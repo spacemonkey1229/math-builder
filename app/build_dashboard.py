@@ -32,7 +32,7 @@ RM = ROOT / "readmodel"
 OUT = ROOT / "app" / "dashboard.html"
 OUT_STUDENT = ROOT / "app" / "student.html"
 
-TODAY = date(2026, 7, 31)
+TODAY = date.today()
 
 SOURCES = [
     "curriculum_tree.json",
@@ -468,7 +468,9 @@ def build_student(learner_id, roster, subs, lib_by_title, ci_by_id, spine_skills
         latest = sorted(sub_by_a.get(a["id"], []), key=lambda s: s["submitted_on"])[-1:] or [None]
         latest = latest[0]
         due_state = "no deadline set"
-        if a["due_on"]:
+        if a["status"] == "complete":
+            due_state = "completed"
+        elif a["due_on"]:
             dd = (date.fromisoformat(a["due_on"]) - TODAY).days
             due_state = ("due in %d day%s" % (dd, "" if dd == 1 else "s") if dd > 0
                          else "due today" if dd == 0 else "%d day%s past due" % (-dd, "" if dd == -1 else "s"))
@@ -3239,7 +3241,7 @@ const DATA = __DATA_JSON__;
           ? '<span class="mono" style="font-size:12px;color:var(--muted)">&#183; ' + esc(r.case_id) + "</span>"
           : '<button class="jump" data-go="case" data-focus="' + esc(String(CASE_BY_ID[r.case_id])) + '">' + esc(r.case_id) + "</button>") +
         "</div>" +
-        '<div class="det">' + esc(r.detail) + (r.badge_index ? " &#183; badge " + r.badge_index : " &#183; badge unallocated") + "</div></div>" +
+        '<div class="det">' + esc(r.detail) + (r.badge_index != null ? " &#183; badge " + r.badge_index : " &#183; badge unallocated") + "</div></div>" +
         '<div class="age">' + r.age + "d</div></div>").join("") + "</div>";
     }
 
@@ -3302,7 +3304,7 @@ const DATA = __DATA_JSON__;
       const downloads = c.assets.filter((a) => a.kind !== "interactive_html");
       return '<article class="mycase"><h3>' + esc(c.title) + "</h3>" +
         '<div class="mm">' + esc(c.tier || "tier unrecorded") + " &#183; assigned " + esc(c.assigned_on) +
-        (c.badge_index ? " &#183; badge " + c.badge_index : " &#183; badge unallocated") + "</div>" +
+        (c.badge_index != null ? " &#183; badge " + c.badge_index : " &#183; badge unallocated") + "</div>" +
         '<div class="due' + (late ? " late" : "") + '">' + esc(c.due_state) + "</div>" +
         '<div class="steps">' + steps.map((s, i) =>
           '<span class="step' + (s[1] ? " done" : (i === cur ? " now" : "")) + '">' + esc(s[0]) + "</span>").join("") + "</div>" +
