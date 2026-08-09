@@ -1,0 +1,328 @@
+{
+  "_schema": {
+    "_comment": "submissions.json \u2014 the state of student work. FOUR flat append-mostly arrays joined on learner_id + case_id. WRITE OWNERSHIP IS SPLIT BY ARRAY, and only by array: assignments[], submissions[] and discussions[] are written ONLY by case-track; scores[] is written ONLY by submission-score. No skill writes an array it does not own. Nothing case-track records is a grade: it records state and flags what needs human judgment. Nothing submission-score writes is final: every score is `machine-first-pass` until a guide confirms it.",
+    "version": "1.0",
+    "generated_on": "2026-07-31",
+    "assignment_fields": {
+      "id": "string. '<learner_id>__<case_id>__<assigned_on>'. Unique.",
+      "learner_id": "string. FK -> roster.json learners[].id.",
+      "case_id": "string. FK -> cases_index.json cases[].id.",
+      "assigned_on": "ISO date.",
+      "due_on": "ISO date or null. null = no deadline; such an assignment can never be OVERDUE, only STALE.",
+      "assigned_by": "string.",
+      "badge_index": "integer or null. Which badge slot this case is intended to count toward. null = unallocated; case-track will flag it once the case completes.",
+      "status": "enum: assigned | submitted | reviewed | complete | withdrawn. Transitions are one-way except withdrawn. 'complete' requires reviewed AND discussion_count >= 2 and is set only by an explicit human confirm in case-track.",
+      "notes": "free text."
+    },
+    "submission_fields": {
+      "id": "string. '<assignment_id>__sub<N>'. Resubmissions get a new record; the old one is retained.",
+      "assignment_id": "string. FK -> assignments[].id.",
+      "learner_id": "string. Denormalized for direct query.",
+      "case_id": "string. Denormalized for direct query.",
+      "submitted_on": "ISO date.",
+      "artifacts": "object mirroring the fixed five Challenges: {challenge_1_resource_url (string|null), challenge_2_pitch_url (string|null), challenge_2_word_count (int|null), challenge_2_has_original_visual (bool|null), challenge_3_deliverables_present (array of deliverable ids from case.json), challenge_4_appendix_url (string|null)}. null means NOT RECORDED, which is different from absent \u2014 case-track reports it as unknown, never as a zero.",
+      "source": "enum: facilitator-dictated | drive-intake. How this record entered the system (Roadmap C3). 'facilitator-dictated' is a human reading the Hero's actual posts and telling case-track the links/counts directly \u2014 the original and still the default path. 'drive-intake' means case-track found new files in the learner's Drive submissions folder (see roster.json drive_folder_id and skills/case-track/SKILL.md 'Drive intake') and staged this record from that \u2014 it still requires the same human confirm before writing, and it does NOT set reviewed_on/outcome by itself; a file arriving is not a review happening.",
+      "drive_artifacts": "object or null. Present only when source == 'drive-intake': {folder_id (string), files: [{drive_file_id, name, modified_time (ISO), local_path (string, relative to project root)}]}. local_path is where case-track downloaded a copy under student_work/<learner_id>/<case_id>/submitted/ \u2014 Drive is the intake channel, never treated as the artifact's only copy, so downstream tools (e.g. submission-score --file) always have a local path to read.",
+      "reviewed_on": "ISO date or null. null = AWAITING REVIEW in the exception queue.",
+      "reviewed_by": "string or null.",
+      "review_note": "string or null. Free-text facilitator judgment. There is no numeric score field by design.",
+      "outcome": "enum or null: accepted | revise | not-accepted. Human-set. null until reviewed."
+    },
+    "discussion_fields": {
+      "id": "string. '<learner_id>__<case_id>__d<N>'.",
+      "learner_id": "string.",
+      "case_id": "string.",
+      "date": "ISO date.",
+      "mode": "enum: live | written-500. 'written-500' is the SPEC Challenge 5 absence substitute (500 excellent words on the discussion questions).",
+      "recorded_by": "string.",
+      "note": "string or null."
+    },
+    "invariants": [
+      "Challenge 5 requires TWO discussion records per learner per case. discussion_count < 2 blocks 'complete'.",
+      "A case counts toward a badge only when its assignment status == 'complete'.",
+      "Nothing in this file is computed on write. Badge progress, overdue state and the exception queue are DERIVED by case-track at read time from these three arrays plus roster.json.",
+      "Records with _example: true are seed data for rendering only and are excluded from every count.",
+      "A score record with status 'machine-first-pass' never contributes to badge progress. case-track must treat it as INTERIM.",
+      "badge_eligible and growth_score are DERIVED from criteria[] and are recomputed, never hand-set.",
+      "Every entry in overrides[] has a matching row in readmodel/score_overrides.json. Overrides are the training signal; a dropped override is lost calibration data.",
+      "A drive-intake submission's presence in Drive never sets reviewed_on or outcome \u2014 those stay human-only regardless of source (MCS-40)."
+    ],
+    "score_fields": {
+      "_comment": "Written ONLY by skills/submission-score/. score_submission.py creates the record with status 'machine-first-pass'; guide_confirm.py is the only writer that may set status 'confirmed'. A machine-first-pass record does NOT count toward a badge and renders as INTERIM on the dashboard.",
+      "id": "string. '<learner_id>__<case_id>__<scored_on>'. Unique. A rescore on the same day replaces; a rescore on a later day is a new record and the old one is retained.",
+      "learner_id": "string. FK -> roster.json learners[].id.",
+      "case_id": "string. FK -> cases_index.json cases[].id.",
+      "scored_on": "ISO date.",
+      "status": "enum: machine-first-pass | confirmed. RUBRIC hard limit 3. Only guide_confirm.py sets 'confirmed'. There is no 'rejected' state \u2014 a guide who disagrees overrides the criterion and confirms, so the disagreement is captured as a training signal rather than discarded.",
+      "criteria": "object C1..C7 -> {level: 'Not Yet'|'Proficient'|'Exemplary', confidence: 'HIGH'|'MEDIUM'|'LOW', set_by?: 'guide'}. RUBRIC hard limit 2: C7 is never 'Exemplary' unless set_by == 'guide'.",
+      "badge_eligible": "bool. THE MASTERY GATE: all seven criteria >= Proficient. No partial credit, no compensation. Recomputed on confirm.",
+      "growth_score": "number 0-100. Weighted C1..C7 at 5/20/20/15/15/15/10, Not Yet 0 / Proficient 70 / Exemplary 100. NEVER averaged with the mastery gate, never shown to a learner as a grade, never used for badge eligibility. It exists so a guide can see 61 -> 68 -> 74 across three cases.",
+      "surface_first": "array of criterion ids the machine flagged LOW confidence. The guide reads these first; they are not buried.",
+      "confirmed_by": "string or null. Named human. null while status is machine-first-pass.",
+      "confirmed_on": "ISO date or null.",
+      "overrides": "array of {criterion, from, to, reason}. Mirrors the rows appended to readmodel/score_overrides.json, which is the file the bias audit reads.",
+      "report": "relative path to student_work/<learner>/<case>/SCORE.md."
+    }
+  },
+  "assignments": [
+    {
+      "id": "maya-w__catering__2026-07-08",
+      "learner_id": "maya-w",
+      "case_id": "catering",
+      "assigned_on": "2026-07-08",
+      "due_on": "2026-07-19",
+      "assigned_by": "facilitator",
+      "badge_index": 1,
+      "status": "complete",
+      "notes": "Confirmed complete 2026-08-08 -- outcome accepted, 2 discussions logged, C3 override reviewed and applied. Counts toward badge 1."
+    },
+    {
+      "id": "ben-okafor__robotics-engineer__2026-07-10",
+      "learner_id": "ben-okafor",
+      "case_id": "robotics-engineer",
+      "assigned_on": "2026-07-10",
+      "due_on": "2026-07-21",
+      "assigned_by": "facilitator",
+      "badge_index": 1,
+      "status": "complete",
+      "notes": "sub1 reviewed 2026-07-19, outcome=revise (C2 hedged, no firm stance). sub2 resubmitted 2026-07-22, reviewed 2026-07-23, outcome=accepted. Confirmed complete 2026-08-08 -- 2 discussions logged. Counts toward badge 1. Growth score across the two submissions: 24.5 -> 69.0."
+    }
+  ],
+  "submissions": [
+    {
+      "id": "maya-w__catering__2026-07-08__sub1",
+      "assignment_id": "maya-w__catering__2026-07-08",
+      "learner_id": "maya-w",
+      "case_id": "catering",
+      "submitted_on": "2026-07-15",
+      "artifacts": {
+        "challenge_1_resource_url": "https://www.mathsisfun.com/algebra/equations-solving.html",
+        "challenge_2_pitch_url": "student_work/maya-w/catering/submitted/Catering - Pitch and Work.md",
+        "challenge_2_word_count": 1062,
+        "challenge_2_has_original_visual": true,
+        "challenge_3_deliverables_present": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6"
+        ],
+        "challenge_4_appendix_url": "student_work/maya-w/catering/submitted/Catering - Pitch and Work.md"
+      },
+      "source": "facilitator-dictated",
+      "drive_artifacts": null,
+      "reviewed_on": "2026-07-16",
+      "reviewed_by": "guide",
+      "review_note": "Strong first submission. C2 and C7 read as genuine, not cue-phrase luck -- she names the trade-off explicitly and answers the strongest counter-argument rather than just naming it. D5's equation is solved correctly and the round-up logic is checked both ways (122 falls short, 123 clears). Overrode C3 to Proficient via guide_confirm -- see override reason there. Accepted.",
+      "outcome": "accepted"
+    },
+    {
+      "id": "ben-okafor__robotics-engineer__2026-07-10__sub1",
+      "assignment_id": "ben-okafor__robotics-engineer__2026-07-10",
+      "learner_id": "ben-okafor",
+      "case_id": "robotics-engineer",
+      "submitted_on": "2026-07-18",
+      "artifacts": {
+        "challenge_1_resource_url": "https://www.basic-mathematics.com/units-of-speed.html",
+        "challenge_2_pitch_url": "student_work/ben-okafor/robotics-engineer/submitted/Robotics Engineer - Pitch and Work v1.md",
+        "challenge_2_word_count": 479,
+        "challenge_2_has_original_visual": true,
+        "challenge_3_deliverables_present": [
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6"
+        ],
+        "challenge_4_appendix_url": "student_work/ben-okafor/robotics-engineer/submitted/Robotics Engineer - Pitch and Work v1.md"
+      },
+      "source": "facilitator-dictated",
+      "drive_artifacts": null,
+      "reviewed_on": "2026-07-19",
+      "reviewed_by": "guide",
+      "review_note": "The math is entirely correct -- checked every figure by hand, all correct, C3 overridden to Proficient (see guide_confirm override; this case's derived{} field names are abbreviated in a way the auto-scorer doesn't expand, not a Ben error). D4/D6 are genuinely well done, and the original per-guest-style comparison table in the Appendix is good instinct. But Challenge 2 doesn't actually take a position: 'either could work depending on what Spencer values most' answers a different, easier question than the one Challenge 2 asks. The case wants a recommendation, not a menu. Sending back for revision: pick one, and defend it using the same real numbers already computed -- the 45.66-second and 0.284-point differences are small, but 'small' is not the same as 'doesn't matter,' and this is exactly the kind of close call the rubric wants a Hero to actually call.",
+      "outcome": "revise"
+    },
+    {
+      "id": "ben-okafor__robotics-engineer__2026-07-10__sub2",
+      "assignment_id": "ben-okafor__robotics-engineer__2026-07-10",
+      "learner_id": "ben-okafor",
+      "case_id": "robotics-engineer",
+      "submitted_on": "2026-07-22",
+      "artifacts": {
+        "challenge_1_resource_url": "https://www.basic-mathematics.com/units-of-speed.html",
+        "challenge_2_pitch_url": "student_work/ben-okafor/robotics-engineer/submitted/Robotics Engineer - Pitch and Work v2.md",
+        "challenge_2_word_count": 836,
+        "challenge_2_has_original_visual": true,
+        "challenge_3_deliverables_present": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6"
+        ],
+        "challenge_4_appendix_url": "student_work/ben-okafor/robotics-engineer/submitted/Robotics Engineer - Pitch and Work v2.md"
+      },
+      "source": "facilitator-dictated",
+      "drive_artifacts": null,
+      "reviewed_on": "2026-07-23",
+      "reviewed_by": "guide",
+      "review_note": "Real fix, not a cosmetic one -- he picked a side, defended it, and answered the actual strongest objection (that the margin is too small to matter) with a real argument (dominance on every measured axis, not a trade-off). Added D1 in this pass too, which was genuinely missing from both versions, not just a scorer artifact. C7 still Not Yet and legitimately so this time, not a detector miss -- he defends the primary metric well but never asks whether it's the right one to optimize; that's real coaching to give him before the next case, not a blocker on accepting this one. Accepted.",
+      "outcome": "accepted"
+    }
+  ],
+  "discussions": [
+    {
+      "id": "maya-w__catering__d1",
+      "learner_id": "maya-w",
+      "case_id": "catering",
+      "date": "2026-07-17",
+      "mode": "live",
+      "recorded_by": "guide",
+      "note": "Defended the wedding pick when pressed on the recurring-corporate-business point; held her position and restated why a single-month decision doesn't foreclose future corporate business."
+    },
+    {
+      "id": "maya-w__catering__d2",
+      "learner_id": "maya-w",
+      "case_id": "catering",
+      "date": "2026-07-17",
+      "mode": "live",
+      "recorded_by": "guide",
+      "note": "Engaged another Hero's reasoning directly -- pushed back on a classmate who argued purely from total profit, pointing to her own per-guest table as a check on whether the bigger event was winning just by being bigger."
+    },
+    {
+      "id": "ben-okafor__robotics-engineer__d1",
+      "learner_id": "ben-okafor",
+      "case_id": "robotics-engineer",
+      "date": "2026-07-23",
+      "mode": "live",
+      "recorded_by": "guide",
+      "note": "Explained why he revised his position after the first review -- said he realized 'either works' wasn't actually an answer once the guide pushed on it."
+    },
+    {
+      "id": "ben-okafor__robotics-engineer__d2",
+      "learner_id": "ben-okafor",
+      "case_id": "robotics-engineer",
+      "date": "2026-07-23",
+      "mode": "live",
+      "recorded_by": "guide",
+      "note": "Responded to a classmate's question about Container A's missing data feed -- disagreed that it should change the routing recommendation, and held that position under follow-up questions."
+    }
+  ],
+  "scores": [
+    {
+      "id": "maya-w__catering__2026-08-08",
+      "learner_id": "maya-w",
+      "case_id": "catering",
+      "scored_on": "2026-08-08",
+      "status": "confirmed",
+      "criteria": {
+        "C1": {
+          "level": "Proficient",
+          "confidence": "MEDIUM"
+        },
+        "C2": {
+          "level": "Exemplary",
+          "confidence": "LOW"
+        },
+        "C3": {
+          "level": "Proficient",
+          "confidence": "LOW",
+          "set_by": "guide"
+        },
+        "C4": {
+          "level": "Proficient",
+          "confidence": "MEDIUM"
+        },
+        "C5": {
+          "level": "Proficient",
+          "confidence": "MEDIUM"
+        },
+        "C6": {
+          "level": "Proficient",
+          "confidence": "MEDIUM"
+        },
+        "C7": {
+          "level": "Proficient",
+          "confidence": "LOW"
+        }
+      },
+      "badge_eligible": true,
+      "growth_score": 76.0,
+      "surface_first": [
+        "C2",
+        "C3",
+        "C7"
+      ],
+      "confirmed_by": "Guide",
+      "confirmed_on": "2026-08-08",
+      "overrides": [
+        {
+          "criterion": "C3",
+          "from": "Not Yet",
+          "to": "Proficient",
+          "reason": "The 3 CHECK flags are all false positives, verified by hand: two collide with case.json's own twist_wedding_* fields (a later, mid-discussion scenario Maya hasn't been given yet, not part of this submission) sharing an auto-generated alias tail with the base wedding fields; the third is that Maya never wrote an explicit 'corporate gross profit' line (she went straight from corporate's revenue/cost/fees to net profit), so the checker attributed the nearby wedding figure to it by mistake. All 16 AGREES are correct, D5's equation and round-up logic are independently right, and no real arithmetic error exists anywhere in the submission."
+        }
+      ],
+      "report": "student_work/maya-w/catering/SCORE.md"
+    },
+    {
+      "id": "ben-okafor__robotics-engineer__2026-08-08",
+      "learner_id": "ben-okafor",
+      "case_id": "robotics-engineer",
+      "scored_on": "2026-08-08",
+      "status": "confirmed",
+      "criteria": {
+        "C1": {
+          "level": "Proficient",
+          "confidence": "MEDIUM"
+        },
+        "C2": {
+          "level": "Exemplary",
+          "confidence": "LOW"
+        },
+        "C3": {
+          "level": "Proficient",
+          "confidence": "LOW",
+          "set_by": "guide"
+        },
+        "C4": {
+          "level": "Proficient",
+          "confidence": "MEDIUM"
+        },
+        "C5": {
+          "level": "Proficient",
+          "confidence": "MEDIUM"
+        },
+        "C6": {
+          "level": "Proficient",
+          "confidence": "MEDIUM"
+        },
+        "C7": {
+          "level": "Not Yet",
+          "confidence": "LOW"
+        }
+      },
+      "badge_eligible": false,
+      "growth_score": 69.0,
+      "surface_first": [
+        "C2",
+        "C3",
+        "C7"
+      ],
+      "confirmed_by": "Guide",
+      "confirmed_on": "2026-08-08",
+      "overrides": [
+        {
+          "criterion": "C3",
+          "from": "Not Yet",
+          "to": "Proficient",
+          "reason": "Same abbreviated-key scorer limitation as sub1 (case.json.derived uses 'dist_C_A_m'-style names the alias generator doesn't expand to natural phrasing) -- rechecked all figures by hand, all correct, unchanged from sub1's math. Not re-litigating the same finding twice; logged once, applies to both scoring runs for this case."
+        }
+      ],
+      "report": "student_work/ben-okafor/robotics-engineer/SCORE.md"
+    }
+  ]
+}

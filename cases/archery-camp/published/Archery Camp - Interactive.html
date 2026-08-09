@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Archery Camp — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7). source case.md sha256:
+  1b975d83573009f520e9829a11811bbc07a9edbed37f3f997d7c767adf3db625
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC */
+  #step4.locked{opacity:.45;pointer-events:none}
+  #step4lock{font-family:var(--sans);font-size:.82rem;color:var(--bad);background:var(--bad-bg);border-radius:6px;padding:8px 12px;margin-bottom:10px}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Archery Camp</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS</span>
+      <span class="pill">Decimals &middot; Combinations &middot; Budgeting</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">"I'm sorry, Ann Morrison isn't available this year because of construction at the park," says the voice on the phone. Karen Dobson presses the phone tighter to her ear, already reaching for a notepad. "But the Simplot Sports Complex has open fields for those dates. It's bigger than Ann Morrison, but flat and open, and you can rent just the sections you need. I think it'd work well for your camp."</p>
+  <p>"Sure," Karen says, "that would be great. When do you need our reservation?"</p>
+  <p>"The sooner the better. One of the fields is already booked for a youth soccer tournament that same weekend, and even though it's a year out, it's a popular week."</p>
+  <p>Karen thanks the rep and hangs up, already pulling up the field list on her laptop. Nine sections, nine different prices, and a summer's worth of archers counting on her to get this right. She's done this every year since the camp started, but never with this many moving pieces at once.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Karen Dobson has coordinated Archery 360, LLC's summer camp for 4 years, growing it from 10 youth attendees its first year to over 50 last summer. She's confident next year's attendance will keep growing and wants to reserve space for <strong>at least 100 youth archers</strong>, ideally with room for up to <strong>150</strong>, for a <strong>3-day camp</strong>.</p>
+  <p>Archery 360 already owns enough bows, targets, and equipment for up to 200 attendees. Karen estimates it costs about <strong>$26.30 per attendee</strong> for a T-shirt and disposable equipment. Camp counselors are paid <strong>$145.00 per counselor per day</strong>. For safety, every archery range requires <strong>at least 2 counselors</strong>, and each range holds up to <strong>12 youth participants</strong>. Archery 360's board has also set a real goal for every camp: keep the per-participant charge at or under <strong>$110.00</strong> whenever realistically possible.</p>
+  <p>The Simplot Sports Complex has nine rentable field sections, each a different size and price. Karen has narrowed her choice to two combinations of sections. The planning figures she budgets from are fixed &mdash; use them, or your numbers won't match anyone else's.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Karen Dobson. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Fields A, B, C, G, H</h4>
+      <p style="margin:0">13 archery ranges.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Fields D, E, F, J</h4>
+      <p style="margin:0">15 archery ranges.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from the case study launch. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which combination you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include the following:
+      <ul>
+        <li><strong>D1</strong> — total ranges and max capacity for your combination.</li>
+        <li><strong>D2</strong> — counselors required and total counselor pay.</li>
+        <li><strong>D3</strong> — total camp cost and per-participant charge.</li>
+        <li><strong>D4</strong> — the number of 5-field combinations possible from all 9 fields.</li>
+        <li><strong>D5</strong> — solve for the minimum attendance Option A needs to hit the board's $110.00/participant target, and state whether that's achievable within Karen's 100-150 planning range.</li>
+        <li><strong>D6</strong> — a recommendation comparing both combinations, informed by D5's finding.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Simplot Sports Complex Field Rentals</summary>
+    <div class="inner">
+      <table id="csvTable1">
+        <tr><th>Field</th><th class="num">Rate / day</th></tr>
+        <tr><td>A</td><td class="num">$99.00</td></tr>
+        <tr><td>B</td><td class="num">$91.00</td></tr>
+        <tr><td>C</td><td class="num">$114.00</td></tr>
+        <tr><td>D</td><td class="num">$114.00</td></tr>
+        <tr><td>E</td><td class="num">$107.00</td></tr>
+        <tr><td>F</td><td class="num">$112.00</td></tr>
+        <tr><td>G</td><td class="num">$87.00</td></tr>
+        <tr><td>H</td><td class="num">$92.00</td></tr>
+        <tr><td>J</td><td class="num">$114.00</td></tr>
+      </table>
+      <div class="csv-row"><button class="csvbtn" onclick="downloadCSV('csvTable1', 'archery-camp-simplot-sports-complex-field-rentals.csv')">&#8681; Download CSV</button> <button class="csvbtn" onclick="printTable('csvTable1', 'Simplot Sports Complex Field Rentals')">🖶 PDF</button></div>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Archery Ranges Per Field</summary>
+    <div class="inner">
+      <table id="csvTable2">
+        <tr><th>Field</th><th class="num">Ranges</th></tr>
+        <tr><td>A</td><td class="num">3</td></tr>
+        <tr><td>B</td><td class="num">2</td></tr>
+        <tr><td>C</td><td class="num">4</td></tr>
+        <tr><td>D</td><td class="num">4</td></tr>
+        <tr><td>E</td><td class="num">3</td></tr>
+        <tr><td>F</td><td class="num">4</td></tr>
+        <tr><td>G</td><td class="num">2</td></tr>
+        <tr><td>H</td><td class="num">2</td></tr>
+        <tr><td>J</td><td class="num">4</td></tr>
+      </table>
+      <div class="csv-row"><button class="csvbtn" onclick="downloadCSV('csvTable2', 'archery-camp-archery-ranges-per-field.csv')">&#8681; Download CSV</button> <button class="csvbtn" onclick="printTable('csvTable2', 'Archery Ranges Per Field')">🖶 PDF</button></div>
+      <p>Each range holds up to 12 youth participants and requires at least 2 camp counselors.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p><strong>Assumption 1 &mdash; Planning attendance.</strong> Equipment and per-participant charges are calculated for 140 planned attendees.</p>
+      <p><strong>Assumption 2 &mdash; Full ranges, no partial refunds.</strong> A field's range count is fixed regardless of actual attendance.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix D &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-04. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong>. It won't tell Karen which combination to choose; that part is still yours.</p>
+
+  <div class="stepbox" id="step1">
+    <h4>Step 1 &mdash; Ranges, capacity, and counselors (D1/D2)</h4>
+    <div class="goal">Pick a combination. Sum its ranges, find max capacity, and total counselors needed.</div>
+    <div class="fieldrow"><label for="comboSelect">Combination</label>
+      <select id="comboSelect"><option value="A">A: Fields A, B, C, G, H</option><option value="B">B: Fields D, E, F, J</option></select>
+    </div>
+    <div class="fieldrow"><label>Total ranges</label><input type="number" step="1" id="rangesGuess">
+      <button onclick="checkStep1()">Check all three</button><span class="fb" id="rangesFb"></span>
+    </div>
+    <div class="fieldrow"><label>Max capacity</label><input type="number" step="1" id="capacityGuess"><span class="fb" id="capacityFb"></span></div>
+    <div class="fieldrow"><label>Counselors needed</label><input type="number" step="1" id="counselorsGuess"><span class="fb" id="counselorsFb"></span></div>
+  </div>
+
+  <div class="stepbox" id="step2">
+    <h4>Step 2 &mdash; Total cost and per-participant charge (D3)</h4>
+    <div class="goal">For the same combination, compute total camp cost (rental + counselor pay + equipment for 140 attendees) and the per-participant charge.</div>
+    <div class="fieldrow"><label>Total cost ($)</label><input type="number" step="0.01" id="totalCostGuess">
+      <button onclick="checkStep2()">Check both</button><span class="fb" id="totalCostFb"></span>
+    </div>
+    <div class="fieldrow"><label>Per-participant charge ($)</label><input type="number" step="0.01" id="perGuess"><span class="fb" id="perFb"></span></div>
+  </div>
+
+  <div class="stepbox" id="step3">
+    <h4>Step 3 &mdash; Combinations sanity check (D4)</h4>
+    <div class="goal">How many different 5-field combinations are possible from the 9 available fields?</div>
+    <div class="fieldrow"><label for="comboCountGuess">Number of combinations</label><input type="number" step="1" id="comboCountGuess">
+      <button onclick="checkCombos()">Check</button><span class="fb" id="comboCountFb"></span>
+    </div>
+  </div>
+
+  <div class="stepbox locked" id="step4">
+    <h4>Step 4 &mdash; The registration surge (unlocks after the Twist)</h4>
+    <div id="step4lock">Locked. Reveal the Twist below and check "apply the twist" to unlock this step.</div>
+    <div class="goal">160 new registrations arrive. For your combination, how many campers would have to be turned away?</div>
+    <div class="fieldrow"><label for="shortfallGuess">Shortfall (campers turned away)</label><input type="number" step="1" id="shortfallGuess">
+      <button onclick="checkTwist()">Check</button><span class="fb" id="twistFb"></span>
+    </div>
+  </div>
+
+  <div class="stepbox" id="step5">
+    <h4>Step 5 &mdash; Solve for the board's target (D5)</h4>
+    <div class="goal">Option A's rental + counselor pay ($12,759 total) are fixed no matter how many attendees show up; equipment costs $26.30/attendee on top of that. Solve for the minimum whole number of attendees needed to bring Option A's per-participant charge down to the board's $110.00 target.</div>
+    <div class="fieldrow"><label for="targetAttendanceGuess">Minimum attendees needed</label><input type="number" step="1" id="targetAttendanceGuess">
+      <button onclick="checkTargetAttendance()">Check</button><span class="fb" id="targetAttendanceFb"></span>
+    </div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>A month later, Cynthia from marketing emails you: a Facebook ad went out and registration is through the roof &mdash; more than 160 new sign-ups on top of what you planned for. Can you handle that?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Unlock Step 4 and check the shortfall for real</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>Field rental rates and cost figures are as recorded in the original 2020 case study material (Appendix A/B). Simplot Sports Complex is a real, confirmed City of Boise Parks and Recreation facility, though its exact per-field rates aren't published online and could not be independently re-verified against a current public rate sheet &mdash; see <a href="https://www.cityofboise.org/departments/parks-and-recreation/parks/simplot-sports-complex/" target="_blank" rel="noopener">City of Boise Parks and Recreation</a>.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Archery Camp &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, from cases/archery-camp/case.md
+   Appendix A/B/C (sha256 1b975d83573009f520e9829a11811bbc07a9edbed37f3f997d7c767adf3db625).
+   ================================================================ */
+const FEES = {A:99.00,B:91.00,C:114.00,D:114.00,E:107.00,F:112.00,G:87.00,H:92.00,J:114.00};
+const RANGES = {A:3,B:2,C:4,D:4,E:3,F:4,G:2,H:2,J:4};
+const PER_RANGE_CAP = 12;
+const COUNSELORS_PER_RANGE = 2;
+const COUNSELOR_DAILY = 145.00;
+const EQUIP_PER_ATTENDEE = 26.30;
+const DAYS = 3;
+const ATTENDEES = 140;
+const COMBOS = { A: ["A","B","C","G","H"], B: ["D","E","F","J"] };
+const BOARD_TARGET = 110.00;
+
+function comboTotals(key){
+  const fields = COMBOS[key];
+  const dailyRental = fields.reduce((s,f)=>s+FEES[f],0);
+  const totalRental = dailyRental*DAYS;
+  const nRanges = fields.reduce((s,f)=>s+RANGES[f],0);
+  const maxCapacity = nRanges*PER_RANGE_CAP;
+  const nCounselors = nRanges*COUNSELORS_PER_RANGE;
+  const counselorCost = nCounselors*COUNSELOR_DAILY*DAYS;
+  const equipCost = EQUIP_PER_ATTENDEE*ATTENDEES;
+  const totalCost = totalRental+counselorCost+equipCost;
+  const perParticipant = totalCost/ATTENDEES;
+  return {nRanges, maxCapacity, nCounselors, totalRental, counselorCost, equipCost, totalCost, perParticipant};
+}
+function factorial(n){ let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
+function nChooseK(n,k){ return Math.round(factorial(n)/(factorial(k)*factorial(n-k))); }
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : ('try again — correct: '+correct);
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries — PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  const key = document.getElementById('comboSelect').value;
+  const t = comboTotals(key);
+  fb('rangesFb', parseInt(val('rangesGuess'))===t.nRanges, String(t.nRanges));
+  fb('capacityFb', parseInt(val('capacityGuess'))===t.maxCapacity, String(t.maxCapacity));
+  fb('counselorsFb', parseInt(val('counselorsGuess'))===t.nCounselors, String(t.nCounselors));
+}
+function checkStep2(){
+  const key = document.getElementById('comboSelect').value;
+  const t = comboTotals(key);
+  fb('totalCostFb', near(parseFloat(val('totalCostGuess')), round(t.totalCost,2), 0.5), '$'+round(t.totalCost,2).toLocaleString());
+  fb('perFb', near(parseFloat(val('perGuess')), round(t.perParticipant,2), 0.02), '$'+round(t.perParticipant,2));
+}
+function checkCombos(){
+  const real = nChooseK(9,5);
+  fb('comboCountFb', parseInt(val('comboCountGuess'))===real, String(real));
+}
+function checkTwist(){
+  const key = document.getElementById('comboSelect').value;
+  const t = comboTotals(key);
+  const demand = ATTENDEES + 160;
+  const shortfall = Math.max(0, demand - t.maxCapacity);
+  fb('twistFb', parseInt(val('shortfallGuess'))===shortfall, String(shortfall));
+}
+function checkTargetAttendance(){
+  // Option A's fixed costs (rental + counselors) don't depend on headcount; only
+  // equipment cost scales with attendees. Solve fixedCost + EQUIP*x = BOARD_TARGET*x.
+  const a = comboTotals('A');
+  const fixedCost = a.totalRental + a.counselorCost;
+  const exact = fixedCost / (BOARD_TARGET - EQUIP_PER_ATTENDEE);
+  const real = Math.ceil(exact);
+  fb('targetAttendanceFb', parseInt(val('targetAttendanceGuess'))===real, String(real));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "archery-camp";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1","Total ranges and max capacity"],
+  ["D2","Counselors required and total pay"],
+  ["D3","Total cost and per-participant charge"],
+  ["D4","Number of 5-field combinations from 9 fields"],
+  ["D5","Minimum attendance for Option A to hit the board's $110 target"],
+  ["D6","Recommendation comparing both combinations"]
+];
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms). "Combination"
+   fetched and confirmed live 2026-08-01; the other 7 reuse already-
+   verified khanacademy.org links from this project's other cases
+   (MCS-21).
+   ================================================================ */
+const GLOSSARY = {
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Multiplication": {def: "Combining equal-sized groups to find a total -- repeated addition, done faster.",
+    url: "https://www.khanacademy.org/math/cc-third-grade-math/intro-to-multiplication/multiply-with-groups-of-objects/v/multiplication-intro"},
+  "Combination": {def: "A way of selecting items from a group where the order of selection does not matter.",
+    url: "https://www.khanacademy.org/math/probability/probability-geometry/counting-combinations/v/introduction-to-combinations"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Rounding": {def: "Replacing a number with a simpler, nearby one at a given place value.",
+    url: "https://www.khanacademy.org/math/cc-fourth-grade-math/imp-addition-and-subtraction-2/imp-rounding-whole-numbers/e/rounding_whole_numbers"},
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Equation": {def: "A mathematical statement that two expressions are equal, connected by an equals sign.",
+    url: "https://www.khanacademy.org/math/pre-algebra/pre-algebra-equations-expressions"},
+  "Variable": {def: "A letter or symbol standing in for an unknown or changeable number.",
+    url: "https://www.khanacademy.org/math/pre-algebra/xb4832e56:variables-expressions"}
+};
+const HOWTO = [
+  ["multiply decimal numbers", "Multiplication"],
+  ["add decimal numbers", "Decimal"],
+  ["divide decimal numbers", "Decimal"],
+  ["determine the number of outcomes of a combination", "Combination"],
+  ["solve a multi-step equation with a variable on both sides", "Equation"],
+  ["compare two or more values", "Data"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-SPECIFIC — twist gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const step4 = document.getElementById('step4');
+  step4.classList.toggle('locked', !applied);
+  document.getElementById('step4lock').style.display = applied ? 'none' : 'block';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

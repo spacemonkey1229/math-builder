@@ -1,0 +1,99 @@
+{
+  "_schema": {
+    "_comment": "score_overrides.json \u2014 every place a guide disagreed with the machine first pass. Written ONLY by skills/submission-score/scripts/guide_confirm.py. Never hand-edited, never written by case-track or case-publish. This file is not an audit trail for its own sake: OVERRIDES ARE THE TRAINING SIGNAL. One override is a judgment call; forty overrides clustered on one criterion is a measurement of machine bias, and it is the only measurement of machine bias this system has.",
+    "version": "1.0",
+    "generated_on": "2026-07-31",
+    "owner": "submission-score (guide_confirm.py)",
+    "the_rule": "A criterion the machine gets wrong more than ~30% of the time should be DEMOTED TO 'GUIDE ONLY' \u2014 removed from the machine first pass entirely, rather than left emitting a verdict a guide has to undo. Tolerating a 40%-wrong criterion is worse than not scoring it at all, because a wrong first-pass verdict ANCHORS the guide who reads it. Run `guide_confirm.py --audit` to see the current per-criterion rate. Rates computed on fewer than 8 confirmed records are noise and the audit says so rather than reporting a percentage.",
+    "why_direction_matters": "The audit reports not just HOW OFTEN a criterion is overridden but in WHICH DIRECTION. A criterion the guide always RAISES means the machine reads harsh \u2014 usually because a cue-phrase detector cannot see reasoning that is present but phrased unusually. A criterion the guide always LOWERS means the machine reads generous \u2014 usually because presence was detected and quality was not. These are different defects with different fixes: the first needs a wider detector, the second needs the criterion demoted.",
+    "expected_hot_spots": {
+      "C7": "The machine is guessing at C7 entirely and may never mark it Exemplary (RUBRIC hard limit 2). A high override rate here is EXPECTED and is not evidence of a bug. C7 is also RUBRIC's own open question \u2014 if nearly everyone lands Not Yet, the criterion is wrong, not the Heroes.",
+      "C3": "A machine BLOCKER on C3 is advisory, not final (RUBRIC hard limit 1). Overrides raising C3 to Proficient because the Hero declared their own assumption are the intended behaviour of the system, not a failure of it \u2014 but if they dominate, the recomputation table needs the Hero's declared assumptions as an input.",
+      "C6": "C6 depends on discussion records nobody currently habitually keeps. A high override rate here is almost certainly a RECORDING gap, not a scoring defect. Fix the habit before touching the scorer."
+    },
+    "fields": {
+      "id": "string. '<learner_id>__<case_id>__<date>__<criterion>'. Unique.",
+      "learner_id": "string. FK -> roster.json learners[].id.",
+      "case_id": "string. FK -> cases_index.json cases[].id.",
+      "score_id": "string. FK -> submissions.json scores[].id.",
+      "criterion": "enum: C1 | C2 | C3 | C4 | C5 | C6 | C7.",
+      "machine_level": "enum: Not Yet | Proficient | Exemplary. What the machine first pass said.",
+      "guide_level": "enum: same. What the guide set it to. Must differ from machine_level.",
+      "from": "alias of machine_level, kept for direct query.",
+      "to": "alias of guide_level.",
+      "machine_confidence": "enum: HIGH | MEDIUM | LOW. The flag the machine carried when it was wrong. An override against a HIGH-confidence verdict is far more serious than one against LOW and should be read first.",
+      "reason": "string, REQUIRED. guide_confirm.py refuses an override with no reason. An unexplained override is not a training signal, it is noise.",
+      "by": "string. Who confirmed. Not optional \u2014 'machine drafts, human promotes' needs a named human.",
+      "on": "ISO date."
+    },
+    "invariants": [
+      "machine_level != guide_level. A confirmation with no change is recorded on the score record, not here.",
+      "Every override has a non-empty reason.",
+      "Append-only. A correction to an override is a new row, never an edit \u2014 the wrong call is part of the signal.",
+      "Records with _example: true are seed data for rendering only and are excluded from every count and every rate."
+    ]
+  },
+  "overrides": [
+    {
+      "_example": true,
+      "id": "EXAMPLE__example-avery-n__cold-chain__2026-08-04__C3",
+      "learner_id": "example-avery-n",
+      "case_id": "cold-chain",
+      "score_id": "example-avery-n__cold-chain__2026-08-03",
+      "criterion": "C3",
+      "machine_level": "Not Yet",
+      "guide_level": "Proficient",
+      "from": "Not Yet",
+      "to": "Proficient",
+      "machine_confidence": "LOW",
+      "reason": "EXAMPLE RECORD \u2014 not a real override. The machine recomputed the cold-life ledger using Appendix F's deduct-openings-up-front convention and flagged a disagreement. The Hero used the sequential reading, declared it explicitly in their appendix, and carried it consistently. RUBRIC hard limit 1: a machine BLOCKER on C3 is advisory. The Hero was right.",
+      "by": "EXAMPLE \u2014 facilitator",
+      "on": "2026-08-04"
+    },
+    {
+      "id": "maya-w__catering__2026-08-08__C3",
+      "learner_id": "maya-w",
+      "case_id": "catering",
+      "score_id": "maya-w__catering__2026-08-08",
+      "criterion": "C3",
+      "machine_level": "Not Yet",
+      "guide_level": "Proficient",
+      "from": "Not Yet",
+      "to": "Proficient",
+      "machine_confidence": "LOW",
+      "reason": "The 3 CHECK flags are all false positives, verified by hand: two collide with case.json's own twist_wedding_* fields (a later, mid-discussion scenario Maya hasn't been given yet, not part of this submission) sharing an auto-generated alias tail with the base wedding fields; the third is that Maya never wrote an explicit 'corporate gross profit' line (she went straight from corporate's revenue/cost/fees to net profit), so the checker attributed the nearby wedding figure to it by mistake. All 16 AGREES are correct, D5's equation and round-up logic are independently right, and no real arithmetic error exists anywhere in the submission.",
+      "by": "Guide",
+      "on": "2026-08-08"
+    },
+    {
+      "id": "ben-okafor__robotics-engineer__2026-08-08__C3",
+      "learner_id": "ben-okafor",
+      "case_id": "robotics-engineer",
+      "score_id": "ben-okafor__robotics-engineer__2026-08-08",
+      "criterion": "C3",
+      "machine_level": "Not Yet",
+      "guide_level": "Proficient",
+      "from": "Not Yet",
+      "to": "Proficient",
+      "machine_confidence": "LOW",
+      "reason": "Checked all 8 of Ben's stated figures (three distances, both route times, both integrity percentages, the triangle-inequality margin) by hand against case.json.derived -- every one is exactly correct. The checker found 0 agreements only because this case's derived{} keys are abbreviated ('dist_C_A_m', 'route_C_B_A_minutes') in a way the auto-alias generator doesn't expand to how a Hero naturally writes them ('the distance from C to A is 12.042 meters'). Not a Hero error -- a known scorer limitation, logged for a follow-up fix to _derived_aliases() (abbreviation expansion: dist->distance, etc.), see UAT_LOG.md.",
+      "by": "Guide",
+      "on": "2026-08-08"
+    },
+    {
+      "id": "ben-okafor__robotics-engineer__2026-08-08__C3",
+      "learner_id": "ben-okafor",
+      "case_id": "robotics-engineer",
+      "score_id": "ben-okafor__robotics-engineer__2026-08-08",
+      "criterion": "C3",
+      "machine_level": "Not Yet",
+      "guide_level": "Proficient",
+      "from": "Not Yet",
+      "to": "Proficient",
+      "machine_confidence": "LOW",
+      "reason": "Same abbreviated-key scorer limitation as sub1 (case.json.derived uses 'dist_C_A_m'-style names the alias generator doesn't expand to natural phrasing) -- rechecked all figures by hand, all correct, unchanged from sub1's math. Not re-litigating the same finding twice; logged once, applies to both scoring runs for this case.",
+      "by": "Guide",
+      "on": "2026-08-08"
+    }
+  ]
+}

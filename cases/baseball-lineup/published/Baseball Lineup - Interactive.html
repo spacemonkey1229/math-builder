@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Baseball Lineup — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7). Case-specific fill-in only;
+  case-agnostic mechanics (glossary renderer, checklist, dilemma-pick, tab nav,
+  twist gating) are unchanged from the shell. source case.md sha256:
+  e6245f4132d6018dac7940aacffa0f7edb635a79e85b199fd5e2ec72e6e593cc
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC */
+  .lineup-cols{display:flex;gap:28px;flex-wrap:wrap;font-family:var(--sans);font-size:.88rem}
+  .lineup-cols ol{margin:6px 0 0;padding-left:22px}
+  .lineup-cols .who{font-weight:700;color:var(--navy)}
+  #step4.locked{opacity:.45;pointer-events:none}
+  #step4lock{font-family:var(--sans);font-size:.82rem;color:var(--bad);background:var(--bad-bg);border-radius:6px;padding:8px 12px;margin-bottom:10px}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Baseball Lineup</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS</span>
+      <span class="pill">Percent &middot; Mean &middot; Fundamental Counting Principle</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Carly Steinbrenner watches an early spring practice through the open glass windows of her third-deck office behind third base. <em>I love my job</em>, she thinks, and for a moment she is eight years old again, playing catch with her father in this same outfield. A breeze moves the papers in her hand. The sound calls her back to work.</p>
+  <p>Her phone rings. "Hi Tony." She already knows what he's going to ask.</p>
+  <p>"Have you found my assistant yet?" says Tony DeLussa, the team's general manager.</p>
+  <p>"I have the final two applications in my hands right now," Carly says. "Any last input?"</p>
+  <p>"I know you'll figure it out. I trust you completely. But I need to know by the end of the day — Paul's replacement has to be ready to move fast."</p>
+  <p>Carly looks down at the two folders on her desk. Ash and Venicia are so evenly matched — same work ethic, same instincts, same three rounds of interviews — that she gave them one final, unscripted challenge that morning: build the best batting lineup you can from the team's spring roster. Their answers could not be more different.</p>
+  <p>She sets the folders side by side and opens the first one.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Carly Steinbrenner is the Denver Dragons' Director of Personnel. She grew up around the organization — her father was a hitting coach here for over twenty years — and for three years she has advised the front office on every player and staff hire in the club. At only twenty-five, she is the youngest Director in the league, and her calls on personnel have been reliably good ones.</p>
+  <p>Tony's longtime executive assistant, Paul, is moving into a new role, and Carly must name his replacement today. Two finalists remain: <strong>Ash</strong> and <strong>Venicia</strong>. Both are outstanding, and side by side their résumés are nearly identical. Unable to separate them on paper, Carly gave both candidates the same challenge without warning: using the Dragons' spring training statistics, build the batting lineup you would put on the field (SEE APPENDIX A). Their two lineups are recorded in <strong>APPENDIX B</strong>.</p>
+  <p>Carly cannot hire both. She has to read what each lineup says about how Ash and Venicia think — and decide which way of thinking she wants running the front office with her.</p>
+  <p>The full spring training numbers for every player either candidate could have chosen are in <strong>APPENDIX A</strong>. The two lineups Ash and Venicia actually submitted are in <strong>APPENDIX B</strong>. <strong>APPENDIX C</strong> states exactly how this case defines an at-bat, a plate appearance, and every rounding rule — use it, or your numbers will not match anyone else's.</p>
+  <p>The vocabulary and the "how to…" skills this case will ask of you are listed in <strong>Appendix D</strong> — that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Carly Steinbrenner. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Hire Ash</h4>
+      <p style="margin:0">Based on the lineup she submitted: Swensen, Jacoby, Tranjier, Chow, Yoder, Adams, Sabathia, Abraham, Harper.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Hire Venicia</h4>
+      <p style="margin:0">Based on the lineup she submitted: Chow, Sabathia, Abraham, Tranjier, Poppins, Yoder, Fredricks, Graham, Jordan.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix D. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on who you'd hire and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include the following:
+      <ul>
+        <li><strong>D1</strong> — a batting-average table for all 15 players (hits, at-bats, AVG rounded to 3 decimals).</li>
+        <li><strong>D2</strong> — a plate-appearance outcome breakdown for all 15 players (6 percentages, rounded to the nearest tenth).</li>
+        <li><strong>D3</strong> — both lineups' combined AVG and mean-of-individual AVG, with one sentence on why they differ.</li>
+        <li><strong>D4</strong> — one original bar graph comparing the two lineups.</li>
+        <li><strong>D5</strong> — the number of distinct batting orders possible for a fixed 9-player lineup, via the Fundamental Counting Principle.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Spring Training Batting Statistics</summary>
+    <div class="inner">
+      <p>Every player on the Denver Dragons' spring training roster &mdash; not just the players either candidate chose. <strong>Walks</strong> is a plate appearance that reaches base without a hit. <strong>1B, 2B, 3B, HR</strong> are singles, doubles, triples, and home runs. <strong>Outs</strong> is every plate appearance that did not reach base, including strikeouts.</p>
+      <table id="csvTable1">
+        <tr><th>Player</th><th class="num">Walks</th><th class="num">1B</th><th class="num">2B</th><th class="num">3B</th><th class="num">HR</th><th class="num">Outs</th></tr>
+        <tr><td>Abraham</td><td class="num">10</td><td class="num">14</td><td class="num">5</td><td class="num">3</td><td class="num">0</td><td class="num">22</td></tr>
+        <tr><td>Adams</td><td class="num">5</td><td class="num">8</td><td class="num">1</td><td class="num">3</td><td class="num">1</td><td class="num">34</td></tr>
+        <tr><td>Chow</td><td class="num">22</td><td class="num">16</td><td class="num">6</td><td class="num">3</td><td class="num">1</td><td class="num">18</td></tr>
+        <tr><td>Dasante</td><td class="num">3</td><td class="num">10</td><td class="num">4</td><td class="num">2</td><td class="num">6</td><td class="num">31</td></tr>
+        <tr><td>Fredricks</td><td class="num">5</td><td class="num">9</td><td class="num">0</td><td class="num">3</td><td class="num">2</td><td class="num">35</td></tr>
+        <tr><td>Graham</td><td class="num">10</td><td class="num">16</td><td class="num">5</td><td class="num">4</td><td class="num">0</td><td class="num">20</td></tr>
+        <tr><td>Harper</td><td class="num">9</td><td class="num">13</td><td class="num">6</td><td class="num">4</td><td class="num">0</td><td class="num">23</td></tr>
+        <tr><td>Jacoby</td><td class="num">9</td><td class="num">17</td><td class="num">6</td><td class="num">2</td><td class="num">7</td><td class="num">20</td></tr>
+        <tr><td>Jordan</td><td class="num">4</td><td class="num">11</td><td class="num">2</td><td class="num">2</td><td class="num">9</td><td class="num">28</td></tr>
+        <tr><td>Poppins</td><td class="num">4</td><td class="num">3</td><td class="num">5</td><td class="num">8</td><td class="num">14</td><td class="num">42</td></tr>
+        <tr><td>Sabathia</td><td class="num">10</td><td class="num">12</td><td class="num">7</td><td class="num">4</td><td class="num">0</td><td class="num">22</td></tr>
+        <tr><td>Swensen</td><td class="num">10</td><td class="num">18</td><td class="num">5</td><td class="num">4</td><td class="num">2</td><td class="num">17</td></tr>
+        <tr><td>Tranjier</td><td class="num">6</td><td class="num">11</td><td class="num">0</td><td class="num">2</td><td class="num">11</td><td class="num">32</td></tr>
+        <tr><td>Yoder</td><td class="num">12</td><td class="num">15</td><td class="num">5</td><td class="num">4</td><td class="num">2</td><td class="num">18</td></tr>
+        <tr><td>Young</td><td class="num">3</td><td class="num">8</td><td class="num">0</td><td class="num">3</td><td class="num">2</td><td class="num">39</td></tr>
+      </table>
+      <div class="csv-row"><button class="csvbtn" onclick="downloadCSV('csvTable1', 'baseball-lineup-spring-training-batting-statistics.csv')">&#8681; Download CSV</button> <button class="csvbtn" onclick="printTable('csvTable1', 'Spring Training Batting Statistics')">🖶 PDF</button></div>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; The Two Proposed Lineups</summary>
+    <div class="inner">
+      <div class="lineup-cols">
+        <div><div class="who">Ash's Lineup</div><ol>
+          <li>Swensen</li><li>Jacoby</li><li>Tranjier</li><li>Chow</li><li>Yoder</li><li>Adams</li><li>Sabathia</li><li>Abraham</li><li>Harper</li>
+        </ol></div>
+        <div><div class="who">Venicia's Lineup</div><ol>
+          <li>Chow</li><li>Sabathia</li><li>Abraham</li><li>Tranjier</li><li>Poppins</li><li>Yoder</li><li>Fredricks</li><li>Graham</li><li>Jordan</li>
+        </ol></div>
+      </div>
+      <p class="side-note">Five players &mdash; Chow, Sabathia, Abraham, Tranjier, and Yoder &mdash; appear on both lineups. The two candidates disagree only on the other four spots.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p><strong>Assumption 1 &mdash; At-bats exclude walks.</strong> Real baseball convention: a walk is a plate appearance, but not an at-bat. <strong>At-bats (AB) = 1B + 2B + 3B + HR + Outs.</strong> <strong>Plate appearances (PA) = AB + Walks.</strong> Batting average is hits &divide; AB. The outcome-percentage breakdown (D2) uses PA, not AB &mdash; two different denominators for two different questions.</p>
+      <p><strong>Assumption 2 &mdash; Rounding.</strong> Batting averages round to <strong>3 decimal places</strong>; percentages round to the <strong>nearest tenth of a percent</strong>. A player's 6 outcome percentages may sum to slightly more or less than 100.0% because of rounding &mdash; expected, not an error.</p>
+      <p><strong>Assumption 3 &mdash; Why order is set aside.</strong> The original Guide Notes ask whether batting order should matter to Carly's decision. D5 asks you to compute exactly how many distinct 9-player batting orders exist for a fixed lineup &mdash; that number is large enough on its own to explain why this case asks Carly to decide <em>who</em> to hire, not to also referee ordering.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix D &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-01. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you who to hire; that part is still yours.</p>
+
+  <div class="stepbox" id="step1">
+    <h4>Step 1 &mdash; Batting average (D1)</h4>
+    <div class="goal goal">Pick any player from Appendix A. Compute hits &divide; at-bats, rounded to 3 decimal places.</div>
+    <div class="fieldrow"><label for="avgPlayer">Player</label>
+      <select id="avgPlayer">
+        <option>Abraham</option><option>Adams</option><option>Chow</option><option>Dasante</option><option>Fredricks</option>
+        <option>Graham</option><option>Harper</option><option>Jacoby</option><option>Jordan</option><option>Poppins</option>
+        <option>Sabathia</option><option>Swensen</option><option>Tranjier</option><option>Yoder</option><option>Young</option>
+      </select>
+    </div>
+    <div class="fieldrow"><label for="avgGuess">Your batting average</label><input type="number" step="0.001" id="avgGuess">
+      <button onclick="checkAvg()">Check</button><span class="fb" id="avgFb"></span>
+    </div>
+  </div>
+
+  <div class="stepbox" id="step2">
+    <h4>Step 2 &mdash; Plate-appearance outcome percentage (D2)</h4>
+    <div class="goal">Pick a player and one outcome. Compute that outcome's percentage of plate appearances (Appendix C, Assumption 1), to the nearest tenth of a percent.</div>
+    <div class="fieldrow"><label for="outPlayer">Player</label>
+      <select id="outPlayer">
+        <option>Abraham</option><option>Adams</option><option>Chow</option><option>Dasante</option><option>Fredricks</option>
+        <option>Graham</option><option>Harper</option><option>Jacoby</option><option>Jordan</option><option>Poppins</option>
+        <option>Sabathia</option><option>Swensen</option><option>Tranjier</option><option>Yoder</option><option>Young</option>
+      </select>
+    </div>
+    <div class="fieldrow"><label for="outKind">Outcome</label>
+      <select id="outKind">
+        <option value="BB">Walk</option><option value="S">Single</option><option value="D">Double</option>
+        <option value="T">Triple</option><option value="HR">Home run</option><option value="OUT">Out</option>
+      </select>
+    </div>
+    <div class="fieldrow"><label for="outGuess">Your percentage</label><input type="number" step="0.1" id="outGuess">
+      <button onclick="checkOutcome()">Check</button><span class="fb" id="outFb"></span>
+    </div>
+  </div>
+
+  <div class="stepbox" id="step3">
+    <h4>Step 3 &mdash; Lineup averages, two ways (D3)</h4>
+    <div class="goal">For each lineup: (i) combined average (total hits &divide; total at-bats across the 9 players) and (ii) the mean of the 9 players' individual averages.</div>
+    <div class="fieldrow"><label>Ash &mdash; combined AVG</label><input type="number" step="0.001" id="combAGuess">
+      <button onclick="checkStep3()">Check all four</button><span class="fb" id="combAFb"></span>
+    </div>
+    <div class="fieldrow"><label>Venicia &mdash; combined AVG</label><input type="number" step="0.001" id="combVGuess"><span class="fb" id="combVFb"></span></div>
+    <div class="fieldrow"><label>Ash &mdash; mean of individual AVGs</label><input type="number" step="0.001" id="meanAGuess"><span class="fb" id="meanAFb"></span></div>
+    <div class="fieldrow"><label>Venicia &mdash; mean of individual AVGs</label><input type="number" step="0.001" id="meanVGuess"><span class="fb" id="meanVFb"></span></div>
+  </div>
+
+  <div class="stepbox locked" id="step4">
+    <h4>Step 4 &mdash; Power check (unlocks after the Twist)</h4>
+    <div id="step4lock">Locked. Reveal the Twist below and check "apply the twist" to unlock this step.</div>
+    <div class="goal">Slugging percentage = total bases &divide; at-bats, where a single/double/triple/home run count as 1/2/3/4 bases. Compute each lineup's combined slugging percentage and total home runs.</div>
+    <div class="fieldrow"><label>Ash &mdash; slugging %</label><input type="number" step="0.001" id="slgAGuess">
+      <button onclick="checkPower()">Check all four</button><span class="fb" id="slgAFb"></span>
+    </div>
+    <div class="fieldrow"><label>Venicia &mdash; slugging %</label><input type="number" step="0.001" id="slgVGuess"><span class="fb" id="slgVFb"></span></div>
+    <div class="fieldrow"><label>Ash &mdash; total home runs</label><input type="number" step="1" id="hrAGuess"><span class="fb" id="hrAFb"></span></div>
+    <div class="fieldrow"><label>Venicia &mdash; total home runs</label><input type="number" step="1" id="hrVGuess"><span class="fb" id="hrVFb"></span></div>
+  </div>
+
+  <div class="stepbox" id="step5">
+    <h4>Step 5 &mdash; Batting orders (D5)</h4>
+    <div class="goal">Using the Fundamental Counting Principle, how many distinct batting orders are possible for a fixed 9-player lineup?</div>
+    <div class="fieldrow"><label for="orderGuess">Your answer</label><input type="text" id="orderGuess" placeholder="e.g. 1,234">
+      <button onclick="checkOrders()">Check</button><span class="fb" id="orderFb"></span>
+    </div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>You're walking down the hall with your recommendation ready. Paul &mdash; the assistant Ash or Venicia would be replacing &mdash; stops you. "Before you send that," he says, "have you actually counted the home runs?"</p>
+      <p>Both lineups' batting-average numbers are real. So is whatever Paul is pointing you toward. Appendix A has everything you need &mdash; nobody handed you new data, just a question you hadn't been asked yet.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Unlock Step 4 and check Paul's numbers for real</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>All data in this case comes from the Denver Dragons' own spring training statistics (Appendix A) &mdash; a self-contained given data set, no external sources used.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Baseball Lineup &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/baseball-lineup/
+   case.md Appendix A (case.md sha256 e6245f4132d6018dac7940aacffa0f7edb635a79e85b199fd5e2ec72e6e593cc).
+   Every figure below is raw given data; combined/derived statistics
+   (AVG, SLG, margin) are computed live, never hardcoded, per MCS-37.
+   ================================================================ */
+const PLAYERS = {
+  "Abraham":  {BB:10,S:14,D:5,T:3,HR:0, OUT:22},
+  "Adams":    {BB:5, S:8, D:1,T:3,HR:1, OUT:34},
+  "Chow":     {BB:22,S:16,D:6,T:3,HR:1, OUT:18},
+  "Dasante":  {BB:3, S:10,D:4,T:2,HR:6, OUT:31},
+  "Fredricks":{BB:5, S:9, D:0,T:3,HR:2, OUT:35},
+  "Graham":   {BB:10,S:16,D:5,T:4,HR:0, OUT:20},
+  "Harper":   {BB:9, S:13,D:6,T:4,HR:0, OUT:23},
+  "Jacoby":   {BB:9, S:17,D:6,T:2,HR:7, OUT:20},
+  "Jordan":   {BB:4, S:11,D:2,T:2,HR:9, OUT:28},
+  "Poppins":  {BB:4, S:3, D:5,T:8,HR:14,OUT:42},
+  "Sabathia": {BB:10,S:12,D:7,T:4,HR:0, OUT:22},
+  "Swensen":  {BB:10,S:18,D:5,T:4,HR:2, OUT:17},
+  "Tranjier": {BB:6, S:11,D:0,T:2,HR:11,OUT:32},
+  "Yoder":    {BB:12,S:15,D:5,T:4,HR:2, OUT:18},
+  "Young":    {BB:3, S:8, D:0,T:3,HR:2, OUT:39}
+};
+const ASH = ["Swensen","Jacoby","Tranjier","Chow","Yoder","Adams","Sabathia","Abraham","Harper"];
+const VENICIA = ["Chow","Sabathia","Abraham","Tranjier","Poppins","Yoder","Fredricks","Graham","Jordan"];
+
+function pStats(name){
+  const d = PLAYERS[name];
+  const hits = d.S + d.D + d.T + d.HR;
+  const AB = hits + d.OUT;
+  const PA = AB + d.BB;
+  const TB = d.S + 2*d.D + 3*d.T + 4*d.HR;
+  return {hits, AB, PA, TB, AVG: hits/AB, SLG: TB/AB};
+}
+function outcomePct(name){
+  const d = PLAYERS[name];
+  const s = pStats(name);
+  const pct = x => 100*x/s.PA;
+  return {BB: pct(d.BB), S: pct(d.S), D: pct(d.D), T: pct(d.T), HR: pct(d.HR), OUT: pct(d.OUT)};
+}
+function combined(roster){
+  let hits=0, AB=0, TB=0, HR=0;
+  roster.forEach(name=>{ const d=PLAYERS[name]; const s=pStats(name); hits+=s.hits; AB+=s.AB; TB+=s.TB; HR+=d.HR; });
+  return {hits, AB, TB, HR, AVG: hits/AB, SLG: TB/AB};
+}
+function meanOfAvgs(roster){
+  return roster.reduce((sum,name)=>sum+pStats(name).AVG,0)/roster.length;
+}
+function factorial(n){ let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : ('try again — correct: '+correct);
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries — PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkAvg(){
+  const p = document.getElementById('avgPlayer').value;
+  const guess = parseFloat(document.getElementById('avgGuess').value);
+  const real = round(pStats(p).AVG, 3);
+  fb('avgFb', near(guess, real, 0.0005), real.toFixed(3));
+}
+function checkOutcome(){
+  const p = document.getElementById('outPlayer').value;
+  const kind = document.getElementById('outKind').value;
+  const guess = parseFloat(document.getElementById('outGuess').value);
+  const real = round(outcomePct(p)[kind], 1);
+  fb('outFb', near(guess, real, 0.05), real.toFixed(1)+'%');
+}
+function checkStep3(){
+  const cA = round(combined(ASH).AVG, 3), cV = round(combined(VENICIA).AVG, 3);
+  const mA = round(meanOfAvgs(ASH), 3), mV = round(meanOfAvgs(VENICIA), 3);
+  fb('combAFb', near(parseFloat(val('combAGuess')), cA, 0.0005), cA.toFixed(3));
+  fb('combVFb', near(parseFloat(val('combVGuess')), cV, 0.0005), cV.toFixed(3));
+  fb('meanAFb', near(parseFloat(val('meanAGuess')), mA, 0.0005), mA.toFixed(3));
+  fb('meanVFb', near(parseFloat(val('meanVGuess')), mV, 0.0005), mV.toFixed(3));
+}
+function checkPower(){
+  const cA = combined(ASH), cV = combined(VENICIA);
+  const slgA = round(cA.SLG,3), slgV = round(cV.SLG,3);
+  fb('slgAFb', near(parseFloat(val('slgAGuess')), slgA, 0.0005), slgA.toFixed(3));
+  fb('slgVFb', near(parseFloat(val('slgVGuess')), slgV, 0.0005), slgV.toFixed(3));
+  fb('hrAFb', parseInt(val('hrAGuess'))===cA.HR, String(cA.HR));
+  fb('hrVFb', parseInt(val('hrVGuess'))===cV.HR, String(cV.HR));
+}
+function checkOrders(){
+  const guess = String(document.getElementById('orderGuess').value).replace(/,/g,'').trim();
+  const real = factorial(9);
+  fb('orderFb', Number(guess)===real, real.toLocaleString());
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "baseball-lineup";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1","Batting-average table for all 15 players"],
+  ["D2","Plate-appearance outcome breakdown for all 15 players"],
+  ["D3","Both lineups' combined AVG and mean-of-individual AVG, with an explanation"],
+  ["D4","One original bar graph comparing the two lineups"],
+  ["D5","Number of distinct batting orders via the Fundamental Counting Principle"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms). "Fractions",
+   "Rounding", and "Fundamental Counting Principle" fetched and
+   confirmed live 2026-08-01; the other 5 reuse Cold Chain's own
+   already-verified khanacademy.org links for the same terms (MCS-21 —
+   legitimate reuse of a verified source, not fabrication).
+   ================================================================ */
+const GLOSSARY = {
+  "Fractions": {def: "A way of writing part of a whole, written as one number over another, e.g. 3/8.",
+    url: "https://www.khanacademy.org/math/fractions"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Rounding": {def: "Replacing a number with a simpler, nearby one at a given place value.",
+    url: "https://www.khanacademy.org/math/cc-fourth-grade-math/imp-addition-and-subtraction-2/imp-rounding-whole-numbers/e/rounding_whole_numbers"},
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Fundamental Counting Principle": {def: "If one choice can be made in m ways and a second, independent choice in n ways, both together can be made in m times n ways.",
+    url: "https://www.khanacademy.org/math/statistics-probability/counting-probability/fundamental-counting-principle/a/fundamental-counting-principle"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"}
+};
+const HOWTO = [
+  ["divide decimal numbers", "Decimal"],
+  ["convert numbers to percents", "Percent"],
+  ["round a number to a specified place value", "Rounding"],
+  ["find the mean of a set of data", "Mean"],
+  ["compare two or more values", "Data"],
+  ["apply the Fundamental Counting Principle to count outcomes", "Fundamental Counting Principle"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-SPECIFIC — twist gating: unlocks Step 4 (Power check) rather
+   than re-perturbing a modeling assumption -- this case's twist is a
+   second real metric drawn from the same given data, not a flexed
+   parameter, so there is no sensitivity_model.py to port here.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const step4 = document.getElementById('step4');
+  step4.classList.toggle('locked', !applied);
+  document.getElementById('step4lock').style.display = applied ? 'none' : 'block';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>
