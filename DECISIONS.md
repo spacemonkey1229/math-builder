@@ -67,3 +67,65 @@ upload and subprocess execution inside a browser sandbox, which isn't possible. 
 non-technical-facilitator-friendly packaging (a double-clickable app, a background launchd job) —
 today it's a command run from a terminal, same operator-comfort bar as everything else in this
 project.
+
+### D-016 · 2026-08-09 · A hosted variant: Vercel + Neon Postgres, alongside (not instead of) the local server
+User asked for a real, live product — GitHub + Vercel + Neon — so the admin panel works from any
+device, not just the machine it was built on. This is the actual "future need" D-015 named in
+advance ("real hosting... treat it as a new architectural decision"), so it's recorded as its own
+decision rather than folded into D-015.
+
+**What changed.** The business logic (`do_*` functions, `build_state`, `compute_queue`, the
+assign/submit/review/complete state machine, badge math) was extracted into `app/admin_core.py`,
+parameterized on a `store` object instead of a hardcoded file path — `store.load(name)` /
+`store.save(name, data)` in place of direct file I/O. Two adapters implement that interface:
+`app/store_local.py` (unchanged real-file behavior, used by `app/admin_server.py`) and
+`app/store_postgres.py` (Neon-backed, used by the new `app/admin_web/app.py` Flask app deployed to
+Vercel via `api/index.py`). **Same rules run in both places** — no duplicated policy to drift out
+of sync, verified by re-running the exact Admin-3/Admin-4 UAT checklist against the local server
+after the extraction (byte-identical behavior) and again against the live Vercel+Neon deployment.
+
+**The one real design problem: `score_submission.py` / `guide_confirm.py`.** These are real
+subprocess scripts that read/write real files (`cases/`, `readmodel/submissions.json`,
+`student_work/`). Rewriting the actual C1-C7 rubric engine to talk to Postgres directly was ruled
+out as high-risk, no-benefit — it's tested, UAT'd pedagogical logic, not a place to introduce
+rewrite risk. Instead, `PostgresStore.materialized_project()` bridges: on each scoring/confirm
+call, it builds a temp directory (Vercel functions get a writable `/tmp`) shaped like a real
+project — symlinked read-only `cases/`/`skills/`, the four mutable JSON docs written out from
+Postgres, any needed submitted files written out from a new `submitted_files` table — runs the
+script exactly as before, then reads the mutated files back and syncs them into Postgres. Verified
+end to end against a real local Postgres instance before ever touching Neon, and again live against
+Neon on Vercel.
+
+**Only 3 of 14 `readmodel/*.json` files actually move to the database**
+(`roster.json`, `submissions.json`, `score_overrides.json`), plus `demoted_criteria.json` (which
+`guide_confirm.py --audit` can also write). Everything else — `cases_index.json`,
+`curriculum_tree.json`, `domains.json`, etc. — is build-time content, never written at runtime, and
+ships as static files in the deployment. **Consequence, stated plainly:** a case moving through
+case-publish to `published`/`legacy` needs a redeploy to become assignable in the live admin app.
+Not a bug — the live app was never meant to run the authoring pipeline, only the day-to-day
+learner-management loop.
+
+**Auth is a named stopgap, not a design endorsement.** A single shared passcode
+(`ADMIN_PASSCODE` env var) behind a signed session cookie, agreed explicitly with the user as
+"start simple for the demo, move to a real auth provider next." Nothing else about this system has
+auth (same as D-015's local server), so this is the first time this project has anything
+internet-facing with write access to real data — worth being honest that a shared passcode is the
+minimum, not the target.
+
+**A real, pre-existing data bug surfaced by the migration, not introduced by it:**
+`guide_confirm.py` generates override ids as `<learner>__<case>__<date>__<criterion>` with no
+submission-number disambiguator. Two scoring runs on the same case on the same day with an override
+on the same criterion collide — silently tolerated by a flat JSON array (no uniqueness
+enforcement), caught immediately by `score_overrides.id` as a real Postgres primary key. Ben
+Okafor's two `robotics-engineer` C3 overrides collided on migration; `scripts/migrate_to_neon.py`
+disambiguates with a `__dupN` suffix and logs a warning rather than dropping either real override
+(this file's own header: "OVERRIDES ARE THE TRAINING SIGNAL"). Root-cause fix in
+`guide_confirm.py`'s id scheme is tracked separately, not patched blind under this deployment task.
+
+**Cost:** two more services to operate (Vercel, Neon), a `requirements.txt` (Flask, `psycopg`), and
+now two variants of the admin app to keep behaviorally identical (mitigated by the shared-core
+design above). **Why not deprecate the local server:** it has zero external dependencies, needs no
+account, no network, no billing — the right tool when the only user is the one person running it
+locally, exactly D-015's original case. The hosted variant is additive, for the case the local
+server was never meant to cover: a school director or facilitator reaching the tool from a device
+that isn't the machine it was built on.

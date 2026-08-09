@@ -386,3 +386,79 @@ is back to just Maya Whitfield and Ben Okafor.
 **Full regression after cleanup:** `build_dashboard.py` -> 150/150 checks, 285/285 links resolved,
 0 broken asset links. `python3 -m py_compile app/admin_server.py` clean.
 Tier 1 across all 12 hardened cases -> still 0 blockers everywhere.
+
+---
+
+## Step 7 — deploying the admin app live: GitHub + Vercel + Neon Postgres (2026-08-09)
+
+Requested directly: push this to a real, hosted product, not just something that runs on one
+machine. Full architecture and reasoning recorded as DECISIONS.md D-016; this section is the UAT
+trail for it.
+
+**Design.** Extracted the business logic (`do_*`, `build_state`, `compute_queue`, the whole
+case-track state machine and eligibility rules) out of `admin_server.py` into a store-agnostic
+`app/admin_core.py`, so the exact same rules run locally (`app/store_local.py`, real files) and
+hosted (`app/store_postgres.py`, Neon Postgres, behind a new Flask app `app/admin_web/app.py`
+deployed to Vercel). `score_submission.py`/`guide_confirm.py` stayed untouched as real subprocess
+scripts; a `materialized_project()` bridge builds a temp directory shaped like a real project
+(bundled read-only `cases/`, the mutable JSON docs written out from Postgres, needed submitted
+files from a new `submitted_files` table), runs them exactly as before, and syncs the results back.
+
+**Verification before touching real infrastructure.** Spun up a throwaway local Postgres 16
+instance, ran `scripts/migrate_to_neon.py` against it, and drove the *entire* stack through it --
+`/api/state`, the CSV upload path, and critically both subprocess bridges (`/api/score` and
+`/api/guide-confirm`) -- via Flask's test client before ever creating a Neon project. This caught
+two real things early:
+- **A refactor-extraction bug risk, ruled out:** re-ran the exact Admin-3/Admin-4 UAT checklist
+  against the refactored local server first (add/CSV/delete/score/guide-confirm) and confirmed
+  byte-identical behavior to before the `admin_core` extraction. One self-inflicted data mutation
+  during this check (a rescore test appended a stray `2026-08-09` score row for Maya) was caught
+  and reverted before it touched anything else.
+- **A real, pre-existing data bug:** the local Postgres migration crashed on a primary-key
+  collision -- `guide_confirm.py` generates override ids as
+  `<learner>__<case>__<date>__<criterion>` with no submission-number disambiguator, so Ben Okafor's
+  two `robotics-engineer` C3 overrides (one per submission) collided. The flat JSON array had
+  silently tolerated this; a real primary key didn't. Fixed the migration script to disambiguate
+  with a `__dupN` suffix (both real overrides kept, neither dropped) and flagged the root cause as
+  a separate follow-up rather than patching `guide_confirm.py` blind mid-deployment.
+
+**Deploying for real.** `gh repo create` (private) + `git push` -- hit a transient `RPC failed;
+HTTP 400` on the first push attempt, resolved by raising `http.postBuffer` and forcing HTTP/1.1.
+`vercel link` auto-detected Flask and auto-connected the GitHub repo. First production deploy
+built cleanly but broke routing: Vercel's own build warning caught it -- an explicit catch-all
+`rewrites` rule in `vercel.json` was fighting with Vercel's built-in Flask framework routing (it
+already routes all paths to the WSGI app on its own), which broke `request.path` inside Flask
+enough that `/login` itself hit the auth gate's 401. Removed the redundant rewrite, redeployed,
+confirmed live: `GET /` redirects to `/login`, `/login` renders, `/api/state` 401s correctly
+unauthenticated.
+
+**Handoff for the two things only the account owner can do:** provisioning Neon Postgres (via
+Vercel's Storage tab -- walked through the region/Auth-toggle-off/custom-prefix screens live,
+since the default "STORAGE" prefix would have named the connection string variable something other
+than the `DATABASE_URL` the code expects) and setting `ADMIN_PASSCODE`. Also worked through several
+rounds of the user's terminal literally pasting the instructional placeholder text
+(`your-actual-copied-connection-string`) instead of the real value, and once the `DATABASE_URL=`
+label itself getting captured along with the value -- both diagnosed via a safe partial-`echo`
+check and fixed without ever putting the real connection string in the chat transcript.
+
+**Live UAT against the real deployment** (logged into the live URL by the user directly, so the
+agent never saw the passcode; browser-automated from there): CSV upload (1 added, 1 skipped with
+the correct per-row reason, including a re-check that the result list survives the page refresh --
+the same bug class fixed in Step 6, confirmed not regressed), assign a case, real file upload
+(`multipart/form-data` -> Postgres `bytea`, confirmed via the returned storage path), record a
+submission, run the machine scorer (first live test of the `materialized_project()` subprocess
+bridge against real Neon data -- worked, returned an all-"Not Yet" first pass, correctly reflecting
+that the test file was synthetic filler with no real deliverables), guide-confirm (second
+subprocess bridge, also worked), delete with cascade (`removed 1 assignment(s), 1 submission(s), 0
+discussion(s), 1 score row(s)` -- exactly what had been created), and a final `/api/state` check
+confirming Maya Whitfield and Ben Okafor's real data -- confirmed scores, growth 76 and 69, both
+`complete` -- was untouched throughout.
+
+**Known, accepted limitations, stated plainly (see D-016 for full reasoning):** the admin app's
+delete does not clean up orphaned `submitted_files` rows for a deleted learner -- matches the local
+server's existing behavior exactly (it never deleted real files under `student_work/` either, only
+the JSON records referencing them), so this is parity, not a new regression. New cases only become
+assignable in the live app after a redeploy, since case content ships as static bundled files, not
+database rows. The passcode auth is an explicit, named stopgap.
+
+**Live URL:** https://math-builder-three.vercel.app · **Repo:** github.com/spacemonkey1229/math-builder (private)
