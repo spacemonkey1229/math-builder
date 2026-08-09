@@ -48,6 +48,29 @@ def load(project):
     return sp, op, subs, ovr
 
 
+def find_duplicate_ids(overrides):
+    """score_overrides.json's own schema declares id 'Unique.' A flat JSON array
+    doesn't enforce that -- Postgres does (score_overrides.id is a primary key,
+    see scripts/migrate_to_neon.py) -- so this has to be checked by hand.
+    Returns {id: count} for every id that appears more than once."""
+    seen = {}
+    for o in overrides:
+        seen[o['id']] = seen.get(o['id'], 0) + 1
+    return {k: v for k, v in seen.items() if v > 1}
+
+
+def next_override_id(overrides, learner, case, date, criterion):
+    """<learner>__<case>__<date>__<criterion>, with a numeric suffix for a second
+    (or third...) override of the same criterion for the same learner/case on the
+    same day -- e.g. two scoring runs (two submissions) confirmed on the same
+    date. Without the suffix these collide (see D-016 in DECISIONS.md)."""
+    base = f"{learner}__{case}__{date}__{criterion}"
+    prior = sum(1 for o in overrides
+                if o.get('learner_id') == learner and o.get('case_id') == case
+                and o.get('criterion') == criterion and o.get('on') == date)
+    return base if prior == 0 else f"{base}__{prior + 1}"
+
+
 def audit(project, write=False):
     """Compute the per-criterion override rate and, per MCS-31, ACTUALLY demote
     any criterion crossing DEMOTE_AT at n >= MIN_N — not just print a suggestion.
@@ -61,6 +84,15 @@ def audit(project, write=False):
     real = [o for o in ovr.get('overrides', []) if not o.get('_example')]
     scored = [s for s in subs.get('scores', []) if s.get('status') == 'confirmed']
     n = len(scored)
+
+    dupes = find_duplicate_ids(ovr.get('overrides', []))
+    if dupes:
+        print(f"ID COLLISION — {len(dupes)} id(s) shared by more than one row "
+              f"(violates score_overrides.json's own 'id: Unique' invariant):")
+        for did, count in dupes.items():
+            print(f"  {did!r} appears {count} times")
+        print()
+
     print(f"OVERRIDE AUDIT — {n} confirmed record(s), {len(real)} override(s)")
     if n < MIN_N:
         print(f"  n = {n} < {MIN_N}. Rates below this are noise. Reporting counts only.\n")
@@ -118,6 +150,22 @@ def audit(project, write=False):
                   f"(n={n} confirmed record(s)).")
 
 
+def check_unique(project):
+    """Regression check: exit 1 if any two rows in score_overrides.json share an
+    id. Standalone (no --write side effects) so it's safe to run in a Tier-1-style
+    gate. Root cause fixed in next_override_id(); this guards the data itself,
+    including rows written before that fix (see D-016 in DECISIONS.md)."""
+    _, _, _, ovr = load(project)
+    rows = ovr.get('overrides', [])
+    dupes = find_duplicate_ids(rows)
+    if dupes:
+        print(f"FAIL — {len(dupes)} duplicate id(s) among {len(rows)} override row(s):")
+        for did, count in dupes.items():
+            print(f"  {did!r} appears {count} times")
+        sys.exit(1)
+    print(f"PASS — {len(rows)} override row(s), all ids unique")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--learner'); ap.add_argument('--case')
@@ -127,8 +175,12 @@ def main():
     ap.add_argument('--project', default=os.getcwd())
     ap.add_argument('--write', action='store_true')
     ap.add_argument('--audit', action='store_true')
+    ap.add_argument('--check', action='store_true',
+                    help='regression check: exit 1 if score_overrides.json has duplicate ids')
     a = ap.parse_args()
 
+    if a.check:
+        check_unique(a.project); return
     if a.audit:
         audit(a.project, write=a.write); return
     for req in ('learner', 'case', 'by'):
@@ -165,8 +217,9 @@ def main():
         rec['criteria'][k]['level'] = new
         rec['criteria'][k]['set_by'] = 'guide'
         applied.append({"criterion": k, "from": old, "to": new, "reason": reason})
-        ovr.setdefault('overrides', []).append({
-            "id": f"{a.learner}__{a.case}__{today}__{k}",
+        oid = next_override_id(ovr.setdefault('overrides', []), a.learner, a.case, today, k)
+        ovr['overrides'].append({
+            "id": oid,
             "learner_id": a.learner, "case_id": a.case, "score_id": rec['id'],
             "criterion": k, "machine_level": old, "guide_level": new,
             "from": old, "to": new,

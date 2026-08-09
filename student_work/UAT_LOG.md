@@ -462,3 +462,164 @@ assignable in the live app after a redeploy, since case content ships as static 
 database rows. The passcode auth is an explicit, named stopgap.
 
 **Live URL:** https://math-builder-three.vercel.app · **Repo:** github.com/spacemonkey1229/math-builder (private)
+
+---
+
+## Step 8 — fixing the override-id collision D-016/Step 7 deferred (2026-08-09)
+
+Step 7's Neon migration found and worked around this bug live (`migrate_to_neon.py`'s `__dupN`
+suffix) but explicitly deferred the root cause: "flagged the root cause as a separate follow-up
+rather than patching `guide_confirm.py` blind mid-deployment." This step is that follow-up.
+
+### BUG FOUND — `guide_confirm.py` generated duplicate override ids for same-day re-scores
+
+`scripts/migrate_to_neon.py` -- which enforces `score_overrides.id` as a real Postgres primary
+key -- hit a collision on real data: Ben Okafor's two `robotics-engineer` submissions were both
+guide-confirmed on 2026-08-08, each with a C3 override, and `guide_confirm.py` built both ids from
+`<learner>__<case>__<date>__<criterion>` with no submission-number component, so both rows landed
+in `readmodel/score_overrides.json` as `ben-okafor__robotics-engineer__2026-08-08__C3` --
+identical, in a file whose own schema declares `id` "Unique." The flat JSON array never enforced
+it; only the Postgres `INSERT` did.
+
+**Fix:** added `next_override_id()` to `guide_confirm.py`, which appends `__2`, `__3`, ... whenever
+the same learner/case/criterion is overridden again on the same date. Hand-fixed the one existing
+collision in `readmodel/score_overrides.json` to `...__C3__2` to match. Added `find_duplicate_ids()`
+plus a standalone `guide_confirm.py --check` regression gate (exit 1 on any duplicate id,
+independent of `--audit`) so this can't silently regress again, and folded the same check into
+`--audit`'s output. Left `migrate_to_neon.py`'s `__dup{n}` rename in place as a defensive fallback
+for data written before this fix or edited by hand, with its comment updated to point at the real
+fix. Logged as D-016 in `DECISIONS.md`.
+
+**Verified:** `guide_confirm.py --check` failed with the exact collision before the data fix, and
+passes (`4 override row(s), all ids unique`) after it. A scripted test confirmed three same-day,
+same-criterion overrides for one learner/case now produce three distinct ids
+(`...__C3`, `...__C3__2`, `...__C3__3`). `python3 -m py_compile` clean on `guide_confirm.py`. A dry
+run (`--learner maya-w --case catering --override C4=Exemplary`, no `--write`) still produces the
+correct confirm output, unaffected by the id-generation change.
+
+---
+
+## Step 9 — Full re-UAT across guide, student, and admin surfaces (2026-08-09)
+
+Requested directly: re-run the UAT to confirm coverage across all three roles after Step 8's
+override-id fix, not just the scripted unit test the fix itself shipped with. This pass lived
+in a real running `admin_server.py` and a real browser throughout, and specifically tried to
+reproduce Step 8's exact collision through the live admin path rather than trust that the CLI
+fix alone was enough.
+
+### Environment hazard found before any real testing could start
+
+The admin server already listening on port 8420 turned out to have been launched with
+`--project .` from the **main branch checkout**, not this worktree -- meaning it was running
+the pre-fix `guide_confirm.py` against the main checkout's `readmodel/`, which still carried
+the exact unfixed Ben Okafor id collision this session's Step 8 exists to fix. A few real API
+calls (add learner, assign, submit, score, one guide-confirm) landed in the main repo's
+`readmodel/*.json` and `student_work/` before this was caught. **Fix:** `git status`/`git diff`
+on the main checkout confirmed the pollution was isolated to exactly those three JSON files plus
+one untracked directory (nothing else uncommitted was at risk), reverted with
+`git checkout -- readmodel/{roster,submissions,score_overrides}.json` and `rm -rf
+student_work/uat-fix-check`, killed the misrouted server process, and relaunched
+`admin_server.py --project <this worktree's absolute path>` -- verified by reading back the new
+process's own command line before touching it again. Recorded here because it is a real,
+reproducible hazard for anyone running this admin tool from a stale terminal: `--project .`
+silently trusts the shell's cwd, and a long-lived server does not notice a `cd`.
+
+### Admin — live exercise of the Step 8 fix, not just its unit test
+
+Added a real test learner ("UAT Fix-Check"), assigned Phone Plan (a published case not used by
+the Maya/Ben demo data), and worked it as a genuine Hero submission -- correct D1-D4 algebra
+(linear cost equations, break-even at 3 lines, the recommendation reversing past that point), a
+250+-word defended pitch, an original visual, and explicit C7 framing language. First real
+scoring run found a **third, novel flavor of the C3 alias-matching limitation** logged in Steps
+3/3 (Catering's twist-field collisions, Robotics Engineer's abbreviated keys): Phone Plan's
+`derived{}` keys concatenate the line count into the token itself (`cost_V_2lines_tax`), so
+`_derived_aliases()`'s underscore-to-space conversion produces phrases like "2lines tax" that no
+natural sentence can ever contain -- 0 of 13 quantities matched despite every figure being
+correct by hand. Overrode C3 with that reasoning (real guide judgment, not a scripted example),
+then deliberately **re-ran the scorer and guide-confirm a second time the same day** (a realistic
+trigger: discussions were logged after the first score, so the guide rescored to pick up C6) --
+reproducing Step 8's exact collision conditions live. Result:
+`uat-fix-check__phone-plan__2026-08-09__C3` and `...__C3__2` -- two distinct rows, `--check` still
+green at every step. Also re-verified the standing guard rails through the correctly-scoped
+server: complete-before-review refused, badge-award-before-eligible refused (`only 1/5 complete`),
+re-assigning a completed case refused, assigning a `qa`-status case refused -- all four fired with
+the exact right message.
+
+### BUG FOUND — a completed case still displayed "N days past due"
+
+`build_student()`'s `due_state` computed only from `due_on` vs today, with no check on
+assignment `status` -- so a fully complete case with a due date in the past kept showing e.g.
+"12 days past due" in red "late" styling in the student view, reading as "this Hero is behind"
+on work that was actually finished weeks ago. **Fix:** `due_state` is now `"completed"` once
+`status == "complete"`, computed before the days-remaining branch. Verified on both Maya's
+Catering (real stale due date) and the UAT test case.
+
+### BUG FOUND — badge slot 0 rendered as "badge unallocated"
+
+Two spots in `build_dashboard.py`'s embedded JS (`renderMyCases()` for the student build, and the
+exception-queue detail line for the guide build) used a truthy check, `c.badge_index ? ... :
+"badge unallocated"` -- since `0` is a legitimate, real badge slot (programs are 0-indexed) and
+also JavaScript-falsy, any case actually allocated to slot 0 displayed as if it had no badge
+allocated at all. `app/admin_html.py` already had the correct `== null` form in two equivalent
+spots, which is what exposed the inconsistency. **Fix:** both sites now check `!= null` instead of
+truthiness. Verified live: assigning and completing a case at `badge_index: 0` now correctly
+displays "badge 0" instead of "badge unallocated."
+
+### BUG FOUND — `build_dashboard.py`'s notion of "today" was hardcoded to 2026-07-31
+
+`TODAY = date(2026, 7, 31)` (a literal, not `date.today()`) drives the Tracker's OVERDUE
+detection (`due_on < TODAY and nothing submitted`), every exception-queue "age in days" figure,
+and the "As of ..." banner -- while every other script in this project (`score_submission.py`,
+`guide_confirm.py`, `admin_core.py`) correctly uses the real calendar date. With the real date now
+more than a week past the hardcoded one, this meant **any assignment due since 2026-07-31 with
+nothing submitted could not be flagged OVERDUE by the tracker** -- a live detection gap in the
+exact feature the tab exists to serve, not a cosmetic date label. **Fix:** `TODAY = date.today()`.
+Verified: the masthead's "built" date and the Tracker's "As of" banner both moved from the frozen
+2026-07-31 to the real 2026-08-09 after the fix, and the full 150-check validator still passes at
+the same rate as before (one pre-existing, unrelated failure -- see below).
+
+### Guide — `cohort_rollup.py` exercised for the first time in this project's UAT history
+
+Step 1 of this log named `cohort_rollup.py` as "not used in this pass" and no later step ever ran
+it. Ran it for real against all three cases with confirmed scores: Catering and the new Phone
+Plan case both correctly report "nothing cohort-wide" at n=1, and Robotics Engineer correctly
+flags **C7 at 100% Not Yet as `COHORT-WIDE -- this is feedback on the CASE`**, with the right
+`CASE_IMPLICATION` text (recorded n is too small to trust per-criterion at n=1, but the mechanism
+fired correctly). Also verified the `--cohort` filter and the "NOTHING TO ROLL UP" guard against
+a case with zero scores (`nuclear-waste`) -- it correctly refuses to read a signal out of an empty
+set rather than reporting a misleading 0%.
+
+Also re-verified `guide_confirm.py --audit` and the dashboard's Rubric & Scoring tab (`Live. 3
+score records on file, 5 guide overrides logged` at peak, matching the real override count exactly,
+including the two new same-day C3 overrides) and the Tracker tab (no reversion of Step 4's banner
+fix) live in the browser -- both correctly sourced from real data with no stale/hardcoded text.
+
+### Student — redaction re-verified for all three real learners, not just one
+
+`student.html` is a single-learner build (`build_student()` picks the first real active learner
+in roster order), so confirming the redaction guarantee for Ben Okafor and the new test learner
+required temporarily reordering `readmodel/roster.json` (learner list only, no other field
+touched), rebuilding, and restoring the original order afterward -- diffed against a saved copy
+of the original file to confirm the restore was exact. All three builds correctly showed only
+that learner's own cases, no growth score, no twist/guide-notes/socratic content, and the same
+"Guide Notes and the Socratic plan are your facilitator's -- they are not in this file at all"
+framing. The internal 150-check validator's redaction assertions (twist text, twist field,
+facilitator asset, growth score) ran against Maya's build both before and after the two bug fixes
+above and stayed green throughout.
+
+### Cleanup and full regression
+
+Deleted "UAT Fix-Check" through the real `/api/learner/delete` endpoint --
+`{"assignments": 1, "submissions": 1, "discussions": 2, "scores": 1}`, exactly what had been
+created -- then removed the leftover `student_work/uat-fix-check/` directory by hand (the delete
+endpoint only touches the JSON read-model, same as Priya Nair/Riley/Jordan in Steps 5-6). Confirmed
+zero stray references across `roster.json`, `submissions.json`, and `score_overrides.json`.
+
+Final regression: `build_dashboard.py` -> 150 checks, 1 failed (`every case has a folder link, 11
+!= expected 56` -- confirmed pre-existing on the unmodified main branch via `git stash`, not a
+regression from this session: only 11 of the 56 legacy-corpus cases have a real `cases/<id>/`
+folder in this repo, a pre-existing pipeline/corpus gap, not a build defect). `validate_domains.py`
+-> 28/28. Tier 1 structural regression across all 12 hardened cases (including Cold Chain and Tide
+Window, still `qa`) -> 0 blockers everywhere. `guide_confirm.py --check` -> all ids unique.
+`python3 -m py_compile` clean on every touched script. `roster.json` back to exactly Maya
+Whitfield and Ben Okafor.

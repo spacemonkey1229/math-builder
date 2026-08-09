@@ -129,3 +129,22 @@ account, no network, no billing — the right tool when the only user is the one
 locally, exactly D-015's original case. The hosted variant is additive, for the case the local
 server was never meant to cover: a school director or facilitator reaching the tool from a device
 that isn't the machine it was built on.
+
+### D-017 · 2026-08-09 · Override ids get a disambiguating suffix, not just a date
+D-016 named this bug during the Neon migration and deliberately deferred the root-cause fix
+("tracked separately, not patched blind under this deployment task"). This is that fix.
+`guide_confirm.py` generated override ids as `<learner>__<case>__<date>__<criterion>` with no
+submission-number component. Ben Okafor's two `robotics-engineer` submissions were both
+guide-confirmed on 2026-08-08 with a C3 override each, producing two rows in
+`score_overrides.json` with the identical id `ben-okafor__robotics-engineer__2026-08-08__C3` —
+a live violation of that file's own schema, which declares `id` "Unique." The flat JSON array
+never enforced it; the bug only surfaced when `scripts/migrate_to_neon.py` tried to `INSERT` both
+rows against `score_overrides.id` as a real Postgres primary key. **Fix:** `next_override_id()`
+now appends `__2`, `__3`, ... whenever the same learner/case/criterion is overridden again on the
+same date, and `guide_confirm.py --check` is a new standalone regression gate (exit 1 on any
+duplicate id) that can run independently of `--audit`. The one pre-existing collision in
+`readmodel/score_overrides.json` was hand-fixed to `...__C3__2` to match the new scheme, and
+`migrate_to_neon.py`'s `__dup{n}` rename kept as a defensive fallback for old or hand-edited data
+rather than removed. **Why a suffix and not dropping/merging a row:** both overrides are real,
+independent training signal (this file's own header: "OVERRIDES ARE THE TRAINING SIGNAL") — the
+fix disambiguates, it never discards.

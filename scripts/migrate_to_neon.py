@@ -91,14 +91,14 @@ def main():
     if os.path.exists(ov_path):
         ov_raw = load_local('score_overrides.json')
         live_overrides = [o for o in ov_raw.get('overrides', []) if not o.get('_example')]
-        # KNOWN SOURCE BUG (pre-existing, not introduced by this migration): guide_confirm.py
-        # generates override ids as <learner>__<case>__<date>__<criterion> with no
-        # submission-number disambiguator, so two scoring runs on the same case on the same
-        # day with the same overridden criterion collide. The flat JSON array silently
-        # tolerated this (arrays don't enforce uniqueness); score_overrides.id is a real
-        # Postgres primary key, so it doesn't. Both rows are real training signal (this
-        # file's own header: "OVERRIDES ARE THE TRAINING SIGNAL") -- disambiguate rather
-        # than drop one. Root cause needs a real fix in guide_confirm.py separately.
+        # FIXED at the source (D-016, DECISIONS.md): guide_confirm.py's next_override_id()
+        # now appends a __2/__3/... suffix when the same learner/case/criterion is
+        # overridden again on the same date, so new rows shouldn't collide. This dedup
+        # stays as a safety net for readmodel data written before the fix, or hand-edited
+        # -- the flat JSON array doesn't enforce uniqueness (arrays never do);
+        # score_overrides.id is a real Postgres primary key here, so it must be unique
+        # before the INSERT. Both rows are real training signal (this file's own header:
+        # "OVERRIDES ARE THE TRAINING SIGNAL") -- disambiguate rather than drop one.
         seen = {}
         for o in live_overrides:
             seen[o['id']] = seen.get(o['id'], 0) + 1
