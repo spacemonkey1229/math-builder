@@ -148,3 +148,22 @@ duplicate id) that can run independently of `--audit`. The one pre-existing coll
 rather than removed. **Why a suffix and not dropping/merging a row:** both overrides are real,
 independent training signal (this file's own header: "OVERRIDES ARE THE TRAINING SIGNAL") — the
 fix disambiguates, it never discards.
+
+### D-018 · 2026-08-10 · The student-facing case page is hosted too, unauthenticated, on purpose
+D-016's own scope note said the interactive case page "is not hosted yet... a clean, separate next
+step, not a redesign." A user hit that gap twice in normal use (following the live demo script,
+then again independently), which made it real friction, not a hypothetical. **What changed:** both
+`admin_server.py` and `admin_web/app.py` now serve `cases/<id>/published/<file>.html` directly.
+**Why unauthenticated, unlike `dashboard.html`/`student.html`:** those two are the guide's/admin's
+views and reasonably sit behind the shared passcode; the case page is what a *student* actually
+works, and a student has no admin login and never should need one to do their homework. **Why
+scoped to an exact `... - Interactive.html` filename, never a blanket `published/` directory
+listing:** that folder also holds guide-only material for several cases (`Guide Notes -
+*.docx`, `*Facilitator Guide*.docx`) sitting next to the student page — serving the directory
+generically would have published those to the open internet. Verified before shipping: the
+interactive HTML files are fully self-contained (no local asset references beyond their own
+"back" link), so no other files needed exposing. **A side effect requiring its own fix:** the
+page's relative "Back to My Cases" link (`../../../app/student.html`) is correct for local file
+use but resolves to `/app/student.html` once hosted, which didn't match the `/student.html` route
+added for D-016/Step 10 -- added `/app/dashboard.html` and `/app/student.html` as aliases of the
+same authenticated handler rather than rewriting the link (which would have broken it locally).

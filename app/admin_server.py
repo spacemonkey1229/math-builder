@@ -22,7 +22,7 @@ by Neon Postgres via app/store_postgres.py) runs the exact same admin_core
 logic behind a live Vercel URL -- see DECISIONS.md for that decision. This
 file stays the zero-dependency, no-network-required local path.
 """
-import argparse, json, os, sys, urllib.parse
+import argparse, json, os, re, sys, urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import admin_core
@@ -31,7 +31,24 @@ from store_local import LocalFileStore
 
 STORE = None  # set in main()
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_HTML = {'/dashboard.html': 'dashboard.html', '/student.html': 'student.html'}
+ROOT_DIR = os.path.dirname(APP_DIR)
+CASES_DIR = os.path.join(ROOT_DIR, 'cases')
+STATIC_HTML = {
+    '/dashboard.html': 'dashboard.html', '/student.html': 'student.html',
+    '/app/dashboard.html': 'dashboard.html', '/app/student.html': 'student.html',
+}
+
+
+def _case_html_path(case_id, filename):
+    """Same scoping as admin_web/app.py's case_interactive_html(): only an
+    exact '<...> Interactive.html' file directly under cases/<id>/published/
+    is servable -- published/ also holds guide-only .docx material that must
+    never be reachable this way."""
+    if '/' in case_id or '..' in case_id or '/' in filename or '..' in filename \
+            or not filename.endswith(' - Interactive.html'):
+        return None
+    path = os.path.join(CASES_DIR, case_id, 'published', filename)
+    return path if os.path.isfile(path) else None
 
 
 # --------------------------------------------------------------- server ----
@@ -63,10 +80,9 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _serve_static_html(self, filename):
-        path = os.path.join(APP_DIR, filename)
-        if not os.path.exists(path):
-            return self._json(404, {"error": f"{filename} not built yet -- run app/build_dashboard.py"})
+    def _serve_html_file(self, path, missing_msg):
+        if not os.path.isfile(path):
+            return self._json(404, {"error": missing_msg})
         with open(path, 'rb') as f:
             body = f.read()
         self.send_response(200)
@@ -80,7 +96,15 @@ class Handler(BaseHTTPRequestHandler):
         if p.path in ('/', '/index.html'):
             return self._serve_page()
         if p.path in STATIC_HTML:
-            return self._serve_static_html(STATIC_HTML[p.path])
+            filename = STATIC_HTML[p.path]
+            return self._serve_html_file(os.path.join(APP_DIR, filename),
+                                          f"{filename} not built yet -- run app/build_dashboard.py")
+        m = re.match(r'^/cases/([^/]+)/published/([^/]+)$', urllib.parse.unquote(p.path))
+        if m:
+            path = _case_html_path(m.group(1), m.group(2))
+            if path is None:
+                return self._json(404, {"error": "not found"})
+            return self._serve_html_file(path, "not found")
         if p.path == '/api/state':
             try:
                 return self._json(200, admin_core.build_state(STORE))

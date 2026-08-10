@@ -14,6 +14,8 @@ today.
 import functools, os, sys
 
 _APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_ROOT_DIR = os.path.dirname(_APP_DIR)
+_CASES_DIR = os.path.join(_ROOT_DIR, 'cases')
 if _APP_DIR not in sys.path:
     sys.path.insert(0, _APP_DIR)
 
@@ -92,7 +94,8 @@ def logout():
 
 @app.before_request
 def require_auth():
-    if request.path in ('/login', '/logout') or request.path.startswith('/static'):
+    if request.path in ('/login', '/logout') or request.path.startswith('/static') \
+            or request.path.startswith('/cases/'):
         return
     if not _authed():
         if request.path.startswith('/api/'):
@@ -124,10 +127,35 @@ def index():
 
 @app.route('/dashboard.html')
 @app.route('/student.html')
+@app.route('/app/dashboard.html')
+@app.route('/app/student.html')
 def static_html():
     # Read-only curriculum/tracker views -- static build output, shipped as
-    # part of the deployment bundle (app/), never written to at runtime.
-    return send_from_directory(_APP_DIR, request.path.lstrip('/'))
+    # part of the deployment bundle (app/), never written to at runtime. Both
+    # the bare and /app/-prefixed paths are registered because a case page's
+    # "Back to My Cases" link is a relative ../../../app/student.html, which
+    # is correct from cases/<id>/published/ but resolves under /app/ once
+    # hosted -- see the /cases/... route below.
+    return send_from_directory(_APP_DIR, request.path.rsplit('/', 1)[-1])
+
+
+@app.route('/cases/<case_id>/published/<filename>')
+def case_interactive_html(case_id, filename):
+    # The student-facing interactive case page -- deliberately NOT behind
+    # the admin passcode (see require_auth() above): a student doing the
+    # actual work has no admin login, and never should need one. Scoped
+    # tightly on purpose: published/ folders also hold guide-only material
+    # (Facilitator Guide, Guide Notes .docx) that must never be reachable
+    # here, so only an exact "<...> Interactive.html" filename with no path
+    # separators in either segment is servable -- everything else 404s.
+    if '/' in case_id or '..' in case_id or '/' in filename or '..' in filename \
+            or not filename.endswith(' - Interactive.html'):
+        return jsonify({"error": "not found"}), 404
+    directory = os.path.join(_CASES_DIR, case_id, 'published')
+    path = os.path.join(directory, filename)
+    if not os.path.isfile(path):
+        return jsonify({"error": "not found"}), 404
+    return send_from_directory(directory, filename)
 
 
 @app.route('/api/state')

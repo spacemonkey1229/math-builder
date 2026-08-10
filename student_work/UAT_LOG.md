@@ -744,3 +744,50 @@ logic does.
 `guide_confirm.py --check` passes. `build_dashboard.py` -> 150/150 (the same one pre-existing,
 unrelated folder-link failure). Production is back to exactly Maya Whitfield and Ben Okafor, with
 no stray references anywhere.
+
+---
+
+## Step 12 — hosting the student-facing case page, unauthenticated (2026-08-10)
+
+The user hit the "case page isn't hosted" scope line a second time, independently, following
+their own exploration rather than a mistake in a script -- real friction, not a hypothetical.
+Recorded as D-018.
+
+**Design constraint that made this non-trivial:** `cases/<id>/published/` folders also hold
+guide-only material for several cases -- `Guide Notes - Cold Chain.docx`,
+`*Facilitator Guide*.docx` -- sitting in the same directory as the student-facing interactive
+HTML. A naive "serve the published/ directory" route would have published those to the open
+internet. Checked every interactive HTML file for local asset references first (`grep`'d for
+non-`#`/non-`http` `href`/`src`) -- none reference anything beyond their own relative
+`../../../app/student.html` back-link, so only the `.html` file itself needed serving, nothing
+else in the folder.
+
+**Fix:** `admin_web/app.py` gets a new `/cases/<case_id>/published/<filename>` route, explicitly
+exempted from `require_auth()` -- a student doing the actual work has no admin passcode and never
+should need one, unlike `dashboard.html`/`student.html` which stay behind it. Scoped tightly: both
+`case_id` and `filename` are rejected if they contain `/` or `..`, and `filename` must end in
+exactly `" - Interactive.html"` -- matches every real case file, rejects every `.docx`/`.xlsx`/
+`MANIFEST.json` in the same folder by construction, not by a maintained blocklist. Mirrored the
+same route (plus the same scoping helper) into `admin_server.py` for parity, even though local
+usage never strictly needed it.
+
+**A side effect this surfaced:** the interactive page's "Back to My Cases" link
+(`../../../app/student.html`) resolves correctly from a local file but lands on `/app/student.html`
+once hosted -- one path segment off from the `/student.html` route added for D-016/Step 10.
+Rewriting the link would have broken local usage instead, so added `/app/dashboard.html` and
+`/app/student.html` as aliases of the same authenticated handler.
+
+**Verified, both variants:**
+- Local server (`curl`): case HTML `200`; `Guide Notes - Cold Chain.docx` `404`; a `..`-traversal
+  attempt `404`; `MANIFEST.json` `404`; `/app/student.html` `200`; bare `/student.html` still `200`.
+- Hosted Flask app (`test_client()`, no live DB needed for these static routes): case HTML `200`
+  **unauthenticated**; the same guide-only docx `404` even unauthenticated; a traversal attempt
+  `404`; `MANIFEST.json` `404`; `/app/student.html` unauthenticated `302 -> /login`, authenticated
+  `200` with the real file bytes.
+- Live in the browser against the local server: opened Catering's interactive page at
+  `http://127.0.0.1:8420/cases/catering/published/...`, confirmed it renders identically to the
+  `file://` version, clicked **Back to My Cases**, landed on `/app/student.html` rendering the
+  real student dashboard -- the full link now resolves end to end, not just individually.
+
+Full regression re-run clean: `py_compile` on both touched files, `build_dashboard.py` 150/150
+(same one pre-existing unrelated failure), `guide_confirm.py --check` passes.
