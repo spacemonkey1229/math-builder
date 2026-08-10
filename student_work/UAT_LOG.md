@@ -665,3 +665,82 @@ Local server: `/dashboard.html` and `/student.html` both `200` after restart, ba
 `LOCAL ONLY · 127.0.0.1`. Full regression re-run clean: `build_dashboard.py` 150/150 (1
 pre-existing unrelated failure), `guide_confirm.py --check` passes, `python3 -m py_compile` clean
 on all three touched files.
+
+---
+
+## Step 11 — UAT of both demo scripts, one against local files, one against production (2026-08-10)
+
+Requested directly: build and run a real UAT for `DEMO_SCRIPT.md` and `LIVE_DEMO_SCRIPT.md`,
+against the actual local files and the actual live app respectively, and fix whatever it finds.
+Triggered by the user hitting `math-builder-three.vercel.app/cases/catering/published/...` 404
+directly — confirmed that specific URL is not a bug (it's the documented scope line: case content
+isn't hosted yet, only the admin/tracking side is) and moved on to testing everything that *is*
+supposed to work.
+
+### DEMO_SCRIPT.md, against local files
+
+Verified Part 1's numeric claims against the real dashboard (`56` cases, `437` skills, `11`
+domains, `56 of 56` in Case Library — all exact). Spot-checked the Twist section on Catering's
+interactive HTML before assuming the worst: it's correctly gated behind an explicit "I've been
+told to reveal it" click with a facilitator warning, not a leak.
+
+### BUG FOUND — the Working Notebook told students the correct answer on a wrong guess
+
+Part 2 claims "a calculator, not an answer key... told if they're right without being told the
+answer first." Tested it for real on Catering's D1 (total servings): entering a deliberately wrong
+guess (110 instead of 118) returned `try again — correct: 118` -- the exact number, immediately,
+contradicting the product's own core pedagogical claim. Traced the shared `fb(id, ok, correct)`
+helper (explicitly commented `CASE-AGNOSTIC`) and found it identical, byte-for-byte, in
+`templates/interactive_shell.html` **and all 11 already-published case HTML files** -- every
+single shipped case's Working Notebook leaked its answers, not just Catering's. **Fix:** the
+helper now renders `try again` with no value on a miss; the `✓` path on a correct answer is
+unchanged. Applied mechanically to `templates/interactive_shell.html` plus all 11 published cases'
+`.html` files (confirmed the block was identical across every file before doing a blanket
+find/replace — grepped for stray leak patterns outside the shared helper first, found none).
+Verified live in the browser on Catering: wrong guess now shows `try again` with no number;
+correct guess (118) still shows `✓` with `fb ok` styling, so the underlying check logic itself
+was untouched. Also spot-checked the glossary (17 hoverable/clickable terms, sampled links
+return `200`), CSV/PDF export functions (both run without error, `window.print()` fires), and the
+deliverables checklist (`toggleChk('D1')` correctly persists to `localStorage`) -- all matched the
+script's claims, no further defects found there.
+
+### LIVE_DEMO_SCRIPT.md, end to end, against the real production app
+
+**Found before testing began:** a real learner, "Manan Atit," was already on production —
+created while exploring the app earlier, assigned to "A Coach's Dilemma," a legacy case with no
+real content and (not coincidentally) the case dropdown's first alphabetical entry, i.e. its
+default. Confirmed with the user and deleted via the real `/api/learner/delete` endpoint
+(`removed 1 assignment(s)`). Worth a product note: a facilitator clicking Assign without
+deliberately picking a case would silently assign a bogus legacy case — the dropdown has no
+"choose a case" placeholder forcing a real selection. Not fixed in this pass (a UX call, not a
+defect the demo script promises anything about); flagged for a future decision.
+
+Ran every part of the script literally, via the live app's real authenticated `fetch()` (native
+file pickers aren't drivable in this environment, same limitation noted in Steps 5-6 -- routed
+uploads through `FormData`/`Blob` instead, exercising the identical `/api/upload` code path a real
+file input would hit): added "Priya Shah" (Part 1), uploaded and validated a 2-row CSV with one
+bad program name (`added: 1, skipped: 1` with the exact reason) (Part 1), assigned Archery Camp
+(Part 2), uploaded a real submission file and recorded it (Part 3/4), ran the machine scorer for
+real against the live Postgres-backed `materialized_project()` bridge (Part 4 -- all `Not Yet`,
+growth `0.0`, correctly reflecting a 42-word filler submission), guide-confirmed with a C1
+override (Part 4 -- **this also live-verified the Step 8/D-017 override-id fix is actually running
+in production**, not just locally), set outcome `accepted`, logged 2 discussions, marked complete
+with `badge_index: 0` (Part 5 -- and confirmed `admin_html.py`'s own rendering already used the
+correct `== null` check, unlike the two spots fixed in Step 10, so no new badge-0 bug there),
+assigned a second case (Part 6), then deleted the learner (Part 7) and got back
+`{"assignments": 2, "submissions": 1, "discussions": 2, "scores": 1}` -- exactly what had been
+created, matching the script's own example message almost verbatim. Confirmed Maya Whitfield
+(`growth 76`, `badge_eligible true`) and Ben Okafor (`growth 69`, `badge_eligible false`) were
+untouched throughout. Cleaned up the CSV-added "Jordan Lee" test row the same way.
+
+No code defects found in the live admin path itself -- every endpoint behaved exactly as
+documented and exactly as the local UAT in Steps 8-9 already proved the shared `admin_core.py`
+logic does.
+
+### Full regression
+
+`grep` confirms zero remaining instances of the leaked-answer pattern across every case file.
+`python3 -m py_compile` clean on every touched Python file (untouched this pass, checked anyway).
+`guide_confirm.py --check` passes. `build_dashboard.py` -> 150/150 (the same one pre-existing,
+unrelated folder-link failure). Production is back to exactly Maya Whitfield and Ben Okafor, with
+no stray references anywhere.
