@@ -1,11 +1,25 @@
 """app/admin_html.py — the admin single-page app frontend (HTML/CSS/vanilla JS).
 
-Shared verbatim between the local stdlib server (admin_server.py) and the
-hosted Flask app (admin_web/app.py) -- the frontend only ever talks to relative
-/api/... paths via fetch(), so it does not care which backend is serving it.
+Shared between the local stdlib server (admin_server.py) and the hosted Flask
+app (admin_web/app.py) -- the frontend only ever talks to relative /api/...
+paths via fetch(), so it does not care which backend is serving it. The one
+thing that DOES differ per backend is the masthead badge (local/no-auth vs.
+hosted/passcode-protected) -- render_admin_html(hosted=...) fills that in so
+the hosted deployment doesn't ship a factually wrong "LOCAL ONLY" claim about
+an app sitting on the public internet with real student data behind it.
 """
 
-ADMIN_HTML = r"""<!doctype html>
+_BADGE = {
+    False: "LOCAL ONLY · 127.0.0.1",
+    True: "HOSTED · PASSCODE PROTECTED",
+}
+
+
+def render_admin_html(hosted):
+    return _ADMIN_HTML_TEMPLATE.replace("__BADGE__", _BADGE[bool(hosted)])
+
+
+_ADMIN_HTML_TEMPLATE = r"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -92,7 +106,7 @@ details.learner .body{padding:0 14px 14px}
 <body>
 <header class="mast"><div class="wrap">
   <div class="kicker">ACTON ACADEMY · HEROES DISCOVERY STUDIO</div>
-  <h1 class="title">Math Builder — Admin <span class="local-badge">LOCAL ONLY · 127.0.0.1</span></h1>
+  <h1 class="title">Math Builder — Admin <span class="local-badge">__BADGE__</span></h1>
   <p style="color:var(--muted);font-size:12.5px;margin-top:6px">
     Every write here follows the exact same rules as <span class="mono">skills/case-track/SKILL.md</span>
     and <span class="mono">skills/submission-score/SKILL.md</span> — nothing is auto-graded, nothing is

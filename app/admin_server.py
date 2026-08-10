@@ -26,10 +26,12 @@ import argparse, json, os, sys, urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import admin_core
-from admin_html import ADMIN_HTML
+from admin_html import render_admin_html
 from store_local import LocalFileStore
 
 STORE = None  # set in main()
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_HTML = {'/dashboard.html': 'dashboard.html', '/student.html': 'student.html'}
 
 
 # --------------------------------------------------------------- server ----
@@ -54,7 +56,19 @@ class Handler(BaseHTTPRequestHandler):
             raise admin_core.ApiError(400, "malformed JSON body")
 
     def _serve_page(self):
-        body = ADMIN_HTML.encode('utf-8')
+        body = render_admin_html(hosted=False).encode('utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_static_html(self, filename):
+        path = os.path.join(APP_DIR, filename)
+        if not os.path.exists(path):
+            return self._json(404, {"error": f"{filename} not built yet -- run app/build_dashboard.py"})
+        with open(path, 'rb') as f:
+            body = f.read()
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
@@ -65,6 +79,8 @@ class Handler(BaseHTTPRequestHandler):
         p = urllib.parse.urlparse(self.path)
         if p.path in ('/', '/index.html'):
             return self._serve_page()
+        if p.path in STATIC_HTML:
+            return self._serve_static_html(STATIC_HTML[p.path])
         if p.path == '/api/state':
             try:
                 return self._json(200, admin_core.build_state(STORE))

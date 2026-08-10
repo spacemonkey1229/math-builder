@@ -18,10 +18,10 @@ if _APP_DIR not in sys.path:
     sys.path.insert(0, _APP_DIR)
 
 import admin_core
-from admin_html import ADMIN_HTML
+from admin_html import render_admin_html
 from store_postgres import PostgresStore
 
-from flask import Flask, Response, jsonify, redirect, request, session
+from flask import Flask, Response, jsonify, redirect, request, send_from_directory, session
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY') or 'dev-only-insecure-secret-do-not-deploy-with-this'
@@ -119,7 +119,15 @@ def json_api(fn):
 @app.route('/')
 @app.route('/index.html')
 def index():
-    return ADMIN_HTML
+    return render_admin_html(hosted=True)
+
+
+@app.route('/dashboard.html')
+@app.route('/student.html')
+def static_html():
+    # Read-only curriculum/tracker views -- static build output, shipped as
+    # part of the deployment bundle (app/), never written to at runtime.
+    return send_from_directory(_APP_DIR, request.path.lstrip('/'))
 
 
 @app.route('/api/state')

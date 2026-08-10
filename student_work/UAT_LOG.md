@@ -623,3 +623,45 @@ folder in this repo, a pre-existing pipeline/corpus gap, not a build defect). `v
 Window, still `qa`) -> 0 blockers everywhere. `guide_confirm.py --check` -> all ids unique.
 `python3 -m py_compile` clean on every touched script. `roster.json` back to exactly Maya
 Whitfield and Ben Okafor.
+
+---
+
+## Step 10 — hosted app showed "LOCAL ONLY" and a dead `dashboard.html` link (2026-08-10)
+
+Reported directly by the user against the real live deployment: `https://math-builder-three.vercel.app`
+rendered the masthead badge `LOCAL ONLY · 127.0.0.1` even though it was fully loaded over the
+public internet, and its own `dashboard.html` link 404'd.
+
+### BUG FOUND — the hosted admin app claimed to be "LOCAL ONLY"
+
+`app/admin_html.py`'s `ADMIN_HTML` is one HTML string shared verbatim by `admin_server.py` (local,
+correct) and `admin_web/app.py` (hosted on Vercel, factually wrong) -- the "LOCAL ONLY · 127.0.0.1"
+badge was hardcoded into that shared markup with no way for either backend to say which one it
+actually was. On a real internet-facing deployment holding real student names, an incorrect
+"local only" claim isn't cosmetic -- it's a false safety/privacy signal. **Fix:** `ADMIN_HTML`
+became `render_admin_html(hosted: bool)`, substituting `LOCAL ONLY · 127.0.0.1` for the local
+server and `HOSTED · PASSCODE PROTECTED` for the Vercel app. Verified both the local server
+(`curl` against a running `admin_server.py`) and the hosted app's own render function directly
+(`render_admin_html(hosted=True)` contains neither `"LOCAL ONLY"` nor `"127.0.0.1"`).
+
+### BUG FOUND — `dashboard.html`/`student.html` links 404'd on both the local and hosted admin apps
+
+Traced before assuming it was Vercel-specific: `curl http://127.0.0.1:8420/dashboard.html` 404'd
+on the **local** server too. Neither `admin_server.py`'s `do_GET` nor `admin_web/app.py`'s Flask
+route table had ever had a handler for these paths -- the link in the shared HTML assumed a
+`file://` context (a real sibling file resolves for a relative link) that stopped being true the
+moment the admin page started being served over HTTP. **Fix:** both servers now serve
+`app/dashboard.html` / `app/student.html` as real static files -- `admin_server.py` reads them
+from disk next to itself; `admin_web/app.py` adds two Flask routes using `send_from_directory`
+against the same bundled files Vercel already ships as part of the deployment. Both stay behind
+the existing auth gate on the hosted app (unauthenticated hits `/login` redirect, same as every
+other non-`/api` path) -- consistent with this deployment's stated scope of "admin/tracking side
+is live, nothing else is," not a new access decision.
+
+**Verified against the real Flask app object** (not just the string function in isolation):
+unauthenticated `GET /dashboard.html` -> `302 /login`; authenticated -> `200`, real file bytes for
+both `dashboard.html` and `student.html`; index page's badge -> `HOSTED · PASSCODE PROTECTED`.
+Local server: `/dashboard.html` and `/student.html` both `200` after restart, badge unchanged at
+`LOCAL ONLY · 127.0.0.1`. Full regression re-run clean: `build_dashboard.py` 150/150 (1
+pre-existing unrelated failure), `guide_confirm.py --check` passes, `python3 -m py_compile` clean
+on all three touched files.
