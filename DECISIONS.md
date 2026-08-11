@@ -167,3 +167,24 @@ page's relative "Back to My Cases" link (`../../../app/student.html`) is correct
 use but resolves to `/app/student.html` once hosted, which didn't match the `/student.html` route
 added for D-016/Step 10 -- added `/app/dashboard.html` and `/app/student.html` as aliases of the
 same authenticated handler rather than rewriting the link (which would have broken it locally).
+
+### D-019 · 2026-08-11 · Assign-a-Case never pre-selects a case, and shows what it teaches
+User reported dissatisfaction with the admin/guide assignment workflow. Root cause:
+`admin_core.py`'s `build_state()` sorted `assignable_cases` purely alphabetically by title, mixing
+`published` (real, vetted content) and `legacy` (older corpus, frequently missing `case.json` and
+an interactive page) cases together with no distinction -- and the frontend `<select>` had no
+placeholder option, so the browser auto-selected whatever sorted first. In practice this was
+almost always a legacy case ("A Coach's Dilemma" alphabetically), meaning a guide who clicked
+Assign without deliberately changing the dropdown got a real student assigned to a case with no
+actual content -- exactly what happened earlier this session (see UAT_LOG Step 9, the "Manan
+Atit" cleanup). **Fix, two parts:** (1) `assignable_cases` now sorts `published` before `legacy`,
+then by band, then by title, so the real, vetted catalog always sorts first; (2) both the learner
+and case `<select>` elements now start on a disabled "— choose a —" placeholder with nothing
+selected, and the Assign button refuses client-side (`flash()`, no API call) if either is still
+empty. **Also addressed the deeper complaint, not just the accident:** LIFECYCLE_SCRIPT.md's own
+Beat 2 calls matching a case to a student "a real judgment call," but the dropdown gave a guide
+nothing to judge with beyond a title and tier code. `assignable_cases` now also carries `band`,
+`standards_count`, and `domains_touched` (already sitting in `cases_index.json`, just never wired
+through), and selecting a case renders a small info panel showing what it actually teaches, plus
+an explicit `LEGACY — no case.json/interactive page` flag when relevant, so "match the context and
+challenge to the student" is something the UI actually supports rather than asks for on faith.

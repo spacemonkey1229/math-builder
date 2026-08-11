@@ -405,11 +405,25 @@ function discussionForm(a) {
 }
 
 // --------------------------------------------------------------- assign ---
+function caseInfoHTML(c) {
+  if (!c) return "";
+  const band = c.band && c.band.length ? c.band.join("/") : "band unrecorded";
+  const domains = c.domains_touched && c.domains_touched.length ? c.domains_touched.join(", ") : "not recorded";
+  const std = c.standards_count != null ? c.standards_count + " standards" : "standards count unrecorded";
+  return '<div class="sub-panel" id="a-case-info" style="margin-top:8px">' +
+    '<div class="mm">' + esc(c.title) + " &middot; " + esc(c.tier || "tier unrecorded") + " &middot; " + esc(band) +
+    (c.status === "legacy" ? ' <span class="pill warn">LEGACY — no case.json/interactive page</span>' : "") + "</div>" +
+    '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">Touches: ' + esc(domains) + " &middot; " + esc(std) + "</div>" +
+    "</div>";
+}
 function renderAssign() {
   if (!STATE.learners.length) return '<div class="card empty">Add a learner first, on the Learners tab.</div>';
-  const learnerOpts = STATE.learners.filter((l) => l.status === "active")
-    .map((l) => '<option value="' + esc(l.id) + '">' + esc(l.display_name) + "</option>").join("");
-  const caseOpts = STATE.cases.map((c) => '<option value="' + esc(c.id) + '">' + esc(c.title) + " (" + esc(c.tier || "?") + ", " + esc(c.status) + ")</option>").join("");
+  const activeLearners = STATE.learners.filter((l) => l.status === "active");
+  const learnerOpts = '<option value="" disabled selected>— choose a learner —</option>' +
+    activeLearners.map((l) => '<option value="' + esc(l.id) + '">' + esc(l.display_name) + "</option>").join("");
+  const caseOpts = '<option value="" disabled selected>— choose a case —</option>' +
+    STATE.cases.map((c) => '<option value="' + esc(c.id) + '">' + esc(c.title) + " (" + esc(c.tier || "?") +
+      (c.band && c.band.length ? " · " + esc(c.band.join("/")) : "") + ", " + esc(c.status) + ")</option>").join("");
   return '<div class="card"><h3 style="margin-bottom:10px">Assign a case</h3>' +
     '<div class="grid2">' +
     '<div class="field"><label>Learner</label><select id="a-learner">' + learnerOpts + "</select></div>" +
@@ -417,10 +431,12 @@ function renderAssign() {
     '<div class="field"><label>Due date (optional)</label><input type="date" id="a-due"></div>' +
     '<div class="field"><label>Badge slot (optional)</label><input type="number" id="a-badge" min="1"></div>' +
     "</div>" +
+    '<div id="a-case-info-wrap"></div>' +
     '<button class="btn" id="do-assign">Assign</button>' +
     '<p style="font-size:11.5px;color:var(--muted);margin-top:8px">Only cases that have passed the publish gate (' +
     '<span class="mono">published</span> or <span class="mono">legacy</span>) are listed — the same rule ' +
-    "case-track itself enforces.</p></div>";
+    "case-track itself enforces. Published cases are listed first; nothing is pre-selected, so an assignment " +
+    "always reflects a deliberate pick, not whatever happened to sort first.</p></div>";
 }
 
 // --------------------------------------------------------------- badges ---
@@ -567,11 +583,29 @@ function wireView() {
     if (confirm("Withdraw this assignment?")) call("/api/assign/withdraw", {assignment_id: b.dataset.withdraw});
   });
 
+  const caseSelect = document.getElementById("a-case");
+  if (caseSelect) {
+    const infoWrap = document.getElementById("a-case-info-wrap");
+    const updateCaseInfo = () => {
+      const c = STATE.cases.find((x) => x.id === caseSelect.value);
+      infoWrap.innerHTML = caseInfoHTML(c);
+    };
+    caseSelect.addEventListener("change", updateCaseInfo);
+    updateCaseInfo();
+  }
+
   const assignBtn = document.getElementById("do-assign");
-  if (assignBtn) assignBtn.onclick = () => call("/api/assign", {
-    learner_id: val("a-learner"), case_id: val("a-case"),
-    due_on: val("a-due") || null, badge_index: val("a-badge") ? Number(val("a-badge")) : null,
-  });
+  if (assignBtn) assignBtn.onclick = () => {
+    const learner_id = val("a-learner"), case_id = val("a-case");
+    if (!learner_id || !case_id) {
+      flash("Pick a learner and a case first — nothing is assigned by default.", true);
+      return;
+    }
+    call("/api/assign", {
+      learner_id, case_id,
+      due_on: val("a-due") || null, badge_index: val("a-badge") ? Number(val("a-badge")) : null,
+    });
+  };
 
   document.querySelectorAll("[data-award]").forEach((b) => b.onclick = () => {
     if (confirm("Confirm badge award for " + b.dataset.award + "?")) call("/api/badge/award", {learner_id: b.dataset.award, badge_index: Number(b.dataset.slot)});

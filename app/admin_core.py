@@ -170,9 +170,15 @@ def build_state(store):
     subs = store.load('submissions.json')
     cases_idx = store.load('cases_index.json')
     assignable_cases = sorted(
-        [{"id": c['id'], "title": c.get('title') or c['id'], "tier": c.get('tier'), "status": c.get('status')}
+        [{"id": c['id'], "title": c.get('title') or c['id'], "tier": c.get('tier'), "status": c.get('status'),
+          "band": c.get('band') or [], "standards_count": c.get('standards_count'),
+          "domains_touched": c.get('domains_touched') or []}
          for c in cases_idx.get('cases', []) if c.get('status') in ('published', 'legacy')],
-        key=lambda c: c['title'])
+        # published (real, vetted content) before legacy (older corpus, often
+        # missing case.json/interactive HTML) -- a guide picking blind from an
+        # alphabetical list was landing on a legacy case by default. Within
+        # each group, sort by band then title so MS/HS don't interleave.
+        key=lambda c: (c['status'] != 'published', ','.join(sorted(c['band'])), c['title']))
 
     A = live(subs['assignments'])
     S = live(subs['submissions'])

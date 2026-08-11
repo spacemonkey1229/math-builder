@@ -873,3 +873,65 @@ a plain `{"error": "not found"}`. `python3 -m py_compile` clean on all touched f
 `build_dashboard.py` -> 150/150 (same one pre-existing, unrelated folder-link failure).
 `guide_confirm.py --check` -> all ids unique. Production confirmed back to exactly Maya Whitfield
 and Ben Okafor with zero stray references.
+
+---
+
+## Step 14 — gap-queue/career link check (already built) + the Assign-a-Case fix (2026-08-11)
+
+### Correction, not a build: the gap-queue-to-career cross-reference already existed
+
+Proposed building a feature -- for each authoring-gap cluster, surface which real career domains
+could motivate the case that closes it -- inspired by a separate project's ("Journey Engine")
+module structure. Before writing code, checked `app/build_dashboard.py` and found it already
+built: `gaps.append({..., "closers": [...]})` (lines ~789-828) does the exact
+skill-id set-intersection against `domains.json`, and `renderGaps()` (~2888-2911) already renders
+it as "DOMAINS THAT COULD CLOSE IT" with clickable jumps to Root Connections. It's even asserted
+by the internal validator (`"gap clusters carry their closing domains"`, plus a check that every
+zero-coverage cluster has a closer except a named, dated B2 backlog list). The reason it looked
+missing during the earlier proposal: reading the Gap Queue tab's text with a 2000-2500 char limit
+cut off before reaching this section, which renders *after* the per-cluster skill list, not before
+it. **UAT'd anyway, live:** clicked a "Computer Graphics & Animation" closer button from the
+Transformations cluster, landed correctly on Root Connections filtered to that domain; confirmed
+a known-orphaned cluster (Set Theory) correctly shows "No application domain lists any of these as
+a signature skill" instead of an empty or broken closers block; no console errors either tab.
+
+### BUG FOUND — the case-assignment dropdown pre-selected a content-less legacy case
+
+User reported general dissatisfaction with the admin/guide assignment workflow. Traced to
+`admin_core.py`'s `build_state()`: `assignable_cases` sorted purely alphabetically by title,
+interleaving `published` (real, vetted) and `legacy` (often missing `case.json` and an interactive
+page) cases, and the frontend `<select>` had no placeholder -- so the browser auto-selected
+whatever sorted first alphabetically, which was "A Coach's Dilemma," a legacy case with no real
+content. This is the exact mechanism behind the "Manan Atit" cleanup in Step 9: a guide who
+clicks Assign without deliberately changing the dropdown gets a real student assigned to a case
+that can't actually be worked or scored.
+
+**Fix (D-019):** `assignable_cases` now sorts `published` before `legacy`, then band, then title.
+Both the learner and case `<select>` elements start on a disabled, unselectable placeholder, and
+the Assign button now validates client-side and refuses (via the existing `flash()` error pattern)
+rather than calling the API if either field is still empty -- confirmed live: clicking Assign with
+nothing chosen shows "Pick a learner and a case first — nothing is assigned by default." and makes
+no network call.
+
+**Also closed the actual judgment gap, not just the accident:** the dropdown gave a guide nothing
+to reason about beyond a title and tier code, despite `LIFECYCLE_SCRIPT.md` itself naming "match
+the context and challenge to the student" a real pedagogical judgment call. `cases_index.json`
+already carries `band`, `standards_count`, and `domains_touched` per case -- these were threaded
+through `build_state()` and the frontend now renders a live info panel on selection (verified for
+Catering: "Touches: Advanced Numbers, Basic Operations, Measurement, Number Sense · 8 standards")
+plus an explicit `LEGACY — no case.json/interactive page` flag when relevant (verified against "A
+Coach's Dilemma").
+
+**Verified:** full happy path re-tested end to end with a fresh test learner -- selected a real
+learner and Phone Plan, assignment succeeded (`Done.`), cleaned up via the real delete endpoint
+(`removed: {assignments: 1, ...}`). Confirmed the guard rail still correctly surfaces a real API
+error (not the client-side one) when a legitimately-selected assignment is rejected server-side
+(tried re-assigning Maya to Catering, which she's already completed -- correct error, not the
+empty-selection message). One methodology note: an early version of this test set `.select.value`
+to a learner id added via raw `fetch()` moments earlier, which silently no-ops on a `<select>`
+with no matching `<option>` yet (stale client `STATE`, same class of artifact noted in Step 13) --
+not a product bug, fixed by reloading before re-testing.
+
+Full regression: `py_compile` clean on all four touched files, `build_dashboard.py` 150/150 (same
+pre-existing unrelated failure), `guide_confirm.py --check` passes, local roster confirmed back to
+exactly Maya Whitfield and Ben Okafor after test-learner cleanup.
