@@ -154,7 +154,16 @@ def case_interactive_html(case_id, filename):
     directory = os.path.join(_CASES_DIR, case_id, 'published')
     path = os.path.join(directory, filename)
     if not os.path.isfile(path):
-        return jsonify({"error": "not found"}), 404
+        case_json = os.path.join(_CASES_DIR, case_id, 'case.json')
+        return jsonify({
+            "error": "not found", "_debug": True,
+            "cases_dir_exists": os.path.isdir(_CASES_DIR),
+            "cases_dir_listing": sorted(os.listdir(_CASES_DIR)) if os.path.isdir(_CASES_DIR) else None,
+            "case_json_exists": os.path.isfile(case_json),
+            "case_dir_listing": sorted(os.listdir(os.path.join(_CASES_DIR, case_id))) if os.path.isdir(os.path.join(_CASES_DIR, case_id)) else None,
+            "published_dir_exists": os.path.isdir(directory),
+            "published_listing": sorted(os.listdir(directory)) if os.path.isdir(directory) else None,
+        }), 404
     return send_from_directory(directory, filename)
 
 
