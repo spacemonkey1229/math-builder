@@ -791,3 +791,85 @@ Rewriting the link would have broken local usage instead, so added `/app/dashboa
 
 Full regression re-run clean: `py_compile` on both touched files, `build_dashboard.py` 150/150
 (same one pre-existing unrelated failure), `guide_confirm.py --check` passes.
+
+---
+
+## Step 13 — Full re-verification pass across every surface (2026-08-11)
+
+Requested directly: write an explicit UAT outline first, then execute it thoroughly across the
+full narrative -- admin, guide, student -- and squash anything it finds. This was specifically a
+re-verification pass, not first-time coverage: the point was to catch any regression from the
+Step 12 case-hosting change and confirm every earlier fix (D-016 through D-018) still holds
+together as one system, not just individually.
+
+**Outline used** (posted to the user before executing): local `dashboard.html` full tab sweep,
+local `student.html` full tab sweep, two more interactive case pages beyond Catering (to catch
+per-case edge cases the shared-helper fix might have missed), then the complete
+`LIFECYCLE_SCRIPT.md` narrative -- Admin enroll, Guide assign, Student work, Guide
+score/confirm/feedback/reassign, cleanup -- run live against production with a fresh test
+learner.
+
+### An open item found and set aside, not chased further this pass
+
+Before this UAT started, the user hit `.../cases/catering/published/...` on the live app a second
+time and asked to actually host it (D-018, previous session). Attempting to verify that fix live
+surfaced a genuine platform-level mystery: the Vercel dashboard shows the relevant commit built
+successfully and is marked the active Production deployment, yet requests to the production
+domain (fresh URLs, cache-busted, `x-vercel-cache: MISS` confirmed) still executed the *prior*
+commit's code. Added, deployed, and then reverted a temporary debug-info branch in the 404 handler
+to try to inspect the deployed filesystem layout without ever getting a response from the new
+code at all -- meaning either the domain isn't aliased to the deployment Vercel calls "Production,"
+or something stranger is happening one layer above the application. This is outside what's
+diagnosable without direct Vercel dashboard/CLI access to that specific project (the session's
+Vercel tool is connected to a different account). **Recorded as a known open item, not fixed this
+pass** -- the debug-info code was reverted back to a plain 404 rather than left exposing server
+paths in a public response.
+
+### Local sweep -- zero new defects
+
+`dashboard.html`: every tab (Curriculum Tree, Coverage Heatmap, Case Library, Root Connections,
+Rubric & Scoring, Pipeline, Gap Queue, Tracker) reloaded fresh and checked against real data --
+`Live. 2 score records on file, 3 guide overrides logged` matches exactly, Pipeline's `10
+PROMOTION / 2 READINESS` matches `DEMO_SCRIPT.md`'s own claim, Tracker's "As of" banner correctly
+reads the real current date. `student.html`: all five tabs (My Cases, My Progress, My Skills, How
+I'm Assessed, Where Maths Goes) load clean, redaction intact, no growth score anywhere, "completed"
+still shows correctly instead of a stale "past due."
+
+Tested the Working Notebook answer-leak fix (Step 11) against two more cases beyond Catering -- Robotics Engineer and Phone Plan, deliberately chosen because they use different
+checker functions (`checkDist`/`checkTime`/`checkTwist`, `checkEquation`/`checkCost`/
+`checkBreakeven`) than Catering's `checkServings`. Read each one's source first to confirm they
+all route through the same shared `fb()` helper rather than rolling their own feedback string
+(they do) before trusting a live click-test on top of that: both show `try again` with no
+number on a wrong guess. Also re-confirmed Robotics Engineer's Twist section is still correctly
+gated behind the "I've been told to reveal it" click.
+
+### Full lifecycle, live on production -- zero new defects
+
+Ran every beat of `LIFECYCLE_SCRIPT.md` against a fresh test learner ("Jordan Rivera"): enrolled
+(Beat 1), assigned Nuclear Waste (Beat 2), uploaded and recorded a real submission (Beat 3
+surrogate -- the actual case page is the still-open item above), scored it for real, guide-
+confirmed with a C1 override, reviewed as `accepted`, logged 2 discussions, marked complete with
+`badge_index: 0` (Beat 4) -- confirmed both the raw `/api/state` data *and* the rendered admin UI
+correctly show "badge slot 0" after a fresh reload, not "unallocated." Assigned a second case
+(Beat 6), then ran all four guard rails fresh against this new code: reassigning the completed
+case refused, assigning a `qa`-status case refused, awarding a badge before eligible refused
+(`only 1/5 complete`), and completing the new assignment before it was reviewed refused (`not
+outcome=accepted yet`). Deleted the learner (Beat 7): `{"assignments": 2, "submissions": 1,
+"discussions": 2, "scores": 1}`, exactly what had been created. Confirmed Maya Whitfield (growth
+76, badge eligible) and Ben Okafor (growth 69, not badge eligible) were untouched throughout --
+production is back to exactly those two.
+
+**One methodology note, not a product bug:** mid-run, the admin UI's rendered learner list
+appeared to be missing the just-added test learner. Traced immediately: driving the loop through
+raw authenticated `fetch()` calls (the only way to avoid native file-picker limitations in this
+environment) writes real data but doesn't trigger the single-page app's own client-side refresh,
+since that only happens inside its own button handlers. A page reload showed everything correctly.
+Recorded so a future session doesn't mistake this for a real staleness bug.
+
+### Full regression
+
+Reverted the temporary debug-info addition in `admin_web/app.py`'s case-page 404 handler back to
+a plain `{"error": "not found"}`. `python3 -m py_compile` clean on all touched files.
+`build_dashboard.py` -> 150/150 (same one pre-existing, unrelated folder-link failure).
+`guide_confirm.py --check` -> all ids unique. Production confirmed back to exactly Maya Whitfield
+and Ben Okafor with zero stray references.
