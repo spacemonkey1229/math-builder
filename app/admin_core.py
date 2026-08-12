@@ -49,6 +49,23 @@ def today():
     return datetime.date.today().isoformat()
 
 
+_SUB_SEQ_RX = re.compile(r'__sub(\d+)$')
+
+
+def _submission_sort_key(s):
+    # "latest submission" was being decided by submitted_on alone (a date, no time), which
+    # ties whenever a learner submits and resubmits the same day -- a common case, not an
+    # edge case. Worse, the Postgres-backed store's SELECT has no ORDER BY, so which same-day
+    # row a stable sort keeps as "first" is undefined, meaning the wrong submission (e.g. a
+    # 'revise' rather than the later 'accepted' one) could silently win on the hosted app even
+    # though it never did locally (a plain JSON list preserves real append order). do_record_
+    # submission's own ids ("<assignment>__sub<n>", n = count-at-creation-time + 1) are already
+    # a reliable, monotonically increasing sequence regardless of same-day collisions or
+    # storage backend, so use that as the real tiebreaker instead of trusting row order.
+    m = _SUB_SEQ_RX.search(s.get('id', ''))
+    return (s.get('submitted_on', ''), int(m.group(1)) if m else -1)
+
+
 # ------------------------------------------------------- read-side view ----
 def compute_queue(roster, subs):
     TODAY = datetime.date.today()
@@ -190,7 +207,7 @@ def build_state(store):
 
     assignments_view = []
     for a in A:
-        my_subs = sorted([s for s in S if s['assignment_id'] == a['id']], key=lambda s: s['submitted_on'])
+        my_subs = sorted([s for s in S if s['assignment_id'] == a['id']], key=_submission_sort_key)
         latest = my_subs[-1] if my_subs else None
         my_scores = sorted([s for s in SC if s['learner_id'] == a['learner_id'] and s['case_id'] == a['case_id']],
                             key=lambda s: s['scored_on'])
@@ -536,7 +553,7 @@ def do_complete(store, assignment_id, badge_index):
     if not asg:
         raise ApiError(404, "assignment not found")
     my_subs = sorted([s for s in subs['submissions'] if s['assignment_id'] == assignment_id],
-                      key=lambda s: s['submitted_on'])
+                      key=_submission_sort_key)
     latest = my_subs[-1] if my_subs else None
     if not latest or latest.get('outcome') != 'accepted':
         raise ApiError(400, "the latest submission is not outcome=accepted yet")
