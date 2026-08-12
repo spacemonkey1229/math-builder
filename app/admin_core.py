@@ -196,7 +196,6 @@ def build_state(store):
         assignments_view.append({**a, "latest_submission": latest, "latest_score": latest_score,
                                   "discussion_count": dcount, "n_submissions": len(my_subs)})
 
-    domains_doc = store.load('domains.json')
     return {
         "today": today(),
         "programs": roster['programs'],
@@ -206,9 +205,6 @@ def build_state(store):
         "discussions": D,
         "queue": compute_queue(roster, subs),
         "badges": compute_badge_rows(roster, subs),
-        # Phase 2 (goals/career self-assessment): the fixed tag list a guide picks from is
-        # domains.json's own real clusters, not a new taxonomy -- see do_set_self_assessment.
-        "interest_clusters": [{"id": c['id'], "name": c['name']} for c in domains_doc.get('clusters', [])],
     }
 
 
@@ -290,99 +286,6 @@ def do_set_learner_status(store, learner_id, status):
         raise ApiError(404, f"learner {learner_id} not found")
     learner['status'] = status
     store.save('roster.json', roster)
-
-
-def do_set_self_assessment(store, learner_id, interests, note, captured_by):
-    """The goals/career conversation, guide-mediated for now (PLAN.md Phase 2 -- students
-    don't have their own login yet, so this is entered by whoever had the conversation,
-    same as review notes and discussion logs already are). interests[] are domains.json
-    cluster ids, not free text -- a fixed, real taxonomy that already exists and is already
-    validated at domain-build time (app/validate_domains.py), so there is nothing new to
-    keep in sync. Setting a new self-assessment always resets reviewed_by_guide to False:
-    a guide reviews *this* version, not a promise to re-review indefinitely."""
-    roster = store.load('roster.json')
-    learner = next((l for l in roster['learners'] if l['id'] == learner_id), None)
-    if not learner:
-        raise ApiError(404, f"learner {learner_id} not found")
-    if not interests:
-        raise ApiError(400, "pick at least one interest cluster")
-    domains = store.load('domains.json')
-    valid = {c['id'] for c in domains.get('clusters', [])}
-    bad = [i for i in interests if i not in valid]
-    if bad:
-        raise ApiError(400, f"unknown interest cluster id(s): {bad} -- must be one of {sorted(valid)}")
-    learner['self_assessment'] = {
-        "interests": interests,
-        "note": note or "",
-        "captured_on": today(),
-        "captured_by": captured_by or "guide",
-        "reviewed_by_guide": False,
-        "reviewed_on": None,
-        "reviewed_by": None,
-    }
-    store.save('roster.json', roster)
-
-
-def do_review_self_assessment(store, learner_id, reviewed_by):
-    roster = store.load('roster.json')
-    learner = next((l for l in roster['learners'] if l['id'] == learner_id), None)
-    if not learner:
-        raise ApiError(404, f"learner {learner_id} not found")
-    sa = learner.get('self_assessment')
-    if not sa:
-        raise ApiError(400, f"{learner['display_name']} has no self-assessment on file yet")
-    sa['reviewed_by_guide'] = True
-    sa['reviewed_on'] = today()
-    sa['reviewed_by'] = reviewed_by or 'guide'
-    store.save('roster.json', roster)
-
-
-def suggest_cases(store, learner_id, limit=5):
-    """PLAN.md Phase 2c. Turns a reviewed self-assessment into a short, explained shortlist
-    instead of a guide scrolling all ~56 assignable cases blind. Reuses the exact same
-    published/legacy eligibility rule build_state() already applies (never invent a second
-    notion of 'assignable'), and domains.json's own existing_cases[]/why_it_engages/careers[]
-    -- all already validated at build time (app/validate_domains.py) -- rather than any new
-    matching heuristic. Returns [] (not an error) for a learner with no reviewed
-    self-assessment; the caller decides what that means for the UI."""
-    roster = store.load('roster.json')
-    learner = next((l for l in roster['learners'] if l['id'] == learner_id), None)
-    if not learner:
-        raise ApiError(404, f"learner {learner_id} not found")
-    sa = learner.get('self_assessment')
-    if not sa or not sa.get('reviewed_by_guide') or not sa.get('interests'):
-        return []
-
-    domains_doc = store.load('domains.json')
-    id_to_name = {c['id']: c['name'] for c in domains_doc.get('clusters', [])}
-    wanted_cluster_names = {id_to_name[i] for i in sa['interests'] if i in id_to_name}
-
-    cases_idx = store.load('cases_index.json')
-    by_title = {c.get('title'): c for c in cases_idx.get('cases', []) if c.get('status') in ('published', 'legacy')}
-
-    subs = store.load('submissions.json')
-    already = {a['case_id'] for a in live(subs['assignments']) if a['learner_id'] == learner_id}
-
-    priority_rank = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
-    seen_case_ids, ranked = set(), []
-    matching_domains = [d for d in domains_doc.get('domains', []) if d.get('cluster') in wanted_cluster_names]
-    matching_domains.sort(key=lambda d: priority_rank.get(d.get('authoring_priority'), 3))
-    for dom in matching_domains:
-        for title in dom.get('existing_cases', []):
-            case = by_title.get(title)
-            if not case or case['id'] in already or case['id'] in seen_case_ids:
-                continue
-            seen_case_ids.add(case['id'])
-            career = dom.get('careers') or [{}]
-            ranked.append({
-                "case_id": case['id'], "title": case.get('title') or case['id'],
-                "tier": case.get('tier'), "band": case.get('band') or [],
-                "domain": dom.get('name'), "why_it_engages": dom.get('why_it_engages'),
-                "career_title": career[0].get('title'),
-            })
-            if len(ranked) >= limit:
-                return ranked
-    return ranked
 
 
 def do_delete_learner(store, learner_id):

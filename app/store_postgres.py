@@ -92,13 +92,12 @@ class PostgresStore:
                 programs = {r['id']: {"badges": r['badges'], "cases_per_badge": r['cases_per_badge'],
                                        "cases_required": r['cases_required']} for r in cur.fetchall()}
                 cur.execute("""SELECT id, display_name, program, cohort, status, started_on, badges_earned,
-                                      drive_folder_id, drive_folder_url, notes, self_assessment FROM learners""")
+                                      drive_folder_id, drive_folder_url, notes FROM learners""")
                 learners = [{
                     "id": r['id'], "display_name": r['display_name'], "program": r['program'],
                     "cohort": r['cohort'], "status": r['status'], "started_on": _to_iso(r['started_on']),
                     "badges_earned": r['badges_earned'], "drive_folder_id": r['drive_folder_id'],
                     "drive_folder_url": r['drive_folder_url'], "notes": r['notes'],
-                    **({"self_assessment": r['self_assessment']} if r['self_assessment'] is not None else {}),
                 } for r in cur.fetchall()]
         return {"programs": programs, "learners": learners}
 
@@ -109,16 +108,13 @@ class PostgresStore:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM learners")
                 for l in data['learners']:
-                    sa = l.get('self_assessment')
                     cur.execute(
                         """INSERT INTO learners (id, display_name, program, cohort, status, started_on,
-                                                  badges_earned, drive_folder_id, drive_folder_url, notes,
-                                                  self_assessment)
-                           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                                                  badges_earned, drive_folder_id, drive_folder_url, notes)
+                           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                         (l['id'], l['display_name'], l['program'], l.get('cohort'), l['status'],
                          _to_date(l['started_on']), Jsonb(l.get('badges_earned', [])),
-                         l.get('drive_folder_id'), l.get('drive_folder_url'), l.get('notes', ''),
-                         Jsonb(sa) if sa is not None else None))
+                         l.get('drive_folder_id'), l.get('drive_folder_url'), l.get('notes', '')))
             conn.commit()
 
     # ------------------------------------------------------- submissions ---

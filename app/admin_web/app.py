@@ -184,34 +184,6 @@ def api_csv_template():
                      headers={'Content-Disposition': 'attachment; filename="learners-template.csv"'})
 
 
-@app.route('/api/suggest-cases')
-def api_suggest_cases():
-    lid = request.args.get('learner_id')
-    if not lid:
-        return jsonify({"error": "learner_id is required"}), 400
-    try:
-        return jsonify({"suggestions": admin_core.suggest_cases(get_store(), lid)})
-    except admin_core.ApiError as e:
-        return jsonify({"error": e.msg}), e.code
-
-
-@app.route('/api/learner/self-assessment', methods=['POST'])
-@json_api
-def api_self_assessment():
-    b = request.get_json(force=True) or {}
-    admin_core.do_set_self_assessment(get_store(), b['learner_id'], b.get('interests', []),
-                                       b.get('note'), b.get('captured_by'))
-    return {"ok": True}
-
-
-@app.route('/api/learner/self-assessment/review', methods=['POST'])
-@json_api
-def api_self_assessment_review():
-    b = request.get_json(force=True) or {}
-    admin_core.do_review_self_assessment(get_store(), b['learner_id'], b.get('reviewed_by'))
-    return {"ok": True}
-
-
 @app.route('/api/upload', methods=['POST'])
 @json_api
 def api_upload():

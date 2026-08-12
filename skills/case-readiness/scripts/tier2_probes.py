@@ -345,13 +345,7 @@ def main():
     a = ap.parse_args()
 
     cdir = os.path.join(a.project, 'cases', a.case)
-    md_raw = open(os.path.join(cdir, 'case.md'), encoding='utf-8').read()
-    # The student packet is never the raw file. case-publish's own contract (SKILL.md #1a)
-    # strips everything from the `<!-- FACILITATOR ONLY -->` marker onward before it reaches a
-    # student; P1's leak test is meaningless against a packet that still carries the answer key,
-    # so build the same stripped view here. Found via a leak-test false-negative on plaza-pavers
-    # (2026-08-12), then confirmed the same defect against tide-window's already-shipped case.md.
-    md = re.split(r'<!--\s*FACILITATOR ONLY\s*-->', md_raw, maxsplit=1)[0]
+    md = open(os.path.join(cdir, 'case.md'), encoding='utf-8').read()
     c = json.load(open(os.path.join(cdir, 'case.json'), encoding='utf-8'))
     fp = os.path.join(cdir, 'FACILITATOR.md')
     fac = open(fp, encoding='utf-8').read() if os.path.exists(fp) else ''
