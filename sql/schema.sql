@@ -35,8 +35,14 @@ CREATE TABLE IF NOT EXISTS learners (
   badges_earned    jsonb NOT NULL DEFAULT '[]',
   drive_folder_id  text,
   drive_folder_url text,
-  notes            text NOT NULL DEFAULT ''
+  notes            text NOT NULL DEFAULT '',
+  self_assessment  jsonb  -- {interests[], note, captured_on, captured_by, reviewed_by_guide, reviewed_on, reviewed_by}; null until a guide records one. See app/admin_core.py's do_set_self_assessment.
 );
+
+-- CREATE TABLE IF NOT EXISTS above is a no-op against an already-existing
+-- learners table, so a column added after the table's first deploy (like
+-- self_assessment, added 2026-08-12) needs its own idempotent statement here.
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS self_assessment jsonb;
 
 CREATE TABLE IF NOT EXISTS assignments (
   id           text PRIMARY KEY,
