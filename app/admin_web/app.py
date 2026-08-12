@@ -12,6 +12,7 @@ agreed next step is a real auth provider; this is what unblocks a live demo
 today.
 """
 import functools, os, sys
+from urllib.parse import unquote
 
 _APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _ROOT_DIR = os.path.dirname(_APP_DIR)
@@ -148,22 +149,24 @@ def case_interactive_html(case_id, filename):
     # (Facilitator Guide, Guide Notes .docx) that must never be reachable
     # here, so only an exact "<...> Interactive.html" filename with no path
     # separators in either segment is servable -- everything else 404s.
+    #
+    # Diagnosed 2026-08-12: Vercel's Python WSGI adapter hands Flask a
+    # PATH_INFO that is still percent-encoded (e.g. "...Robotics%20Engineer
+    # %20-%20Interactive.html"), which violates the WSGI spec (PATH_INFO
+    # must already be decoded) -- Werkzeug trusts that and never decodes
+    # it, so every filename containing a space (all of them) failed the
+    # suffix check below and 404'd before ever touching the filesystem.
+    # Decoding defensively here is a no-op on a normal, already-decoded
+    # string, so this is safe regardless of which WSGI server is in front.
+    case_id = unquote(case_id)
+    filename = unquote(filename)
     if '/' in case_id or '..' in case_id or '/' in filename or '..' in filename \
             or not filename.endswith(' - Interactive.html'):
         return jsonify({"error": "not found"}), 404
     directory = os.path.join(_CASES_DIR, case_id, 'published')
     path = os.path.join(directory, filename)
     if not os.path.isfile(path):
-        case_json = os.path.join(_CASES_DIR, case_id, 'case.json')
-        return jsonify({
-            "error": "not found", "_debug": True,
-            "cases_dir_exists": os.path.isdir(_CASES_DIR),
-            "cases_dir_listing": sorted(os.listdir(_CASES_DIR)) if os.path.isdir(_CASES_DIR) else None,
-            "case_json_exists": os.path.isfile(case_json),
-            "case_dir_listing": sorted(os.listdir(os.path.join(_CASES_DIR, case_id))) if os.path.isdir(os.path.join(_CASES_DIR, case_id)) else None,
-            "published_dir_exists": os.path.isdir(directory),
-            "published_listing": sorted(os.listdir(directory)) if os.path.isdir(directory) else None,
-        }), 404
+        return jsonify({"error": "not found"}), 404
     return send_from_directory(directory, filename)
 
 
