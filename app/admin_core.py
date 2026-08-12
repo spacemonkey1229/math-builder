@@ -22,7 +22,7 @@ This module does not introduce new policy — same rules as
 skills/case-track/SKILL.md and skills/submission-score/SKILL.md documented
 before any of this had a UI on top of it.
 """
-import csv, datetime, io, os, re, subprocess, sys
+import csv, datetime, io, os, re, subprocess, sys, unicodedata
 
 
 # ---------------------------------------------------------------- errors ---
@@ -39,7 +39,10 @@ def live(rows):
 
 
 def slugify(s):
-    return re.sub(r'[^a-z0-9]+', '-', s.lower()).strip('-')
+    # NFKD + drop combining marks first, so "Théo" -> "theo" (transliterated) rather than
+    # silently vanishing into "th-o" the moment the regex below hits a non-ASCII character.
+    ascii_s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
+    return re.sub(r'[^a-z0-9]+', '-', ascii_s.lower()).strip('-')
 
 
 def today():
@@ -364,7 +367,7 @@ def suggest_cases(store, learner_id, limit=5):
     already = {a['case_id'] for a in live(subs['assignments']) if a['learner_id'] == learner_id}
 
     priority_rank = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
-    seen_case_ids, ranked = set(), []
+    seen_case_ids, candidates = set(), []
     matching_domains = [d for d in domains_doc.get('domains', []) if d.get('cluster') in wanted_cluster_names]
     matching_domains.sort(key=lambda d: priority_rank.get(d.get('authoring_priority'), 3))
     for dom in matching_domains:
@@ -374,15 +377,18 @@ def suggest_cases(store, learner_id, limit=5):
                 continue
             seen_case_ids.add(case['id'])
             career = dom.get('careers') or [{}]
-            ranked.append({
+            candidates.append({
                 "case_id": case['id'], "title": case.get('title') or case['id'],
                 "tier": case.get('tier'), "band": case.get('band') or [],
                 "domain": dom.get('name'), "why_it_engages": dom.get('why_it_engages'),
                 "career_title": career[0].get('title'),
             })
-            if len(ranked) >= limit:
-                return ranked
-    return ranked
+    # A guide can't judge grade/skill fit on a case with no tier -- prefer real, piloted
+    # T1-T4 cases over unvetted legacy imports whenever both exist for the same interest,
+    # rather than filling the shortlist domain-by-domain regardless of how well-specified
+    # each case is. Sort is stable, so ties keep the original domain-priority/appearance order.
+    candidates.sort(key=lambda c: 0 if c["tier"] else 1)
+    return candidates[:limit]
 
 
 def do_delete_learner(store, learner_id):

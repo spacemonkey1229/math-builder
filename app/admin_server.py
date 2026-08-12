@@ -110,6 +110,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, admin_core.build_state(STORE))
             except Exception as e:
                 return self._json(500, {"error": f"{type(e).__name__}: {e}"})
+        if p.path == '/api/suggest-cases':
+            qs = urllib.parse.parse_qs(p.query)
+            lid = (qs.get('learner_id') or [None])[0]
+            if not lid:
+                return self._json(400, {"error": "learner_id is required"})
+            try:
+                return self._json(200, {"suggestions": admin_core.suggest_cases(STORE, lid)})
+            except admin_core.ApiError as e:
+                return self._json(e.code, {"error": e.msg})
         if p.path == '/api/learners/csv-template':
             body = admin_core.CSV_TEMPLATE.encode('utf-8')
             self.send_response(200)
@@ -153,6 +162,13 @@ class Handler(BaseHTTPRequestHandler):
             elif p.path == '/api/learner/delete':
                 counts = admin_core.do_delete_learner(STORE, b['learner_id'])
                 self._json(200, {"ok": True, "removed": counts})
+            elif p.path == '/api/learner/self-assessment':
+                admin_core.do_set_self_assessment(STORE, b['learner_id'], b.get('interests', []),
+                                                   b.get('note'), b.get('captured_by'))
+                self._json(200, {"ok": True})
+            elif p.path == '/api/learner/self-assessment/review':
+                admin_core.do_review_self_assessment(STORE, b['learner_id'], b.get('reviewed_by'))
+                self._json(200, {"ok": True})
             elif p.path == '/api/assign':
                 aid = admin_core.do_assign(STORE, b['learner_id'], b['case_id'], b.get('due_on'),
                                             b.get('badge_index'), b.get('assigned_by'))

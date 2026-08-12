@@ -539,8 +539,17 @@ function caseInfoHTML(c) {
 // PLAN.md Phase 2d. Cards built from admin_core.suggest_cases()'s own rationale fields
 // (why_it_engages, career_title) -- narrows the search, never gates it: the plain
 // dropdown right below stays exactly as it was for every learner, suggested or not.
-function suggestionCardsHTML(suggestions) {
-  if (!suggestions.length) return "";
+function suggestionCardsHTML(suggestions, reviewedNoMatch) {
+  if (!suggestions.length) {
+    if (!reviewedNoMatch) return "";
+    // Distinguish "hasn't done a self-assessment" (silence is correct — nothing to show)
+    // from "did the self-assessment, reviewed it, and we genuinely have nothing that fits
+    // their interests yet" (silence here reads as broken, not as "no signal").
+    return '<div class="sub-panel" style="margin-top:8px">' +
+      '<strong style="font-size:12.5px">Suggested, based on their self-assessment</strong>' +
+      '<p style="font-size:12px;color:var(--muted);margin:6px 0 0">No published or legacy case ' +
+      "matches their interests yet. Browse the full list below instead.</p></div>";
+  }
   return '<div class="sub-panel" style="margin-top:8px">' +
     '<strong style="font-size:12.5px">Suggested, based on their self-assessment</strong>' +
     suggestions.map((s) =>
@@ -762,7 +771,9 @@ function wireView() {
       if (!learnerSelect.value) { suggestWrap.innerHTML = ""; return; }
       try {
         const r = await api("/api/suggest-cases?learner_id=" + encodeURIComponent(learnerSelect.value));
-        suggestWrap.innerHTML = suggestionCardsHTML(r.suggestions || []);
+        const learner = STATE.learners.find((l) => l.id === learnerSelect.value);
+        const reviewed = !!(learner && learner.self_assessment && learner.self_assessment.reviewed_by_guide);
+        suggestWrap.innerHTML = suggestionCardsHTML(r.suggestions || [], reviewed);
         suggestWrap.querySelectorAll("[data-use-suggestion]").forEach((b) => b.onclick = () => {
           caseSelect.value = b.dataset.useSuggestion;
           caseSelect.dispatchEvent(new Event("change"));
