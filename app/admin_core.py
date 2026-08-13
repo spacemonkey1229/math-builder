@@ -399,6 +399,14 @@ def suggest_cases(store, learner_id, limit=5):
                 "tier": case.get('tier'), "band": case.get('band') or [],
                 "domain": dom.get('name'), "why_it_engages": dom.get('why_it_engages'),
                 "career_title": career[0].get('title'),
+                # Case-specific, not the domain-level why_it_engages above -- multiple
+                # suggestions can share a domain (and so share that sentence verbatim),
+                # but domains_touched/standards_count/primary_metric are per-case, from
+                # cases_index.json, so they're what actually differentiate one suggestion
+                # from another instead of reading like repeated, broken copy.
+                "domains_touched": case.get('domains_touched') or [],
+                "standards_count": case.get('standards_count'),
+                "primary_metric": case.get('primary_metric'),
             })
     # A guide can't judge grade/skill fit on a case with no tier -- prefer real, piloted
     # T1-T4 cases over unvetted legacy imports whenever both exist for the same interest,

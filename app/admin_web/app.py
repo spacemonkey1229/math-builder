@@ -95,8 +95,13 @@ def logout():
 
 @app.before_request
 def require_auth():
-    if request.path in ('/login', '/logout') or request.path.startswith('/static') \
-            or request.path.startswith('/cases/'):
+    # student.html (and its /app/ alias) is build_dashboard.py's separate, genuinely
+    # redacted, role-locked build -- guide notes and the full read-model stripped out,
+    # unlike dashboard.html which keeps the full data behind its cosmetic-only Guide/
+    # Student toggle and must stay behind the passcode. A learner has no admin login
+    # and never should need one to see their own tracker.
+    if request.path in ('/login', '/logout', '/student.html', '/app/student.html') \
+            or request.path.startswith('/static') or request.path.startswith('/cases/'):
         return
     if not _authed():
         if request.path.startswith('/api/'):

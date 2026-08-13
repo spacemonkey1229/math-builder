@@ -217,6 +217,11 @@ const GLOSSARY = {
               "(programs require a fixed number of cases per badge — see the program's cases_per_badge).",
   machine_first_pass: "Machine first-pass. An automated draft score — never final. A guide must " +
                        "confirm (or override, with a reason) before it counts.",
+  T1: "Tier 1 — MS entry. ~2 hours. Arithmetic, percent, single-step unit conversion. One dominant variable.",
+  T2: "Tier 2 — MS core. ~2–3 hours. Multi-step, rates, ratio, area/volume, weighted comparison. Two competing variables that trade off.",
+  T3: "Tier 3 — MS stretch / HS entry. ~3 hours. Scientific notation, systems, probability, optimization over a set. Three+ variables, some deliberately irrelevant.",
+  T4: "Tier 4 — HS. ~3+ hours. Algebraic modeling, functions, statistics with inference, sensitivity. Requires stating and defending an assumption; data is incomplete by design.",
+  tier_unknown: "No tier assigned yet. This is an older, imported case that hasn't been through the difficulty-tiering pass the newer T1–T4 cases have — a guide should sanity-check it fits the learner's level before assigning.",
 };
 function gloss(label, term) {
   const def = GLOSSARY[term];
@@ -552,16 +557,23 @@ function suggestionCardsHTML(suggestions, reviewedNoMatch) {
   }
   return '<div class="sub-panel" style="margin-top:8px">' +
     '<strong style="font-size:12.5px">Suggested, based on their self-assessment</strong>' +
-    suggestions.map((s) =>
-      '<div class="row" style="justify-content:space-between;margin-top:8px;align-items:flex-start">' +
-      '<div style="flex:1"><div><strong>' + esc(s.title) + "</strong> " +
-      '<span class="mono" style="font-size:11px;color:var(--muted)">' + esc(s.tier || "?") +
-      (s.band && s.band.length ? " · " + esc(s.band.join("/")) : "") + "</span></div>" +
-      '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + esc(s.why_it_engages || "") +
-      (s.career_title ? " &mdash; a real path here: " + esc(s.career_title) : "") + "</div></div>" +
-      '<button class="btn ghost" data-use-suggestion="' + esc(s.case_id) + '">Use this</button>' +
-      "</div>"
-    ).join("") + "</div>";
+    suggestions.map((s) => {
+      const tierBadge = s.tier ? gloss(s.tier, s.tier) : gloss("?", "tier_unknown");
+      const teaches = (s.domains_touched && s.domains_touched.length)
+        ? esc(s.domains_touched.join(", ")) + (s.standards_count ? " (" + s.standards_count + " spine skills)" : "")
+        : null;
+      return '<div class="row" style="justify-content:space-between;margin-top:8px;align-items:flex-start">' +
+        '<div style="flex:1"><div><strong>' + esc(s.title) + "</strong> " +
+        '<span class="mono" style="font-size:11px;color:var(--muted)">' + tierBadge +
+        (s.band && s.band.length ? " · " + esc(s.band.join("/")) : "") + "</span></div>" +
+        (s.primary_metric ? '<div style="font-size:12px;margin-top:3px">The real question: ' + esc(s.primary_metric) + "</div>" : "") +
+        (teaches ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">Teaches: ' + teaches + "</div>" : "") +
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">Matches their interest in ' + esc(s.domain || "this domain") +
+        (s.why_it_engages ? ": " + esc(s.why_it_engages) : "") +
+        (s.career_title ? " &mdash; a real path here: " + esc(s.career_title) : "") + "</div></div>" +
+        '<button class="btn ghost" data-use-suggestion="' + esc(s.case_id) + '">Use this</button>' +
+        "</div>";
+    }).join("") + "</div>";
 }
 
 function renderAssign() {
