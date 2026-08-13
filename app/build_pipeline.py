@@ -174,6 +174,15 @@ def main():
         d for d in os.listdir(os.path.join(ROOT, "cases"))
         if d != "_concepts" and os.path.isfile(os.path.join(ROOT, "cases", d, "case.json"))
     )
+    # legacy_readiness.json's titles come from folder names, filesystem-safe
+    # (e.g. "A Coach_s Dilemma"); a converted case.json carries the real
+    # apostrophe. Same normalization build_legacy_readiness.py/build_dashboard.py
+    # already use for exactly this reason -- without it, a genuinely-converted
+    # case never matches its legacy row and shows twice (once real, once stale
+    # "not yet converted").
+    def norm_apos(s):
+        return (s or "").replace("_s", "'s")
+
     written_titles = set()
     cases_out = []
     for cid in case_dirs:
@@ -215,7 +224,7 @@ def main():
         lr = json.load(open(lr_path, encoding="utf-8"))
         legacy_source_total = len(lr["cases"])
         for row in lr["cases"]:
-            if row["title"].strip() in written_titles:
+            if row["title"].strip() in written_titles or norm_apos(row["title"].strip()) in written_titles:
                 # already converted -- a real cases/<id>/case.json exists and is
                 # already in cases_out above with its own live stage/tier1. Do not
                 # also list the pre-conversion legacy row, or the case appears
