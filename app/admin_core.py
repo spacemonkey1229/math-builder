@@ -22,7 +22,26 @@ This module does not introduce new policy — same rules as
 skills/case-track/SKILL.md and skills/submission-score/SKILL.md documented
 before any of this had a UI on top of it.
 """
-import csv, datetime, io, os, re, subprocess, sys, unicodedata
+import csv, datetime, io, os, random, re, subprocess, sys, unicodedata
+
+_APP_DIR = os.path.dirname(os.path.abspath(__file__))
+_CASES_DIR = os.path.join(os.path.dirname(_APP_DIR), 'cases')
+
+
+def case_interactive_filename(title):
+    return f"{title} - Interactive.html"
+
+
+def _case_interactive_info(case_id, title):
+    """Whether cases/<id>/published/<title> - Interactive.html exists on disk --
+    cases/ ships as static, read-only content in the deployment bundle (never in
+    Postgres, see store_postgres.py's own docstring), so a plain filesystem check
+    is correct in both local and hosted modes. Many `legacy` cases have no
+    interactive page at all (see admin_html.py's own LEGACY pill) -- surfacing
+    that here means the student portal can say so instead of linking to a 404."""
+    filename = case_interactive_filename(title)
+    exists = os.path.isfile(os.path.join(_CASES_DIR, case_id, 'published', filename))
+    return filename, exists
 
 
 # ---------------------------------------------------------------- errors ---
@@ -47,6 +66,17 @@ def slugify(s):
 
 def today():
     return datetime.date.today().isoformat()
+
+
+def _gen_passcode(existing):
+    """A short numeric code a Hero can type on a shared classroom device -- not a
+    real credential (see admin_web/app.py's own passcode-gate docstring for the
+    same tradeoff at the guide layer). Excludes anything already in use so two
+    learners never collide."""
+    while True:
+        code = f"{random.randint(0, 9999):04d}"
+        if code not in existing:
+            return code
 
 
 _SUB_SEQ_RX = re.compile(r'__sub(\d+)$')
@@ -202,11 +232,16 @@ def build_state(store):
     roster = store.load('roster.json')
     subs = store.load('submissions.json')
     cases_idx = store.load('cases_index.json')
+    def _case_view(c):
+        title = c.get('title') or c['id']
+        filename, has_interactive = _case_interactive_info(c['id'], title)
+        return {"id": c['id'], "title": title, "tier": c.get('tier'), "status": c.get('status'),
+                "band": c.get('band') or [], "standards_count": c.get('standards_count'),
+                "domains_touched": c.get('domains_touched') or [],
+                "interactive_file": filename, "has_interactive": has_interactive}
+
     assignable_cases = sorted(
-        [{"id": c['id'], "title": c.get('title') or c['id'], "tier": c.get('tier'), "status": c.get('status'),
-          "band": c.get('band') or [], "standards_count": c.get('standards_count'),
-          "domains_touched": c.get('domains_touched') or []}
-         for c in cases_idx.get('cases', []) if c.get('status') in ('published', 'legacy')],
+        [_case_view(c) for c in cases_idx.get('cases', []) if c.get('status') in ('published', 'legacy')],
         # published (real, vetted content) before legacy (older corpus, often
         # missing case.json/interactive HTML) -- a guide picking blind from an
         # alphabetical list was landing on a legacy case by default. Within
@@ -217,6 +252,7 @@ def build_state(store):
     S = live(subs['submissions'])
     D = live(subs['discussions'])
     SC = [s for s in subs.get('scores', []) if not s.get('_example')]
+    cases_by_id = {c['id']: c for c in assignable_cases}
 
     assignments_view = []
     for a in A:
@@ -226,8 +262,12 @@ def build_state(store):
                             key=lambda s: s['scored_on'])
         latest_score = my_scores[-1] if my_scores else None
         dcount = len([d for d in D if d['learner_id'] == a['learner_id'] and d['case_id'] == a['case_id']])
+        c = cases_by_id.get(a['case_id'])
         assignments_view.append({**a, "latest_submission": latest, "latest_score": latest_score,
-                                  "discussion_count": dcount, "n_submissions": len(my_subs)})
+                                  "discussion_count": dcount, "n_submissions": len(my_subs),
+                                  "case_title": c['title'] if c else a['case_id'],
+                                  "interactive_file": c['interactive_file'] if c else None,
+                                  "has_interactive": bool(c and c['has_interactive'])})
 
     domains_doc = store.load('domains.json')
     tree_doc = store.load('curriculum_tree.json')
@@ -252,7 +292,7 @@ def build_state(store):
 
 
 # --------------------------------------------------------------- writes ----
-def _add_learner_to_roster(roster, display_name, program, cohort, status, learner_id):
+def _add_learner_to_roster(roster, display_name, program, cohort, status, learner_id, goals=None):
     """Pure mutation on an already-loaded roster dict -- shared by the single-add
     endpoint and the CSV bulk-add path, so bulk upload does one load+save for the
     whole file instead of one round-trip (and one snapshot) per row."""
@@ -268,29 +308,53 @@ def _add_learner_to_roster(roster, display_name, program, cohort, status, learne
         raise ApiError(409, f"learner id {lid!r} already exists")
     if status and status not in ('active', 'paused', 'alumni'):
         raise ApiError(400, f"status must be active/paused/alumni, got {status!r}")
+    existing_codes = {l.get('passcode') for l in roster['learners'] if l.get('passcode')}
+    passcode = _gen_passcode(existing_codes)
     roster['learners'].append({
         "id": lid, "display_name": display_name, "program": program, "cohort": (cohort or "").strip() or None,
         "status": status or "active", "started_on": today(), "badges_earned": [],
         "drive_folder_id": None, "drive_folder_url": None, "notes": "",
+        "goals": (goals or "").strip(), "passcode": passcode,
     })
-    return lid
+    return lid, passcode
 
 
-def do_add_learner(store, display_name, program, cohort, status, learner_id):
+def do_add_learner(store, display_name, program, cohort, status, learner_id, goals=None):
     roster = store.load('roster.json')
-    lid = _add_learner_to_roster(roster, display_name, program, cohort, status, learner_id)
+    lid, passcode = _add_learner_to_roster(roster, display_name, program, cohort, status, learner_id, goals)
     store.save('roster.json', roster)
-    return lid
+    return lid, passcode
+
+
+def do_set_learner_goals(store, learner_id, goals):
+    roster = store.load('roster.json')
+    learner = next((l for l in roster['learners'] if l['id'] == learner_id), None)
+    if not learner:
+        raise ApiError(404, f"learner {learner_id} not found")
+    learner['goals'] = (goals or "").strip()
+    store.save('roster.json', roster)
+
+
+def do_reset_passcode(store, learner_id):
+    roster = store.load('roster.json')
+    learner = next((l for l in roster['learners'] if l['id'] == learner_id), None)
+    if not learner:
+        raise ApiError(404, f"learner {learner_id} not found")
+    existing = {l.get('passcode') for l in roster['learners'] if l.get('passcode')}
+    learner['passcode'] = _gen_passcode(existing)
+    store.save('roster.json', roster)
+    return learner['passcode']
 
 
 def do_bulk_add_learners_csv(store, csv_text):
     """Expected columns (header row required, case-insensitive, extra columns
     ignored): display_name, program, cohort (optional), status (optional,
-    default active), id (optional, auto-slugified from display_name if absent).
-    Partial success is normal and expected for a bulk import -- report every row's
-    outcome rather than failing the whole file on the first bad row (same 'absent/
-    wrong is a first-class reportable state, not a silent all-or-nothing' spirit
-    the rest of this project applies everywhere else)."""
+    default active), id (optional, auto-slugified from display_name if absent),
+    goals (optional, free text). Partial success is normal and expected for a
+    bulk import -- report every row's outcome rather than failing the whole file
+    on the first bad row (same 'absent/wrong is a first-class reportable state,
+    not a silent all-or-nothing' spirit the rest of this project applies
+    everywhere else)."""
     reader = csv.DictReader(io.StringIO(csv_text))
     if not reader.fieldnames:
         raise ApiError(400, "empty CSV -- no header row found")
@@ -310,9 +374,9 @@ def do_bulk_add_learners_csv(store, csv_text):
             skipped.append({"row": i, "reason": "blank display_name"})
             continue
         try:
-            lid = _add_learner_to_roster(roster, name, get('program'), get('cohort'),
-                                          get('status') or None, get('id') or None)
-            added.append({"row": i, "id": lid, "display_name": name})
+            lid, passcode = _add_learner_to_roster(roster, name, get('program'), get('cohort'),
+                                                     get('status') or None, get('id') or None, get('goals'))
+            added.append({"row": i, "id": lid, "display_name": name, "passcode": passcode})
         except ApiError as e:
             skipped.append({"row": i, "display_name": name, "reason": e.msg})
     if added:
@@ -732,6 +796,134 @@ def do_award_badge(store, learner_id, badge_index, awarded_by):
     store.save('roster.json', roster)
 
 
+# --------------------------------------------------------- student portal --
+def do_student_login(store, learner_id, passcode):
+    roster = store.load('roster.json')
+    learner = next((l for l in live(roster['learners']) if l['id'] == learner_id), None)
+    if not learner or not learner.get('passcode') or learner['passcode'] != (passcode or '').strip():
+        raise ApiError(401, "wrong learner or passcode")
+    if learner['status'] != 'active':
+        raise ApiError(403, f"{learner['display_name']}'s account is {learner['status']}, not active -- ask your guide")
+    return learner
+
+
+def build_student_state(store, learner_id):
+    """The live student portal's whole-page state -- deliberately just the slice
+    of build_state() this one learner is allowed to see: their own record, their
+    own assignments (feedback included), their own badge progress. No roster,
+    no other learner's data, ever."""
+    full = build_state(store)
+    learner = next((l for l in full['learners'] if l['id'] == learner_id), None)
+    if not learner:
+        raise ApiError(404, f"learner {learner_id} not found")
+    my_assignments = [a for a in full['assignments'] if a['learner_id'] == learner_id]
+    my_badges = next((b for b in full['badges'] if b['id'] == learner_id), None)
+    try:
+        suggestions = suggest_cases(store, learner_id)
+    except ApiError:
+        suggestions = []
+    return {
+        "today": full['today'], "learner": learner, "assignments": my_assignments, "badges": my_badges,
+        "interest_clusters": full['interest_clusters'], "curriculum_branches": full['curriculum_branches'],
+        "suggestions": suggestions,
+    }
+
+
+def build_class_dashboard(store):
+    """PLAN.md-style aggregate the guide asked for: what the class as a whole is
+    into, what's working, what's not -- to help match students to cases, not a
+    per-learner drill-down (that's the Learners tab). Every number here is
+    derived live from roster.json + submissions.json + cases_index.json, same
+    as build_state(), never a second cached copy."""
+    roster = store.load('roster.json')
+    subs = store.load('submissions.json')
+    cases_idx = store.load('cases_index.json')
+    domains_doc = store.load('domains.json')
+    tree_doc = store.load('curriculum_tree.json')
+
+    learners = live(roster['learners'])
+    active = [l for l in learners if l['status'] == 'active']
+    cases_by_id = {c['id']: c for c in cases_idx.get('cases', [])}
+    branch_by_id = {b['id']: b for b in tree_doc.get('branches', [])}
+    cluster_by_id = {c['id']: c for c in domains_doc.get('clusters', [])}
+    domain_by_name = {d['name']: d for d in domains_doc.get('domains', [])}
+
+    # Topics being considered -- current_branch on each learner's self-assessment.
+    topic_counts = {}
+    for l in active:
+        sa = l.get('self_assessment')
+        b = sa and sa.get('current_branch')
+        if not b:
+            continue
+        entry = topic_counts.setdefault(b, {"branch_id": b, "branch": branch_by_id.get(b, {}).get('branch', b),
+                                             "learners": []})
+        entry['learners'].append(l['display_name'])
+    topics = sorted(topic_counts.values(), key=lambda t: -len(t['learners']))
+
+    # Careers of interest -- each learner's interest cluster ids -> that cluster's
+    # domains -> each domain's named careers[] (domains.json), same taxonomy
+    # suggest_cases() already uses, no new one invented here.
+    career_counts = {}
+    for l in active:
+        sa = l.get('self_assessment')
+        if not sa or not sa.get('interests'):
+            continue
+        cluster_names = {cluster_by_id[i]['name'] for i in sa['interests'] if i in cluster_by_id}
+        seen_titles = set()
+        for dom in domains_doc.get('domains', []):
+            if dom.get('cluster') not in cluster_names:
+                continue
+            for career in (dom.get('careers') or []):
+                title = career.get('title')
+                if not title or title in seen_titles:
+                    continue
+                seen_titles.add(title)
+                entry = career_counts.setdefault(title, {"title": title, "learners": []})
+                entry['learners'].append(l['display_name'])
+    careers = sorted(career_counts.values(), key=lambda c: -len(c['learners']))[:15]
+
+    # Strength / difficulty -- reviewed submissions grouped by the domains the
+    # case touches (cases_index.json domains_touched), split on outcome. A
+    # domain with many 'accepted' outcomes and few 'revise'/'not-accepted' ones
+    # is a class strength; the reverse is a difficulty.
+    domain_stats = {}
+    for s in live(subs['submissions']):
+        if not s.get('outcome'):
+            continue
+        case = cases_by_id.get(s['case_id'])
+        touched = (case or {}).get('domains_touched') or []
+        for d in touched:
+            entry = domain_stats.setdefault(d, {"domain": d, "accepted": 0, "revise": 0, "not_accepted": 0})
+            if s['outcome'] == 'accepted':
+                entry['accepted'] += 1
+            elif s['outcome'] == 'revise':
+                entry['revise'] += 1
+            elif s['outcome'] == 'not-accepted':
+                entry['not_accepted'] += 1
+    scored = []
+    for d in domain_stats.values():
+        total = d['accepted'] + d['revise'] + d['not_accepted']
+        d['total'] = total
+        d['accept_rate'] = round(100 * d['accepted'] / total) if total else None
+        scored.append(d)
+    strengths = sorted([d for d in scored if d['total'] >= 1], key=lambda d: (-d['accept_rate'], -d['total']))[:8]
+    difficulties = sorted([d for d in scored if d['total'] >= 1], key=lambda d: (d['accept_rate'], -d['total']))[:8]
+
+    # Learners with no self-assessment / no active work at all -- a guide can't
+    # match a case to a Hero it has nothing on file about.
+    no_self_assessment = [l['display_name'] for l in active if not l.get('self_assessment')]
+    queue = compute_queue(roster, subs)
+    needs_resubmission = [q for q in queue if q['kind'] == 'NEEDS RESUBMISSION']
+    overdue = [q for q in queue if q['kind'] in ('OVERDUE', 'STALE')]
+
+    return {
+        "learner_count": len(active), "topics": topics, "careers": careers,
+        "strengths": strengths, "difficulties": difficulties,
+        "no_self_assessment": no_self_assessment,
+        "needs_resubmission": needs_resubmission, "overdue": overdue,
+    }
+
+
 # ------------------------------------------------------------- uploads -----
 def parse_multipart(body, content_type):
     m = re.search(r'boundary=(?:"([^"]+)"|([^;]+))', content_type or '')
@@ -774,7 +966,7 @@ def do_upload(store, fields, files):
 
 
 CSV_TEMPLATE = (
-    "display_name,program,cohort,status,id\n"
-    "Avery N.,MS-Adventure,2026-fall-adventure,active,\n"
-    "Jordan P.,Launchpad,2026-fall-lp,active,\n"
+    "display_name,program,cohort,status,id,goals\n"
+    "Avery N.,MS-Adventure,2026-fall-adventure,active,,build confidence with ratios\n"
+    "Jordan P.,Launchpad,2026-fall-lp,active,,explore engineering careers\n"
 )

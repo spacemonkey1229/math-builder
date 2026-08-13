@@ -51,6 +51,14 @@ CREATE TABLE IF NOT EXISTS learners (
 -- self_assessment, added 2026-08-12) needs its own idempotent statement here.
 ALTER TABLE learners ADD COLUMN IF NOT EXISTS self_assessment jsonb;
 
+-- goals: free-text captured at add-learner time (distinct from self_assessment's
+-- structured interests[], which is a separate guide-mediated conversation).
+-- passcode: the student's own login code for the live student portal -- see
+-- app/admin_web/app.py's /student-login. Generated once at add-learner time
+-- (admin_core._gen_passcode), never derived from anything guessable.
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS goals text NOT NULL DEFAULT '';
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS passcode text;
+
 CREATE TABLE IF NOT EXISTS assignments (
   id           text PRIMARY KEY,
   learner_id   text NOT NULL,  -- logical FK -> learners.id

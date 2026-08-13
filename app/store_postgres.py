@@ -49,9 +49,28 @@ def _to_date(s):
     return datetime.date.fromisoformat(s) if s else None
 
 
+# Columns added after this table's first deploy. Applied idempotently (ADD COLUMN
+# IF NOT EXISTS) the first time a store connects in a given process, same
+# statements as sql/schema.sql -- so a live deploy self-migrates on its first
+# request instead of needing someone to run psql/migrate_to_neon.py by hand
+# against Neon before the new code can work. Safe to re-run.
+_MIGRATIONS = (
+    "ALTER TABLE learners ADD COLUMN IF NOT EXISTS goals text NOT NULL DEFAULT ''",
+    "ALTER TABLE learners ADD COLUMN IF NOT EXISTS passcode text",
+)
+
+
 class PostgresStore:
     def __init__(self, dsn=None):
         self.dsn = dsn or os.environ['DATABASE_URL']
+        self._ensure_schema()
+
+    def _ensure_schema(self):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                for stmt in _MIGRATIONS:
+                    cur.execute(stmt)
+            conn.commit()
 
     def _conn(self):
         return psycopg.connect(self.dsn)
@@ -94,12 +113,14 @@ class PostgresStore:
                                        **({"badge_names": r['badge_names']} if r['badge_names'] else {})}
                             for r in cur.fetchall()}
                 cur.execute("""SELECT id, display_name, program, cohort, status, started_on, badges_earned,
-                                      drive_folder_id, drive_folder_url, notes, self_assessment FROM learners""")
+                                      drive_folder_id, drive_folder_url, notes, self_assessment, goals, passcode
+                               FROM learners""")
                 learners = [{
                     "id": r['id'], "display_name": r['display_name'], "program": r['program'],
                     "cohort": r['cohort'], "status": r['status'], "started_on": _to_iso(r['started_on']),
                     "badges_earned": r['badges_earned'], "drive_folder_id": r['drive_folder_id'],
                     "drive_folder_url": r['drive_folder_url'], "notes": r['notes'],
+                    "goals": r['goals'] or '', "passcode": r['passcode'],
                     **({"self_assessment": r['self_assessment']} if r['self_assessment'] is not None else {}),
                 } for r in cur.fetchall()]
         return {"programs": programs, "learners": learners}
@@ -115,12 +136,12 @@ class PostgresStore:
                     cur.execute(
                         """INSERT INTO learners (id, display_name, program, cohort, status, started_on,
                                                   badges_earned, drive_folder_id, drive_folder_url, notes,
-                                                  self_assessment)
-                           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                                                  self_assessment, goals, passcode)
+                           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                         (l['id'], l['display_name'], l['program'], l.get('cohort'), l['status'],
                          _to_date(l['started_on']), Jsonb(l.get('badges_earned', [])),
                          l.get('drive_folder_id'), l.get('drive_folder_url'), l.get('notes', ''),
-                         Jsonb(sa) if sa is not None else None))
+                         Jsonb(sa) if sa is not None else None, l.get('goals', ''), l.get('passcode')))
             conn.commit()
 
     # ------------------------------------------------------- submissions ---

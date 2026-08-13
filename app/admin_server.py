@@ -39,6 +39,17 @@ STATIC_HTML = {
 }
 
 
+def _student_html_path(learner_id):
+    """One role-locked build per learner, e.g. student-ben-okafor.html --
+    build_dashboard.py writes these next to the shared, data-free landing
+    page at student.html. learner_id comes straight off the URL, so it's
+    restricted to the same slug shape build_dashboard.py emits."""
+    if not re.match(r'^[a-z0-9][a-z0-9-]*$', learner_id):
+        return None
+    path = os.path.join(APP_DIR, f'student-{learner_id}.html')
+    return path if os.path.isfile(path) else None
+
+
 def _case_html_path(case_id, filename):
     """Same scoping as admin_web/app.py's case_interactive_html(): only an
     exact '<...> Interactive.html' file directly under cases/<id>/published/
@@ -105,6 +116,12 @@ class Handler(BaseHTTPRequestHandler):
             if path is None:
                 return self._json(404, {"error": "not found"})
             return self._serve_html_file(path, "not found")
+        m = re.match(r'^/(?:app/)?student-([^/]+)\.html$', urllib.parse.unquote(p.path))
+        if m:
+            path = _student_html_path(m.group(1))
+            if path is None:
+                return self._json(404, {"error": "not found"})
+            return self._serve_html_file(path, "not found")
         if p.path == '/api/state':
             try:
                 return self._json(200, admin_core.build_state(STORE))
@@ -119,6 +136,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"suggestions": admin_core.suggest_cases(STORE, lid)})
             except admin_core.ApiError as e:
                 return self._json(e.code, {"error": e.msg})
+        if p.path == '/api/class-dashboard':
+            try:
+                return self._json(200, admin_core.build_class_dashboard(STORE))
+            except Exception as e:
+                return self._json(500, {"error": f"{type(e).__name__}: {e}"})
         if p.path == '/api/learners/csv-template':
             body = admin_core.CSV_TEMPLATE.encode('utf-8')
             self.send_response(200)
@@ -153,9 +175,16 @@ class Handler(BaseHTTPRequestHandler):
 
             b = self._read_json()
             if p.path == '/api/learner/add':
-                lid = admin_core.do_add_learner(STORE, b.get('display_name'), b.get('program'), b.get('cohort'),
-                                                 b.get('status'), b.get('id'))
-                self._json(200, {"ok": True, "id": lid})
+                lid, passcode = admin_core.do_add_learner(STORE, b.get('display_name'), b.get('program'),
+                                                            b.get('cohort'), b.get('status'), b.get('id'),
+                                                            b.get('goals'))
+                self._json(200, {"ok": True, "id": lid, "passcode": passcode})
+            elif p.path == '/api/learner/goals':
+                admin_core.do_set_learner_goals(STORE, b['learner_id'], b.get('goals'))
+                self._json(200, {"ok": True})
+            elif p.path == '/api/learner/passcode/reset':
+                passcode = admin_core.do_reset_passcode(STORE, b['learner_id'])
+                self._json(200, {"ok": True, "passcode": passcode})
             elif p.path == '/api/learner/status':
                 admin_core.do_set_learner_status(STORE, b['learner_id'], b['status'])
                 self._json(200, {"ok": True})

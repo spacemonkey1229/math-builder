@@ -11,7 +11,7 @@ explicit, named stopgap -- see DECISIONS.md -- not a design endorsement. The
 agreed next step is a real auth provider; this is what unblocks a live demo
 today.
 """
-import functools, os, sys
+import functools, os, re, sys
 from urllib.parse import unquote
 
 _APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,6 +22,7 @@ if _APP_DIR not in sys.path:
 
 import admin_core
 from admin_html import render_admin_html
+from student_portal_html import render_student_portal_html
 from store_postgres import PostgresStore
 
 from flask import Flask, Response, jsonify, redirect, request, send_from_directory, session
@@ -89,19 +90,84 @@ def login():
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    session.clear()
+    session.pop('authed', None)
     return redirect('/login')
+
+
+_STUDENT_FILE_RE = re.compile(r'^/(?:app/)?student(?:-[a-z0-9][a-z0-9-]*)?\.html$')
+
+STUDENT_LOGIN_HTML = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Math Builder — My Cases</title>
+<style>
+:root{{--paper:#FAF8F4;--ink:#16140F;--muted:#5F594E;--rule:#DED8CC;--accent:#22406B;--flag:#A93A1E;--flag-soft:#F8E7E1}}
+*{{box-sizing:border-box}}
+body{{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif;background:var(--paper);
+  color:var(--ink);display:flex;align-items:center;justify-content:center;height:100vh}}
+form{{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:32px;min-width:280px;
+  box-shadow:0 4px 14px rgba(24,20,12,.06)}}
+h1{{font-size:17px;margin:0 0 4px}}
+p.sub{{font-size:12px;color:var(--muted);margin:0 0 18px}}
+input{{width:100%;padding:9px 10px;border:1px solid var(--rule);border-radius:6px;margin-bottom:14px;
+  box-sizing:border-box;font-size:14px}}
+button{{width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;
+  cursor:pointer;font-weight:600;font-size:14px}}
+.err{{color:var(--flag);background:var(--flag-soft);border-radius:6px;padding:8px 10px;font-size:13px;
+  margin-bottom:14px}}
+</style></head><body>
+<form method="post" action="/student-login">
+<h1>Math Builder — My Cases</h1>
+<p class="sub">Enter your learner id and passcode — ask your guide if you don't have them.</p>
+{err}
+<input type="text" name="learner_id" placeholder="Learner id (e.g. maya-w)" autofocus autocapitalize="off" autocorrect="off">
+<input type="password" name="passcode" placeholder="Passcode" inputmode="numeric">
+<button type="submit">Enter</button>
+</form></body></html>"""
+
+
+@app.route('/student-login', methods=['GET', 'POST'])
+def student_login():
+    if request.method == 'GET':
+        return STUDENT_LOGIN_HTML.format(err='')
+    lid = (request.form.get('learner_id') or '').strip().lower()
+    passcode = (request.form.get('passcode') or '').strip()
+    try:
+        learner = admin_core.do_student_login(get_store(), lid, passcode)
+    except admin_core.ApiError as e:
+        return STUDENT_LOGIN_HTML.format(err=f'<div class="err">{e.msg}</div>'), e.code
+    session['student_id'] = learner['id']
+    return redirect('/student')
+
+
+@app.route('/student-logout', methods=['POST'])
+def student_logout():
+    session.pop('student_id', None)
+    return redirect('/student-login')
+
+
+_STUDENT_API_RE = re.compile(r'^/api/student/')
 
 
 @app.before_request
 def require_auth():
-    # student.html (and its /app/ alias) is build_dashboard.py's separate, genuinely
-    # redacted, role-locked build -- guide notes and the full read-model stripped out,
-    # unlike dashboard.html which keeps the full data behind its cosmetic-only Guide/
-    # Student toggle and must stay behind the passcode. A learner has no admin login
-    # and never should need one to see their own tracker.
-    if request.path in ('/login', '/logout', '/student.html', '/app/student.html') \
+    # student.html (the data-free landing page) and student-<learner-id>.html
+    # (and their /app/ aliases) are build_dashboard.py's separate, genuinely
+    # redacted, role-locked builds -- guide notes and the full read-model
+    # stripped out, unlike dashboard.html which keeps the full data behind
+    # its cosmetic-only Guide/Student toggle and must stay behind the
+    # passcode.
+    if request.path in ('/login', '/logout', '/student-login', '/student-logout') \
+            or _STUDENT_FILE_RE.match(request.path) \
             or request.path.startswith('/static') or request.path.startswith('/cases/'):
+        return
+    # The live student portal (/student + /api/student/*) has its own, separate
+    # per-learner passcode session -- never the admin one. A learner never gets
+    # (and never needs) an admin login just to see their own cases.
+    if request.path == '/student' or _STUDENT_API_RE.match(request.path):
+        if not session.get('student_id'):
+            if request.path.startswith('/api/'):
+                return jsonify({"error": "not authenticated as a student"}), 401
+            return redirect('/student-login')
         return
     if not _authed():
         if request.path.startswith('/api/'):
@@ -143,6 +209,21 @@ def static_html():
     # is correct from cases/<id>/published/ but resolves under /app/ once
     # hosted -- see the /cases/... route below.
     return send_from_directory(_APP_DIR, request.path.rsplit('/', 1)[-1])
+
+
+@app.route('/student-<learner_id>.html')
+@app.route('/app/student-<learner_id>.html')
+def student_html(learner_id):
+    # One role-locked build per learner (see build_dashboard.py's
+    # student_file_path()). Same scoping discipline as case_interactive_html()
+    # below: learner_id is attacker-controlled, so it's checked against the
+    # exact slug shape the builder emits before ever touching the filesystem.
+    if not re.match(r'^[a-z0-9][a-z0-9-]*$', learner_id):
+        return jsonify({"error": "not found"}), 404
+    filename = f'student-{learner_id}.html'
+    if not os.path.isfile(os.path.join(_APP_DIR, filename)):
+        return jsonify({"error": "not found"}), 404
+    return send_from_directory(_APP_DIR, filename)
 
 
 @app.route('/cases/<case_id>/published/<filename>')
@@ -245,9 +326,33 @@ def api_bulk_csv():
 @json_api
 def api_learner_add():
     b = request.get_json(force=True) or {}
-    lid = admin_core.do_add_learner(get_store(), b.get('display_name'), b.get('program'), b.get('cohort'),
-                                     b.get('status'), b.get('id'))
-    return {"ok": True, "id": lid}
+    lid, passcode = admin_core.do_add_learner(get_store(), b.get('display_name'), b.get('program'),
+                                               b.get('cohort'), b.get('status'), b.get('id'), b.get('goals'))
+    return {"ok": True, "id": lid, "passcode": passcode}
+
+
+@app.route('/api/learner/goals', methods=['POST'])
+@json_api
+def api_learner_goals():
+    b = request.get_json(force=True) or {}
+    admin_core.do_set_learner_goals(get_store(), b['learner_id'], b.get('goals'))
+    return {"ok": True}
+
+
+@app.route('/api/learner/passcode/reset', methods=['POST'])
+@json_api
+def api_learner_passcode_reset():
+    b = request.get_json(force=True) or {}
+    passcode = admin_core.do_reset_passcode(get_store(), b['learner_id'])
+    return {"ok": True, "passcode": passcode}
+
+
+@app.route('/api/class-dashboard')
+def api_class_dashboard():
+    try:
+        return jsonify(admin_core.build_class_dashboard(get_store()))
+    except Exception as e:
+        return jsonify({"error": f"{type(e).__name__}: {e}"}), 500
 
 
 @app.route('/api/learner/status', methods=['POST'])
@@ -339,4 +444,41 @@ def api_guide_confirm():
 def api_badge_award():
     b = request.get_json(force=True) or {}
     admin_core.do_award_badge(get_store(), b['learner_id'], b['badge_index'], b.get('awarded_by'))
+    return {"ok": True}
+
+
+# ------------------------------------------------------------ student portal
+@app.route('/student')
+def student_portal():
+    return render_student_portal_html()
+
+
+@app.route('/api/student/state')
+def api_student_state():
+    try:
+        return jsonify(admin_core.build_student_state(get_store(), session['student_id']))
+    except admin_core.ApiError as e:
+        return jsonify({"error": e.msg}), e.code
+
+
+@app.route('/api/student/submit', methods=['POST'])
+@json_api
+def api_student_submit():
+    # learner_id is deliberately never read from the request body -- always the
+    # session's own id, so a student can only ever submit as themselves. Same
+    # reuse of do_record_submission as the guide-facing /api/submission/record;
+    # calling it again on an already-'reviewed' assignment (outcome revise/
+    # not-accepted) is exactly how a resubmission after feedback works.
+    b = request.get_json(force=True) or {}
+    sid = admin_core.do_record_submission(get_store(), session['student_id'], b['case_id'],
+                                           b.get('artifacts', {}), 'student-portal')
+    return {"ok": True, "id": sid}
+
+
+@app.route('/api/student/self-assessment', methods=['POST'])
+@json_api
+def api_student_self_assessment():
+    b = request.get_json(force=True) or {}
+    admin_core.do_set_self_assessment(get_store(), session['student_id'], b.get('interests', []),
+                                       b.get('note'), 'student', b.get('grade_level'), b.get('current_branch'))
     return {"ok": True}

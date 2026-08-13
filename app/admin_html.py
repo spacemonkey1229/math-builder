@@ -121,6 +121,7 @@ abbr.gloss{text-decoration:none;border-bottom:1px dotted var(--muted);cursor:hel
   <button data-tab="learners">Learners</button>
   <button data-tab="assign">Assign a Case</button>
   <button data-tab="badges">Badges</button>
+  <button data-tab="class">Class Dashboard</button>
 </nav>
 
 <main class="wrap">
@@ -149,6 +150,32 @@ let LAST_CSV_RESULT = null;
 // their own) wipes out whatever was typed. Capture every keystroke into this map, keyed
 // by element id, and re-apply it after every render — same fix shape as OPEN_LEARNERS.
 const FIELD_VALUES = {};
+// Roster filters (Learners + Badges tabs) -- client-side only, /api/state already
+// returns every learner, so slicing the view doesn't need a round-trip. "" means
+// no filter on that dimension.
+const ROSTER_FILTER = {program: "", cohort: "", status: "active"};
+function filteredLearners() {
+  return STATE.learners.filter((l) =>
+    (!ROSTER_FILTER.program || l.program === ROSTER_FILTER.program) &&
+    (!ROSTER_FILTER.cohort || l.cohort === ROSTER_FILTER.cohort) &&
+    (!ROSTER_FILTER.status || l.status === ROSTER_FILTER.status));
+}
+function rosterFilterHTML() {
+  const cohorts = Array.from(new Set(STATE.learners.map((l) => l.cohort).filter(Boolean))).sort();
+  const progOpts = '<option value="">all levels/programs</option>' +
+    Object.keys(STATE.programs).map((p) => '<option value="' + esc(p) + '"' + (ROSTER_FILTER.program === p ? " selected" : "") + ">" + esc(p) + "</option>").join("");
+  const cohortOpts = '<option value="">all organizations/cohorts</option>' +
+    cohorts.map((c) => '<option value="' + esc(c) + '"' + (ROSTER_FILTER.cohort === c ? " selected" : "") + ">" + esc(c) + "</option>").join("");
+  const statusOpts = ["", "active", "paused", "alumni"].map((s) =>
+    '<option value="' + s + '"' + (ROSTER_FILTER.status === s ? " selected" : "") + ">" + (s || "all statuses") + "</option>").join("");
+  return '<div class="card" style="padding:10px 14px"><div class="row">' +
+    '<span style="font-size:11.5px;color:var(--muted);font-weight:600">Filter:</span>' +
+    '<select id="filter-program">' + progOpts + "</select>" +
+    '<select id="filter-cohort">' + cohortOpts + "</select>" +
+    '<select id="filter-status">' + statusOpts + "</select>" +
+    '<span style="font-size:11.5px;color:var(--muted)" id="filter-count"></span>' +
+    "</div></div>";
+}
 function restoreFieldValues() {
   for (const id in FIELD_VALUES) {
     const el = document.getElementById(id);
@@ -164,6 +191,7 @@ async function api(path, opts) {
 }
 async function refresh() {
   STATE = await api("/api/state");
+  CLASS_DASH = null;
   render();
 }
 function flash(text, isErr) {
@@ -234,13 +262,24 @@ function badgeSlotLabel(L, badgeIndex) {
   return name ? esc(name) + " (badge " + (badgeIndex + 1) + ")" : String(badgeIndex);
 }
 
-document.getElementById("tabs").addEventListener("click", (e) => {
+document.getElementById("tabs").addEventListener("click", async (e) => {
   const b = e.target.closest("button[data-tab]");
   if (!b) return;
   TAB = b.dataset.tab;
   document.querySelectorAll("#tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  if (TAB === "class" && !CLASS_DASH) await loadClassDashboard();
   render();
 });
+
+// Fetched lazily (not part of /api/state) since it's a heavier aggregate query a
+// guide may never open in a given session -- loaded once per page load, then
+// cached here; refresh() (called after every write) invalidates it so a change
+// made elsewhere (e.g. a new self-assessment) shows up next time the tab opens.
+let CLASS_DASH = null;
+async function loadClassDashboard() {
+  try { CLASS_DASH = await api("/api/class-dashboard"); }
+  catch (e) { CLASS_DASH = {error: e.message}; }
+}
 
 function render() {
   const v = document.getElementById("view");
@@ -248,6 +287,7 @@ function render() {
   else if (TAB === "learners") v.innerHTML = renderLearners();
   else if (TAB === "assign") v.innerHTML = renderAssign();
   else if (TAB === "badges") v.innerHTML = renderBadges();
+  else if (TAB === "class") v.innerHTML = renderClassDashboard();
   wireView();
   restoreFieldValues();
 }
@@ -290,7 +330,8 @@ function renderCsvResult() {
     (skipped.length ? ", <strong>" + skipped.length + " skipped</strong>" : "") + "</p>";
   if (added.length) {
     html += '<ul style="font-size:12px;color:var(--ok);margin:0 0 6px 18px">' +
-      added.map((a) => "<li>row " + a.row + ": " + esc(a.display_name) + " &rarr; " + esc(a.id) + "</li>").join("") +
+      added.map((a) => "<li>row " + a.row + ": " + esc(a.display_name) + " &rarr; " + esc(a.id) +
+        (a.passcode ? " &middot; passcode <strong class=\"mono\">" + esc(a.passcode) + "</strong>" : "") + "</li>").join("") +
       "</ul>";
   }
   if (skipped.length) {
@@ -306,24 +347,32 @@ function renderLearners() {
   let html = '<div class="card"><h3 style="margin-bottom:10px">Add a learner</h3>' +
     '<div class="row">' +
     '<div class="field"><label>Display name</label><input id="new-name" placeholder="Avery N."></div>' +
-    '<div class="field"><label>Program</label><select id="new-program">' + progOpts + "</select></div>" +
-    '<div class="field"><label>Cohort</label><input id="new-cohort" placeholder="2026-fall-adventure"></div>' +
-    '<div class="field"><label>&nbsp;</label><button class="btn" id="add-learner-btn">Add learner</button></div>' +
-    "</div></div>";
+    '<div class="field"><label>Program (level)</label><select id="new-program">' + progOpts + "</select></div>" +
+    '<div class="field"><label>Cohort (organization/class)</label><input id="new-cohort" placeholder="2026-fall-adventure"></div>' +
+    "</div>" +
+    '<div class="field" style="margin-top:2px"><label>Goals — what this Hero is here to work on</label>' +
+    '<textarea id="new-goals" rows="2" style="width:100%" placeholder="e.g. build confidence with ratios; wants to explore engineering careers"></textarea></div>' +
+    '<button class="btn" id="add-learner-btn">Add learner</button>' +
+    '<div id="new-learner-result" style="margin-top:8px"></div></div>';
 
   html += '<div class="card"><h3 style="margin-bottom:6px">Upload a class (CSV)</h3>' +
     '<p style="font-size:12.5px;color:var(--muted);margin:0 0 10px">Columns: <span class="mono">display_name</span>, ' +
     '<span class="mono">program</span> (required — must match a program below exactly) — plus optional ' +
-    '<span class="mono">cohort</span>, <span class="mono">status</span>, <span class="mono">id</span>. ' +
+    '<span class="mono">cohort</span>, <span class="mono">status</span>, <span class="mono">id</span>, ' +
+    '<span class="mono">goals</span>. ' +
     'Every row is reported back individually: added rows and skipped rows with the exact reason, never a silent ' +
-    'all-or-nothing.</p>' +
+    'all-or-nothing. Each added Hero gets their own student-portal passcode, shown in the result below.</p>' +
     '<div class="row">' +
     '<input type="file" id="csv-file" accept=".csv,text/csv">' +
     '<button class="btn" id="csv-upload-btn">Upload class</button>' +
     '<a class="btn ghost" href="/api/learners/csv-template" download>Download CSV template</a>' +
     "</div><div id=\"csv-result\" style=\"margin-top:10px\">" + renderCsvResult() + "</div></div>";
 
-  html += STATE.learners.map((L) => {
+  html += rosterFilterHTML();
+  const shown = filteredLearners();
+  html += '<p style="font-size:11.5px;color:var(--muted);margin:0 0 8px">Showing ' + shown.length + " of " + STATE.learners.length + " learners.</p>";
+
+  html += shown.map((L) => {
     const myA = STATE.assignments.filter((a) => a.learner_id === L.id);
     const badge = STATE.badges.find((b) => b.id === L.id);
     return '<details class="learner" data-learner-id="' + esc(L.id) + '"' + (OPEN_LEARNERS.has(L.id) ? " open" : "") +
@@ -332,12 +381,33 @@ function renderLearners() {
       '<span class="mono" style="font-size:11px;color:var(--muted)">' + esc(L.program) + " &middot; " + esc(L.cohort || "no cohort") + "</span></div>" +
       '<span class="mono" style="font-size:12px;color:var(--muted)">' + (badge ? badge.badges + "/" + badge.badges_total + " badges &middot; " + badge.cases_done + "/" + badge.cases_required + " cases" : "") + "</span>" +
       "</summary><div class=\"body\">" +
+      renderProfile(L) +
       renderSelfAssessment(L) +
       renderLearnerAssignments(L, myA) +
       renderLearnerStatusControls(L) +
       "</div></details>";
   }).join("");
   return html;
+}
+
+// Student-portal identity + free-text goals, both settable by a guide/admin at
+// add-learner time or edited later here. Separate from the structured self-
+// assessment below (interests[]/grade/branch) -- goals is the plain-language
+// version of "why this Hero signed up," always visible even before a guide has
+// had the fuller conversation.
+function renderProfile(L) {
+  return '<div class="sub-panel"><strong style="font-size:12.5px">Profile</strong>' +
+    '<div class="field" style="margin-top:6px"><label>Goals</label>' +
+    '<textarea id="goals-' + esc(L.id) + '" rows="2" style="width:100%">' + esc(L.goals || "") + "</textarea></div>" +
+    '<div class="row" style="margin-top:4px">' +
+    '<button class="btn ghost" data-save-goals="' + esc(L.id) + '">Save goals</button>' +
+    '<span class="mono" style="font-size:12px;color:var(--muted)">Student portal passcode: <strong>' + esc(L.passcode || "—") + '</strong></span>' +
+    '<button class="btn ghost" data-reset-passcode="' + esc(L.id) + '" data-name="' + esc(L.display_name) + '">Reset passcode</button>' +
+    "</div>" +
+    '<p style="font-size:11px;color:var(--muted);margin:4px 0 0">Give the Hero their id (<span class="mono">' +
+    esc(L.id) + '</span>) and passcode to sign into <a href="/student-login" target="_blank">the student portal</a> ' +
+    "themselves — open cases, submit, revise, and check badge progress.</p>" +
+    "</div>";
 }
 
 // PLAN.md Phase 2b — the goals/career conversation, guide-mediated for now (see
@@ -634,7 +704,11 @@ function renderAssign() {
 // --------------------------------------------------------------- badges ---
 function renderBadges() {
   if (!STATE.badges.length) return '<div class="card empty">No learners yet.</div>';
-  return '<div class="rings">' + STATE.badges.map((b) => {
+  const shown = STATE.badges.filter((b) =>
+    (!ROSTER_FILTER.program || b.program === ROSTER_FILTER.program) &&
+    (!ROSTER_FILTER.cohort || b.cohort === ROSTER_FILTER.cohort) &&
+    (!ROSTER_FILTER.status || b.status === ROSTER_FILTER.status));
+  return rosterFilterHTML() + '<div class="rings">' + shown.map((b) => {
     return '<div class="ringcard"><div style="width:100%">' +
       '<div class="who">' + esc(b.name) + "</div>" +
       '<div class="det">' + esc(b.program) + " &middot; " + b.badges + "/" + b.badges_total + " badges &middot; " + b.cases_done + "/" + b.cases_required + " cases</div>" +
@@ -655,6 +729,59 @@ function renderBadges() {
   }).join("") + "</div>";
 }
 
+// ---------------------------------------------------------- class dash ----
+function renderClassDashboard() {
+  if (!CLASS_DASH) return '<div class="card empty">Loading…</div>';
+  if (CLASS_DASH.error) return '<div class="card empty">' + esc(CLASS_DASH.error) + "</div>";
+  const d = CLASS_DASH;
+  let html = '<p style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Live aggregate across ' +
+    d.learner_count + ' active learners — what the class is into, what\'s working, and where they\'re stuck, ' +
+    "to help match Heroes to their next case. Every number here is derived live, same as the rest of this app.</p>";
+
+  html += '<div class="grid2">';
+  html += '<div class="card"><h3 style="margin-bottom:8px;font-size:15px">Topics being considered</h3>' +
+    (d.topics.length
+      ? d.topics.map((t) => '<div class="row" style="justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--rule-2)">' +
+          '<span>' + esc(t.branch) + '</span><span class="pill accent">' + t.learners.length + "</span></div>").join("")
+      : '<p style="font-size:12.5px;color:var(--muted)">No current-course data on file yet — set it on a learner\'s self-assessment.</p>') +
+    "</div>";
+  html += '<div class="card"><h3 style="margin-bottom:8px;font-size:15px">Careers of interest</h3>' +
+    (d.careers.length
+      ? d.careers.map((c) => '<div class="row" style="justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--rule-2)">' +
+          '<span>' + esc(c.title) + '</span><span class="pill accent">' + c.learners.length + "</span></div>").join("")
+      : '<p style="font-size:12.5px;color:var(--muted)">No interests on file yet.</p>') +
+    "</div></div>";
+
+  html += '<div class="grid2">';
+  html += '<div class="card"><h3 style="margin-bottom:4px;font-size:15px">Areas of strength</h3>' +
+    '<p style="font-size:11.5px;color:var(--muted);margin:0 0 8px">Highest accept-rate domains across reviewed submissions.</p>' +
+    (d.strengths.length
+      ? d.strengths.map((s) => '<div class="row" style="justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--rule-2)">' +
+          '<span>' + esc(s.domain) + '</span><span class="mono" style="font-size:12px">' + s.accept_rate + "% (" + s.total + ")</span></div>").join("")
+      : '<p style="font-size:12.5px;color:var(--muted)">No reviewed submissions yet.</p>') +
+    "</div>";
+  html += '<div class="card"><h3 style="margin-bottom:4px;font-size:15px">Areas of difficulty</h3>' +
+    '<p style="font-size:11.5px;color:var(--muted);margin:0 0 8px">Lowest accept-rate domains — candidates for a check-in or a different case.</p>' +
+    (d.difficulties.length
+      ? d.difficulties.map((s) => '<div class="row" style="justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--rule-2)">' +
+          '<span>' + esc(s.domain) + '</span><span class="mono" style="font-size:12px">' + s.accept_rate + "% (" + s.total + ")</span></div>").join("")
+      : '<p style="font-size:12.5px;color:var(--muted)">No reviewed submissions yet.</p>') +
+    "</div></div>";
+
+  if (d.overdue.length || d.needs_resubmission.length) {
+    html += '<div class="card"><h3 style="margin-bottom:8px;font-size:15px">Needs attention right now</h3>' +
+      d.overdue.concat(d.needs_resubmission).map((q) =>
+        '<div class="exc-row"><div style="flex:1"><div class="who">' + esc(q.learner) + '</div>' +
+        '<div class="det">' + esc(q.kind) + " — " + esc(q.detail) + "</div></div></div>").join("") +
+      "</div>";
+  }
+  if (d.no_self_assessment.length) {
+    html += '<div class="card"><h3 style="margin-bottom:6px;font-size:15px">No goals/interests on file</h3>' +
+      '<p style="font-size:12.5px;color:var(--muted)">' + d.no_self_assessment.map(esc).join(", ") + "</p></div>";
+  }
+  return html;
+}
+
 // ------------------------------------------------------------- wiring -----
 function wireView() {
   const $ = (id) => document.getElementById(id);
@@ -667,8 +794,30 @@ function wireView() {
   });
 
   const addBtn = document.getElementById("add-learner-btn");
-  if (addBtn) addBtn.onclick = () => call("/api/learner/add", {
-    display_name: val("new-name"), program: val("new-program"), cohort: val("new-cohort"),
+  if (addBtn) addBtn.onclick = async () => {
+    try {
+      const r = await call("/api/learner/add", {
+        display_name: val("new-name"), program: val("new-program"), cohort: val("new-cohort"),
+        goals: val("new-goals"),
+      });
+      const box = document.getElementById("new-learner-result");
+      if (box) box.innerHTML = '<div class="msg ok">Added <strong>' + esc(r.id) + '</strong> — student portal passcode: <strong class="mono">' + esc(r.passcode) + "</strong>. Give this to the Hero to sign in at /student-login.</div>";
+      const nameEl = document.getElementById("new-name");
+      if (nameEl) { nameEl.value = ""; document.getElementById("new-goals").value = ""; document.getElementById("new-cohort").value = ""; }
+    } catch (e) { /* call() already flashed the error */ }
+  };
+
+  document.querySelectorAll("[data-save-goals]").forEach((b) => b.onclick = () =>
+    call("/api/learner/goals", {learner_id: b.dataset.saveGoals, goals: val("goals-" + b.dataset.saveGoals)}));
+
+  document.querySelectorAll("[data-reset-passcode]").forEach((b) => b.onclick = () => {
+    if (!confirm("Reset the student portal passcode for " + b.dataset.name + "? Their old passcode will stop working immediately.")) return;
+    call("/api/learner/passcode/reset", {learner_id: b.dataset.resetPasscode});
+  });
+
+  ["program", "cohort", "status"].forEach((dim) => {
+    const sel = document.getElementById("filter-" + dim);
+    if (sel) sel.onchange = () => { ROSTER_FILTER[dim] = sel.value; render(); };
   });
 
   document.querySelectorAll(".set-status").forEach((b) => b.onclick = () =>
