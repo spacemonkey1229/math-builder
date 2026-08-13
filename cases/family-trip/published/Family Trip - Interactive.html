@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Family Trip — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  template placeholder tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Family Trip</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Decimals &middot; Units &middot; Elapsed Time</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+<p class="lede">The phone buzzes face-down on the kitchen counter, next to a coffee mug that went cold an hour ago. Patricia Jackson doesn't reach for it &mdash; Suzanna has just, finally, fallen asleep against her shoulder, and some sounds aren't worth the tradeoff.</p>
+<p>Across the kitchen, Tom is hunched over his laptop, a browser tab refreshed four times in the last ten minutes. A countdown banner blinks in the corner of the page: SALE ENDS TONIGHT. His thumb hovers near the trackpad.</p>
+<p>Down the hall, Ronaldo and Cedric are arguing about a Nerf dart &mdash; the kind of noise that used to mean nothing and now means everything, because by the time this house empties out for the holidays, it'll either be loaded into a minivan for a stretch of highway that doesn't end, or squeezed into a strip of airport seats with a diaper bag apiece.</p>
+<p>"Hey babe," Tom says, not looking up. "Allegiant's got a sale. Ends tonight."</p>
+<p>Patricia doesn't answer right away. She already said her piece over dinner &mdash; the money, the drive, the baby, all of it circling the table twice.</p>
+<p>Tom glances at her. She looks back and says nothing new.</p>
+<p>Somewhere in his back pocket, the calculator app is still open from an hour ago, its last line unfinished. The cursor blinks over the browser tab.</p>
+<p>Someone has to close it.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+<p>Tom and Patricia Jackson live in Boise, Idaho, with their four children: Ronaldo (7), Cedric (5), Ethan (20 months), and baby Suzanna (2 months). Every winter break, the Jacksons travel to Gilbert, Arizona, to spend the holidays with the Youngs &mdash; close friends since college, and the closest thing the kids have to a second set of grandparents. For as long as they've been making the trip, it has followed the same pattern: two long days behind the wheel each way, with an overnight stop in Las Vegas to break it up, in the family's own 2014 Honda Odyssey (see <a href="#apx-A">Appendix A</a> and <a href="#apx-B">Appendix B</a>).</p>
+<p>This year, for the first time, an Allegiant Air sale on the nonstop route between Boise (BOI) and Phoenix-Mesa Gateway (AZA) &mdash; the closest commercial airport to Gilbert &mdash; has put flying on the table (see <a href="#apx-C">Appendix C</a>). Allegiant doesn't fly this route every day, so whichever dates the family picks have to land on one of the airline's actual scheduled days.</p>
+<p>Tom and Patricia have set a <strong>total holiday <a class="gterm" data-term="Currency" href="#">budget</a> of $1,300</strong> &mdash; one number that has to cover both getting the family to Arizona and back, in either direction, and their Christmas gifts for each other and all four kids. Two of the four kids, Ethan and Suzanna, are young enough to fly as free lap children (one per adult) under Allegiant's own policy &mdash; a detail that changes the flying math more than it first appears to (see <a href="#apx-D">Appendix D</a>). Tom and Patricia would also need somewhere to sleep in Las Vegas if they drive (see <a href="#apx-E">Appendix E</a>).</p>
+<p>Tom's employer gives him <strong>five business days (Monday&ndash;Friday) of paid vacation</strong> to use however he likes, on top of Christmas Eve, Christmas Day, and New Year's Day, which he already has off regardless of vacation days (see <a href="#apx-G">Appendix G</a>). The Jacksons want to spend as much of that time as possible actually in Gilbert with the Youngs &mdash; especially Christmas Day itself &mdash; rather than in transit.</p>
+<p>The Odyssey seats eight and already belongs to the family outright. Driving it doesn't cost anything extra to <em>own</em> &mdash; but it isn't free to <em>run</em>, and how you count that cost turns out to matter (see <a href="#apx-F">Appendix F</a>).</p>
+<p>Whichever option the Jacksons pick, they need a real plan: a dated itinerary, a real total cost, and a real accounting of how much of Tom's limited time off it actually costs them.</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Tom and Patricia. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Fly Allegiant</h4>
+      <p style="margin:0">Fly Allegiant Air nonstop from Boise to Phoenix-Mesa Gateway.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Drive the Odyssey</h4>
+      <p style="margin:0">Drive the family's 2014 Honda Odyssey from Boise to Gilbert, with an overnight stop in Las Vegas each way.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix I. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">D1 a full itemized cost breakdown ending in one cash total; D2 a dated itinerary with elapsed travel time and vacation days used; D3 a second Option B total using the IRS's current mileage rate, with an explanation of the difference; D4 a bar graph (A vs. B) and a pie chart (your option's breakdown); D5 a dollars-remaining-for-gifts calculation.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+<details open id="apx-A">
+<summary>Appendix A &mdash; Driving Route: Boise, ID to Gilbert, AZ</summary>
+<div class="inner">
+<p>The Jacksons' route runs south through Nevada, with Las Vegas as the natural overnight stop.</p>
+<table id="apxA-table"><tr><th>Leg</th><th class="num">Distance</th><th class="num">Drive time</th></tr>
+<tr><td>Boise, ID &rarr; Las Vegas, NV</td><td class="num">624 mi</td><td class="num">9 h 34 min</td></tr>
+<tr><td>Las Vegas, NV &rarr; Gilbert, AZ</td><td class="num">320 mi</td><td class="num">4 h 55 min</td></tr>
+<tr class="hi"><td><strong>One-way total</strong></td><td class="num"><strong>944 mi</strong></td><td class="num"><strong>14 h 29 min</strong></td></tr>
+<tr class="hi"><td><strong>Round trip total</strong></td><td class="num"><strong>1,888 mi</strong></td><td class="num"><strong>28 h 58 min</strong></td></tr>
+</table>
+<p class="side-note">Source: route-distance aggregator [S1], accessed 2026-08-13.</p>
+</div>
+</details>
+
+<details id="apx-B">
+<summary>Appendix B &mdash; The Family's Vehicle: 2014 Honda Odyssey</summary>
+<div class="inner">
+<table id="apxB-table"><tr><th>Spec</th><th class="num">Value</th></tr>
+<tr><td>Seats</td><td class="num">8</td></tr>
+<tr><td>Cargo rack</td><td class="num">Yes</td></tr>
+<tr><td>EPA city mileage</td><td class="num">19 mpg</td></tr>
+<tr><td>EPA highway mileage</td><td class="num">27 mpg</td></tr>
+<tr><td>EPA combined mileage</td><td class="num">22 mpg</td></tr>
+<tr><td>Fuel tank capacity</td><td class="num">21.0 gal</td></tr>
+</table>
+<p class="side-note">Source: fueleconomy.gov, official EPA rating [S2], accessed 2026-08-13.</p>
+</div>
+</details>
+
+<details id="apx-C">
+<summary>Appendix C &mdash; Allegiant Air, Boise &harr; Phoenix-Mesa Gateway</summary>
+<div class="inner">
+<p>Allegiant flies this route nonstop, but not every day &mdash; roughly 2&ndash;3 flights per week in each direction [S3]. A live check of Allegiant's own site on 2026-08-13 showed a lowest advertised one-way fare of $58 for a low-demand November date [S4] &mdash; useful for today's price floor, but the Jacksons are flying the single busiest week of the year.</p>
+<p>The calendar below is real historical data the original case authors captured directly from Allegiant's own booking tool, Nov 2024 &ndash; Jan 2025. Allegiant's calendar only shows fares a few months out, so no live December-2026 quote exists yet &mdash; this table is the best real evidence of how this route's fares move around the Christmas corridor.</p>
+<table id="apxC-table"><tr><th>Departure date (2024&ndash;25)</th><th>Day</th><th class="num">One-way fare (round-trip purchase)</th></tr>
+<tr><td>Fri Nov 1</td><td>Fri</td><td class="num">$69</td></tr>
+<tr><td>Fri Nov 8</td><td>Fri</td><td class="num">$89</td></tr>
+<tr><td>Fri Nov 15</td><td>Fri</td><td class="num">$106</td></tr>
+<tr><td>Fri Nov 22</td><td>Fri</td><td class="num">$128</td></tr>
+<tr class="hi"><td>Fri Dec 20</td><td>Fri</td><td class="num">$237</td></tr>
+<tr class="hi"><td>Sat Dec 21</td><td>Sat</td><td class="num">$237</td></tr>
+<tr class="hi"><td>Fri Dec 27</td><td>Fri</td><td class="num">$237</td></tr>
+<tr><td>Mon Dec 30</td><td>Mon</td><td class="num">$178</td></tr>
+<tr><td>Fri Jan 3</td><td>Fri</td><td class="num">$81</td></tr>
+</table>
+<p class="side-note">Source: Allegiant Air booking calendar, screen-captured by the original case authors [S5], Nov 2024&ndash;Jan 2025 (historical evidence &mdash; see Appendix H, MA1).</p>
+</div>
+</details>
+
+<details id="apx-D">
+<summary>Appendix D &mdash; Allegiant Air: Fees and the Infant/Lap-Child Policy</summary>
+<div class="inner">
+<p><strong>Federal September 11th Security Fee</strong> (a government fee, applies on every U.S. airline): $5.60 per one-way flight, capped at $11.20 per round trip, per passenger [S6].</p>
+<p><strong>Baggage.</strong> One free personal item per passenger. Carry-on and checked bags cost extra, priced dynamically by route/date &mdash; Allegiant publishes no fixed number [S7].</p>
+<p><strong>Traveling with an infant.</strong> A child age 14 days&ndash;2 years flies free as a "lap child" held by a fare-paying passenger 12+ &mdash; but only <strong>one lap child per adult</strong> [S8].</p>
+<blockquote>The Jacksons have two children under 2 (Ethan, 20 months, and Suzanna, 2 months) and two adults &mdash; exactly enough lap-child slots to fly both infants free. Only 4 of the 6 family members need a paid ticket.</blockquote>
+</div>
+</details>
+
+<details id="apx-E">
+<summary>Appendix E &mdash; Las Vegas Overnight</summary>
+<div class="inner">
+<table id="apxE-table"><tr><th>Hotel</th><th>Area</th><th class="num">Nightly rate (2024, as captured)</th></tr>
+<tr><td>Residence Inn by Marriott Las Vegas Hughes Center</td><td>East of the Strip</td><td class="num">$87</td></tr>
+<tr class="hi"><td>Hawthorn Suites by Wyndham Las Vegas/Henderson</td><td>Henderson</td><td class="num">$84</td></tr>
+<tr><td>Hampton Inn Las Vegas-Tropicana</td><td>Las Vegas South</td><td class="num">$101</td></tr>
+<tr><td>3-Star Hotel (Express Deal)</td><td>Near LAS airport</td><td class="num">$123</td></tr>
+</table>
+<p class="side-note">Source: hotel booking site, screen-captured by the original case authors [S9], late 2024. Current 2026 Strip-area rates run well above these off-Strip 2024 figures [S10] &mdash; see Appendix H, MA2. A family of six exceeds standard room occupancy, so this case assumes <strong>2 rooms</strong> per overnight stop.</p>
+</div>
+</details>
+
+<details id="apx-F">
+<summary>Appendix F &mdash; Gas Prices and the True Cost of Driving</summary>
+<div class="inner">
+<table id="apxF-table"><tr><th>Figure</th><th class="num">Value</th><th>Source</th></tr>
+<tr><td>AAA national average, regular unleaded gasoline</td><td class="num">$4.04/gal</td><td>AAA Gas Prices [S11]</td></tr>
+<tr><td>IRS standard mileage rate (business use), effective Jul&nbsp;1, 2026</td><td class="num">$0.76/mile</td><td>IRS.gov [S12]</td></tr>
+</table>
+<p class="side-note">These are two different, both-real ways to price a mile of driving. Gas price alone only covers what leaves your wallet at the pump. The IRS's own standard mileage rate bundles in fuel, maintenance, tires, and depreciation &mdash; the government's own estimate of a vehicle's full operating cost. Both appear in the Working Notebook for a reason.</p>
+</div>
+</details>
+
+<details id="apx-G">
+<summary>Appendix G &mdash; The Calendar: December 2026 &ndash; January 2027</summary>
+<div class="inner">
+<table id="apxG-table"><tr><th>Date</th><th>Status</th></tr>
+<tr><td>Sat Dec 19</td><td>free (weekend)</td></tr>
+<tr><td>Sun Dec 20</td><td>free (weekend)</td></tr>
+<tr><td>Mon Dec 21 &ndash; Wed Dec 23</td><td>needs a vacation day (3 days)</td></tr>
+<tr class="hi"><td>Thu Dec 24 / Fri Dec 25</td><td>given holiday (Christmas Eve / Day)</td></tr>
+<tr><td>Sat Dec 26 / Sun Dec 27</td><td>free (weekend)</td></tr>
+<tr><td>Mon Dec 28 / Tue Dec 29</td><td>needs a vacation day (2 days)</td></tr>
+<tr><td>Wed Dec 30 / Thu Dec 31</td><td>ordinary work day</td></tr>
+<tr class="hi"><td>Fri Jan 1</td><td>given holiday (New Year's Day)</td></tr>
+<tr><td>Sat Jan 2 / Sun Jan 3</td><td>free (weekend)</td></tr>
+</table>
+<p class="side-note">Tom has exactly 5 vacation days. Spending them on Dec 21&ndash;23 and Dec 28&ndash;29 bridges both weekends and Christmas into one unbroken run from Sat Dec 19 through Tue Dec 29 &mdash; 11 days, the longest single trip his time off can cover. New Year's Day falls after he's due back at work, so it can't be stitched onto this trip without a 6th vacation day the family doesn't have.</p>
+</div>
+</details>
+
+<details id="apx-H">
+<summary>Appendix H &mdash; Modeling Assumptions</summary>
+<div class="inner">
+<blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author, each with a real basis. You may challenge any of them in discussion.</blockquote>
+<table id="apxH-table"><tr><th>#</th><th>Assumption</th><th>Value used</th></tr>
+<tr><td>MA1</td><td>Dec 2026 Allegiant round-trip fare per passenger</td><td class="num">$237 out + $237 back</td></tr>
+<tr><td>MA2</td><td>Las Vegas hotel rate</td><td class="num">$80/night &times; 2 rooms &times; 2 nights</td></tr>
+<tr><td>MA3</td><td>Bag strategy for Option A</td><td class="num">$0 (personal items only)</td></tr>
+<tr><td>MA4</td><td>"Fully-loaded" driving cost uses the IRS rate, not gas alone</td><td class="num">$0.76/mile</td></tr>
+<tr><td>MA5</td><td>Gas-only calculation uses EPA highway mileage</td><td class="num">27 mpg</td></tr>
+<tr><td>MA6</td><td>Trip window, both options</td><td class="num">Sat Dec 19 &ndash; Tue Dec 29, 2026</td></tr>
+</table>
+<p class="side-note">Full basis and sensitivity for each assumption: see case.md Appendix H.</p>
+</div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix I &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-13. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+<div class="stepbox">
+  <h4>Step 1 &mdash; Option A: What does flying actually cost?</h4>
+  <div class="goal">Only 4 of the 6 family members need a paid ticket (Appendix D). Compute fares + the federal fee + bags.</div>
+  <div class="fieldrow"><label for="s1_fare">Fare per leg (per paying passenger, Appendix C)</label><input type="number" id="s1_fare" step="0.01" placeholder="$"></div>
+  <div class="fieldrow"><label for="s1_pax">Paying passengers</label><input type="number" id="s1_pax" step="1" placeholder="#"></div>
+  <div class="fieldrow"><label for="s1_fee">TSA fee, round trip, per passenger (Appendix D)</label><input type="number" id="s1_fee" step="0.01" placeholder="$"></div>
+  <div class="fieldrow"><label for="s1_bags">Bag fees, total (Appendix H, MA3)</label><input type="number" id="s1_bags" step="0.01" placeholder="$"></div>
+  <div class="fieldrow"><label for="s1_total">Your total for Option A</label><input type="number" id="s1_total" step="0.01" placeholder="$"><button onclick="checkStep1()">Check</button><span class="fb" id="fb1"></span></div>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; Option B: two ways to price a mile</h4>
+  <div class="goal">Compute Option B's driving cost twice: once with gas price alone, once with the IRS's standard mileage rate. Both use the same hotel cost.</div>
+  <div class="fieldrow"><label for="s2_miles">Round-trip miles (Appendix A)</label><input type="number" id="s2_miles" step="1" placeholder="mi"></div>
+  <div class="fieldrow"><label for="s2_mpg">Highway mpg (Appendix B)</label><input type="number" id="s2_mpg" step="0.1" placeholder="mpg"></div>
+  <div class="fieldrow"><label for="s2_gas">Gas price per gallon (Appendix F)</label><input type="number" id="s2_gas" step="0.01" placeholder="$"></div>
+  <div class="fieldrow"><label for="s2_irs">IRS standard mileage rate (Appendix F)</label><input type="number" id="s2_irs" step="0.01" placeholder="$/mi"></div>
+  <div class="fieldrow"><label for="s2_hotel">Hotel total, both nights, both rooms (Appendix E)</label><input type="number" id="s2_hotel" step="0.01" placeholder="$"></div>
+  <div class="fieldrow"><label for="s2_gasonly">Your gas-only total for Option B</label><input type="number" id="s2_gasonly" step="0.01" placeholder="$"><button onclick="checkStep2gas()">Check</button><span class="fb" id="fb2a"></span></div>
+  <div class="fieldrow"><label for="s2_fullload">Your fully-loaded (IRS rate) total for Option B</label><input type="number" id="s2_fullload" step="0.01" placeholder="$"><button onclick="checkStep2full()">Check</button><span class="fb" id="fb2b"></span></div>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; Elapsed travel time</h4>
+  <div class="goal">Add both driving legs, both directions (Appendix A), to find total time behind the wheel for a round trip.</div>
+  <div class="fieldrow"><label for="s3_hours">Total round-trip drive time (hours, decimal is fine)</label><input type="number" id="s3_hours" step="0.01" placeholder="hours"><button onclick="checkStep3()">Check</button><span class="fb" id="fb3"></span></div>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; Dollars remaining for Christmas gifts</h4>
+  <div class="goal">Pick your option above, then compute $1,300 minus that option's real cash cost (Option A: fares+fees+bags. Option B: gas-only+hotel &mdash; the cash a family with a minivan they already own actually spends).</div>
+  <div class="fieldrow"><label for="s4_remain">Dollars remaining for gifts</label><input type="number" id="s4_remain" step="0.01" placeholder="$ (can be negative)"><button onclick="checkStep4()">Check</button><span class="fb" id="fb4"></span></div>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+<p><strong>"Everyone's cost-per-mile so far has used the price of gas. But the Odyssey isn't free to run &mdash; the IRS publishes a standard mileage rate every year: the number the federal government itself uses to estimate what a mile in your own car actually costs, once you count not just gas but maintenance, tires, and the fact that a car with 1,888 more miles on it is worth measurably less than one without them. Recompute Option B's cost using that rate instead of the pump price."</strong></p>
+<p>Use Appendix F's IRS rate in Step 2's "fully-loaded" field above instead of the gas-only price, and recheck. Then ask yourself: did the gap between your two options get wider, or narrower &mdash; and does that change which one you'd defend?</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the IRS mileage-rate recompute to Option B</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+<li>[S1] Driving distance/time, Boise&ndash;Gilbert &mdash; trippy.com, accessed 2026-08-13 (<a href="https://www.trippy.com/distance/Boise-to-Gilbert" target="_blank" rel="noopener">link</a>)</li>
+<li>[S2] 2014 Honda Odyssey EPA mileage &mdash; fueleconomy.gov (<a href="https://fueleconomy.gov/feg/Find.do?action=sbs&id=33717" target="_blank" rel="noopener">link</a>)</li>
+<li>[S3] Allegiant BOI-AZA route/frequency &mdash; route aggregator, accessed 2026-08-13</li>
+<li>[S4] Allegiant's own live fare snapshot &mdash; allegiantair.com, accessed 2026-08-13 (<a href="https://www.allegiantair.com/en/flights-from-boise-to-phoenix-mesa" target="_blank" rel="noopener">link</a>)</li>
+<li>[S5] Historical BOI-AZA fare calendar, Nov 2024-Jan 2025 &mdash; captured by original case authors</li>
+<li>[S6] Federal September 11th Security Fee &mdash; TSA.gov (<a href="https://www.tsa.gov/for-industry/security-fees" target="_blank" rel="noopener">link</a>)</li>
+<li>[S7] Allegiant baggage policy &mdash; allegiantair.com/baggage-1 (<a href="https://www.allegiantair.com/baggage-1" target="_blank" rel="noopener">link</a>)</li>
+<li>[S8] Allegiant infant/lap-child policy &mdash; Allegiant infant help center</li>
+<li>[S9] Las Vegas off-Strip hotel rates, late 2024 &mdash; captured by original case authors</li>
+<li>[S10] Las Vegas Strip average daily rate, 2026 &mdash; Las Vegas Convention and Visitors Authority</li>
+<li>[S11] AAA national average gas price &mdash; gasprices.aaa.com, accessed 2026-08-13</li>
+<li>[S12] IRS standard mileage rate, effective Jul 1 2026 &mdash; IRS.gov (<a href="https://www.irs.gov/newsroom/irs-sets-2026-business-standard-mileage-rate-at-725-cents-per-mile-up-25-cents" target="_blank" rel="noopener">link</a>)</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Family Trip &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/family-trip/sensitivity_model.py -- keep in sync by hand.
+// sha256 of case.md recorded at publish time; see case.json.qa.case_md_sha256.
+const PARAMS = {
+  fare_per_leg_usd: 237.00,
+  paying_passengers: 4,
+  tsa_fee_roundtrip_usd: 11.20,
+  bag_fee_total_usd: 0.00,
+  roundtrip_miles: 1888,
+  irs_mileage_rate_usd: 0.76,
+  gas_price_per_gal_usd: 4.04,
+  mpg_highway: 27,
+  hotel_rate_per_night_usd: 80.00,
+  hotel_rooms: 2,
+  hotel_nights: 2
+};
+const FLEX = ["fare_per_leg_usd", "hotel_rate_per_night_usd", "irs_mileage_rate_usd", "mpg_highway"];
+
+function hotelTotal(p){ return p.hotel_rooms * p.hotel_nights * p.hotel_rate_per_night_usd; }
+function flyTotal(p){
+  const fares = p.paying_passengers * (2 * p.fare_per_leg_usd);
+  const fees = p.paying_passengers * p.tsa_fee_roundtrip_usd;
+  return fares + fees + p.bag_fee_total_usd;
+}
+function driveFullyLoaded(p){ return p.roundtrip_miles * p.irs_mileage_rate_usd + hotelTotal(p); }
+function driveGasOnly(p){
+  const gallons = p.roundtrip_miles / p.mpg_highway;
+  return gallons * p.gas_price_per_gal_usd + hotelTotal(p);
+}
+// Primary graded metric (fully-loaded); lower is better for this case.
+function evaluate(overrides){
+  const p = Object.assign({}, PARAMS, overrides || {});
+  return { A: flyTotal(p), B: driveFullyLoaded(p) };
+}
+// Pre-twist, gas-only lens.
+function evaluate_twist(overrides){
+  const p = Object.assign({}, PARAMS, overrides || {});
+  return { A: flyTotal(p), B: driveGasOnly(p) };
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkStep1(){
+  const p = Object.assign({}, PARAMS, {
+    fare_per_leg_usd: parseFloat(val('s1_fare')),
+    paying_passengers: parseFloat(val('s1_pax')),
+    tsa_fee_roundtrip_usd: parseFloat(val('s1_fee')),
+    bag_fee_total_usd: parseFloat(val('s1_bags'))
+  });
+  const correct = flyTotal(p);
+  const entered = parseFloat(val('s1_total'));
+  fb('fb1', near(entered, correct, 0.01));
+}
+function checkStep2gas(){
+  const p = Object.assign({}, PARAMS, {
+    roundtrip_miles: parseFloat(val('s2_miles')),
+    mpg_highway: parseFloat(val('s2_mpg')),
+    gas_price_per_gal_usd: parseFloat(val('s2_gas')),
+    hotel_rooms: 1, hotel_nights: 1,
+    hotel_rate_per_night_usd: parseFloat(val('s2_hotel'))
+  });
+  const correct = driveGasOnly(p);
+  const entered = parseFloat(val('s2_gasonly'));
+  fb('fb2a', near(entered, correct, 0.05));
+}
+function checkStep2full(){
+  const p = Object.assign({}, PARAMS, {
+    roundtrip_miles: parseFloat(val('s2_miles')),
+    irs_mileage_rate_usd: parseFloat(val('s2_irs')),
+    hotel_rooms: 1, hotel_nights: 1,
+    hotel_rate_per_night_usd: parseFloat(val('s2_hotel'))
+  });
+  const correct = driveFullyLoaded(p);
+  const entered = parseFloat(val('s2_fullload'));
+  fb('fb2b', near(entered, correct, 0.05));
+}
+function checkStep3(){
+  // Appendix A: 9h34m + 4h55m, each way, round trip -- student sums all four legs.
+  const correctHours = (9 + 34/60) + (4 + 55/60);
+  const correctRoundTrip = correctHours * 2;
+  const entered = parseFloat(val('s3_hours'));
+  fb('fb3', near(entered, correctHours, 0.05) || near(entered, correctRoundTrip, 0.05));
+}
+function checkStep4(){
+  const pick = document.querySelector('input[name=pick]:checked');
+  const ev = evaluate_twist({}); // cash-cost lens: A is unaffected by gas-vs-IRS, B is what a family with an owned van actually pays
+  const budget = 1300;
+  let correct;
+  if(pick && pick.value === 'A') correct = budget - ev.A;
+  else if(pick && pick.value === 'B') correct = budget - ev.B;
+  else { fb('fb4', false); return; }
+  const entered = parseFloat(val('s4_remain'));
+  fb('fb4', near(entered, correct, 0.05));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "family-trip"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "A full cost breakdown for your chosen option, itemized to the penny"],
+  ["D2", "A dated itinerary with elapsed travel time and vacation days used"],
+  ["D3", "A second Option B total using the IRS mileage rate, with an explanation"],
+  ["D4", "A bar graph (A vs. B totals) and a pie chart (your option's breakdown)"],
+  ["D5", "A dollars-remaining-for-gifts calculation"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Currency": {def: "Money in a specific form -- dollars, euros, coins, bills -- used to measure and exchange value.",
+    url: "https://www.mathsisfun.com/money/index.html"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Unit": {def: "A defined quantity -- a mile, a gallon, an hour -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Time": {def: "A measured duration, or a point on a clock or calendar.",
+    url: "https://www.mathsisfun.com/time.html"},
+  "Rounding": {def: "Making a number simpler while keeping its value close to the original.",
+    url: "https://www.mathsisfun.com/rounding-numbers.html"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Pie Chart": {def: "A circular chart divided into slices, where each slice's size shows its share of the whole.",
+    url: "https://www.mathsisfun.com/data/pie-charts.html"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"}
+};
+const HOWTO = [
+  ["add decimal numbers", "Decimal"],
+  ["multiply decimal numbers", "Decimal"],
+  ["divide a multi-digit number by a 2-digit number", "Unit"],
+  ["convert an amount from one unit to another unit", "Unit"],
+  ["convert between units of time", "Time"],
+  ["find elapsed time", "Time"],
+  ["round a number to a specified place value", "Rounding"],
+  ["create a pie chart given a set of data", "Pie Chart"],
+  ["create a histogram given a set of data", "Bar Graph"],
+  ["compare two or more values", "Data"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const ev = applied ? evaluate({}) : evaluate_twist({});
+  // Nothing is printed here as a static verdict -- this only recomputes the
+  // Working Notebook's own live fields if a Hero has already filled them in,
+  // so the page never hands over the winner as a literal (MCS-37).
+  if(applied){
+    document.getElementById('s2_irs').focus();
+  }
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

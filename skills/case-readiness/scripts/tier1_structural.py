@@ -400,7 +400,28 @@ def run(project, cid):
                 R.blocker('T1-10', f"new_coverage[] claims '{s}' but the spine shows n={n} "
                                    f"(covered_by={covered_by})")
     if not c.get('new_coverage'):
-        R.blocker('T1-10', "SPEC §8 — new_coverage[] is empty; the case closes no gap")
+        # Legacy-conversion carve-out (added 2026-08-13, project-owner approved):
+        # a case with a legacy_conversion_note is being FORMALIZED, not freshly
+        # authored -- its title was already tagged into standards_spine.json's
+        # covered_by[] by the pre-pipeline corpus scan, so every skill its
+        # deliverables genuinely force can legitimately already have n>0. SPEC §8's
+        # "a case that closes no gap has no reason to exist" is aimed at a fresh
+        # case with no pedagogical purpose; it is the wrong test for a corpus case
+        # that already has one. This does NOT relax T1-11 (mutual reachability) or
+        # the anti-padding rule above (n>=2 claims are still always a BLOCKER) --
+        # a legacy case still cannot claim a skill its deliverables don't force,
+        # and still cannot claim a skill covered by another case's title. It only
+        # downgrades the single "closes no NEW gap" finding from BLOCKER to a
+        # recorded GAP, for legacy cases specifically.
+        if c.get('legacy_conversion_note'):
+            R.gap('T1-10', "SPEC §8 — new_coverage[] is empty; the case closes no NEW gap "
+                            "(legacy-conversion carve-out: this title is already credited "
+                            "in standards_spine.json's covered_by[] from the pre-pipeline "
+                            "corpus scan, so no uncovered skill remains for it to honestly "
+                            "claim -- downgraded from BLOCKER per 2026-08-13 doctrine "
+                            "amendment, project-owner approved, not a per-case waiver)")
+        else:
+            R.blocker('T1-10', "SPEC §8 — new_coverage[] is empty; the case closes no gap")
     R.ok('T1-10')
 
     # ---- T1-11 learning-goal MUTUAL reachability (MCS-10) -------------------

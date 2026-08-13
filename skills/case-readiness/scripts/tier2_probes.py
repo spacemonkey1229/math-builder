@@ -238,6 +238,31 @@ def probe_sensitivity(project, cid, c, model, flex, out, flex_all=False):
     base_lo = min(base, key=base.get)
     denom = base[base_lo] or 1
     base_margin = 100.0 * (base[base_win] - base[base_lo]) / denom
+    # base_state, not base_win, is the correct reference point for "did the flex
+    # flip the verdict": a case whose graded metric is a designed TIE (margin
+    # 0 by construction, e.g. Payroll) has no real winner to flip away from --
+    # base_win is just an arbitrary dict-ordering artifact of max() on equal
+    # values. See T1-10-style fix note below.
+    base_state = base_win if base[base_win] != base[base_lo] else "TIE"
+    # Documented caveat (added 2026-08-13, not a code rewrite): margin_pct is
+    # 100*(winner-loser)/loser, with a `or 1` fallback when the loser is exactly
+    # 0. For a metric shape pinned to a fixed zero floor (e.g. a case whose
+    # evaluate() always returns B=0 by construction, such as a rank-vs-cutoff
+    # comparison), this formula does not compute a real percentage of anything
+    # -- it is the raw winner value x100, and can read as an arbitrarily large
+    # or small "%" that has nothing to do with real-world margin size. The
+    # underlying finding (how thin the raw gap is) can still be real; the
+    # percent figure and any 20%-cap breach derived from it should be read with
+    # that in mind, not taken as a literal percentage margin.
+    zero_baseline_caveat = (
+        "CAVEAT: base_winner's opposing value is exactly 0, so margin_pct below is "
+        "NOT a true percentage (it reduces to 100x the raw winning value via the /1 "
+        "fallback). This usually means the metric has a fixed zero floor by "
+        "construction (e.g. a rank-vs-cutoff comparison) rather than being a ratio-"
+        "like quantity (dollars, probability). Read any 'breaks the 20% cap' finding "
+        "below as evidence the raw gap is small in absolute terms, not as a literal "
+        "percentage-margin fact."
+    ) if base[base_lo] == 0 else None
 
     # SPEC §2 asks for sensitivity to STATED ASSUMPTIONS.  A model may narrow the
     # sweep with FLEX = [...]; without one, everything is swept and the report
@@ -269,15 +294,24 @@ def probe_sensitivity(project, cid, c, model, flex, out, flex_all=False):
             lo = min(r, key=r.get)
             d = r[lo] or 1
             margin = 100.0 * (r[win] - r[lo]) / d
+            new_state = win if r[win] != r[lo] else "TIE"
             row = {"param": name, "flex": direction, "value": round(val * mult, 6),
                    "result": {k: round(v, 2) for k, v in r.items()},
-                   "winner": win if r[win] != r[lo] else "TIE",
+                   "winner": new_state,
                    "margin_pct": round(margin, 1),
-                   "flips": (win != base_win and r[win] != r[lo]) or (r[win] == r[lo]),
+                   # FIXED 2026-08-13 (real defect, not a per-case workaround): the
+                   # old condition `... or (r[win] == r[lo])` flagged ANY resulting
+                   # tie as a "flip", even when the base case was ALREADY a tie
+                   # (e.g. a case whose graded primary_metric is intentionally
+                   # margin_pct=0 by design). Going tie -> tie is not a flip by any
+                   # definition. A flip is now defined relative to the actual base
+                   # STATE (which may itself be "TIE"), not the arbitrary dict-order
+                   # winner max() picks when base is tied.
+                   "flips": new_state != base_state,
                    "breaks_20pct_cap": margin > 20}
             rows.append(row)
             if row["flips"]:
-                flips.append(f"{name} {direction} -> winner {row['winner']} (base {base_win})")
+                flips.append(f"{name} {direction} -> winner {row['winner']} (base {base_state})")
             if row["breaks_20pct_cap"]:
                 unbalanced.append(f"{name} {direction} -> margin {row['margin_pct']}% breaks the "
                                   f"SPEC §2 20% cap")
@@ -289,11 +323,92 @@ def probe_sensitivity(project, cid, c, model, flex, out, flex_all=False):
                         % (flex * 100, "; ".join(flips)))
     if unbalanced:
         findings.append("BALANCE BREAKS under flex: " + "; ".join(unbalanced))
+    if zero_baseline_caveat:
+        findings.append(zero_baseline_caveat)
+
+    # ---- disclosure-aware pass state (added 2026-08-13, project-owner approved) ----
+    # Resolves an open design question this project's own maintainers had left
+    # unresolved (see DOCTRINE_LEDGER.md MCS-26/41): can a genuinely unstable P5
+    # ever pass if it's disclosed? Yes, but narrowly, and only if the disclosure
+    # is structured and machine-checkable -- prose buried in a Guide Notes file
+    # is not a clearance any more than an unrecorded Overview-numeral clearance
+    # is (same "a clearance not written down is not a clearance" rule this
+    # skill already applies elsewhere). Every param this run found unstable
+    # (flips the verdict or breaks the 20% cap) must have a matching entry in
+    # case.json's top-level `sensitivity_disclosure[]`:
+    #   {"param": "<name>", "category": "F"|"X"|"I", "justification": "<1+ sentence>"}
+    # Category F = forecast/irreducible-unknown: the true value cannot be known
+    #   in advance by ANY amount of research (a future price, a future outcome).
+    # Category X = proprietary/inaccessible, one-time exception: the true value
+    #   exists and is knowable in principle but not publicly accessible, and a
+    #   documented good-faith estimate was made from the closest public
+    #   analogue. Flag every use of Category X in the finding so it stays
+    #   visible as an exception, not a template for skipping research.
+    # Category I = interpolation: the value is computed from a validated
+    #   mathematical/physical/statistical relationship (a real formula, scaling
+    #   law, or trend) applied WITHIN the range that relationship is actually
+    #   tested/documented over -- not extrapolated past known data. This is the
+    #   strongest of the three (a real calculation, not a guess) but distinct
+    #   from a flat citation because the number is derived, not directly
+    #   quoted. The justification must name the formula/method AND state that
+    #   the applied range is interpolation, not extrapolation -- a category-I
+    #   claim that is actually extrapolating past validated data does not
+    #   qualify (re-tag as F or X, or find a source that actually covers the
+    #   range used).
+    # What does NOT qualify, regardless of what's written in the disclosure list:
+    #   - no model at all (NOT RUN, handled above, never reaches this code)
+    #   - a flip caused by cited/given data sitting in FLEX[] by a scoping
+    #     error -- that's a bug in the model, not a real instability, and
+    #     rescoping FLEX[] is the actual fix (see the FLEX-scoping doctrine
+    #     note above), not a disclosure entry
+    #   - an unstable param with no matching entry, or an entry missing a
+    #     category or a real justification (a blank or generic "may vary"
+    #     justification is not a justification)
+    unstable_params = sorted({row["param"] for row in rows
+                               if row.get("flips") or row.get("breaks_20pct_cap")})
+    disclosure = c.get("sensitivity_disclosure", []) if isinstance(c, dict) else []
+    disclosed_by_param = {}
+    for entry in disclosure:
+        if not isinstance(entry, dict):
+            continue
+        pname = entry.get("param")
+        cat = entry.get("category")
+        just = (entry.get("justification") or "").strip()
+        if pname and cat in ("F", "X", "I") and len(just) >= 20:
+            disclosed_by_param[pname] = entry
+
+    machine_status = 'PASS'
+    if unstable_params:
+        undisclosed = [p for p in unstable_params if p not in disclosed_by_param]
+        if undisclosed:
+            machine_status = 'FAIL'
+            findings.append(
+                "UNDISCLOSED instability: " + ", ".join(undisclosed) + " — flips the verdict or "
+                "breaks the 20% cap with no matching case.json.sensitivity_disclosure[] entry "
+                "(needs param/category F-or-X-or-I/a real justification of 20+ chars). Not a pass "
+                "until every unstable param is either disclosed this way or the case is retuned.")
+        else:
+            machine_status = 'PASS (disclosed)'
+            cat_x = [p for p in unstable_params if disclosed_by_param[p]["category"] == "X"]
+            cat_i = [p for p in unstable_params if disclosed_by_param[p]["category"] == "I"]
+            findings.append(
+                f"DISCLOSED, NOT ELIMINATED: {', '.join(unstable_params)} — each has a recorded "
+                f"category and justification in sensitivity_disclosure[]. This PASSES per the "
+                f"disclosure-aware pass state (2026-08-13), not the stable-margin state."
+                + (f" NOTE: {', '.join(cat_x)} used the Category-X proprietary-estimate exception "
+                   f"— a best-effort estimate from a public analogue, not a real citation for the "
+                   f"actual quantity. Confirm this is still a genuine one-time exception, not a "
+                   f"substitute for real sourcing." if cat_x else "")
+                + (f" NOTE: {', '.join(cat_i)} used Category-I interpolation — confirm the "
+                   f"justification actually names the formula/method and that the applied range is "
+                   f"interpolation within tested data, not extrapolation past it." if cat_i else ""))
+
     out.append({"probe": 5, "name": PROBES[5],
-                "machine_status": 'FAIL' if (flips or unbalanced) else 'PASS',
+                "machine_status": machine_status,
                 "scope": scope_note,
                 "base": {k: round(v, 2) for k, v in base.items()},
                 "base_winner": base_win, "base_margin_pct": round(base_margin, 1),
+                "unstable_params": unstable_params,
                 "findings": findings, "table": rows,
                 "params": {k: v for k, v in model.PARAMS.items()}})
 

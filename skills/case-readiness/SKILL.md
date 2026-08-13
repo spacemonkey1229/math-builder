@@ -173,6 +173,34 @@ the workbook and the published docx quietly keep teaching the old ones.
 - **T1-16** re-checks the MCS-11 hash: a stale hash means every other finding may describe a
   different file, so it is reported first.
 
+## The legacy-conversion carve-out on T1-10 (added 2026-08-13)
+
+A run converting a batch of pre-pipeline corpus cases found that T1-10's "SPEC §8 —
+`new_coverage[]` is empty; the case closes no gap" check, as a BLOCKER, structurally cannot be
+cleared by most legacy conversions: their titles were already tagged into
+`standards_spine.json`'s `covered_by[]` by the pre-pipeline corpus scan, so every skill their
+deliverables genuinely force can legitimately already have `n>0` in the spine. Padding
+`standards[]`/`new_coverage[]` with a skill no deliverable forces to manufacture a pass is
+exactly what `case-write`'s LEARNING GOAL CHECK (and T1-10's own anti-padding rule two
+paragraphs up) exists to catch — so agents correctly refused to fabricate one, and correctly
+refused an earlier attempt to record this as a **waiver** (there is no BLOCKER-level waiver
+mechanism in this skill; "Every BLOCKER must be resolved. No exceptions" was written for exactly
+this situation and a waiver would have quietly hollowed it out for every future case, not just
+legacy ones).
+
+The actual fix, project-owner approved, is narrower than a waiver: `tier1_structural.py`'s T1-10
+now downgrades the empty-`new_coverage[]` finding from BLOCKER to a recorded GAP **only** when
+`case.json.legacy_conversion_note` is present — i.e. only for a case being *formalized*, not
+*freshly authored*. SPEC §8's "a case that closes no gap has no reason to exist" targets a new
+case with no pedagogical purpose; a legacy case already has one; the corpus scan crediting it in
+`covered_by[]` is exactly that purpose being recognized retroactively. Nothing else about T1-10
+changes: a legacy case still cannot claim a skill its deliverables don't force, still cannot
+claim a skill covered by a *different* case's title (`n>=2` is always a BLOCKER, no carve-out),
+and a case with **no** `legacy_conversion_note` — i.e. every freshly-authored case — still hits
+the unmodified BLOCKER. This is a permanent, visible rule change to the checker and this doc, not
+a per-case override recorded in `case.json`; do not also write a `waivers[]` entry for T1-10 on a
+legacy case going forward, the carve-out already covers it.
+
 ## Two behaviours that are intentional
 
 - **Overview numerals** are BLOCKER-for-confirmation per SPEC §1.2. Clock times (`4:40`) and
@@ -284,6 +312,46 @@ Two rules that keep this honest:
 so**, in `balance_test` and in the Guide Notes, or the guide will defend a margin that does not
 exist. A flex that pushes the margin past the SPEC §2 20% cap is the same finding in the other
 direction.
+
+**Two P5 defects fixed 2026-08-13**, found while running a batch of legacy conversions through
+Tier 2 for real:
+
+1. **Tie-to-tie was misreported as a flip.** `probe_sensitivity`'s old `flips` condition fired
+   whenever the *flexed* result was a tie, regardless of what the *base* case was — so a case
+   whose graded `primary_metric` is intentionally a tie by design (margin 0%, e.g. Payroll: "the
+   real tension is who bears the cost, not which option is financially better") could never pass
+   P5, because any flex that left it tied still got flagged as an instability. Fixed: flips is
+   now computed against the actual base **state** (which may itself be `"TIE"`), not the arbitrary
+   dict-ordering winner `max()` picks when the base values are equal. Verified: Payroll's real,
+   already-disclosed twist assumption still ties under flex either direction — correctly `PASS`
+   now, not a false `FAIL`.
+2. **The margin formula breaks down at a zero baseline.** `margin_pct = 100*(winner-loser)/loser`
+   with a `loser or 1` fallback — for a metric shape pinned to a fixed zero floor by construction
+   (e.g. a rank-vs-cutoff comparison where `B` is always `0`), this isn't a real percentage of
+   anything; it's `100 × winner`, and can print as an absurd "850%" or "-100%" that has nothing to
+   do with real-world margin size. Not rewritten (the underlying thin-margin finding can still be
+   real and worth surfacing) — instead the probe now emits an explicit `CAVEAT` finding whenever
+   `base[base_lo] == 0`, so a human reads any resulting cap-breach as "the raw gap is small," not
+   as a literal percentage fact. Seton Hall is the worked example: its real instability (AP rank
+   +50% genuinely flips the verdict) still correctly fails; its formula-artifact ("-50%" producing
+   an "850% margin") is now labeled, not treated as an independent finding.
+
+Neither fix changes what counts as a genuine instability — both were verified not to mask any of
+the real, substantiated fragility findings already on file (Airstrike, Family Trip, End Of Life,
+Airplane Manufacturer, Seton Hall's real flip all still fail after both fixes).
+
+**A third, related and NOT fixed here: FLEX[] scoping is the model author's responsibility, not
+the checker's.** The same legacy-conversion batch found several `sensitivity_model.py` files
+flexing cited/given data (real season stats, a sourced sketch dimension, a published route
+distance) instead of the case's actual stated assumption — inflating false instabilities. This
+isn't a `tier2_probes.py` defect to fix in the script; it's a modeling-quality issue each case's
+own `sensitivity_model.py` must get right, per the "Only `FLEX[]` is swept" rule above. Test: is
+this PARAM a real assumption the case had to *choose* (an unstated convention, an estimate, a
+scenario dial) — flex it; or is it *given/cited* data (whether real-sourced or part of a fictional
+but fixed dataset) — don't, P6 covers it instead. The one legitimate exception found in this batch
+(Seton Hall keeping a cited `ap_rank` in `FLEX`) is because it IS the graded primary metric itself
+and the case's whole point is testing verdict fragility at the thinnest possible real margin — a
+deliberate, documented judgment call, not the default.
 
 ### P6 · Data decay
 
