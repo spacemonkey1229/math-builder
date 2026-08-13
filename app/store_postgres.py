@@ -88,9 +88,11 @@ class PostgresStore:
     def _load_roster(self):
         with self._conn() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
-                cur.execute("SELECT id, badges, cases_per_badge, cases_required FROM programs")
+                cur.execute("SELECT id, badges, cases_per_badge, cases_required, badge_names FROM programs")
                 programs = {r['id']: {"badges": r['badges'], "cases_per_badge": r['cases_per_badge'],
-                                       "cases_required": r['cases_required']} for r in cur.fetchall()}
+                                       "cases_required": r['cases_required'],
+                                       **({"badge_names": r['badge_names']} if r['badge_names'] else {})}
+                            for r in cur.fetchall()}
                 cur.execute("""SELECT id, display_name, program, cohort, status, started_on, badges_earned,
                                       drive_folder_id, drive_folder_url, notes, self_assessment FROM learners""")
                 learners = [{

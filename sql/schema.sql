@@ -22,8 +22,15 @@ CREATE TABLE IF NOT EXISTS programs (
   id              text PRIMARY KEY,
   badges          int  NOT NULL,
   cases_per_badge int  NOT NULL,
-  cases_required  int  NOT NULL
+  cases_required  int  NOT NULL,
+  badge_names     jsonb  -- array of strings, length == badges; badge_names[i] names badge_index i. Nullable: falls back to numeric display.
 );
+
+-- CREATE TABLE IF NOT EXISTS above is a no-op against an already-existing programs
+-- table, and programs is seeded once, never rewritten by the app itself (see
+-- store_postgres.py) -- a plain ALTER is the only thing that reaches an
+-- already-deployed database. Same pattern used below for learners.self_assessment.
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS badge_names jsonb;
 
 CREATE TABLE IF NOT EXISTS learners (
   id               text PRIMARY KEY,

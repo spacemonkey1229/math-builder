@@ -176,11 +176,24 @@ def compute_badge_rows(roster, subs):
         one_short = any(n == p['cases_per_badge'] - 1 for slot, n in byslot.items() if slot not in earned_slots)
         eligible = [slot for slot, n in byslot.items()
                     if slot is not None and n >= p['cases_per_badge'] and slot not in earned_slots]
+        names = p.get('badge_names') or []
+        slots = []
+        for i in range(p['badges']):
+            if i in earned_slots:
+                st = 'earned'
+            elif i in eligible:
+                st = 'eligible'
+            else:
+                st = 'in_progress'
+            slots.append({
+                "index": i, "name": names[i] if i < len(names) else None, "status": st,
+                "cases_done": byslot.get(i, 0), "cases_per_badge": p['cases_per_badge'],
+            })
         out.append({
             "id": L['id'], "name": L['display_name'], "program": L['program'], "cohort": L.get('cohort'),
             "status": L['status'], "badges": earned_n, "badges_total": p['badges'],
             "cases_done": total, "cases_required": p['cases_required'], "cases_per_badge": p['cases_per_badge'],
-            "one_short": one_short, "eligible_slots": eligible,
+            "one_short": one_short, "eligible_slots": eligible, "slots": slots,
         })
     return out
 
@@ -217,6 +230,7 @@ def build_state(store):
                                   "discussion_count": dcount, "n_submissions": len(my_subs)})
 
     domains_doc = store.load('domains.json')
+    tree_doc = store.load('curriculum_tree.json')
     return {
         "today": today(),
         "programs": roster['programs'],
@@ -229,6 +243,11 @@ def build_state(store):
         # Phase 2 (goals/career self-assessment): the fixed tag list a guide picks from is
         # domains.json's own real clusters, not a new taxonomy -- see do_set_self_assessment.
         "interest_clusters": [{"id": c['id'], "name": c['name']} for c in domains_doc.get('clusters', [])],
+        # Same idea for "what course are they in" -- reuse curriculum_tree.json's 10 real
+        # branches (the same ones dashboard.html's Tree of Thought already renders) rather
+        # than invent a second course taxonomy.
+        "curriculum_branches": [{"id": b['id'], "branch": b['branch'], "band": b['band']}
+                                 for b in tree_doc.get('branches', [])],
     }
 
 
@@ -312,14 +331,21 @@ def do_set_learner_status(store, learner_id, status):
     store.save('roster.json', roster)
 
 
-def do_set_self_assessment(store, learner_id, interests, note, captured_by):
+VALID_GRADE_LEVELS = set(range(6, 13))  # 6-12, matches curriculum_tree.json's MS-through-HS span
+
+
+def do_set_self_assessment(store, learner_id, interests, note, captured_by, grade_level=None, current_branch=None):
     """The goals/career conversation, guide-mediated for now (PLAN.md Phase 2 -- students
     don't have their own login yet, so this is entered by whoever had the conversation,
     same as review notes and discussion logs already are). interests[] are domains.json
     cluster ids, not free text -- a fixed, real taxonomy that already exists and is already
     validated at domain-build time (app/validate_domains.py), so there is nothing new to
-    keep in sync. Setting a new self-assessment always resets reviewed_by_guide to False:
-    a guide reviews *this* version, not a promise to re-review indefinitely."""
+    keep in sync. grade_level/current_branch are optional -- feeding suggest_cases() a real
+    match score, not a hard requirement for capturing interests at all. current_branch is
+    one of curriculum_tree.json's 10 real branch ids (the same taxonomy dashboard.html's own
+    Tree of Thought uses), not a new course list invented for this feature. Setting a new
+    self-assessment always resets reviewed_by_guide to False: a guide reviews *this* version,
+    not a promise to re-review indefinitely."""
     roster = store.load('roster.json')
     learner = next((l for l in roster['learners'] if l['id'] == learner_id), None)
     if not learner:
@@ -331,11 +357,20 @@ def do_set_self_assessment(store, learner_id, interests, note, captured_by):
     bad = [i for i in interests if i not in valid]
     if bad:
         raise ApiError(400, f"unknown interest cluster id(s): {bad} -- must be one of {sorted(valid)}")
+    if grade_level is not None and grade_level not in VALID_GRADE_LEVELS:
+        raise ApiError(400, f"grade_level must be one of {sorted(VALID_GRADE_LEVELS)} or omitted")
+    if current_branch is not None:
+        tree = store.load('curriculum_tree.json')
+        valid_branches = {b['id'] for b in tree.get('branches', [])}
+        if current_branch not in valid_branches:
+            raise ApiError(400, f"unknown current_branch {current_branch!r} -- must be one of {sorted(valid_branches)}")
     learner['self_assessment'] = {
         "interests": interests,
         "note": note or "",
         "captured_on": today(),
         "captured_by": captured_by or "guide",
+        "grade_level": grade_level,
+        "current_branch": current_branch,
         "reviewed_by_guide": False,
         "reviewed_on": None,
         "reviewed_by": None,
@@ -357,14 +392,68 @@ def do_review_self_assessment(store, learner_id, reviewed_by):
     store.save('roster.json', roster)
 
 
+# Coarse, explicitly-a-heuristic mapping from grade level to the tier SPEC.md's own
+# difficulty table (section 3) says that grade is ready for -- T1 "MS entry" through
+# T4 "HS". Not calibrated against real outcomes yet; a reasonable starting point, not
+# a claim of precision. Tune here if a cohort's actual fit says otherwise.
+GRADE_TO_TIER = {6: 1, 7: 1, 8: 2, 9: 2, 10: 3, 11: 3, 12: 4}
+TIER_NUM = {"T1": 1, "T2": 2, "T3": 3, "T4": 4}
+
+
+def _match_score(case, dom_priority, learner_branch_domains, grade_level):
+    """Returns (score 0-100, breakdown dict of label -> points) for one candidate case
+    against one learner. Three components, each capped so no single signal can dominate
+    the other two:
+      - domain fit (0-30): how strongly the matched interest domain is prioritized for
+        authoring (domains.json's own authoring_priority -- a real, existing signal for
+        "this domain has a well-thought-through case pipeline behind it", not a guess).
+      - skills overlap (0-30): how many of the case's domains_touched land in the spine
+        domains the learner's current course (curriculum_tree.json's acton_domains for
+        their current_branch) actually feeds -- i.e. is this case teaching what they're
+        learning in class right now, not just a topic they said they like.
+      - tier/grade fit (0-40): distance between the case's real T1-T4 tier and the tier
+        GRADE_TO_TIER expects for their grade. Weighted heaviest, on purpose -- a case a
+        student can't realistically do yet (or that's beneath them) is the failure mode
+        a guide most needs the shortlist to catch. An unknown (legacy) tier or unset
+        grade_level score low/neutral rather than being excluded -- absent data is
+        surfaced as a real cost, never guessed away.
+    """
+    breakdown = {}
+    domain_pts = {"HIGH": 30, "MEDIUM": 20, "LOW": 10}.get(dom_priority, 10)
+    breakdown["Matches a priority interest area"] = domain_pts
+
+    touched = set(case.get('domains_touched') or [])
+    overlap = len(touched & learner_branch_domains) if learner_branch_domains else 0
+    skills_pts = min(30, overlap * 10) if learner_branch_domains else 15
+    breakdown["Overlaps their current course" if learner_branch_domains else "Current course not on file"] = skills_pts
+
+    tier = case.get('tier')
+    tier_num = TIER_NUM.get(tier)
+    if tier_num and grade_level and grade_level in GRADE_TO_TIER:
+        dist = abs(tier_num - GRADE_TO_TIER[grade_level])
+        tier_pts = {0: 40, 1: 20, 2: 5}.get(dist, 0)
+        breakdown[f"{tier} fits grade {grade_level}" if dist == 0 else f"{tier} vs. expected tier for grade {grade_level}"] = tier_pts
+    elif tier_num:
+        tier_pts = 20
+        breakdown[f"{tier}, real difficulty rating (grade not on file to check fit)"] = tier_pts
+    else:
+        tier_pts = 5
+        breakdown["No tier yet — older, unvetted case"] = tier_pts
+
+    return domain_pts + skills_pts + tier_pts, breakdown
+
+
 def suggest_cases(store, learner_id, limit=5):
-    """PLAN.md Phase 2c. Turns a reviewed self-assessment into a short, explained shortlist
-    instead of a guide scrolling all ~56 assignable cases blind. Reuses the exact same
-    published/legacy eligibility rule build_state() already applies (never invent a second
-    notion of 'assignable'), and domains.json's own existing_cases[]/why_it_engages/careers[]
-    -- all already validated at build time (app/validate_domains.py) -- rather than any new
-    matching heuristic. Returns [] (not an error) for a learner with no reviewed
-    self-assessment; the caller decides what that means for the UI."""
+    """PLAN.md Phase 2c/2e. Turns a reviewed self-assessment into a short, explained,
+    *ranked* shortlist instead of a guide scrolling all ~56 assignable cases blind.
+    Reuses the exact same published/legacy eligibility rule build_state() already
+    applies (never invent a second notion of 'assignable'), domains.json's own
+    existing_cases[]/why_it_engages[]/careers[]/authoring_priority (already validated
+    at build time by app/validate_domains.py), and curriculum_tree.json's real 10-branch
+    course taxonomy (the same one dashboard.html's Tree of Thought renders) for the
+    grade/course match -- no new taxonomy invented anywhere in this function. Returns []
+    (not an error) for a learner with no reviewed self-assessment; the caller decides
+    what that means for the UI."""
     roster = store.load('roster.json')
     learner = next((l for l in roster['learners'] if l['id'] == learner_id), None)
     if not learner:
@@ -383,6 +472,14 @@ def suggest_cases(store, learner_id, limit=5):
     subs = store.load('submissions.json')
     already = {a['case_id'] for a in live(subs['assignments']) if a['learner_id'] == learner_id}
 
+    learner_branch_domains = set()
+    if sa.get('current_branch'):
+        tree = store.load('curriculum_tree.json')
+        branch = next((b for b in tree.get('branches', []) if b['id'] == sa['current_branch']), None)
+        if branch:
+            learner_branch_domains = set(branch.get('acton_domains') or [])
+    grade_level = sa.get('grade_level')
+
     priority_rank = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
     seen_case_ids, candidates = set(), []
     matching_domains = [d for d in domains_doc.get('domains', []) if d.get('cluster') in wanted_cluster_names]
@@ -394,6 +491,7 @@ def suggest_cases(store, learner_id, limit=5):
                 continue
             seen_case_ids.add(case['id'])
             career = dom.get('careers') or [{}]
+            score, breakdown = _match_score(case, dom.get('authoring_priority'), learner_branch_domains, grade_level)
             candidates.append({
                 "case_id": case['id'], "title": case.get('title') or case['id'],
                 "tier": case.get('tier'), "band": case.get('band') or [],
@@ -407,12 +505,12 @@ def suggest_cases(store, learner_id, limit=5):
                 "domains_touched": case.get('domains_touched') or [],
                 "standards_count": case.get('standards_count'),
                 "primary_metric": case.get('primary_metric'),
+                "match_score": score, "match_breakdown": breakdown,
             })
-    # A guide can't judge grade/skill fit on a case with no tier -- prefer real, piloted
-    # T1-T4 cases over unvetted legacy imports whenever both exist for the same interest,
-    # rather than filling the shortlist domain-by-domain regardless of how well-specified
-    # each case is. Sort is stable, so ties keep the original domain-priority/appearance order.
-    candidates.sort(key=lambda c: 0 if c["tier"] else 1)
+    # Real, explained ranking now (see _match_score) instead of a bare tier-known-first
+    # sort -- that was a reasonable stopgap but couldn't account for grade fit or what
+    # the learner is actually taking in class right now.
+    candidates.sort(key=lambda c: -c["match_score"])
     return candidates[:limit]
 
 

@@ -205,7 +205,8 @@ def api_suggest_cases():
 def api_self_assessment():
     b = request.get_json(force=True) or {}
     admin_core.do_set_self_assessment(get_store(), b['learner_id'], b.get('interests', []),
-                                       b.get('note'), b.get('captured_by'))
+                                       b.get('note'), b.get('captured_by'),
+                                       b.get('grade_level'), b.get('current_branch'))
     return {"ok": True}
 
 

@@ -227,6 +227,12 @@ function gloss(label, term) {
   const def = GLOSSARY[term];
   return def ? '<abbr class="gloss" title="' + esc(def) + '">' + esc(label) + "</abbr>" : esc(label);
 }
+function badgeSlotLabel(L, badgeIndex) {
+  if (badgeIndex == null) return "unallocated";
+  const names = (STATE.programs[L.program] || {}).badge_names || [];
+  const name = names[badgeIndex];
+  return name ? esc(name) + " (badge " + (badgeIndex + 1) + ")" : String(badgeIndex);
+}
 
 document.getElementById("tabs").addEventListener("click", (e) => {
   const b = e.target.closest("button[data-tab]");
@@ -350,10 +356,21 @@ function renderSelfAssessment(L) {
       (checked.has(c.id) ? " checked" : "") + " style=\"margin-right:4px\">" + esc(c.name) + "</label>"
     ).join("") + "</div>";
 
+  const branches = STATE.curriculum_branches || [];
+  const curGrade = sa && sa.grade_level;
+  const curBranch = sa && sa.current_branch;
+  const gradeOpts = '<option value="">grade — not set</option>' +
+    [6, 7, 8, 9, 10, 11, 12].map((g) => '<option value="' + g + '"' + (curGrade === g ? " selected" : "") + ">Grade " + g + "</option>").join("");
+  const branchOpts = '<option value="">current course — not set</option>' +
+    branches.map((b) => '<option value="' + esc(b.id) + '"' + (curBranch === b.id ? " selected" : "") + ">" + esc(b.branch) + " (" + esc(b.band) + ")</option>").join("");
+  const branchName = curBranch ? (branches.find((b) => b.id === curBranch) || {}).branch : null;
+
   let html = '<div class="sub-panel"><strong style="font-size:12.5px">Goals & career self-assessment</strong>';
   if (sa) {
     html += '<div style="font-size:11.5px;color:var(--muted);margin-top:4px">Captured ' + esc(sa.captured_on) +
       " by " + esc(sa.captured_by) +
+      (curGrade ? " &middot; grade " + curGrade : "") +
+      (branchName ? " &middot; currently in " + esc(branchName) : "") +
       (sa.reviewed_by_guide
         ? ' &middot; <span class="pill ok">reviewed</span> ' + esc(sa.reviewed_on) + " by " + esc(sa.reviewed_by)
         : ' &middot; <span class="pill warn">not yet reviewed — suggestions won\'t show until it is</span>') +
@@ -363,6 +380,11 @@ function renderSelfAssessment(L) {
       "conversation, then capture what the Hero is curious about below.</div>";
   }
   html += picker;
+  html += '<div class="row" style="margin-top:6px">' +
+    '<select id="sa-grade-' + esc(L.id) + '">' + gradeOpts + "</select>" +
+    '<select id="sa-branch-' + esc(L.id) + '">' + branchOpts + "</select>" +
+    '</div><p style="font-size:11px;color:var(--muted);margin:4px 0 0">Grade and current course sharpen the ' +
+    "suggested-cases match score on Assign a Case — optional, but the more a guide fills in, the better the shortlist.</p>";
   html += '<div class="field" style="margin-top:6px"><label>Note (what they said, in their words)</label>' +
     '<textarea id="sa-note-' + esc(L.id) + '" rows="2" style="width:100%">' + esc((sa && sa.note) || "") + "</textarea></div>";
   html += '<div class="row" style="margin-top:6px">' +
@@ -398,7 +420,7 @@ function renderLearnerAssignments(L, myA) {
     const score = a.latest_score;
     let body = '<div class="sub-panel"><div class="row" style="justify-content:space-between">' +
       '<div><strong class="mono">' + esc(a.case_id) + '</strong> <span class="pill accent">' + esc(a.status) + "</span></div>" +
-      '<div style="font-size:11.5px;color:var(--muted)">assigned ' + esc(a.assigned_on) + (a.due_on ? " &middot; due " + esc(a.due_on) : "") + " &middot; " + gloss("badge slot", "badge_slot") + " " + (a.badge_index == null ? "unallocated" : a.badge_index) + "</div>" +
+      '<div style="font-size:11.5px;color:var(--muted)">assigned ' + esc(a.assigned_on) + (a.due_on ? " &middot; due " + esc(a.due_on) : "") + " &middot; " + gloss("badge slot", "badge_slot") + " " + badgeSlotLabel(L, a.badge_index) + "</div>" +
       "</div>";
 
     if (a.status === "assigned") {
@@ -562,10 +584,19 @@ function suggestionCardsHTML(suggestions, reviewedNoMatch) {
       const teaches = (s.domains_touched && s.domains_touched.length)
         ? esc(s.domains_touched.join(", ")) + (s.standards_count ? " (" + s.standards_count + " spine skills)" : "")
         : null;
+      const scoreTitle = s.match_breakdown
+        ? Object.entries(s.match_breakdown).map(([k, v]) => k + ": " + v + " pts").join("\n")
+        : null;
+      const scorePill = (s.match_score != null)
+        ? '<abbr class="gloss" style="border:1px solid var(--rule);border-radius:5px;padding:1px 6px;' +
+          'font-family:var(--mono);font-size:11px;font-weight:700' +
+          (s.match_score >= 70 ? ";background:var(--ok-soft);color:var(--ok)" : s.match_score >= 40 ? "" : ";color:var(--muted)") +
+          '"' + (scoreTitle ? ' title="' + esc(scoreTitle) + '"' : "") + ">" + s.match_score + "% match</abbr>"
+        : "";
       return '<div class="row" style="justify-content:space-between;margin-top:8px;align-items:flex-start">' +
         '<div style="flex:1"><div><strong>' + esc(s.title) + "</strong> " +
         '<span class="mono" style="font-size:11px;color:var(--muted)">' + tierBadge +
-        (s.band && s.band.length ? " · " + esc(s.band.join("/")) : "") + "</span></div>" +
+        (s.band && s.band.length ? " · " + esc(s.band.join("/")) : "") + "</span> " + scorePill + "</div>" +
         (s.primary_metric ? '<div style="font-size:12px;margin-top:3px">The real question: ' + esc(s.primary_metric) + "</div>" : "") +
         (teaches ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">Teaches: ' + teaches + "</div>" : "") +
         '<div style="font-size:12px;color:var(--muted);margin-top:2px">Matches their interest in ' + esc(s.domain || "this domain") +
@@ -604,14 +635,23 @@ function renderAssign() {
 function renderBadges() {
   if (!STATE.badges.length) return '<div class="card empty">No learners yet.</div>';
   return '<div class="rings">' + STATE.badges.map((b) => {
-    const canAward = b.eligible_slots.length > 0;
-    return '<div class="ringcard"><div>' +
+    return '<div class="ringcard"><div style="width:100%">' +
       '<div class="who">' + esc(b.name) + "</div>" +
       '<div class="det">' + esc(b.program) + " &middot; " + b.badges + "/" + b.badges_total + " badges &middot; " + b.cases_done + "/" + b.cases_required + " cases</div>" +
-      (canAward ? b.eligible_slots.map((slot) =>
-        '<button class="btn" style="margin-top:6px" data-award="' + esc(b.id) + '" data-slot="' + slot + '">Confirm award — badge ' + slot + "</button>").join("")
-        : (b.one_short ? '<span class="pill warn" style="margin-top:6px;display:inline-block">one case short</span>' : "")) +
-      "</div></div>";
+      '<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">' +
+      (b.slots || []).map((s) => {
+        const label = s.name || ("Badge " + (s.index + 1));
+        if (s.status === 'earned') {
+          return '<div style="font-size:12px"><span class="pill ok" style="margin-right:6px">earned</span>' + esc(label) + "</div>";
+        }
+        if (s.status === 'eligible') {
+          return '<div style="font-size:12px">' + esc(label) + " &mdash; " + s.cases_done + "/" + s.cases_per_badge + " cases " +
+            '<button class="btn" style="margin-left:6px;padding:3px 9px" data-award="' + esc(b.id) + '" data-slot="' + s.index + '">Confirm award</button></div>';
+        }
+        return '<div style="font-size:12px;color:var(--muted)">' + esc(label) + " &mdash; " + s.cases_done + "/" + s.cases_per_badge + " cases" +
+          (s.cases_done === s.cases_per_badge - 1 ? ' <span class="pill warn">one case short</span>' : "") + "</div>";
+      }).join("") +
+      "</div></div></div>";
   }).join("") + "</div>";
 }
 
@@ -638,8 +678,12 @@ function wireView() {
     const lid = b.dataset.saveSa;
     const interests = Array.from(document.querySelectorAll('[data-interest-tag="' + lid + '"]:checked')).map((c) => c.value);
     if (!interests.length) return flash("Pick at least one interest tag first.", true);
+    const gradeRaw = val("sa-grade-" + lid);
+    const branchRaw = val("sa-branch-" + lid);
     call("/api/learner/self-assessment", {
       learner_id: lid, interests, note: val("sa-note-" + lid), captured_by: val("sa-by-" + lid),
+      grade_level: gradeRaw ? parseInt(gradeRaw, 10) : null,
+      current_branch: branchRaw || null,
     });
   });
 

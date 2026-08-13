@@ -164,7 +164,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"ok": True, "removed": counts})
             elif p.path == '/api/learner/self-assessment':
                 admin_core.do_set_self_assessment(STORE, b['learner_id'], b.get('interests', []),
-                                                   b.get('note'), b.get('captured_by'))
+                                                   b.get('note'), b.get('captured_by'),
+                                                   b.get('grade_level'), b.get('current_branch'))
                 self._json(200, {"ok": True})
             elif p.path == '/api/learner/self-assessment/review':
                 admin_core.do_review_self_assessment(STORE, b['learner_id'], b.get('reviewed_by'))
