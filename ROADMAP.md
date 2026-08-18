@@ -1,5 +1,48 @@
 # Roadmap — Math Builder
 
+**v2.9 · 2026-08-12.** Supersedes v2.8. **Delta: this file was eleven days stale, and the gap was
+structural rather than clerical.** Between 2026-08-04 and 2026-08-12 the project shipped an entire
+architecture that no roadmap track described — a local admin server (D-015), a hosted Flask app on
+Vercel + Neon Postgres with passcode auth (D-016), an override-id fix (D-017), a public
+student-facing case page (D-018), an Assign-a-Case redesign (D-019) — plus roughly fifteen more
+authored cases. None of it appeared here, in README, in TECH_STACK or in DOCTRINE_LEDGER; a grep of
+all six governance docs for `vercel|neon|postgres` returned zero hits. Corrected in this pass, with
+five new doctrine rows (MCS-41→45).
+
+**Three claims in v2.8 below are now false, and are corrected rather than deleted** (the v2.8 text
+is left as written, per append-only discipline — read it as a 2026-08-01 snapshot):
+
+1. **"Do not author case #2 until Cold Chain is `VERIFIED`"** (Track A's depth-before-breadth rule)
+   — roughly fifteen more cases were authored. Tide Window was recorded as a deliberate stated
+   exception; the Aug 4–5 batch of ten was not recorded as anything. The rule was not repealed, it
+   was simply outrun. **What actually happened is more interesting than a rule violation:** the
+   batch that ignored the rule produced ten cases at `TIER1_PASS` with no sensitivity model and no
+   QA report, and the five cases authored 2026-08-12 — after the tooling matured — all clear
+   `TIER2_PASS` with the full five-file packet. Depth-before-breadth was right about *why*, and the
+   fix was better tooling rather than slower authoring. Track A's rule is hereby amended to the
+   thing it was actually protecting: **do not mark a case `published` below `TIER2_PASS`** (MCS-41).
+2. **A7 "no case #2 has used [the interactive shell] yet"** — every authored case now ships an
+   `Interactive.html`. The scaffold is proven. What remains open is the narrower original point: no
+   case's Working Notebook JS is a genuine *port* of its `sensitivity_model.py`, so the two can
+   still silently drift (see `templates/INTERACTIVE_HTML_CONTRACT.md`).
+3. **A2 "every future case needs its own `sensitivity_model.py`"** — stated as an open item, then
+   not enforced for ten cases. Now mechanically swept by `scripts/apply_publish_gate.py` (MCS-41).
+
+**The blocking fact is unchanged and is now the *only* blocker: no case is `VERIFIED`.** What has
+changed is why. On 2026-08-01 there was no path to get a case to a learner and a score back. That
+path now exists, is deployed, and has run the full assign → submit → machine-score → guide-confirm →
+revise → resubmit → accept → complete cycle for real, repeatedly, with real submission files (see
+`student_work/UAT_LOG.md`, `student_work/LIFECYCLE_SCRIPT.md`). **A3 is now a scheduling and
+facilitation problem, not an engineering one.**
+
+**New top-of-queue item — A8 · backfill the ten demoted cases.** D-020 demoted the Aug 4–5 batch
+from `published` to `qa`, which makes them unassignable in the live app until each has a
+`sensitivity_model.py` and a real Tier 2 run. Ten cases × (a declarative model + a probe run + a
+QA report). This is now the largest single piece of open Track A work, and it is a direct,
+quantified cost of having shipped past the gate — worth stating plainly rather than burying.
+
+---
+
 **v2.8 · 2026-08-01.** Supersedes v2.7. Delta: three roadmap items closed in one session —
 **A7** (`templates/interactive_shell.html` + `INTERACTIVE_HTML_CONTRACT.md`, the case-agnostic
 scaffold Cold Chain's hand-built interactive HTML never had), **B2** (spine extended into
@@ -299,6 +342,40 @@ Deliberately author the domains a teenager would not expect to be mathematical: 
 ---
 
 ## Sequencing
+
+### As of v2.9 · 2026-08-12
+
+**Now, in order:**
+1. **A3 — first `VERIFIED` case.** A real guide, a real room, a filled `RUN_REPORT`. The live app
+   removed every technical excuse; this is calendar work now. Run it on one of the five
+   `TIER2_PASS` cases (`plaza-pavers`, `company-front`, `vent-cap`, `apron-order`, `survey-corner`),
+   not on Cold Chain — those clear a higher bar.
+2. **A8 — backfill the ten demoted cases** (new; see the v2.9 header). Sensitivity model + Tier 2
+   run + QA report each, then re-promote via `case-publish`. Until then they are correctly
+   unassignable.
+3. **Close MCS-41 at the gate.** `scripts/apply_publish_gate.py` sweeps after the fact;
+   `case-publish` should refuse to stamp `published` below `TIER2_PASS` in the first place.
+4. **A regression net over the admin core.** `admin_core.py`, `store_postgres.py` and
+   `admin_web/app.py` have zero automated tests. Every production bug so far was caught by a human
+   using the app (D-017, D-019, both MCS-45 failures). That has worked and does not scale.
+5. **Real auth (MCS-44).** One shared passcode currently guards write access to real learner data,
+   with no per-user identity — the audit trail records a typed name, not an authenticated actor.
+
+**Done since v2.8 (2026-08-01 → 2026-08-12):** the local admin server (D-015) · the hosted
+Vercel + Neon variant with a shared core across both transports (D-016) · the override-id collision
+fix (D-017) · the public student case page (D-018) · the Assign-a-Case redesign (D-019) · the
+publish gate written down and swept (D-020, MCS-41) · roughly fifteen more authored cases, the last
+five at `TIER2_PASS` with full packets · A7's shell proven across every case · five doctrine rows
+for the architecture that had none (MCS-41→45).
+
+**Ongoing:** E5 override watch · E3 discussion participation (still the least-instrumented of the
+seven rubric criteria, and the one measuring the thing the format exists for).
+
+**One line:** the pipeline got good enough to outrun its own gate, the gate is now written down and
+enforced, and the only thing left between this system and Phase 3 is putting one case in front of
+real students.
+
+### As of v2.8 · 2026-08-01 (historical)
 
 **Now:** A3 (first VERIFIED case — needs a real guide and room, the one thing this pipeline cannot do for itself)
 **Done since v2.7:** A1 · A2 · A7 (interactive-HTML scaffold) · B1 · B2 (spine extended) · C3 (Drive intake designed)

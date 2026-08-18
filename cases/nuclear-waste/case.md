@@ -26,7 +26,7 @@ The commission is an independent federal agency tasked with protecting public he
 
 Both companies are experienced, licensed, and highly regarded. The commission's job is to weigh what each one actually offers. Exactly how to count rods per container and how to size each facility's maximum capacity are fixed in **APPENDIX D**; use those conventions, or your numbers won't match anyone else's.
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix E** — that is where Challenge 1 sends you.
+The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix F** — that is where Challenge 1 sends you. For background reading on how spent nuclear fuel is actually stored in the real world, SEE APPENDIX E.
 
 ---
 
@@ -91,7 +91,18 @@ Each spent fuel rod is a metal cylindrical container measuring **19 inches long 
 
 ---
 
-## Appendix E: "How To…" Math Questions To Research
+## Appendix E: Learn More
+
+These are optional, real resources for anyone curious about spent nuclear fuel storage beyond the math in this case. None of them are required for the Challenges.
+
+- [Backgrounder on Dry Cask Storage of Spent Nuclear Fuel — U.S. Nuclear Regulatory Commission](https://www.nrc.gov/reading-rm/doc-collections/fact-sheets/dry-cask-storage) — the federal regulator's own explanation of how dry casks are built, licensed, and monitored.
+- [How and Where Is Nuclear Waste Stored in the U.S.? — Ohio State University College of Engineering](https://news.osu.edu/how-and-where-is-nuclear-waste-stored-in-the-us/) — a materials-science professor explains where the country's spent fuel actually sits today and why a permanent site has been so hard to build.
+- [Safer Storage of Spent Nuclear Fuel — Union of Concerned Scientists](https://www.ucs.org/resources/safer-storage-spent-nuclear-fuel) — compares the risks of pool storage against dry cask storage, the same above-ground/below-ground tradeoff at the center of this case.
+- [What Happens to Nuclear Waste? — World Nuclear Association](https://world-nuclear.org/nuclear-essentials/what-is-nuclear-waste-and-what-do-we-do-with-it) — a plain-language overview of nuclear waste types, storage, and disposal from the global industry association.
+
+---
+
+## Appendix F: "How To…" Math Questions To Research
 
 **Vocabulary**
 

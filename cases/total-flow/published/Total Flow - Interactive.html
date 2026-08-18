@@ -1,0 +1,1204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Total Flow — Interactive</title>
+<!--
+  cases/total-flow/published/Total Flow - Interactive.html
+  Built from templates/interactive_shell.html (A7). See
+  templates/INTERACTIVE_HTML_CONTRACT.md before hand-editing.
+  case.json standards[]/new_coverage[] sha not tracked here; case.md sha256
+  at time of this build: 4b3bba3908596df253f718d7e0f459b742cd3716a4c10d866a5b15acd1724b41
+  (see cases/total-flow/case.json qa.case_md_sha256).
+  HARD LINE (MCS-37): this file must never print case.json's balance.margin_pct,
+  the acre-feet-per-$1,000 totals, or the twist's winner as a static literal
+  outside a <script> tag's live computation. Every number in the Working
+  Notebook is computed by the JS port of cases/total-flow/sensitivity_model.py
+  at read time, never pre-rendered into markup.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC — hydrograph bars used in Step 3/4 to visualize excess/managed volume */
+  .flowbar-row{display:flex;align-items:center;gap:10px;font-family:var(--sans);font-size:.82rem;margin:6px 0}
+  .flowbar-row .lbl{min-width:170px;color:var(--sub)}
+  .flowbar-track{flex:1;height:14px;background:#e4e9ee;border-radius:7px;position:relative;overflow:visible}
+  .flowbar-fill{height:100%;border-radius:7px;background:var(--navy)}
+  .flowbar-cap{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--bad)}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-levee" viewBox="0 0 24 24"><path d="M2 20h20"/><path d="M4 20V12l4-3 4 3v8"/><path d="M12 20v-6l4-3 4 3v6"/></symbol>
+  <symbol id="icon-drop" viewBox="0 0 24 24"><path d="M12 2c4 5 7 9 7 13a7 7 0 0 1-14 0c0-4 3-8 7-13z"/></symbol>
+  <symbol id="icon-gage" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4"/><path d="M12 3v2"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Launchpad</div>
+        <h1>Case Study: Total Flow</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">HS</span>
+      <span class="pill">Calculus &middot; Integrals &amp; Applications</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <figure>
+    <svg viewBox="0 0 700 170" role="img" aria-label="Two discharge hydrographs, one a tall narrow spike, one a lower wider hump, with a horizontal channel-capacity line cutting across both">
+      <rect x="0" y="0" width="700" height="170" fill="#eef3f8"/>
+      <line x1="0" y1="118" x2="700" y2="118" stroke="#a3312a" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <path d="M20 140 L70 140 L110 34 L150 96 L190 128 L230 134 L270 138 L310 139" fill="none" stroke="#1a3a5c" stroke-width="2.5"/>
+      <path d="M360 140 L390 132 L420 92 L450 46 L480 42 L510 52 L540 84 L570 108 L600 118 L630 120" fill="none" stroke="#c9a227" stroke-width="2.5"/>
+      <text x="165" y="158" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#5b6472">The Slammed Door — sharp and short</text>
+      <text x="495" y="158" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#5b6472">The Long Guest — lower and long</text>
+      <text x="690" y="114" text-anchor="end" font-family="sans-serif" font-size="10" fill="#a3312a">channel capacity</text>
+    </svg>
+    <figcaption>Two real storms, one river, one dashed line neither of them respects. Nothing here is labeled with a number yet — that comes later.</figcaption>
+  </figure>
+  <p class="lede">The wind coming off the river keeps trying to turn the pages, so Nadia Brennan holds the binder
+  flat with her forearm and reads the same column again.</p>
+  <p>She is standing on the levee crown at the reach the district board has taken to calling the soft
+  spot, boots in wet crown gravel, watching a fisherman's truck idle on the access road below.
+  Behind her the town's water tower is close enough to read. In front of her the channel is running
+  low and brown and completely harmless-looking, which is the part she has never been able to get
+  the board to feel.</p>
+  <p>Nadia is the district's engineer of record. When the design certification goes out, her seal is
+  the one on it — not the board's, not the contractor's — and that certification says this levee
+  will hold what the river sends. She has one construction season and one appropriation, and she has
+  spent the better part of a month learning that the river does not send the same thing twice.</p>
+  <p>Two binders, flat on the tailgate. One holds a storm that arrived like a slammed door, up and over
+  and gone before the district's own crews had finished sandbagging the boat ramp. The other holds a
+  storm that never looked frightening on any single morning and simply refused to leave.</p>
+  <p>Her phone buzzes against the truck bed. The board chair. The bid package goes out at the end of
+  the week, and it can describe exactly one design.</p>
+  <p>Nadia looks at the channel, then at the binders, then at the channel again.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Nadia Brennan is the district engineer for the Marrow Bend Levee District, a small
+  special-purpose district responsible for a single leveed reach on Henderson Creek in western
+  Illinois. The board controls the appropriation; the design certification carries Nadia's
+  professional seal, and she is personally accountable for the standard she certifies to.</p>
+  <p>Henderson Creek is gaged continuously by the U.S. Geological Survey, which publishes a daily mean
+  discharge — the average rate of flow past the gage, in cubic feet per second — for every day of
+  record (see Appendix A). Two real floods from that record are the district's design storms this
+  season: <strong>The Slammed Door</strong>, a short, violent event, and <strong>The Long Guest</strong>, a flood that ran for
+  days (see Appendix A).</p>
+  <p>Below a certain discharge — the reach's <strong>channel capacity</strong> — the channel carries the creek
+  without loading the levee at all. Above that rate, every additional cubic foot per second is water
+  the district's works have to handle (see Appendix B). That water, and only that water, is what
+  this case calls <strong>floodwater</strong>: the volume above channel capacity. Flow at or below channel
+  capacity is not floodwater, and it never enters the board's number for either bid. Appendix B also
+  carries the gage's published flood-frequency record, which the district's engineering standards
+  require the certification to reference.</p>
+  <p>A design <strong>safely manages</strong> floodwater when that water is either carried inside the channel the
+  design provides or held in the storage the design provides. Floodwater that is neither is a
+  <strong>shortfall</strong>. Two bids are on the table and the appropriation pays for exactly one
+  (see Appendix C).</p>
+  <div class="card">
+    <p><strong>The Crest Standard</strong> raises and armors the levee crown so the channel itself carries a higher
+    discharge. It handles any flow at or below its design discharge for as long as the storm lasts —
+    duration is free — and everything above that design discharge is a shortfall, no matter how
+    briefly it lasts.</p>
+    <p><strong>The Basin Standard</strong> leaves the crown where it was built and buys two upstream floodwater
+    detention structures. They absorb flow above channel capacity at any rate at all — peak is free —
+    but only until their storage is full; everything after that is a shortfall.</p>
+  </div>
+  <p>The board scores the two bids on one number, stated in the bid package: <strong>acre-feet of floodwater
+  safely managed per one thousand dollars of appropriation, totalled across both design storms</strong>
+  (see Appendices C and D). Appendix D also carries the conversion the district's reports use to
+  turn a discharge rate into a volume, and the appropriation the board has voted.</p>
+  <p>Nadia may not change either bid's scope and may not change the river. Where a figure below is not
+  a matter of public record it is stated as an explicit modeling assumption (see Appendix F) rather
+  than guessed, and every sourced figure is listed in Appendix E. The vocabulary and the "how to…"
+  skills this case will ask of you are listed in Appendix G — that is where Challenge 1 sends you.
+  Curious what any of this looks like in the field? See Appendix H for further reading.</p>
+  <figure>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
+      <div style="flex:1 1 220px;min-width:200px;max-width:320px">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/7/7e/USGS_Gage_House_Cedar_Creek_North_Dakota.jpg" alt="A USGS streamgage cableway and gage house on a small creek, used to measure stage and discharge" style="width:100%;border-radius:6px;display:block;border:1px solid var(--line)">
+        <p class="side-note">USGS streamgage cableway and gage house, Cedar Creek, ND. Photo: Nate Stroh / USGS, public domain.</p>
+      </div>
+      <div style="flex:1 1 220px;min-width:200px;max-width:320px">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/Levee_Street_and_the_seawall_-_Vicksburg_MS.jpg" alt="A concrete levee wall with slotted gates along Levee Street in Vicksburg, Mississippi" style="width:100%;border-radius:6px;display:block;border:1px solid var(--line)">
+        <p class="side-note">A levee wall built to raise a channel's effective capacity, Vicksburg, MS. Photo: David Brossard, Wikimedia Commons, CC BY-SA 4.0.</p>
+      </div>
+      <div style="flex:1 1 220px;min-width:200px;max-width:320px">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/a/ae/2022-05-02_13_05_14_Lawn_on_the_top_of_a_detention_basin_embankment_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg" alt="A grassy embankment on top of a flood detention basin, Fairfax County, Virginia" style="width:100%;border-radius:6px;display:block;border:1px solid var(--line)">
+        <p class="side-note">An earthen detention-basin embankment — the kind of structure that stores floodwater above capacity, Fairfax County, VA. Photo: Famartin, Wikimedia Commons, CC BY-SA 4.0.</p>
+      </div>
+    </div>
+    <figcaption>Three pieces of real flood-control infrastructure like the ones this case's two bids describe: a streamgage station, a levee, and a floodwater detention basin.</figcaption>
+  </figure>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Nadia Brennan. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Certify The Crest Standard</h4>
+      <p style="margin:0">Raise and armor the levee crown so the channel carries a higher discharge, for however long the storm lasts.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Certify The Basin Standard</h4>
+      <p style="margin:0">Leave the crown as built and buy upstream detention storage that absorbs flow above channel capacity until it fills.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which design you'd certify and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a Riemann sum for the total water volume that passed the gage during each design storm — stated interval width and where inside each day you placed that day's value, the sum, the acre-feet conversion, and whether your sum over-, under-, or exactly reproduces the published record and how you know; <strong>D2</strong> for each storm, a fitted discharge function Q(t), its general antiderivative with the constant of integration shown, and the definite integral by the Fundamental Theorem of Calculus, compared against your D1 sum; <strong>D3</strong> for each storm, a shaded diagram and computation of the area between your Q(t) curve and the channel-capacity line over the interval where the storm exceeds capacity, with limits of integration stated, plus the same volume read straight off Appendix A and an accounting of the difference; <strong>D4</strong> a floodwater-safely-managed table for both standards across both storms, each option's shortfall shown, a final acre-feet-per-$1,000-of-appropriation figure for each, and your recommendation.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; The Gage and the Two Design Storms</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Gage name and USGS site number</td><td>Henderson Creek near Oquawka, Illinois &mdash; USGS 05469000 [S1]</td></tr>
+        <tr><td>Location</td><td>Henderson County, IL &middot; 41.001425&deg; N, 90.854308&deg; W [S1]</td></tr>
+        <tr><td>Drainage area above the gage</td><td class="num">432 square miles [S1]</td></tr>
+        <tr><td>Gage altitude</td><td class="num">540.64 ft above NAVD88 [S1]</td></tr>
+        <tr><td>Regulation</td><td>Unregulated &mdash; no upstream reservoir controls the flow past this gage [S6]</td></tr>
+      </table>
+      <p class="side-note">Both tables below are daily mean discharge in cubic feet per second, exactly as USGS publishes them. Every value carries qualification code <code>A</code> &mdash; approved for publication, review complete [S2, S3].</p>
+      <table id="apxTableStorm1">
+        <tr><th colspan="2">Design Storm 1 &mdash; The Slammed Door (February 2019)</th></tr>
+        <tr><th>Date</th><th>Daily mean discharge (cfs)</th></tr>
+        <tr><td>2019-02-22</td><td class="num">413</td></tr>
+        <tr><td>2019-02-23</td><td class="num">3,290</td></tr>
+        <tr><td>2019-02-24</td><td class="num">8,060</td></tr>
+        <tr><td>2019-02-25</td><td class="num">4,220</td></tr>
+        <tr><td>2019-02-26</td><td class="num">1,130</td></tr>
+        <tr><td>2019-02-27</td><td class="num">690</td></tr>
+        <tr><td>2019-02-28</td><td class="num">490</td></tr>
+        <tr><td>2019-03-01</td><td class="num">474</td></tr>
+      </table>
+      <p class="side-note">(Source: [S2])</p>
+      <table id="apxTableStorm2">
+        <tr><th colspan="2">Design Storm 2 &mdash; The Long Guest (April&ndash;May 2019)</th></tr>
+        <tr><th>Date</th><th>Daily mean discharge (cfs)</th></tr>
+        <tr><td>2019-04-28</td><td class="num">225</td></tr>
+        <tr><td>2019-04-29</td><td class="num">932</td></tr>
+        <tr><td>2019-04-30</td><td class="num">3,000</td></tr>
+        <tr><td>2019-05-01</td><td class="num">6,400</td></tr>
+        <tr><td>2019-05-02</td><td class="num">6,700</td></tr>
+        <tr><td>2019-05-03</td><td class="num">6,240</td></tr>
+        <tr><td>2019-05-04</td><td class="num">3,980</td></tr>
+        <tr><td>2019-05-05</td><td class="num">2,050</td></tr>
+        <tr><td>2019-05-06</td><td class="num">1,490</td></tr>
+        <tr><td>2019-05-07</td><td class="num">1,420</td></tr>
+      </table>
+      <p class="side-note">(Source: [S3])</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; The Reach: Capacity and Flood-Frequency Record</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>National Weather Service minor flood stage at this gage</td><td>21.5 ft (action stage 20.0 ft; moderate and major flood stages are not defined for this gage) [S4]</td></tr>
+        <tr><td><strong>Channel capacity</strong> &mdash; discharge at minor flood stage, from the gage's own rating</td><td class="num"><strong>1,934 cfs</strong> [S5]</td></tr>
+      </table>
+      <p class="side-note">USGS stage-discharge rating 31.0 for site 05469000 (excerpt) [S5]</p>
+      <table>
+        <tr><th>Gage height (ft)</th><th>Discharge (cfs)</th></tr>
+        <tr><td>20.00</td><td class="num">1,415</td></tr>
+        <tr><td>21.50</td><td class="num">1,934</td></tr>
+        <tr><td>22.00</td><td class="num">2,147</td></tr>
+        <tr><td>23.00</td><td class="num">2,663</td></tr>
+        <tr><td>24.00</td><td class="num">3,290</td></tr>
+        <tr><td>25.00</td><td class="num">4,117</td></tr>
+        <tr><td>26.00</td><td class="num">5,927</td></tr>
+        <tr><td>26.50</td><td class="num">7,049</td></tr>
+        <tr><td>27.00</td><td class="num">8,337</td></tr>
+        <tr><td>28.00</td><td class="num">11,488</td></tr>
+      </table>
+      <p class="side-note">Published peak-flow frequency at this gage, at-site estimates from 1924&ndash;2017 annual peaks [S6]</p>
+      <table>
+        <tr><th>Annual exceedance probability</th><th>Peak discharge (cfs)</th></tr>
+        <tr><td>50%</td><td class="num">5,070</td></tr>
+        <tr><td>20%</td><td class="num">9,020</td></tr>
+        <tr><td>10%</td><td class="num">12,400</td></tr>
+        <tr><td>4%</td><td class="num">17,700</td></tr>
+        <tr><td>2%</td><td class="num">22,400</td></tr>
+        <tr><td>1%</td><td class="num">27,800</td></tr>
+        <tr><td>0.5%</td><td class="num">34,000</td></tr>
+        <tr><td>0.2%</td><td class="num">43,800</td></tr>
+      </table>
+      <p class="side-note"><em>These are instantaneous peak discharges. Every other discharge figure in this case is a daily mean. The two quantities are not the same thing and are not directly comparable [S6, S7].</em></p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; The Two Bids</summary>
+    <div class="inner">
+      <p class="side-note">Both bids came in at the appropriation ceiling in Appendix D &mdash; the board published the number, and both contractors priced to it (see Appendix F, MA1).</p>
+      <table>
+        <tr><th></th><th>Bid A: The Crest Standard</th><th>Bid B: The Basin Standard</th></tr>
+        <tr><td>Scope</td><td>Raise and armor 2.50 miles of levee crown by 4.50 ft</td><td>Two upstream floodwater detention structures</td></tr>
+        <tr><td>Discharge the channel then carries</td><td class="num">5,927 cfs [S5]</td><td class="num">Unchanged at 1,934 cfs [S5]</td></tr>
+        <tr><td>Storage provided</td><td>None. The crest handles rate, not volume</td><td class="num">25,000 acre-feet authorized &mdash; two structures at the 12,500 acre-foot per-structure ceiling in 16 U.S.C. 1002 [S8]</td></tr>
+        <tr><td>Usable storage at the start of a storm</td><td>&mdash;</td><td class="num">24,000 acre-feet (see Appendix F, MA2)</td></tr>
+        <tr><td>Duration it can hold</td><td>Unlimited at or below its design discharge</td><td>Until the storage is full</td></tr>
+        <tr><td>Bid price</td><td>The full appropriation (see Appendix D)</td><td>The full appropriation (see Appendix D)</td></tr>
+        <tr><td>How its scope was priced</td><td>A comparable U.S. Army Corps of Engineers project raised a levee an average of 5 ft at a cost of $258 million across a 17-mile system [S9]</td><td>Detention pools are farmland; Illinois cropland averaged $9,850 per acre in 2025 [S10]</td></tr>
+      </table>
+      <p class="side-note"><strong>A levee is only as high as its lowest point.</strong> Bid A raises the whole 2.50-mile reach or the reach is not certified at all &mdash; the height in its scope line is the height it holds everywhere, and it is what the contractor bid against the published appropriation, not a figure the district derived (see Appendix F, MA1).</p>
+      <p class="side-note"><strong>Shortfall, per option.</strong> Bid A's shortfall on a storm is the volume of flow above 5,927 cfs. Bid B's shortfall on a storm is the floodwater above channel capacity that its usable storage cannot hold. The two design storms are ten weeks apart in the real record, and the detention structures' outlet works draw a full pool down in far less time than that (see Appendix F, MA3), so each storm meets the structures with their usable storage available.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Units, Volume, and the Appropriation</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>One cubic foot per second sustained for one day (one cfs-day)</td><td>86,400 cubic feet = <strong>1.98347 acre-feet</strong> = 646,317 gallons [S7]</td></tr>
+        <tr><td>USGS on its own daily values</td><td><em>"The daily mean discharges reported in the daily value data tables numerically are equal to the daily volumes in cfs-days, and the totals also represent volumes in cfs-days."</em> [S7]</td></tr>
+        <tr><td>District appropriation, this season</td><td class="num"><strong>$38,000,000</strong> (see Appendix F, MA1)</td></tr>
+        <tr><td>Board's scoring number</td><td>Acre-feet of floodwater safely managed per one thousand dollars of appropriation, totalled across both design storms &mdash; floodwater being the volume above channel capacity, as defined in Background. Flow the channel would have carried anyway is not floodwater and is not scored for either bid.</td></tr>
+      </table>
+      <p><strong>Reading Appendix A as a function of time.</strong> Every row of Appendix A is the mean discharge over
+      one whole day, not a reading taken at an instant. Let <em>t</em> be measured in days, with <em>t</em> = 0 at the
+      start of the first row's day; a storm of <em>n</em> rows then occupies the window 0 &le; <em>t</em> &le; <em>n</em> days, and
+      each row is the average value of Q on one one-day subinterval of it. Two things follow, and the
+      district's reports use both:</p>
+      <ul>
+        <li>Sum with &Delta;<em>t</em> = one day and <strong>one subinterval per row</strong>. Work out for yourself, from the USGS
+        sentence above, what that sum returns and whether the choice of left, right or midpoint placement
+        changes it &mdash; D1 asks you to say which, and why.</li>
+        <li>A smooth curve fitted through the rows is a different object. Place each daily mean at the
+        <strong>midpoint</strong> of its day (<em>t</em> = 0.5, 1.5, 2.5, &hellip;) if you fit one. Compare its integral against
+        your sum, and be ready to say what any gap between the two is &mdash; and whether it is an error.</li>
+      </ul>
+      <p class="side-note">The district scores the bids on the published daily record, so every acre-foot in the D4 table comes from Appendix A's daily values, not from a fitted curve.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Sources</summary>
+    <div class="inner">
+      <ul class="src-list" style="font-size:.82rem">
+        <li>[S1] U.S. Geological Survey, NWIS Site Service, expanded site record for 05469000 &mdash; gage identity, location, drainage area, altitude. <a href="https://waterservices.usgs.gov/nwis/site/?format=rdb&amp;sites=05469000&amp;siteOutput=expanded" target="_blank" rel="noopener">waterservices.usgs.gov</a></li>
+        <li>[S2] USGS NWIS Daily Values Service, site 05469000 &mdash; Design Storm 1 discharge. <a href="https://waterservices.usgs.gov/nwis/dv/?format=rdb&amp;sites=05469000&amp;startDT=2019-02-15&amp;endDT=2019-03-08&amp;parameterCd=00060&amp;statCd=00003" target="_blank" rel="noopener">waterservices.usgs.gov</a></li>
+        <li>[S3] USGS NWIS Daily Values Service, site 05469000 &mdash; Design Storm 2 discharge. <a href="https://waterservices.usgs.gov/nwis/dv/?format=rdb&amp;sites=05469000&amp;startDT=2019-04-24&amp;endDT=2019-05-14&amp;parameterCd=00060&amp;statCd=00003" target="_blank" rel="noopener">waterservices.usgs.gov</a></li>
+        <li>[S4] NOAA National Weather Service, National Water Prediction Service, gauge OQUI2 &mdash; flood-category stages. <a href="https://api.water.noaa.gov/nwps/v1/gauges/OQUI2" target="_blank" rel="noopener">api.water.noaa.gov</a></li>
+        <li>[S5] USGS NWISWeb expanded rating table (exsa), site 05469000, rating 31.0 &mdash; stage-discharge rating. <a href="https://waterdata.usgs.gov/nwisweb/get_ratings/?site_no=05469000&amp;file_type=exsa" target="_blank" rel="noopener">waterdata.usgs.gov</a></li>
+        <li>[S6] USGS StreamStats GageStats service, station 05469000 &mdash; peak-flow frequency and regulation status. <a href="https://streamstats.usgs.gov/gagestatsservices/stations/05469000?includeStats=true" target="_blank" rel="noopener">streamstats.usgs.gov</a></li>
+        <li>[S7] U.S. Geological Survey, <em>Water Resources Data &mdash; Definition of Terms</em> &mdash; cfs-day definition. <a href="https://water.usgs.gov/ADR_Defs_2004.pdf" target="_blank" rel="noopener">water.usgs.gov</a></li>
+        <li>[S8] Watershed Protection and Flood Prevention Act, 16 U.S.C. &sect; 1002 &mdash; statutory storage ceiling. <a href="https://www.law.cornell.edu/uscode/text/16/1002" target="_blank" rel="noopener">law.cornell.edu</a></li>
+        <li>[S9] Giles Lambertson, "USACE Begins Final Stage of $529M, 17-Mile Flood Protection Project in Kansas City," Construction Equipment Guide, 2022-08-31. <a href="https://www.constructionequipmentguide.com/usace-begins-final-stage-of-529m-17-mile-flood-protection-project-in-kansas-city/57707" target="_blank" rel="noopener">constructionequipmentguide.com</a></li>
+        <li>[S10] USDA National Agricultural Statistics Service, <em>Land Values 2025 Summary</em>, August 2025. <a href="https://www.nass.usda.gov/Publications/Todays_Reports/reports/land0825.pdf" target="_blank" rel="noopener">nass.usda.gov</a></li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="side-note">These figures are not sourced. They are stated scenario assumptions chosen by the case author, each with a real basis named below. You may challenge any of them in discussion &mdash; that is a legitimate move.</p>
+      <table>
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+        <tr><td>MA1</td><td>The district's appropriation, and that both bids come in at it</td><td class="num">$38,000,000, both bids</td><td>The Marrow Bend Levee District is fictional and has no published budget; the figure is set so each bid's scope is the right size of job against real unit costs from S9 and S10.</td></tr>
+        <tr><td>MA2</td><td>Share of authorized detention capacity unavailable when a storm arrives</td><td class="num">4.0% of 25,000 acre-feet</td><td>Detention structures lose capacity to sediment accumulation and may hold an antecedent pool at the onset of an event. No measured figure can exist for structures that don't exist; 4% is a small, deliberately conservative reservation.</td></tr>
+        <tr><td>MA3</td><td>Time for the detention structures' outlet works to draw a full pool down</td><td class="num">10 days</td><td>Standard practice sizes a flood-detention outlet to empty the pool within days, not weeks, so the storage is ready for the next event.</td></tr>
+        <tr><td>MA4</td><td>The sustained-loading limit revealed by the Twist</td><td class="num">4 consecutive days above channel capacity</td><td>The district's geotechnical report is a scenario device; sustained high water driving underseepage beneath an embankment is a real, well-documented levee failure mode.</td></tr>
+        <tr><td>MA5</td><td>Data cutoff for every still-moving figure</td><td class="num">2026-08-12</td><td>Illinois cropland values (S10), the USGS rating (S5), and the NWS flood-category stages (S4) all change over time; every one is frozen at this date.</td></tr>
+      </table>
+      <p><strong>Two lines this case states rather than measures.</strong> Neither is in the table above, because
+      neither is an estimate of an unknown quantity &mdash; each is a choice, made in the open, that the
+      arithmetic then obeys. Both move the answer further than anything in the table does.</p>
+      <ol>
+        <li><strong>Channel capacity is taken to be the discharge at the National Weather Service's published
+        minor flood stage</strong> &mdash; 21.50 ft on Appendix B's rating. That is a choice of convention, not a
+        measurement. Raising it shrinks both storms' floodwater volumes; lowering it grows them &mdash; and it
+        does not grow the two storms' volumes at the same rate, which is something you can check and
+        should. Every row of Appendix B's rating excerpt is a different convention, and moving one row is
+        enough to move the recommendation.</li>
+        <li><strong>The height in Bid A's scope line is a bid's scope, not a property of the river.</strong> It selects
+        a second row of the same rating, and the discharge in Appendix C is whatever that row says. A
+        different raise is a different bid, not a corrected number.</li>
+      </ol>
+      <p class="side-note">A Hero who wants to attack the recommendation should attack these two lines first, and should say which row of Appendix B they are standing on when they do.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-15. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to certify; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Riemann sum of total volume (D1)</h4>
+    <div class="goal">Appendix D's convention: an <em>n</em>-row storm spans <em>n</em> one-day subintervals, &Delta;t = 1 day, one subinterval per row. Pick a storm, add up its daily mean discharges (cfs-days), and convert to acre-feet using Appendix D's factor (1.98347). Then say whether your sum over-, under-, or exactly reproduces the published record.</div>
+    <div class="fieldrow">
+      <label for="s1storm">Storm</label>
+      <select id="s1storm">
+        <option value="1">Storm 1 &mdash; The Slammed Door (8 rows)</option>
+        <option value="2">Storm 2 &mdash; The Long Guest (10 rows)</option>
+      </select>
+    </div>
+    <div class="fieldrow"><label for="s1sum">Riemann sum (cfs-days)</label><input type="number" id="s1sum" step="0.01"><span id="fb1a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1af">Converted to acre-feet</label><input type="number" id="s1af" step="0.01"><span id="fb1b" class="fb"></span></div>
+    <div class="fieldrow">
+      <label for="s1kind">Your sum&hellip;</label>
+      <select id="s1kind">
+        <option value="">choose one</option>
+        <option value="over">over-estimates the published record</option>
+        <option value="under">under-estimates the published record</option>
+        <option value="exact">exactly reproduces the published record</option>
+      </select>
+      <span id="fb1c" class="fb"></span>
+    </div>
+    <button onclick="checkStep1()">Check</button>
+    <p class="side-note">Why "exact" is a defensible answer here (and isn't, for most Riemann sums): each row is already a daily mean, not a sampled instant, and USGS's own definition (Appendix D, [S7]) says the daily mean numerically equals the daily volume in cfs-days. Summing <em>n</em> daily means over <em>n</em> whole days reproduces the published total precisely &mdash; the approximation, if there is one, is in how USGS built the daily mean, not in your arithmetic.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Antiderivative and FTC for a fitted Q(t) (D2)</h4>
+    <div class="goal">This notebook fits one reasonable quadratic Q(t) = at&sup2; + bt + c through Storm 1's 8 daily-mean points, each placed at the midpoint of its day (Appendix D): a = &minus;256.01786, b = 1586.55952, c = 1440.01637, over the window 0 &le; t &le; 8. Write the general antiderivative F(t) using the power rule (don't forget the constant of integration), then evaluate the definite integral over [0, 8] by the Fundamental Theorem of Calculus.</div>
+    <div class="fieldrow"><label for="s2t3">Coefficient of t&sup3; in F(t) (= a/3)</label><input type="number" id="s2t3" step="0.0001"><span id="fb2a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2t2">Coefficient of t&sup2; in F(t) (= b/2)</label><input type="number" id="s2t2" step="0.0001"><span id="fb2b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2t1">Coefficient of t in F(t) (= c)</label><input type="number" id="s2t1" step="0.01"><span id="fb2c" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2ftc">Definite integral, F(8) &minus; F(0) (cfs-days)</label><input type="number" id="s2ftc" step="0.01"><span id="fb2d" class="fb"></span></div>
+    <button onclick="checkStep2()">Check</button>
+    <p class="side-note">Compare this FTC value to your Step 1 sum for Storm 1. They will not match &mdash; a smooth least-squares curve necessarily clips a one-day spike like 2019-02-24's 8,060 cfs, so the fitted model's integral runs under the true published total. That gap is real information about the model, not an arithmetic mistake in either calculation.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Area between Q(t) and channel capacity (D3)</h4>
+    <div class="goal">Using the same Step 2 model, find where Q(t) = 1,934 cfs (channel capacity) within [0, 8], then compute the area between Q(t) and the horizontal capacity line over that interval &mdash; the floodwater your curve model predicts. Then compare it to the daily-block figure read straight off Appendix A.</div>
+    <div class="fieldrow"><label for="s3lo">Lower limit of integration (t, days)</label><input type="number" id="s3lo" step="0.0001"><span id="fb3a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3hi">Upper limit of integration (t, days)</label><input type="number" id="s3hi" step="0.0001"><span id="fb3b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3area">Area above capacity (cfs-days)</label><input type="number" id="s3area" step="0.01"><span id="fb3c" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3af">Converted to acre-feet</label><input type="number" id="s3af" step="0.01"><span id="fb3d" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3daily">Same figure, read from Appendix A's daily blocks (acre-feet)</label><input type="number" id="s3daily" step="0.01"><span id="fb3e" class="fb"></span></div>
+    <button onclick="checkStep3()">Check</button>
+    <div id="s3bars" style="margin-top:14px"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Floodwater safely managed, both standards (D4)</h4>
+    <div class="goal">D4 is scored from Appendix A's <strong>daily values</strong>, not a fitted curve (Appendix D says so). Using Appendix A/B/C/F, compute each standard's managed floodwater (acre-feet) across both storms, and the acre-feet-per-$1,000-of-appropriation figure the board actually scores. Try the slider to see how MA2's storage-reservation assumption moves the picture &mdash; this is exactly what Tier 2 probe 5 checks mechanically against <code>sensitivity_model.py</code>.</div>
+    <div class="fieldrow"><label for="s4a">Crest Standard managed (acre-feet)</label><input type="number" id="s4a" step="0.01"><span id="fb4a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s4b">Basin Standard managed (acre-feet)</label><input type="number" id="s4b" step="0.01"><span id="fb4b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s4ap">Crest Standard, acre-feet per $1,000</label><input type="number" id="s4ap" step="0.00001"><span id="fb4c" class="fb"></span></div>
+    <div class="fieldrow"><label for="s4bp">Basin Standard, acre-feet per $1,000</label><input type="number" id="s4bp" step="0.00001"><span id="fb4d" class="fb"></span></div>
+    <button onclick="checkStep4()">Check</button>
+    <div class="sliderow">
+      <label for="s4slider" style="min-width:220px;font-family:var(--sans);font-size:.86rem">Explore: MA2 unavailable-storage share</label>
+      <input type="range" id="s4slider" min="0" max="0.08" step="0.001" value="0.04" oninput="onS4Slider()">
+      <span class="val" id="s4sliderVal">4.0%</span>
+    </div>
+    <div id="s4live" class="side-note"></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-levee"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>"The geotechnical report Nadia ordered comes back, and it is not about the crest at all &mdash; it
+      is about what is underneath the levee."</p>
+      <p>"A raised crown holds a higher river. It does not hold it forever. Under sustained high water
+      the foundation begins to pass water beneath the embankment, and the district's emergency plan
+      takes the reach out of service after four consecutive days of continuous loading &mdash; four
+      consecutive days with the creek above channel capacity, which is what Background means by
+      loading the levee &mdash; no matter how high the crown is."</p>
+      <p>"You have sixty seconds. The Crest Standard's whole argument was that duration is free. It is
+      not. Are you changing your recommendation, or not?"</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the 4-consecutive-day sustained-loading limit (MA4) to the Crest Standard in Step 4 above</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] USGS NWIS Site Service &mdash; expanded site record, 05469000 (gage identity/location).</li>
+      <li>[S2] USGS NWIS Daily Values Service, 05469000 (Design Storm 1 discharge).</li>
+      <li>[S3] USGS NWIS Daily Values Service, 05469000 (Design Storm 2 discharge).</li>
+      <li>[S4] NOAA National Weather Service, National Water Prediction Service, gauge OQUI2 (flood stages).</li>
+      <li>[S5] USGS NWISWeb expanded rating table, site 05469000, rating 31.0 (stage-discharge).</li>
+      <li>[S6] USGS StreamStats GageStats service, station 05469000 (peak-flow frequency, regulation status).</li>
+      <li>[S7] USGS, Water Resources Data &mdash; Definition of Terms (cfs-day definition).</li>
+      <li>[S8] 16 U.S.C. &sect; 1002, Watershed Protection and Flood Prevention Act (storage ceiling).</li>
+      <li>[S9] Construction Equipment Guide, USACE Kansas City levee raise cost (2022).</li>
+      <li>[S10] USDA NASS, Land Values 2025 Summary (Illinois cropland).</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Total Flow &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, ported from cases/total-flow/case.json
+   and cases/total-flow/sensitivity_model.py (verified 2026-08-15 to
+   reproduce case.json.derived exactly). Every field here is either a
+   real sourced figure (S1-S10) or a stated Modeling Assumption
+   (MA1-MA5) -- never a pre-computed verdict.
+   ================================================================ */
+const CASE_ID = "total-flow";
+
+// --- The real record (S2, S3) ----------------------------------------------
+const STORM1 = [
+  ["2019-02-22", 413.0], ["2019-02-23", 3290.0], ["2019-02-24", 8060.0],
+  ["2019-02-25", 4220.0], ["2019-02-26", 1130.0], ["2019-02-27", 690.0],
+  ["2019-02-28", 490.0], ["2019-03-01", 474.0]
+].map(([d, q]) => ({date: new Date(d + "T00:00:00Z"), q}));
+
+const STORM2 = [
+  ["2019-04-28", 225.0], ["2019-04-29", 932.0], ["2019-04-30", 3000.0],
+  ["2019-05-01", 6400.0], ["2019-05-02", 6700.0], ["2019-05-03", 6240.0],
+  ["2019-05-04", 3980.0], ["2019-05-05", 2050.0], ["2019-05-06", 1490.0],
+  ["2019-05-07", 1420.0]
+].map(([d, q]) => ({date: new Date(d + "T00:00:00Z"), q}));
+
+// --- JS port of sensitivity_model.py PARAMS/FLEX ----------------------------
+const PARAMS = {
+  channel_capacity_cfs: 1934.0,          // S5 -- USGS rating 31.0 at 21.50 ft (S4, NWS minor flood stage)
+  crest_design_discharge_cfs: 5927.0,    // S5 -- same rating at 26.00 ft (21.50 + a 4.50 ft raise)
+  authorized_detention_af: 25000.0,      // S8 -- 2 structures x 12,500 acre-ft, the 16 U.S.C. 1002 ceiling
+  cfsday_to_acreft: 1.98347,             // S7 -- USGS Definition of Terms
+
+  appropriation_usd: 38000000.0,         // MA1
+  unavailable_storage_frac: 0.04,        // MA2
+  basin_drawdown_days: 10.0,             // MA3
+  twist_max_loading_days: 4.0,           // MA4
+};
+const FLEX = ["appropriation_usd", "unavailable_storage_frac", "basin_drawdown_days", "twist_max_loading_days"];
+
+function daysBetween(d1, d2){ return Math.round((d2 - d1) / 86400000); }
+
+function excessCfsdays(series, floorCfs){
+  return series.reduce((s, r) => s + (r.q > floorCfs ? r.q - floorCfs : 0), 0);
+}
+function separationDays(p){
+  const qc = p.channel_capacity_cfs;
+  const above1 = STORM1.filter(r => r.q > qc).map(r => r.date);
+  const above2 = STORM2.filter(r => r.q > qc).map(r => r.date);
+  const last1 = new Date(Math.max(...above1));
+  const first2 = new Date(Math.min(...above2));
+  return daysBetween(last1, first2);
+}
+function tailExcessCfsdays(series, floorCfs, keepDays){
+  let run = 0, lost = 0, prev = null;
+  for(const r of series){
+    if(r.q > floorCfs){
+      run = (prev !== null && daysBetween(prev, r.date) === 1 && run) ? run + 1 : 1;
+      if(run > keepDays) lost += r.q - floorCfs;
+    } else {
+      run = 0;
+    }
+    prev = r.date;
+  }
+  return lost;
+}
+function breakdown(p){
+  const conv = p.cfsday_to_acreft, qc = p.channel_capacity_cfs, qa = p.crest_design_discharge_cfs;
+  const e1 = excessCfsdays(STORM1, qc) * conv;
+  const e2 = excessCfsdays(STORM2, qc) * conv;
+  const total = e1 + e2;
+  const shortA = (excessCfsdays(STORM1, qa) + excessCfsdays(STORM2, qa)) * conv;
+  const managedA = total - shortA;
+  const usable = p.authorized_detention_af * (1 - p.unavailable_storage_frac);
+  const stored1 = Math.min(usable, e1);
+  const sep = separationDays(p);
+  const undrained = stored1 * Math.max(0, 1 - sep / Math.max(p.basin_drawdown_days, 1e-9));
+  const stored2 = Math.min(Math.max(usable - undrained, 0), e2);
+  const managedB = stored1 + stored2;
+  const per1000 = p.appropriation_usd / 1000.0;
+  return {
+    e1, e2, total, shortA, managedA, usable, managedB, shortB: total - managedB,
+    A_per_1000: managedA / per1000, B_per_1000: managedB / per1000, sep
+  };
+}
+function twistBreakdown(p){
+  const b = breakdown(p);
+  const qc = p.channel_capacity_cfs, keep = p.twist_max_loading_days;
+  const lost = (tailExcessCfsdays(STORM1, qc, keep) + tailExcessCfsdays(STORM2, qc, keep)) * p.cfsday_to_acreft;
+  const managedA = b.managedA - lost;
+  const per1000 = p.appropriation_usd / 1000.0;
+  return {lost, managedA, managedB: b.managedB, A_per_1000: managedA / per1000, B_per_1000: b.B_per_1000};
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const d = breakdown(p);
+  return {A: d.A_per_1000, B: d.B_per_1000};
+}
+function evaluateTwist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const t = twistBreakdown(p);
+  return {A: t.A_per_1000, B: t.B_per_1000};
+}
+
+// --- Step 2/3 illustrative quadratic fit for Storm 1 (least-squares, midpoint
+// placement per Appendix D) -- given here as case content the notebook checks
+// against, not a student's own open-ended curve-fitting choice. ---------------
+const Q1_A = -256.01785714, Q1_B = 1586.55952381, Q1_C = 1440.01636905;
+function Q1(t){ return Q1_A*t*t + Q1_B*t + Q1_C; }
+function F1(t){ return (Q1_A/3)*t*t*t + (Q1_B/2)*t*t + Q1_C*t; }
+function q1Roots(floorCfs){
+  const A = Q1_A, B = Q1_B, C = Q1_C - floorCfs;
+  const disc = B*B - 4*A*C;
+  const r1 = (-B - Math.sqrt(disc)) / (2*A);
+  const r2 = (-B + Math.sqrt(disc)) / (2*A);
+  return [Math.min(r1, r2), Math.max(r1, r2)];
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+function strval(id){ return document.getElementById(id).value; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions. Step 4 calls the
+   JS port of sensitivity_model.py (evaluate()/evaluateTwist()) rather
+   than re-deriving the arithmetic inline.
+   ================================================================ */
+function checkStep1(){
+  const storm = strval('s1storm') === '2' ? STORM2 : STORM1;
+  const sumCfsdays = storm.reduce((s, r) => s + r.q, 0);
+  const af = sumCfsdays * PARAMS.cfsday_to_acreft;
+  fb('fb1a', near(val('s1sum'), sumCfsdays, 1));
+  fb('fb1b', near(val('s1af'), af, 2));
+  fb('fb1c', strval('s1kind') === 'exact');
+}
+function checkStep2(){
+  fb('fb2a', near(val('s2t3'), Q1_A/3, 0.5));
+  fb('fb2b', near(val('s2t2'), Q1_B/2, 2));
+  fb('fb2c', near(val('s2t1'), Q1_C, 5));
+  const ftc = F1(8) - F1(0);
+  fb('fb2d', near(val('s2ftc'), ftc, 2));
+}
+function checkStep3(){
+  const [lo, hi] = q1Roots(PARAMS.channel_capacity_cfs);
+  const area = (F1(hi) - PARAMS.channel_capacity_cfs*hi) - (F1(lo) - PARAMS.channel_capacity_cfs*lo);
+  const af = area * PARAMS.cfsday_to_acreft;
+  const daily = breakdown(PARAMS).e1;
+  fb('fb3a', near(val('s3lo'), lo, 0.05));
+  fb('fb3b', near(val('s3hi'), hi, 0.05));
+  fb('fb3c', near(val('s3area'), area, 5));
+  fb('fb3d', near(val('s3af'), af, 5));
+  fb('fb3e', near(val('s3daily'), daily, 2));
+  renderS3Bars(af, daily);
+}
+function renderS3Bars(curveAf, dailyAf){
+  const maxScale = Math.max(curveAf, dailyAf) * 1.15;
+  const el = document.getElementById('s3bars');
+  function row(label, ft){
+    const pct = Math.max(0, Math.min(100, 100 * ft / maxScale));
+    return `<div class="flowbar-row"><span class="lbl">${label}</span>
+      <div class="flowbar-track"><div class="flowbar-fill" style="width:${pct}%"></div></div>
+      <span style="min-width:80px;text-align:right">${round(ft,0).toLocaleString()} af</span></div>`;
+  }
+  el.innerHTML = row('Curve-fit reading', curveAf) + row('Daily-block reading (scored)', dailyAf);
+}
+function checkStep4(){
+  const b = breakdown(PARAMS);
+  fb('fb4a', near(val('s4a'), b.managedA, 2));
+  fb('fb4b', near(val('s4b'), b.managedB, 2));
+  fb('fb4c', near(val('s4ap'), b.A_per_1000, 0.001));
+  fb('fb4d', near(val('s4bp'), b.B_per_1000, 0.001));
+  updateS4Live(PARAMS.unavailable_storage_frac);
+}
+function onS4Slider(){
+  const frac = val('s4slider');
+  document.getElementById('s4sliderVal').textContent = (frac*100).toFixed(1) + '%';
+  updateS4Live(frac);
+}
+function updateS4Live(frac){
+  const twistOn = document.getElementById('applyTwist') && document.getElementById('applyTwist').checked;
+  const p = Object.assign({}, PARAMS, {unavailable_storage_frac: frac});
+  const d = twistOn ? twistBreakdown(p) : breakdown(p);
+  const aPer = twistOn ? d.A_per_1000 : d.A_per_1000;
+  const bPer = d.B_per_1000;
+  const winner = aPer > bPer ? 'Crest' : (bPer > aPer ? 'Basin' : 'a tie');
+  document.getElementById('s4live').textContent =
+    `At this storage reservation${twistOn ? ' and with the Twist applied' : ''}: Crest ${aPer.toFixed(5)} af/$1,000, `
+    + `Basin ${bPer.toFixed(5)} af/$1,000 — leading option: ${winner}. (Live calculation, not a stored answer.)`;
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Riemann sum for total storm volume, interval/placement stated, converted to acre-feet, over/under/exact"],
+  ["D2", "Fitted Q(t), general antiderivative with constant of integration, definite integral by FTC, compared to D1"],
+  ["D3", "Shaded diagram and area between Q(t) and channel capacity, limits stated, compared to the daily-block figure"],
+  ["D4", "Floodwater-safely-managed table, both standards, shortfalls shown, acre-feet-per-$1,000, and a recommendation"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). All 9 links fetched and
+   confirmed live 2026-08-15.
+   ================================================================ */
+const GLOSSARY = {
+  "Antiderivative": {def: "A function whose derivative is the given function -- the reverse operation of differentiation.",
+    url: "https://www.mathsisfun.com/definitions/antiderivative.html"},
+  "Indefinite Integral": {def: "The general antiderivative of a function, written with a constant of integration C because no specific interval is given.",
+    url: "https://www.mathsisfun.com/definitions/indefinite-integral.html"},
+  "Definite Integral": {def: "The signed area under a curve between two stated limits, a and b -- a specific number, not a family of functions.",
+    url: "https://www.mathsisfun.com/calculus/integration-definite.html"},
+  "Riemann Sum": {def: "An approximation of the area under a curve made by adding up the areas of a series of rectangles, one per subinterval.",
+    url: "https://www.cuemath.com/riemann-sum-formula/"},
+  "Area Between Two Curves": {def: "The definite integral of the difference between the upper and lower functions over the interval where one sits above the other.",
+    url: "https://www.cuemath.com/calculus/area-between-two-curves/"},
+  "Power Rule (Antiderivatives)": {def: "To find the antiderivative of t^n, add 1 to the exponent and divide by the new exponent: t^(n+1)/(n+1) + C.",
+    url: "https://www.cuemath.com/calculus/power-rule-of-integration/"},
+  "Fundamental Theorem Of Calculus": {def: "Connects derivatives and integrals: the definite integral of f from a to b equals F(b) - F(a), where F is any antiderivative of f.",
+    url: "https://www.cuemath.com/calculus/fundamental-theorem-of-calculus/"},
+  "Constant Of Integration": {def: "The '+ C' added to an antiderivative, since the derivative of any constant is zero -- it stands for the whole family of antiderivatives.",
+    url: "https://www.cuemath.com/calculus/constant-of-integration/"},
+  "Continuous Function": {def: "A function with no breaks, jumps, or holes in its graph over an interval -- a condition the Fundamental Theorem of Calculus relies on.",
+    url: "https://www.cuemath.com/calculus/continuous-function/"},
+};
+const HOWTO = [
+  ["How to find an antiderivative using the power rule", "Power Rule (Antiderivatives)"],
+  ["How to evaluate a definite integral using the Fundamental Theorem of Calculus", "Fundamental Theorem Of Calculus"],
+  ["How to approximate area under a curve using a Riemann sum", "Riemann Sum"],
+  ["How to find the area between two curves", "Area Between Two Curves"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  updateS4Live(val('s4slider') || PARAMS.unavailable_storage_frac);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

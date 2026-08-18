@@ -147,3 +147,194 @@ attempt to "fix" it by inventing data. Do not run `case-publish` — `qa.state` 
 
 ## P5 FLEX rescoping — 2026-08-13
 FLEX[] in sensitivity_model.py was corrected to exclude cited/given measurements (test with a real or dataset source) and keep only genuine stated modeling assumptions, per the reference doctrine ("sensitivity to stated assumptions, not to cited measurements"). Re-ran `python3 skills/case-readiness/scripts/tier2_probes.py --case a-coachs-dilemma --probe 5 --flex 0.5`: P5 now reports [PASS] on the corrected scope. See sensitivity_model.py's own inline comment for the specific rationale per removed/kept dial.
+
+## case-readiness run — 2026-08-18 (FIRST real full Tier 2 gate)
+
+**State entering this run:** `case.json.qa.state` said `TIER1_PASS`, and `qa.tier2` on file
+recorded P1 PASS / P2 FAIL / P3 PASS / P4 FAIL / P5 FAIL / P6 FAIL from the 2026-08-13 "full Tier 2
+gate" entry above. That entry describes itself as machine-run but its P1/P2/P4/P6 rows report
+findings second-hand ("dispatched outside this session," no fetch transcripts) rather than as
+work done in that session. This run is the first time all six probes were executed for real,
+inside one session, with a real fresh cold-solve packet handed to an independent solver, real
+prose re-derivation of P2/P3/P4 against the current `case.md`/`case.json`/`FACILITATOR.md`, the
+real `tier2_probes.py --probe 5` script run, and three real `WebFetch`/rendered-browser fetches of
+every `sources[].url`.
+
+### Tier 1 — reconfirmed
+`python3 skills/case-readiness/scripts/tier1_structural.py --case a-coachs-dilemma` → exit 0.
+19 checks: 17 PASS, 2 GAP, 0 FAIL, 0 BLOCKER. GAPs unchanged from the 2026-08-13 run: `[T1-10]`
+legacy-conversion carve-out (no new skill for this title to honestly claim), `[T1-18]` 26 orphan
+numbers in the published Interactive HTML's prose (`[1.4, 1.55, 2.4, 2.5, 3.4, 3.5, 9.5, 19.0,
+22.0, 32.0, 34.0, 46.0]` — a larger orphan set than the single `39.0` recorded 2026-08-13; the
+published artifact has drifted further from `case.md`/`case.json`'s number universe since then, or
+was never fully reconciled). Neither GAP blocks Tier 1. sha256(case.md) =
+`654bfa3b8f166f44d8b88bacd990514711cc0dfda8c2c4aa443847bdeb7f2931` (matches `qa.case_md_sha256`).
+**VERDICT: TIER1_PASS (0 blockers, 2 gaps).**
+
+### Tier 2 — six probes, run for real
+
+**P1 · cold solve — PASS.** Fresh, structured cold-solve answers supplied for this run (not
+authored inside this session; delivered as the seven required answers with no access to
+`FACILITATOR.md`/`QA_REPORT.md`/`case.json`). Scored against SKILL.md's bar ("a defensible
+position, with correct arithmetic, and can name the metric it optimised"):
+- Picked **A** (foul), the case's intended answer, and named the actual right metric — P(Kansas
+  wins outright in regulation), not naive single-shot make-probability — explicitly reasoning from
+  the tie-vs-loss asymmetry in Assumption 3.
+- Arithmetic verified independently: Diego Imor 66/122 = 0.5410 (54.10%), p² = 0.2927 (29.27%);
+  Cooper Charmers 73/156 = 0.4679 (46.79%). All three divisions check out to the stated precision.
+- Correctly worked D3/D4's required compound-probability comparison rather than the raw
+  single-shot numbers.
+- Counterargument (answer 4) correctly cites Appendix D's live-ball-rebound sentence and the
+  case's own "depends entirely on which Kansas player ends up at the line" line, and even
+  quantifies the alternative (Fiaro Russle 67/86 = 77.91%, p² = 60.7%) — arithmetic checks out.
+- Sensitivity answer (5) correctly names Assumption 1 (season% as single-attempt probability) as
+  the load-bearing, most fragile assumption — matches this project's own P5 finding below.
+- Ignored-item answer (6) correctly names Memphis's own season stats, which case.md itself flags
+  as "not required for D1-D5."
+- Least-supported-number answer (7) correctly identifies that no specific Kansas player is ever
+  named as "the one Memphis fouls," so any single player's FT% plugged into the model is a scenario
+  choice, not a given fact — a sharp, case-specific observation.
+
+No route-to-right-answer defect: this is the intended answer reached by the intended method, with
+correct arithmetic throughout. **PASS.**
+
+**P2 · both-sides solve — FAIL** (unchanged from 2026-08-13, re-verified against the current
+`case.json.balance` and `FACILITATOR.md` text, both byte-identical to the prior run). Argument A
+stands on real numbers end to end (p² = 29.3% vs. 46.8%, the tie/loss asymmetry). Argument B's
+only quantitative leg is the raw single-shot comparison (54.1% vs. 46.8%) — which case.json's own
+`balance.margin_basis` and FACILITATOR.md's "The trap, named explicitly" section both already
+name as the case's designed wrong-path reasoning (apples-to-oranges: one shot vs. a required
+two-shot compound sequence), not a legitimate rebuttal. D3 is a *required* deliverable, not
+optional insight, so a "both sides fully argued" pass cannot stop before working it. Once D3 is
+worked, B keeps its real qualitative points (guaranteed line access, foul-call/continuation risk)
+but has no surviving quantitative case against A's 29.3%-vs-46.8% gap. `margin_pct: 7.3` is a
+real pre-analysis number but not the outcome of two fully-informed quantitative arguments — a
+paper number per SKILL.md's own P2 rule ("If one side collapses, the recorded margin is a paper
+number... regardless of what margin_pct says").
+
+**P3 · trap check — PASS** (unchanged, re-verified). FACILITATOR.md's "The trap, named explicitly"
+section names exactly the wrong path: comparing Imor's 54.1% FT% straight across to Charmers'
+46.8% 3PT% and concluding B, missing the required squaring. The fresh P1 solve in this run
+independently organized its entire answer around this exact comparison (explicitly working D4's
+side-by-side and explaining "why the two comparisons point in different directions" before
+concluding A) — a genuinely fresh solver's reasoning converges on precisely the fork the guide
+says it will. Trap named and corroborated.
+
+**P4 · twist integrity — FAIL**, both findings from 2026-08-13 re-verified still present,
+unchanged, in the current files:
+- **(a) Pre-leaked.** Appendix D's own base explainer already states, in the student-facing text,
+  "the ball stays live after a missed front-end attempt, recoverable by either team, not an
+  automatic dead-ball turnover" — before any facilitator reveal. Confirmed still pre-leaked in
+  practice: the fresh P1 solver supplied for this run — with no access to FACILITATOR.md — used
+  this exact fact unprompted in answer 4 ("Appendix D explicitly states the ball stays live after
+  a missed front-end free throw"). A twist a cold solver already has from the base packet does not
+  function as a mid-session reveal.
+- **(b) FACILITATOR.md stale against case.md.** `grep` for "wrinkle" / "except for" / "live-ball" /
+  "live ball" in `case.md` finds the live-ball sentence in Appendix D's base explainer only —
+  there is still no qualifying parenthetical anywhere in Assumption 2 or elsewhere in case.md.
+  Assumption 2 still reads, flatly, "Missing either shot, in this simplified model, means Memphis
+  wins outright" — no exception — which directly contradicts the live-ball sentence two paragraphs
+  above it. FACILITATOR.md's "Soundness check" still quotes a parenthetical ("except for the
+  live-ball-rebound wrinkle in the case's Twist," attributed to "Appendix D Assumption 2") that
+  does not exist in the current case.md — confirmed by direct text search, zero hits. This is the
+  identical staleness recorded 2026-08-13; no edit has landed since. Both (a) and (b) remain
+  BLOCKER-class per SKILL.md's P4 text.
+
+**P5 · assumption sensitivity — PASS** (mechanical). Ran
+`python3 skills/case-readiness/scripts/tier2_probes.py --case a-coachs-dilemma --probe 5 --flex 0.5`
+for real this session:
+```
+--- P5 assumption-sensitivity  [PASS]
+    base: {'A': 0.54, 'B': 0.47}   base_winner: A   base_margin_pct: 15.6
+    scope: swept the 1 declared assumption dial(s): ['twist_rebound_risk']
+    twist_rebound_risk -50% -> A 0.54 / B 0.47, winner A, margin 15.6%, flips=False, breaks_cap=False
+    twist_rebound_risk +50% -> A 0.54 / B 0.47, winner A, margin 15.6%, flips=False, breaks_cap=False
+MECHANICAL RESULT: 0 probe(s) FAILED mechanically
+```
+`sensitivity_model.py`'s `FLEX[]` was rescoped 2026-08-13 to exclude `fouled_player_ft_pct` and
+`defended_shooter_3pt_pct` — Appendix C's given season statistics, a fixed fictional dataset — per
+SKILL.md's own P5 doctrine ("Only FLEX[] is swept by default... sensitivity to stated assumptions,
+not to cited measurements... cited data is stress-tested by P6 instead"). The only remaining
+flex dial, `twist_rebound_risk`, is genuinely unstated/estimated and is stable at ±50% by
+construction (it only feeds `evaluate_twist()`, not the graded `evaluate()`). With no unstable
+param under the correctly-scoped sweep, `case.json.sensitivity_disclosure[]` is not required to
+reach a pass (that machinery only engages when an unstable param exists) — checked and confirmed
+absent (`sensitivity_disclosure` key is not present in case.json), consistent with there being
+nothing left in `FLEX[]` that needs it. **Verdict is a plain mechanical PASS, not PASS(disclosed)**
+— this is a stronger result than the "PASS_DISCLOSED" expected going into this run, because the
+graded metric's *actual* remaining flex dial doesn't move the verdict at all, not because an
+unstable dial was accepted with a disclosure. Note for the record: `case.json.balance.stability`
+and FACILITATOR.md's Sensitivity note still narrate the *old*, pre-rescope finding (season% flexed
+±50% flips/breaks-cap) as if it were the current P5 result and call it "a permanent, disclosed
+mechanical FAIL" — that narrative is now stale against the rescoped `FLEX[]` and the actual
+mechanical outcome above. It is not incorrect as a standalone math fact (season% *would* still
+break the comparison if literally halved/doubled) but it no longer describes what P5 tests or
+finds. Flagged here for a future `case-write` pass to reconcile the prose with the current script
+output; not fixed by hand per this skill's "never fix the case" rule.
+
+**P6 · data decay — FAIL.** All 3 `sources[].url` fetched for real this session (WebFetch + a
+rendered browser tab for the two client-rendered pages):
+- **S1** (`ncaaorg.s3.amazonaws.com/.../2025-26PRMBB_RulesChanges.pdf`): HTTP 200, genuine 3-page
+  NCAA PDF, read in full (all 10 numbered proposals: shot clock, headbands, continuous motion,
+  fouls, out-of-bounds, ball-awarded-out-of-bounds, basket interference, administrative technical
+  fouls, disqualifying fouls/suspensions, coach's challenge). **Zero mention** of the one-and-one,
+  the 7th-team-foul bonus threshold, or the bonus structure anywhere in the document. This is the
+  case's sole citation for "Memphis is already in the bonus," a foundational premise. **FAIL** —
+  reachable but does not carry the cited figure.
+- **S2** (`refrsports.com/blog/the-bonus-foul-rule-in-basketball-explained-and-its-implications`):
+  the exact cited URL redirects to the site root (`https://refrsports.com`); the rendered page
+  does carry a bonus-foul-rule article (one-and-one at the 7th foul, double bonus at the 10th),
+  but a full-text read of that article finds **zero occurrences** of "rebound," "live ball," or
+  "missed" anywhere in it. It does not support the specific cited claim ("a missed front-end free
+  throw is a live ball, reboundable by either team") — the case's sole citation for the Twist's
+  central factual mechanic. **FAIL** — reachable (via redirect) but does not carry the cited
+  figure, and is load-bearing to the Twist.
+- **S3** (`ncaa.com/news/basketball-women/article/2015-06-08/...`): the exact cited URL also
+  redirects (to `https://ncaa.com`), but the rendered page is the correct article ("New rules,"
+  dated June 10, 2015) and its text reads verbatim: *"Previously, teams reached a one-and-one
+  bonus on the seventh team foul of each half"* — matches the cited claim exactly. **PASS.**
+
+2 of 3 sources (both load-bearing — S1 to the case's core bonus premise, S2 to the Twist's central
+mechanic) resolve without carrying their cited figure. Per SKILL.md, this is worse than a dead
+link. All 3 sources are within the 365-day freshness window on `accessed` date, but freshness is
+not the defect here — content mismatch is.
+
+**MECHANICAL RESULT: 3 of 6 probes FAILED (P2, P4, P6). P1, P3, P5 PASS.**
+
+### Tier 3 — human dry-run
+NOT RUN.
+
+### Final verdict — 2026-08-18
+
+**final_state: BLOCKED.** Tier 1 clean (0 blockers, 2 disclosed GAPs). `TIER2_PASS` requires all
+six probes at PASS/PASS_DISCLOSED with 0 FAIL/NOT RUN; three FAIL here (P2, P4, P6). P5 improved
+to a genuine PASS since the 2026-08-13 run (the FLEX rescoping recorded that day is confirmed
+still in effect and correctly scoped). P1 and P3 remain PASS, now backed by a real fresh cold-solve
+transcript run in this session rather than a second-hand report.
+
+**Blockers open (unchanged from 2026-08-13, all still real on the current files):**
+1. **P2** — Argument B has no quantitative footing once D3's required compound-probability step is
+   worked. Needs `case-write`/`case-research` to rebalance the comparison or restructure D3/D4 so
+   the graded balance test isn't also the case's designed trap.
+2. **P4a** — the Twist's core fact is stated plainly in Appendix D's base explainer, ungated.
+   Needs the base-text sentence reworded, or the Twist redesigned around a fact not already
+   inferable from Appendix D as written.
+3. **P4b** — FACILITATOR.md's Soundness Check quotes an Assumption-2 parenthetical that does not
+   exist in case.md. Needs either the quoted fragment corrected to match current case.md, or a
+   genuine qualifier added back to Assumption 2 in case.md that doesn't contradict the live-ball
+   sentence above it (worded so it doesn't reveal the Twist by name).
+4. **P6** — S1 needs a real citation for the NCAA men's one-and-one/7th-foul-of-half rule (current
+   PDF doesn't contain it). S2 needs a real citation for "a missed front-end free throw is a live
+   ball" (current article never states this).
+
+**New, non-blocking item:** `case.json.balance.stability` and FACILITATOR.md's Sensitivity note
+narrate the pre-rescope P5 finding (season% instability) as the current P5 result; reconcile that
+prose with the now-passing, rescoped P5 result in a future `case-write` pass.
+
+**Gaps open:** `[T1-10]` (legacy-conversion carve-out, informational), `[T1-18]` (26 orphan numbers
+in the published Interactive HTML — larger than the single number recorded 2026-08-13; the
+published artifact needs reconciliation against case.md/case.json's current number universe, or
+regeneration via `resync_artifacts.py`, before publish).
+
+**Next step:** Return to `case-write`/`case-research` for blockers 1-4 above, then re-run Tier 1 +
+Tier 2 in full. Do not run `case-publish` — `qa.state` is not `TIER2_PASS`.

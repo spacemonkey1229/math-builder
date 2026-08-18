@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Life Insurance — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  HARD LINE (MCS-37): this page must never print case.json.balance_test's verdict
+  (winner, margin) as a static literal anywhere outside a <script> tag's computation.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:280px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:140px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  th .icon{stroke:#fff}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-house" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></symbol>
+  <symbol id="icon-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1.1 3 2.5S13.7 12 12 12s-3 1.1-3 2.5 1.3 2.5 3 2.5 3-1.1 3-2.5"/></symbol>
+  <symbol id="icon-growth" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Launchpad</div>
+        <h1>Case Study: Life Insurance</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">HS</span>
+      <span class="pill">Percent &middot; Sequences &middot; Exponents</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">The porch light is already on when Jake Johnson pulls into the Fawsons' driveway, laptop bag over one shoulder, a manila folder tucked under the other arm. Two folders, actually &mdash; he switches them so the thicker one is on top, then switches back.</p>
+  <p>Rebecca answers the door with a one-year-old on her hip and a four-year-old already asking who's here. "Come in, come in &mdash; Neil's just getting the good chairs from the garage."</p>
+  <p>At the kitchen table, Neil sets down two mismatched folding chairs and drops into one of them. "So," he says. "You said you'd have an answer for us tonight."</p>
+  <p>Jake opens his laptop instead of either folder. Two browser tabs sit open side by side &mdash; one labeled <em>Whole Life Illustration</em>, the other <em>Term Quote</em> &mdash; both running the same numbers through the same calculator, spitting out two very different monthly figures. He's run this comparison a hundred times for a hundred families. He has never once been sure, watching a young couple's faces across a kitchen table, which one he'd choose if it were his own name on the application.</p>
+  <p>Rebecca sits down, bouncing the baby lightly. "We trust you, Jake. Just tell us which one."</p>
+  <p>Jake looks at the two tabs. He clicks between them once, twice, then leaves the cursor hovering between the two numbers.</p>
+  <p>He opens his mouth.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Neil and Rebecca Fawson moved to Aurora, Colorado for Neil's work as a logistics strategist at a regional distribution firm. They recently bought their first home and have two young children, with hopes of having more. Rebecca works part-time running her own interior-design consultancy. The couple wants a life insurance policy that protects the family financially if Neil dies &mdash; specifically, enough to pay off the remaining mortgage and replace Neil's income until their youngest child turns 18 (<a href="#apx-b">Appendix B</a>).</p>
+
+  <div class="grid2" style="margin:18px 0">
+    <div class="card" style="padding:12px">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/William_Smith_House.JPG" alt="A brick single-family home with a front porch in Aurora, Colorado, the same city where the Fawson family bought their first house." style="width:100%;height:auto;border-radius:6px;display:block">
+      <p class="side-note" style="margin-top:8px;border-top:none;padding-top:0">A single-family home in Aurora, Colorado &mdash; the Fawsons' city. Photo: Jeffrey Beall, Wikimedia Commons, CC BY-SA 3.0.</p>
+    </div>
+    <div class="card" style="padding:12px">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/e/eb/Analyzing_Financial_Data_%285099605109%29.jpg" alt="A calculator, pen, and printed financial statement full of dollar figures, the kind of paperwork Jake spreads across the Fawsons' kitchen table." style="width:100%;height:auto;border-radius:6px;display:block">
+      <p class="side-note" style="margin-top:8px;border-top:none;padding-top:0">Working through the numbers &mdash; the same kind of arithmetic Jake runs for every family. Photo: Dave Dugdale, Wikimedia Commons, CC BY-SA 2.0.</p>
+    </div>
+  </div>
+
+  <p>Jake Johnson is a licensed life insurance agent at Meridian Mutual, certified to sell in Colorado and two neighboring states. Working from the family's stated needs and Neil's health profile (<a href="#apx-c">Appendix C</a>), Jake has narrowed the choice to two real categories of policy, priced using current, publicly available market rate data rather than a single company's private quote (<a href="#apx-d">Appendix D</a>):</p>
+  <div class="card">
+    <p style="margin:0 0 10px"><strong>Whole Life Insurance</strong> &mdash; coverage that lasts Neil's entire life, with a guaranteed cash-value component that grows over time and can be borrowed against or cashed out. Premiums are level for life, but substantially higher than term for the same death benefit.</p>
+    <p style="margin:0"><strong>Term Life Insurance</strong> &mdash; coverage for a fixed number of years (commonly 10 to 30). Premiums are level for the chosen term and dramatically lower than whole life, but the policy pays nothing and has no cash value if Neil outlives the term.</p>
+  </div>
+  <p>Both options can be written for any death-benefit amount the family qualifies for and chooses to pay for &mdash; the first number Jake has to help them pin down is how much coverage they actually need (<a href="#apx-b">Appendix B</a>), before either policy type can be priced (<a href="#apx-d">Appendix D</a>).</p>
+  <p>Want to go beyond the required math and read more about how real families and agents work through this decision? <a href="#apx-e">See Appendix E</a> for further reading.</p>
+  <p>The vocabulary and the "how to&hellip;" skills this case will ask of you are listed in Appendix F &mdash; that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Jake Johnson. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Whole Life</h4>
+      <p style="margin:0">Recommend whole life insurance to the Fawsons.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Term Life</h4>
+      <p style="margin:0">Recommend term life insurance to the Fawsons.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which option you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include the following: <strong>D1</strong> a coverage-need calculation (mortgage + income-replacement); <strong>D2</strong> a term-length recommendation and total premiums over that term; <strong>D3</strong> a whole life cash-value projection via a recursive formula converted to its explicit form, evaluated at ages 65 and 80; <strong>D4</strong> a rate-of-return comparison between whole life's dividend-inclusive rate and the best available CD rate, with a written explanation; <strong>D5</strong> a rider recommendation with cost as a percentage of premium; <strong>D6</strong> an original visual comparing cumulative premiums vs. cash value at three checkpoints.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; Jake Johnson & The Fawson Family</summary>
+    <div class="inner">
+      <p><strong>This case is fiction.</strong> Jake Johnson, the Fawson family, Meridian Mutual, and every dollar figure attached to them are invented for this case study. Real term and whole life insurance premiums require an individualized, medically underwritten quote from a specific insurer &mdash; not something obtainable without an actual application &mdash; so this case fictionalizes the insurance company and the family, then prices their decision using real, current, publicly published market-average rate data for a comparable buyer (Appendix D), the same way a real agent benchmarks a quote against the broader market.</p>
+      <p>Jake has worked as a licensed life insurance agent for over four years, certified in Colorado and two neighboring states. He was raised in the Denver area and has a newborn daughter of his own.</p>
+    </div>
+  </details>
+
+  <details open id="apx-b">
+    <summary>Appendix B &mdash; The Fawson Family Finances</summary>
+    <div class="inner">
+      <table id="tblFinances"><thead><tr><th>Item</th><th>Value</th></tr></thead><tbody>
+        <tr><td>Neil's annual income</td><td>$55,000/year</td></tr>
+        <tr><td>Neil's anticipated annual income growth</td><td>4.8%/year</td></tr>
+        <tr><td>Rebecca's annual income</td><td>$12,450/year</td></tr>
+        <tr><td>Family monthly expenditures</td><td>$4,250/month</td></tr>
+        <tr><td>Home mortgage &mdash; remaining balance</td><td>$374,000</td></tr>
+        <tr><td>Home mortgage &mdash; years remaining</td><td>28 (of an original 30-year loan)</td></tr>
+        <tr><td>Credit score</td><td>817</td></tr>
+        <tr><td>Older child's current age</td><td>4</td></tr>
+        <tr><td>Younger child's current age</td><td>1</td></tr>
+      </tbody></table>
+      <p>The family's stated goal: enough coverage, if Neil dies, to pay off the remaining mortgage balance in full and replace Neil's income until their <strong>youngest</strong> child turns 18. The Fawsons plan to pay every premium out of pocket, from current income.</p>
+    </div>
+  </details>
+
+  <details open id="apx-c">
+    <summary>Appendix C &mdash; Neil Fawson: Health & Underwriting Profile</summary>
+    <div class="inner">
+      <table id="tblHealth"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+        <tr><td>Age</td><td>26</td></tr>
+        <tr><td>Height</td><td>6'1"</td></tr>
+        <tr><td>Weight</td><td>207 lbs</td></tr>
+        <tr><td>Tobacco user</td><td>No</td></tr>
+        <tr><td>Current medications</td><td>None</td></tr>
+        <tr><td>Previous serious medical issues</td><td>None</td></tr>
+        <tr><td>Driving history</td><td>No tickets or accidents</td></tr>
+        <tr><td>Underwriting health class</td><td>Preferred Plus (the best class most insurers offer)</td></tr>
+      </tbody></table>
+      <p>Every rate in Appendix D assumes a buyer in this same health class.</p>
+    </div>
+  </details>
+
+  <details open id="apx-d">
+    <summary>Appendix D &mdash; Life Insurance Market Data & Modeling Assumptions</summary>
+    <div class="inner">
+      <p><strong>How much coverage, in general?</strong> A standard, real-world method for estimating a family's coverage need is to add the household's other major debts (here, just the mortgage) to an income-replacement figure found by multiplying the insured person's annual income by the number of years of support the family wants &mdash; the core arithmetic behind both the simple "multiple of income" method and the more detailed DIME (Debt, Income, Mortgage, Education) method real agents use. <span class="side-note" style="border:none;padding:0;margin:0">(Source: Ritter Insurance Marketing, 2025.)</span></p>
+      <p><strong>Standard term lengths.</strong> Term policies are sold in a small number of standard lengths: 10, 15, 20, 25, and 30 years. A buyer picks the shortest one that still covers their full stated need.</p>
+      <p><strong>Real 2026 market premium benchmarks</strong> (Preferred/Preferred-Plus-adjacent, non-smoker, average health, $500,000 coverage, age ~30, 20-year level term):</p>
+      <table id="tblRates"><thead><tr><th></th><th>Term (20-year level)</th><th>Whole Life (level, lifetime)</th></tr></thead><tbody>
+        <tr><td>Monthly premium, $500,000 coverage</td><td class="num">$36/month</td><td class="num">$444/month</td></tr>
+      </tbody></table>
+      <p class="side-note" style="border:none;padding:0">Source: MoneyGeek, "Term Life vs. Whole Life Insurance," updated August 2026. Rates for other coverage amounts scale roughly in proportion to this $500,000 benchmark &mdash; insurers price per $1,000 of face amount.</p>
+      <p><strong>Guaranteed whole life cash-value growth.</strong> Across major U.S. mutual insurers in 2026, published guaranteed minimum rates fall in a <strong>2%&ndash;4%</strong> range. (Source: InsuranceGeek, updated July 2026.)</p>
+      <p><strong>Whole life dividend-inclusive crediting rate.</strong> The source below lists each major mutual carrier's individual 2026 dividend rate (5.75%&ndash;6.60%), not a combined average; averaged across those 5 real rates, the typical total (dividend-inclusive) crediting rate is about <strong>6.20%</strong>. (Source: InsuranceGeek, updated July 2026.)</p>
+      <p><strong>A real, safe alternative.</strong> As of August 2026, the best publicly advertised 5-year CD rate available to any saver &mdash; fully insured, contractually guaranteed for the full 5 years &mdash; is <strong>4.50% APY</strong>. (Source: CNBC Select, August 2026.)</p>
+      <p><strong>8 Common Life Insurance Riders:</strong></p>
+      <table id="tblRiders"><thead><tr><th>Rider</th><th>What it does</th></tr></thead><tbody>
+        <tr><td>Accelerated Death Benefit</td><td>Access part of the death benefit early on a qualifying terminal/critical illness diagnosis.</td></tr>
+        <tr><td>Accidental Death and Dismemberment</td><td>Pays an additional benefit if death or serious injury results from an accident.</td></tr>
+        <tr><td>Child Protection Rider</td><td>Adds a small term policy covering the insured's children.</td></tr>
+        <tr><td>Critical Illness Rider</td><td>Pays a benefit on diagnosis of a covered serious illness.</td></tr>
+        <tr><td>Disability Income / Long-Term Care Rider</td><td>Pays a benefit, or waives premiums, on disability or long-term care need.</td></tr>
+        <tr><td>Return of Premium Rider</td><td>Refunds some or all premiums if the insured outlives the policy term.</td></tr>
+        <tr><td>Term Conversion Rider</td><td>Convert term to permanent coverage later without new medical underwriting.</td></tr>
+        <tr><td>Waiver of Premium Rider</td><td>Waives future premiums if the insured becomes totally disabled.</td></tr>
+      </tbody></table>
+      <p class="side-note" style="border:none;padding:0">Source: Baily Insurance Agency, "Common Life Insurance Riders (What Do They Cost? Who Should Buy Them?)."</p>
+      <h3 style="margin-top:22px">Modeling Assumptions</h3>
+      <p><strong>MA1 &mdash; Fictionalized company and buyer.</strong> This case fictionalizes the insurance company and every name because a real premium quote and a real cash-value schedule both require an actual, individualized, medically underwritten application. In their place: real, current, publicly published market-average rate data for a buyer matching Neil's real profile.</p>
+      <p><strong>MA2 &mdash; Nearest published age bracket.</strong> Real rate benchmarks are published at 5&ndash;10 year intervals; no public source breaks out age 26 specifically. This case uses the nearest published bracket (age ~30).</p>
+      <p><strong>MA3 &mdash; Linear scaling by face amount.</strong> The $500,000 rate benchmarks are scaled in proportion to D1's coverage amount, since both policy types are conventionally priced per $1,000 of face amount.</p>
+      <p><strong>MA4 &mdash; Simplified whole life cash-value starting point.</strong> This case models the guaranteed cash value as starting, in year 1, at an amount equal to one year's premium, growing geometrically from there &mdash; a stated, disclosed simplification of real (insurer-specific, slower-starting) cash-value schedules.</p>
+      <p><strong>MA5 &mdash; A single guaranteed growth rate.</strong> D3's projection uses 3% &mdash; the midpoint of the real published 2%&ndash;4% guaranteed range &mdash; since no single universal guaranteed rate exists across insurers.</p>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; Learn More (Further Reading)</summary>
+    <div class="inner">
+      <p>These are real, currently-live resources for students who want to go beyond the required math and understand more about how term and whole life insurance actually work in practice. None of this reading is required to complete the Challenges &mdash; it's here for the curious.</p>
+      <ul>
+        <li><a href="https://www.youtube.com/watch?v=wYPee7aczTE" target="_blank" rel="noopener">"Introduction to life insurance" (Khan Academy, Financial Literacy series)</a> &mdash; a short video walking through what life insurance is, why people buy it, and the basic idea behind an insurance company pricing a policy.</li>
+        <li><a href="https://www.fidelity.com/learning-center/personal-finance/term-life-vs-whole-life-insurance" target="_blank" rel="noopener">"Term vs. whole life insurance: What's the difference?" (Fidelity Learning Center)</a> &mdash; a plain-language comparison of the two policy types covering duration, cost, cash value, dividends, and which situations each is typically recommended for.</li>
+        <li><a href="https://www.nerdwallet.com/insurance/life/learn/how-much-life-insurance-do-i-need" target="_blank" rel="noopener">"How Much Life Insurance Do I Need?" (NerdWallet)</a> &mdash; explains the DIME (Debt, Income, Mortgage, Education) method referenced in Appendix D in more depth, with a worked example of adding up a family's coverage need.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-17. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &middot; Coverage Need (D1)</h4>
+    <div class="goal">From Appendix B: add the mortgage balance to Neil's income &times; the number of years until the youngest child turns 18. Round to the nearest $50,000.</div>
+    <div class="fieldrow"><label>Raw coverage need (mortgage + income &times; years), $</label><input type="number" id="s1_raw" step="any"><span id="fb_s1_raw" class="fb"></span></div>
+    <div class="fieldrow"><label>Rounded to nearest $50,000, $</label><input type="number" id="s1_rounded" step="any"><span id="fb_s1_rounded" class="fb"></span></div>
+    <button onclick="checkStep1()">Check Step 1</button>
+    <p class="side-note">Years until youngest (age 1) turns 18 = 17. This coverage amount is what both D2 and D3 are priced against.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &middot; Term Premium Total (D2)</h4>
+    <div class="goal">Scale Appendix D's $500,000 benchmark ($36/month) to your Step 1 coverage amount, find the annual premium, then multiply by a 20-year term.</div>
+    <div class="fieldrow"><label>Scaled term monthly premium, $</label><input type="number" id="s2_monthly" step="any"><span id="fb_s2_monthly" class="fb"></span></div>
+    <div class="fieldrow"><label>Total premiums over 20 years, $</label><input type="number" id="s2_total" step="any"><span id="fb_s2_total" class="fb"></span></div>
+    <button onclick="checkStep2()">Check Step 2</button>
+    <p class="side-note">Scale factor = your coverage &divide; $500,000. 17 years of need rounds up to the nearest standard term (20 years).</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &middot; Whole Life Cash Value (D3)</h4>
+    <div class="goal">Write CV<sub>n</sub> = CV<sub>n-1</sub> &times; 1.03 as a recursive rule, convert to the explicit form CV<sub>n</sub> = CV<sub>0</sub> &times; 1.03<sup>n</sup> (CV<sub>0</sub> = one year's whole life premium, MA4/MA5), then evaluate at age 65 (n=39) and age 80 (n=54).</div>
+    <div class="fieldrow"><label>Guaranteed cash value at age 65, $</label><input type="number" id="s3_cv65" step="any"><span id="fb_s3_cv65" class="fb"></span></div>
+    <div class="fieldrow"><label>Guaranteed cash value at age 80, $</label><input type="number" id="s3_cv80" step="any"><span id="fb_s3_cv80" class="fb"></span></div>
+    <button onclick="checkStep3()">Check Step 3</button>
+    <p class="side-note">First compute your Step 1&ndash;scaled whole life annual premium (Appendix D's $444/month benchmark, scaled the same way as Step 2), then apply the explicit formula.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &middot; The Rate Comparison (D4)</h4>
+    <div class="goal">Compare whole life's dividend-inclusive crediting rate (6.20%) to the best available 5-year CD rate (4.50%) from Appendix D. Find the gap in percentage points.</div>
+    <div class="fieldrow"><label>Whole life rate &minus; CD rate (percentage points)</label><input type="number" id="s4_gap" step="any"><span id="fb_s4_gap" class="fb"></span></div>
+    <button onclick="checkStep4()">Check Step 4</button>
+    <p class="side-note">This is the comparison Jake's two browser tabs are really showing him. Don't decide yet whether it settles the question &mdash; write out, in your D4 explanation, what this comparison assumes about how much money is actually growing at each rate.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-coin"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p style="color:#e8e3d5">One more thing. The 6.20% whole life rate you just compared to the CD isn't guaranteed. It's a <strong>dividend</strong> &mdash; declared year to year by the insurer, based on how well the company's investments and mortality experience actually performed. In a bad year, that dividend can be reduced, or not paid at all. The CD's 4.50% is not like that: it is contractually fixed, insured, and guaranteed for the full five years no matter what happens in the market.</p>
+      <p style="color:#e8e3d5">If you strip out the non-guaranteed dividend and compare whole life's <em>guaranteed</em> minimum rate (3%, the midpoint of the real published 2%&ndash;4% range) to the CD's 4.50% instead &mdash; does your Step 4 comparison still favor the same option?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Recompute the rate comparison using only the guaranteed minimum rate instead of the dividend-inclusive rate</label>
+      </div>
+      <div id="twistResult" class="fieldrow" style="display:none;margin-top:10px">
+        <label style="color:#e8e3d5">Guaranteed-only rate gap (whole life &minus; CD, percentage points)</label>
+        <span id="twistResultVal" style="color:#f7edcf;font-weight:700"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>MoneyGeek, <a href="https://www.moneygeek.com/insurance/life/types/term-vs-whole/" target="_blank" rel="noopener">Term Life vs. Whole Life Insurance (Cost, Pros and Cons)</a> &mdash; $500,000 rate benchmarks, updated August 2026.</li>
+      <li>Ritter Insurance Marketing, <a href="https://ritterim.com/blog/4-ways-to-calculate-your-clients-life-insurance-needs/" target="_blank" rel="noopener">4 Ways to Calculate Your Clients' Life Insurance Needs</a> &mdash; income-replacement / DIME method.</li>
+      <li>InsuranceGeek, <a href="https://www.insurancegeek.com/life-insurance/rates/whole-life-dividend-history/" target="_blank" rel="noopener">Whole Life Insurance Dividends | 2006&ndash;2026 Rate History</a> &mdash; guaranteed range and dividend-inclusive average rate.</li>
+      <li>CNBC Select, <a href="https://www.cnbc.com/select/best-5-year-cds/" target="_blank" rel="noopener">The best 5-year CD rates of August 2026</a> &mdash; safe-alternative CD rate.</li>
+      <li>Baily Insurance Agency, <a href="https://bailyagency.com/blog/life-insurance-riders/" target="_blank" rel="noopener">Common Life Insurance Riders (What Do They Cost? Who Should Buy Them?)</a> &mdash; rider list and cost data.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Life Insurance &middot; Math Builder Launchpad &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   Ported from cases/life-insurance/sensitivity_model.py -- keep in sync
+   by hand. case.json sha256 recorded in case.json.qa.case_md_sha256.
+   ================================================================ */
+const PARAMS = {
+  coverage_need: 1300000.0,
+  term_500k_monthly: 36.0,
+  whole_life_500k_monthly: 444.0,
+  term_length_years: 20,
+  dividend_inclusive_rate: 0.0620,
+  cd_rate: 0.045,
+  guaranteed_growth_rate: 0.03,
+  cv0_multiple_of_premium: 1.0
+};
+function scaleFactor(p){ return p.coverage_need / 500000.0; }
+function premiums(p){
+  const scale = scaleFactor(p);
+  return { term_annual: p.term_500k_monthly*scale*12, wl_annual: p.whole_life_500k_monthly*scale*12 };
+}
+function cashValue(p, years){
+  const pr = premiums(p);
+  const cv0 = p.cv0_multiple_of_premium * pr.wl_annual;
+  return cv0 * Math.pow(1 + p.guaranteed_growth_rate, years);
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  return {A: p.dividend_inclusive_rate*100, B: p.cd_rate*100};
+}
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  return {A: p.guaranteed_growth_rate*100, B: p.cd_rate*100};
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title, 'Math Builder case study', '', 'Sources:', ...srcLis, '', location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  const scaledMortgage = 374000, scaledIncome = 55000*17;
+  const raw = scaledMortgage + scaledIncome;
+  const rounded = Math.round(raw/50000)*50000;
+  fb('fb_s1_raw', near(round(val('s1_raw'),0), raw, 500));
+  fb('fb_s1_rounded', near(round(val('s1_rounded'),0), rounded, 1));
+}
+function checkStep2(){
+  const p = PARAMS;
+  const pr = premiums(p);
+  const monthly = pr.term_annual/12;
+  const total = pr.term_annual * p.term_length_years;
+  fb('fb_s2_monthly', near(round(val('s2_monthly'),2), round(monthly,2), 0.5));
+  fb('fb_s2_total', near(round(val('s2_total'),0), round(total,0), 25));
+}
+function checkStep3(){
+  const cv65 = cashValue(PARAMS, 39);
+  const cv80 = cashValue(PARAMS, 54);
+  fb('fb_s3_cv65', near(round(val('s3_cv65'),0), round(cv65,0), 500));
+  fb('fb_s3_cv80', near(round(val('s3_cv80'),0), round(cv80,0), 750));
+}
+function checkStep4(){
+  const base = evaluate();
+  const gap = base.A - base.B;
+  fb('fb_s4_gap', near(round(val('s4_gap'),2), round(gap,2), 0.05));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "life-insurance";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "A coverage-need calculation (mortgage + income-replacement, rounded to a standard increment)."],
+  ["D2", "A term-length recommendation and total premiums paid over that term."],
+  ["D3", "A whole life cash-value projection via recursive -> explicit formula, at ages 65 and 80."],
+  ["D4", "A rate-of-return comparison (dividend-inclusive rate vs. best CD rate), with a written explanation."],
+  ["D5", "A rider recommendation, at least two riders, each costed as a % increase to base premium."],
+  ["D6", "An original visual comparing cumulative premiums vs. cash value at three checkpoints."]
+];
+
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, allowlisted).
+   ================================================================ */
+const GLOSSARY = {
+  "Multiplication": {def: "Repeated addition of the same number -- the operation for combining equal-sized groups.",
+    url: "https://www.mathsisfun.com/numbers/multiplication.html"},
+  "Addition": {def: "Combining two or more numbers to find their total.",
+    url: "https://www.mathsisfun.com/numbers/addition.html"},
+  "Rounding": {def: "Making a number simpler while keeping its value close to the original -- 5 or more rounds up.",
+    url: "https://www.mathsisfun.com/rounding-numbers.html"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Sequence": {def: "A list of numbers arranged in a specific order, following a rule.",
+    url: "https://www.mathsisfun.com/algebra/sequences-series.html"},
+  "Recursive Formula": {def: "A rule that defines each term of a sequence using the term(s) before it, plus a starting value.",
+    url: "https://www.ck12.org/flexi/precalculus/recursive-formulas/what-is-a-recursive-formula/"},
+  "Exponent": {def: "A small raised number showing how many times to multiply a base number by itself (also called a power).",
+    url: "https://www.khanacademy.org/math/pre-algebra/xb4832e56:exponents-intro-and-order-of-operations/xb4832e56:exponents/v/introduction-to-exponents"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+};
+const HOWTO = [
+  ["How to multiply multi-digit numbers by single-digit numbers", "Multiplication"],
+  ["How to add multi-digit numbers", "Addition"],
+  ["How to round a number to a specified place value", "Rounding"],
+  ["How to multiply decimal numbers", "Decimal"],
+  ["How to find the percent of a number", "Percent"],
+  ["How to compare two or more values", "Bar Graph"],
+  ["How to write a recursive formula for a sequence", "Recursive Formula"],
+  ["How to convert a recursive formula to an explicit formula", "Sequence"],
+  ["How to evaluate an exponential expression", "Exponent"]
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const box = document.getElementById('applyTwist');
+  const resultRow = document.getElementById('twistResult');
+  if(!box.checked){ resultRow.style.display = 'none'; return; }
+  const tw = evaluate_twist({});
+  const gap = round(tw.A - tw.B, 2);
+  document.getElementById('twistResultVal').textContent = gap + ' pts';
+  resultRow.style.display = 'flex';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

@@ -96,3 +96,62 @@ know the twist was *designed* not to flip the verdict, on purpose, after checkin
 failed to flip by accident. `case-qa` Tier 2 probe 4 (twist integrity) and probe 5 (assumption
 sensitivity, once a `sensitivity_model.py` exists for this case) should verify this arithmetic
 independently rather than trust `case.json.derived` on faith.
+
+**CORRECTION, 2026-08-12 — two real defects found by an adversarial Tier 2 twist-integrity probe
+(P4), independently re-verified against `case.md` before being fixed.**
+
+1. **MA3's sign contradicted its own cited mechanism.** Since 2026-08-01 this case has described
+   MA3's 0.91 ft figure as derived from S8's inverse-barometer rate applied to a 28 mb pressure
+   drop — but S8's own stated relationship is "sea-level **rise** per 1 hPa pressure **drop**"
+   (`case.md` Appendix D, unchanged), which is the correct, standard physics behind ordinary storm
+   surge. A pressure drop cannot honestly be made to *reduce* water level via that rate — the case
+   had the sign backwards. A Hero reading Appendix D literally and applying it to MA3 would derive
+   the twist *helping* Option A, the opposite of the intended "erosion of confidence" narrative.
+   This is not a rendering glitch; every derived figure since 2026-08-01 was internally consistent
+   with the *wrong* mechanism.
+
+   Fix: researched real, documented **wind-driven setdown** ("reverse storm surge") — a distinct
+   effect where a storm's offshore-blowing wind physically pushes coastal water away, lowering the
+   local level, opposite in sign to the inverse-barometer effect and unrelated to it mechanically.
+   This is well-documented and consistent with this case's own "offshore, non-landfalling system"
+   framing (real events: Hurricane Irma at Cedar Key, FL, 2017; Hurricane Ian at Tampa Bay, FL,
+   2022, ~4 ft of wind-driven setdown — see new source S10, a Penn State IEE retrospective
+   article). MA3's basis text now attributes the 0.91 ft figure to this mechanism instead — the
+   **figure itself is unchanged** (0.91 ft was already, coincidentally, a defensible number; it is
+   now honestly a small, non-extreme fraction of a real ~4 ft documented event rather than a
+   mis-derived inverse-barometer conversion). Appendix D rewritten to state both real mechanisms
+   explicitly and distinguish them by sign. `case.json.sources[]` gained S10; `modeling_assumptions`
+   MA3's `basis` field rewritten; `FACILITATOR.md`'s twist explainer rewritten with an explicit
+   note for a facilitator whose Hero catches the original contradiction mid-discussion.
+
+2. **Appendix B's governing depth was used without being disclosed as a choice.** Appendix B
+   states two real, both-sourced, dated depths for this harbor — 54 ft (entrance channel) and
+   52 ft (inner harbor), both from S6 — without saying which applies to this fictional vessel's
+   route. `case.json.derived` has silently used 54 ft since 2026-08-01. A Hero reading Appendix B
+   literally could equally defensibly apply 52 ft, under which the Dawn Transit's **pre-twist**
+   margin over the policy floor is already negative (−0.456 ft) — Option A would fail the safety
+   floor before any storm is even modeled, undercutting the entire "comfortably safe pre-twist"
+   premise the twist is built to erode.
+
+   Fix: added explicit MA4 stating the 54 ft convention and naming the real trade-off (the
+   NOAA tide station behind Appendix A's predictions sits nearer the harbor entrance than the
+   inner-harbor terminals, so 54 ft is the more geographically defensible reading of *where the
+   case's own tide data actually applies* — but this is disclosed as a modeling choice, not
+   claimed as a settled fact, because the exact route for this fictional vessel is not itself a
+   matter of public record). `case.json.derived` gained `ma4_governing_depth_ft` and
+   `alt_ma4_52ft_pretwist_margin_over_policy_ft: -0.456` so the alternate reading's consequence is
+   checkable, not just narrated. This is deliberately **not** swept by the sensitivity model's
+   `FLEX[]` (a discrete either/or between two sourced figures isn't a `+/-50%` scenario dial) —
+   `sensitivity_model.py`'s `__main__` block runs the 52 ft case explicitly instead, and
+   `FACILITATOR.md` now tells a facilitator how to handle a Hero who raises it: treat it as a
+   legitimate, case-breaking challenge, not a gotcha to deflect.
+
+Both defects were caught by the exact same discipline this file's earlier entries describe (real
+figures, no invented numbers, disclose what's uncertain) failing to get *applied* to two specific
+spots — the sign of one conversion, and the choice between two real figures. Neither required
+inventing anything; both were fixed by researching a real replacement mechanism (S10) and by
+naming an existing undisclosed choice (MA4), respectively. `sensitivity_model.py` (authored the
+same day, see that file's docstring) now gives probe 5 something to actually run: `+/-50%` on
+MA3's `setdown_ft` does **not** flip the verdict (it would take ~1.54 ft, still less than S10's
+real ~4 ft documented event); the discrete MA4 check confirms the 52 ft alternate reading **does**
+flip it, pre-twist, standalone.

@@ -182,6 +182,17 @@ Every figure in the document is one of exactly three things:
 
 There is no fourth category. A plausible number is not a true number (SPEC §5).
 
+**The Modeling Assumptions block states WHAT was assumed and WHY — never the RESULT.** A recurring
+defect found 2026-08-13 across 9+ cases from two separate authoring passes: a `Sensitivity`/`Why`
+column that names the assumption, then goes on to state the case's own `balance_test.margin_pct`,
+which option wins, or the exact dollar/percent threshold where SPEC §2's 20% cap breaks. That is
+the answer key, handed to the student inside the document they're meant to solve — caught by Tier
+2 probe 1's leak check every time, but only after a full case-write pass has to be redone. Write
+the assumption's basis and its real-world justification; if you need to note that the assumption is
+load-bearing, say "the answer is sensitive to this value" — never the size, direction, or threshold
+of that sensitivity. That analysis belongs in `case.json.balance`/`sensitivity_disclosure[]` and
+`FACILITATOR.md`, both facilitator-only, never in `case.md`'s student-facing appendices.
+
 Write the description precisely enough that a researcher can act on it without re-reading the
 case. Bad: `{{NEEDS_SOURCE: steel price}}`. Good:
 `{{NEEDS_SOURCE: 304 stainless sheet price, USD per pound, US spot, 2026 or most recent}}`.
@@ -285,6 +296,7 @@ SPEC §4 keys are mandatory and may not be renamed.
   "id": "fermenter",
   "title": "Fermenter",
   "tier": "T2",
+  "complexity": 2,
   "band": ["MS-core"],
   "primary_metric": "buildout dollars per barrel of annual capacity",
   "options": { "A": "Two 20-bbl squat fermenters under the existing ceiling",
@@ -322,6 +334,9 @@ SPEC §4 keys are mandatory and may not be renamed.
   "pipeline_version": "1.0"
 }
 ```
+
+`complexity` (added above, alongside `tier`) is the T1→1/T2→2/T3→4/T4→5 star mapping from §14 —
+set it here at write time, not left for a later backfill.
 
 Validate before you finish:
 
@@ -365,7 +380,23 @@ wrote (QA will do this again, harder):
 **T4 cases must include at least one quantity the student has to assume**, with the assumption
 stated and justified. If you declared T4, name that quantity now.
 
-### 14. Report and hand off
+### 14. Set complexity from tier
+
+Set `case.json["complexity"]` from the tier you just checked, using this fixed mapping (never a
+different one, never a guess independent of tier):
+
+| Tier | Complexity (stars) |
+|---|---|
+| T1 | 1 |
+| T2 | 2 |
+| T3 | 4 |
+| T4 | 5 |
+
+(3 is deliberately skipped — SPEC §3's numeric-load table shows a bigger jump T2→T3 than between
+the other adjacent tiers.) This is a normal `case.json` key written alongside `tier`, not a
+separate step later — set it now, at write time.
+
+### 15. Report and hand off
 
 Report: case id, tier, deliverable count, claimed/new-coverage skill counts, LEARNING GOAL CHECK
 result, placeholder count, and the next step —

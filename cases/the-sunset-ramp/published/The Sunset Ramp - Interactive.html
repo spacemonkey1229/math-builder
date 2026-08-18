@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Sunset Ramp — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  Case data below mirrors cases/the-sunset-ramp/case.json (authored/researched
+  2026-08-13) and cases/the-sunset-ramp/sensitivity_model.py exactly -- the JS
+  PARAMS/FLEX/evaluate()/evaluate_twist() block is a direct port of the Python
+  model per templates/INTERACTIVE_HTML_CONTRACT.md section 2.
+
+  HARD LINE (MCS-37): this file never prints case.json.balance.margin_pct,
+  the D2 instantaneous ramp rate, or either option's cost-per-MW/min as a
+  static literal anywhere outside a <script> tag's live computation. The
+  notebook computes; it never hands over the verdict.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .photogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+  @media(max-width:720px){.photogrid{grid-template-columns:1fr}}
+  .photogrid figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .photogrid img{display:block;width:100%;height:150px;object-fit:cover}
+  .photogrid figcaption{padding:8px 10px;font-family:var(--sans)}
+  .photogrid figcaption .cap-desc{font-size:.82rem;color:var(--ink)}
+  .photogrid figcaption .cap-credit{display:block;font-size:.72rem;color:var(--sub);margin-top:3px}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:260px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:140px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  textarea.notebook-text{width:100%;min-height:56px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+
+  /* CASE-SPECIFIC — evening-ramp chart wrapper */
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Sunset Ramp</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">HS</span>
+      <span class="pill">Calculus &middot; Derivatives</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">The west wall of monitors is doing the thing it does every clear evening: six generation curves sliding down together, and one number in the corner ticking downward faster than any of the others can climb to meet it. Lena Marsh doesn&rsquo;t look away from it while she answers the phone one-handed. &ldquo;I see it,&rdquo; she says. &ldquo;I&rsquo;m looking at the same slope you are.&rdquo; On the desk beside her keyboard, a procurement folder sits open to a bid page she has read four times tonight, a sticky note wedged in the margin in her own handwriting: <em>how fast, not just how much.</em></p>
+  <p>Tomorrow&rsquo;s evening ramp is forecast to be worse than today&rsquo;s &mdash; clearer skies, a little more solar on the system than last month, the same stubborn need for something else to pick up the slack in the exact minutes the sun gives up. Cascade Grid Authority&rsquo;s capital committee wants her recommendation by morning, and the committee does not want to hear about total megawatts. They already know both bids on her desk deliver plenty of megawatts. What they are going to ask, in the first sixty seconds of tomorrow&rsquo;s meeting, is whether either one can actually keep up &mdash; not over an hour, not on average, but at the single worst instant of the drop.</p>
+  <p>She minimizes the phone call and pulls two folders side by side: one full of battery discharge curves, one full of a turbine&rsquo;s startup log. Somewhere in the gap between how fast a system can respond and how fast the sun actually sets is the answer the committee is going to hold her to.</p>
+  <p>Her cursor sits on the tab she hasn&rsquo;t opened yet &mdash; the raw hourly generation data from tonight, the actual slope she&rsquo;ll need to beat.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Lena Marsh is a resource-planning dispatcher at Cascade Grid Authority, a balancing authority responsible for keeping electricity supply matched to demand, second by second, across its service territory. Her specific accountability is the evening net-load ramp: the window each clear day when the sun sets and solar generation falls away while electricity demand is still high, and the rest of the system&rsquo;s dispatchable resources have to increase output, in real time, to replace exactly what the sun stops providing. Cascade Grid Authority is fictional; the evening ramp pattern this case asks Lena to analyze is modeled directly on real, published net-load ramp statistics from CAISO, the real balancing authority most associated with the &ldquo;duck curve&rdquo; (see Appendix D), because this evening ramp is a real, well-documented feature of solar-heavy grids and not a hypothetical one.</p>
+  <p>The capital committee has two vendor bids in front of it for the same job &mdash; covering the evening ramp &mdash; and it is evaluating them on the same basis: cost per unit of ramp-rate capability delivered, not total price tag (see Appendix A).</p>
+  <div class="card"><strong>The Solar Stack</strong> pairs 200 MW of new utility-scale solar generation with a 4-hour battery energy storage system, sized to the same 200 MW of power for its full 4-hour discharge duration. A battery can, in principle, respond to any rate of change almost instantly &mdash; its limit is not speed, it is how many total megawatt-hours it holds before it runs out (see Appendix A).</div>
+  <div class="card"><strong>The Peaker Call</strong> is a new 120 MW natural-gas peaker plant &mdash; a simple-cycle combustion turbine built specifically to start quickly and run only during high-demand hours. A gas peaker has a real, physical minimum ramp rate: the fastest rate at which its turbine can safely increase output after starting, a mechanical limit that does not depend on how much fuel is in the tank (see Appendix A).</div>
+  <p>Both resources are candidates for the same job: covering the evening ramp. Neither bid is useful to the committee unless Lena can show, using the actual measured rate at which net system load rises on a clear evening as solar falls away, whether that resource&rsquo;s response capability is fast enough to cover it &mdash; and, if so, what it costs per unit of ramp rate covered, which is the number the committee will actually compare (see Appendix A). The raw evening net-load data Lena must model is in Appendix B. Any figure in this case that is not a matter of public record is stated as an explicit modeling assumption (Appendix C) rather than guessed, and every sourced figure is listed in Appendix D. The vocabulary and the &ldquo;how to&hellip;&rdquo; skills this case will ask of you are listed in Appendix F &mdash; that is where Challenge 1 sends you. Want to see what the real version of this looks like, beyond the standards this case asks you to practice? See Appendix E for further reading.</p>
+
+  <div class="photogrid">
+    <figure>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Duck_Curve_CA-ISO_2016-10-22.agr.png" alt="CAISO 'duck curve' chart showing hourly electric load versus load-less-solar-and-wind, October 22, 2016">
+      <figcaption><span class="cap-desc">CAISO's own &ldquo;duck curve&rdquo; chart &mdash; the real evening net-load ramp this case models.</span><span class="cap-credit">Photo: Wikimedia Commons, ArnoldReinhold, CC BY-SA 4.0</span></figcaption>
+    </figure>
+    <figure>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/6/6d/Reid_Gardner_BESS.jpg" alt="Reid Gardner grid-scale battery energy storage facility near Moapa, Nevada">
+      <figcaption><span class="cap-desc">A real grid-scale lithium-ion battery storage site &mdash; the kind of resource behind The Solar Stack's battery.</span><span class="cap-credit">Photo: Wikimedia Commons, Sig. Chiocciola, public domain (CC0)</span></figcaption>
+    </figure>
+    <figure>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/6/60/Encogen_in_Bellingham_%2814555104926%29.jpg" alt="Encogen natural-gas power plant in Bellingham, Washington, built to supply extra power during peak demand">
+      <figcaption><span class="cap-desc">A natural-gas peaking power plant &mdash; the kind of resource behind The Peaker Call.</span><span class="cap-credit">Photo: Wikimedia Commons, Robert Ashworth, CC BY 2.0</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Lena Marsh. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Solar Stack</h4>
+      <p style="margin:0">200 MW of solar plus a 4-hour, 200 MW battery.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Peaker Call</h4>
+      <p style="margin:0">A new 120 MW natural-gas peaker plant.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must include: (a) use of the "how to&hellip;" resource you researched in Challenge 1; (b) at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a continuous model P(t) of net system load fit to the steepest three hourly points of Appendix B, written as a polynomial in t, and its derivative dP/dt found using the power rule; <strong>D2</strong> the equation of the tangent line to P(t) at the specific clock time of the steepest measured rise, with the slope reported as the instantaneous ramp rate in MW per minute, plus a justification that P(t) is differentiable at that point; <strong>D3</strong> a ramp-response capability table converting each option's own physical limit to MW per minute and comparing it to D2's rate, with a covered / not covered call for each; <strong>D4</strong> a dollars-of-capital-cost-per-MW-per-minute-of-ramp-rate-covered calculation for each option, with the percent margin between them shown explicitly.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. *If you are absent the day of a discussion post 500 "excellent" words on the questions above.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+<details open>
+  <summary>Appendix A &mdash; The Two Ramp-Response Options</summary>
+  <div class="inner">
+    <p><strong>The Solar Stack</strong></p>
+    <table><tr><th></th><th>Value</th></tr>
+    <tr><td>Solar capacity</td><td>200 MW (fixed by the bid)</td></tr>
+    <tr><td>Battery power rating</td><td>200 MW</td></tr>
+    <tr><td>Battery duration</td><td>4 hours (800 MWh total usable energy)</td></tr>
+    <tr><td>Battery full-power response time</td><td>&le; about 1 second to full rated output [S4] &mdash; grid-scale lithium-ion BESS are widely characterized as able to go from zero to full charge or discharge &ldquo;almost instantaneously,&rdquo; with the frequency-regulation literature reporting response on the order of 100&ndash;500 milliseconds</td></tr>
+    <tr><td>Battery ramp-rate capability, derived</td><td>200 MW achieved within 1 second = 200 MW &divide; (1/60 min) = <strong>12,000 MW per minute</strong>, the student's own work in D3 &mdash; this is a theoretical ceiling; Appendix C notes why it is not the binding limit on this option</td></tr>
+    <tr><td>Solar PV capital cost basis</td><td><strong>$1,502 per kW</strong> (overnight capital cost, 150 MWAC single-axis-tracking utility-scale solar PV reference case) [S1]</td></tr>
+    <tr><td>Total installed capital cost, solar PV portion</td><td>200,000 kW &times; $1,502/kW = <strong>$300,400,000</strong> &mdash; the student's own work in D4</td></tr>
+    <tr><td>Battery storage capital cost basis</td><td><strong>$1,744 per kW</strong> (equivalently $436/kWh; 150 MW / 600 MWh, 4-hour lithium-ion BESS reference case) [S2]</td></tr>
+    <tr><td>Total installed capital cost, battery portion</td><td>200,000 kW &times; $1,744/kW = <strong>$348,800,000</strong> &mdash; the student's own work in D4</td></tr>
+    <tr><td>Total capital cost, The Solar Stack</td><td>$300,400,000 + $348,800,000 = <strong>$649,200,000</strong> &mdash; the student's own work in D4</td></tr>
+    </table>
+    <p><strong>The Peaker Call</strong></p>
+    <table><tr><th></th><th>Value</th></tr>
+    <tr><td>Nameplate capacity</td><td>120 MW (fixed by the bid)</td></tr>
+    <tr><td>Peaker minimum ramp rate after start</td><td><strong>50 MW per minute</strong> &mdash; GE Vernova's own published characterization of the &ldquo;nominal ramp rate&rdquo; for the aeroderivative combustion-turbine class this reference case belongs to (as opposed to ~5 MW/min for reciprocating engines) [S3]</td></tr>
+    <tr><td>Peaker capital cost basis</td><td><strong>$1,606 per kW</strong> (overnight capital cost, 4&times;54 MW gross aeroderivative simple-cycle reference case, 211 MW net) [S1]</td></tr>
+    <tr><td>Total installed capital cost</td><td>120,000 kW &times; $1,606/kW = <strong>$192,720,000</strong> &mdash; the student's own work in D4</td></tr>
+    </table>
+    <p class="side-note">Both capital-cost figures are drawn from the same single EIA-commissioned cost study (Appendix D, source S1), so the comparison uses one consistent cost basis across all three technologies. The solar and battery capital-cost figures for The Solar Stack come from the same study's companion reference cases, at matching plant sizes and, for the battery, the matching 4-hour duration class.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix B &mdash; The Evening Net-Load Data</summary>
+  <div class="inner">
+    <p>Cascade Grid Authority is fictional; the table below is a stated Modeling Assumption, not a directly-sourced table (see Appendix C, MA1) &mdash; but it is not invented out of nothing. It is shaped to match the one real, dated, cited statistic this case could obtain for a specific hour of CAISO's evening ramp: CAISO's net load increases by an average of <strong>6.5 GW during the 6:00 p.m. hour</strong> [S5], the steepest single hour of a typical clear-day evening ramp. The table places that real 6,500 MW rise between its 18:00 and 19:00 points exactly, and fills in the hours before and after with a smooth, realistic evening-ramp shape:</p>
+    <table><tr><th>Clock time</th><th>Net system load (MW)</th></tr>
+    <tr><td>16:00</td><td class="num">18,000</td></tr>
+    <tr><td>17:00</td><td class="num">19,500</td></tr>
+    <tr><td>18:00</td><td class="num">22,500</td></tr>
+    <tr><td>19:00</td><td class="num">29,000</td></tr>
+    <tr><td>20:00</td><td class="num">32,500</td></tr>
+    </table>
+    <p class="side-note">Model P(t) (D1) from the three consecutive data points spanning the steepest single-hour rise in the table above &mdash; 17:00, 18:00, and 19:00; the remaining points are for context and for checking the model against the data outside the fitted window.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix C &mdash; Modeling Assumptions</summary>
+  <div class="inner">
+    <p>These figures are <strong>not sourced</strong> as a directly-published table. They are a stated scenario assumption chosen by the case author, anchored to a real, cited statistic. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+    <table><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Sensitivity</th></tr>
+    <tr><td>MA1</td><td>The five hourly net-system-load figures in Appendix B, 16:00&ndash;20:00</td><td>18,000 / 19,500 / 22,500 / 29,000 / 32,500 MW</td><td>The fitted model's peak instantaneous rate (D2) is highly sensitive to the exact shape chosen between data points, not just their hourly totals &mdash; a quadratic fit constrained to match the same 6,500 MW hourly total could still return a peak instantaneous rate anywhere from a little above 108 MW/min (the hourly average) to well above 137.5 MW/min, depending on how convex the true curve is. This is exactly the kind of &ldquo;how much does the shape between two anchor points matter&rdquo; question the Socratic discussion should surface.</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix D &mdash; Sources</summary>
+  <div class="inner">
+    <table><tr><th>id</th><th>Claim</th><th>Value</th><th>Source</th><th>Confidence</th></tr>
+    <tr><td>S1</td><td>Overnight capital cost, solar PV (150 MWAC) and aeroderivative CT (211 MW net) reference cases</td><td>$1,502/kW; $1,606/kW</td><td><a href="https://www.eia.gov/analysis/studies/powerplants/capitalcost/pdf/capital_cost_AEO2025.pdf" target="_blank" rel="noopener">EIA / Sargent &amp; Lundy, Capital Cost and Performance Characteristics (SL-018001)</a></td><td>HIGH</td></tr>
+    <tr><td>S2</td><td>Overnight capital cost, 150 MW / 600 MWh (4-hr) lithium-ion BESS reference case</td><td>$1,744/kW ($436/kWh)</td><td><a href="https://www.eia.gov/analysis/studies/powerplants/capitalcost/pdf/capital_cost_AEO2025.pdf" target="_blank" rel="noopener">Same EIA / Sargent &amp; Lundy study, Case 19</a></td><td>HIGH</td></tr>
+    <tr><td>S3</td><td>Nominal ramp rate, aeroderivative gas-turbine class</td><td>~50 MW/min</td><td><a href="https://www.gevernova.com/gas-power/products/gas-turbines/lm6000" target="_blank" rel="noopener">GE Vernova, LM6000 product page</a></td><td>MEDIUM</td></tr>
+    <tr><td>S4</td><td>Grid-scale lithium-ion battery response time to full rated power</td><td>&ldquo;almost instantaneously&rdquo;; 100&ndash;500 ms</td><td><a href="https://modoenergy.com/research/ramp-rates-dynamic-frequency-response-services-battery-energy-storage" target="_blank" rel="noopener">Modo Energy, Ramp rates in Dynamic frequency response services</a></td><td>MEDIUM</td></tr>
+    <tr><td>S5</td><td>CAISO's average net-load increase during the 6pm hour</td><td>6.5 GW</td><td><a href="https://modoenergy.com/research/en/caiso-flexible-ramping-product-reliability-challenge-battery-energy-storage-revenue-opportunity" target="_blank" rel="noopener">Modo Energy, CAISO Flexible Ramping Product research note</a></td><td>MEDIUM</td></tr>
+    </table>
+  </div>
+</details>
+
+  <details>
+    <summary>Appendix E &mdash; Learn More</summary>
+    <div class="inner">
+      <p>These are real, live, outside resources for anyone curious about the evening ramp and the technologies in this case, beyond what the Challenges require. They are optional background reading, not part of any graded deliverable.</p>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/Duck_curve" target="_blank" rel="noopener">Wikipedia &mdash; Duck curve</a>: an overview of how the "duck curve" got its name and why solar-heavy grids like CAISO's face a steep evening ramp.</li>
+        <li><a href="https://www.caiso.com/todays-outlook" target="_blank" rel="noopener">CAISO &mdash; Today's Outlook</a>: California ISO's live dashboard of real-time grid demand, net demand, and renewable output, the same kind of data behind Appendix B.</li>
+        <li><a href="https://www.eia.gov/todayinenergy/detail.php?id=67925" target="_blank" rel="noopener">U.S. EIA &mdash; "Battery storage capacity averaged 70% growth over the last three years"</a>: a short EIA article on how fast utility-scale battery storage like The Solar Stack's has actually been growing nationwide.</li>
+        <li><a href="https://www.eia.gov/energyexplained/electricity/how-electricity-is-generated.php" target="_blank" rel="noopener">U.S. EIA &mdash; How electricity is generated</a>: a plain-English explainer on turbines, generators, and the different technologies (including gas combustion turbines like The Peaker Call) that make U.S. electricity.</li>
+        <li><a href="https://www.mathsisfun.com/calculus/derivatives-rules.html" target="_blank" rel="noopener">Math Is Fun &mdash; Derivative Rules</a>: a clear walkthrough of the power rule and other derivative rules, useful alongside D1's power-rule work.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-15. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+<div class="stepbox">
+  <h4>Step 1 &middot; Fit P(t) and Differentiate (D1)</h4>
+  <div class="goal">Fit a quadratic P(t) = a&middot;t&sup2; + b&middot;t + c through Appendix B's three steepest points, letting t = minutes after 16:00: (60, 19,500), (120, 22,500), (180, 29,000). Then use the power rule to write dP/dt = m&middot;t + k.</div>
+  <div class="fieldrow"><label>a (coefficient of t&sup2;)</label><input type="number" id="d1_a" step="any"><span id="fb_d1_a"></span></div>
+  <div class="fieldrow"><label>b (coefficient of t)</label><input type="number" id="d1_b" step="any"><span id="fb_d1_b"></span></div>
+  <div class="fieldrow"><label>c (constant term)</label><input type="number" id="d1_c" step="any"><span id="fb_d1_c"></span></div>
+  <div class="fieldrow"><label>dP/dt: coefficient of t (m)</label><input type="number" id="d1_m" step="any"><span id="fb_d1_m"></span></div>
+  <div class="fieldrow"><label>dP/dt: constant term (k)</label><input type="number" id="d1_k" step="any"><span id="fb_d1_k"></span></div>
+  <button onclick="checkD1()">Check Step 1</button>
+  <p class="side-note">Power rule reminder: for a term a&middot;t<sup>n</sup>, the derivative is n&middot;a&middot;t<sup>n-1</sup>.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &middot; Tangent Line at the Steepest Instant (D2)</h4>
+  <div class="goal">Evaluate dP/dt at each end of the fitted window (t = 60 and t = 180) to find where the rise is steepest, then write the tangent line there in the form P = m&middot;t + k.</div>
+  <div class="fieldrow"><label>Clock time of steepest measured rise</label>
+    <select id="d2_time"><option value="">-- choose --</option><option value="17:00">17:00</option><option value="18:00">18:00</option><option value="19:00">19:00</option></select>
+    <span id="fb_d2_time"></span></div>
+  <div class="fieldrow"><label>Tangent slope, m (MW/min)</label><input type="number" id="d2_slope" step="any"><span id="fb_d2_slope"></span></div>
+  <div class="fieldrow"><label>Tangent line constant term, k</label><input type="number" id="d2_k" step="any"><span id="fb_d2_k"></span></div>
+  <button onclick="checkD2()">Check Step 2</button>
+  <div class="fieldrow" style="align-items:flex-start"><label>Why is P(t) differentiable there?</label>
+    <textarea class="notebook-text" id="d2_justify" placeholder="A sentence or two -- this is not auto-graded, it's here so you have to actually write the justification down."></textarea></div>
+  <p class="side-note">dP/dt is linear across the fitted window, so its extreme value over that window is always at one of the two endpoints &mdash; check both.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &middot; Ramp-Response Capability Table (D3)</h4>
+  <div class="goal">Convert each option's own physical limit to MW per minute, then compare it to your Step 2 slope: does the option's own capability meet or exceed the rate the grid must cover?</div>
+  <table>
+    <tr><th></th><th>Capability (MW/min)</th><th>Covered?</th></tr>
+    <tr><td>The Solar Stack (battery, from a &le;1s full-power response)</td>
+      <td><input type="number" id="d3_a_cap" step="any"></td>
+      <td><select id="d3_a_covered"><option value="">--</option><option value="yes">Covered</option><option value="no">Not covered</option></select></td></tr>
+    <tr><td>The Peaker Call (from its sourced 50 MW/min ramp rate)</td>
+      <td><input type="number" id="d3_b_cap" step="any"></td>
+      <td><select id="d3_b_covered"><option value="">--</option><option value="yes">Covered</option><option value="no">Not covered</option></select></td></tr>
+  </table>
+  <button onclick="checkD3()">Check Step 3</button>
+  <span id="fb_d3"></span>
+  <p class="side-note">MW/min conversion: power (MW) &divide; response time (minutes). A response time given in seconds converts to minutes by dividing by 60.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &middot; Cost per MW/min Covered (D4)</h4>
+  <div class="goal">For each option, divide its total capital cost (Appendix A) by the MW/min it actually delivers &mdash; its own capability, capped at your Step 2 rate for any option whose capability exceeds it. Toggle the Twist below to see how a backstop battery changes Option B's number.</div>
+  <table>
+    <tr><th></th><th>Cost per MW/min ($)</th></tr>
+    <tr><td>The Solar Stack</td><td><input type="number" id="d4_a" step="any"></td></tr>
+    <tr><td>The Peaker Call</td><td><input type="number" id="d4_b" step="any"></td></tr>
+  </table>
+  <div class="fieldrow"><label>Percent margin between A and B</label><input type="number" id="d4_margin" step="any">%</div>
+  <button onclick="checkD4()">Check Step 4</button>
+  <span id="fb_d4"></span>
+  <p class="side-note">The calculator checks your totals against the case's own model &mdash; it does not tell you which option to recommend.</p>
+</div>
+
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-bolt"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>&ldquo;Real balancing authorities don't actually pick one resource alone. CAISO's own operational history is part of why battery storage discharge in its territory has tripled in recent years &mdash; a peaker alone tends to leave a gap between what it can deliver and what the evening's worst instant demands.&rdquo;</p>
+      <p>&ldquo;What if The Peaker Call were paired with a much smaller battery &mdash; sized just to cover the gap between the peaker's own ramp rate and the instant rate your Step 2 tangent line found, not to replace the peaker outright &mdash; for a fraction of The Solar Stack's full battery cost?&rdquo;</p>
+      <p>&ldquo;You have sixty seconds: does adding a small backstop battery to the peaker change your vote &mdash; and if it does, why didn't &lsquo;pair them&rsquo; occur to you as a third path the first time through?&rdquo;</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the backstop-battery twist: size a small battery (at the same $1,744/kW cost basis and the same response-time convention as the main battery) to exactly cover The Peaker Call's shortfall, and recompute Step 4's Option B cost.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>U.S. Energy Information Administration / Sargent &amp; Lundy &mdash; Capital Cost and Performance Characteristics for Utility-Scale Electric Power Generating Technologies (SL-018001), January 2024.</li>
+      <li>GE Vernova &mdash; LM6000 Aeroderivative Gas Turbine product page.</li>
+      <li>Modo Energy &mdash; Ramp rates in Dynamic frequency response services.</li>
+      <li>Modo Energy &mdash; CAISO: Flexible Ramping Product is tailored to BESS, but opportunity is limited.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Sunset Ramp &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data + a direct JS port of
+   cases/the-sunset-ramp/sensitivity_model.py's PARAMS / FLEX /
+   evaluate() / evaluate_twist(). Kept in sync BY HAND with the Python
+   file per templates/INTERACTIVE_HTML_CONTRACT.md section 2 -- same
+   keys, same arithmetic, same FLEX-scoping rationale (only genuine
+   stated assumptions are flexed; rise_1819_mw, the peaker capability,
+   and both capital totals are cited/given, not authorial choices).
+   ================================================================ */
+const PARAMS = {
+  t60_net_load_mw: 19500.0,
+  t120_net_load_mw: 22500.0,
+  rise_1819_mw: 6500.0,
+  battery_power_mw: 200.0,
+  battery_response_time_s: 1.0,
+  peaker_capability_mw_per_min: 50.0,
+  capA_total_usd: 649200000.0,
+  capB_total_usd: 192720000.0,
+  battery_cost_per_kw: 1744.0,
+};
+const FLEX = ["t60_net_load_mw", "t120_net_load_mw", "battery_response_time_s"];
+
+function quadFit(p){
+  const x0=60.0, x1=120.0, x2=180.0;
+  const y0=p.t60_net_load_mw, y1=p.t120_net_load_mw, y2=y1+p.rise_1819_mw;
+  const h=60.0;
+  const f01=(y1-y0)/h, f12=(y2-y1)/h;
+  const f012=(f12-f01)/(2*h);
+  const a=f012, b=f01-f012*(x0+x1), c=y0-f01*x0+f012*x0*x1;
+  return {a,b,c};
+}
+function peakRampRate(p){
+  const {a,b} = quadFit(p);
+  const dPdt = t => 2*a*t + b;
+  return Math.max(dPdt(60), dPdt(180));
+}
+function batteryCapability(p){ return p.battery_power_mw * 60.0 / p.battery_response_time_s; }
+function costs(p){
+  const peak = peakRampRate(p);
+  const batCap = batteryCapability(p);
+  const peakerCap = p.peaker_capability_mw_per_min;
+  const rateA = Math.min(batCap, peak);
+  const rateB = Math.min(peakerCap, peak);
+  const costA = rateA > 0 ? p.capA_total_usd / rateA : Infinity;
+  const costB = rateB > 0 ? p.capB_total_usd / rateB : Infinity;
+  return {peak, batCap, peakerCap, rateA, rateB, costA, costB};
+}
+function evaluate(p){
+  const {costA, costB} = costs(p);
+  return {A: 1.0/costA, B: 1.0/costB};
+}
+function evaluate_twist(p){
+  const {peak, costA, peakerCap} = costs(p);
+  const shortfall = Math.max(0, peak - peakerCap);
+  const backstopPowerMw = shortfall * p.battery_response_time_s / 60.0;
+  const backstopCost = backstopPowerMw * 1000.0 * p.battery_cost_per_kw;
+  const combined = p.capB_total_usd + backstopCost;
+  const rateBTwisted = Math.min(peakerCap + shortfall, peak);
+  const costBTwisted = rateBTwisted > 0 ? combined / rateBTwisted : Infinity;
+  return {A: 1.0/costA, B: 1.0/costBTwisted};
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value); }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions. Every check
+   compares the Hero's own entry against a value derived LIVE from
+   PARAMS via quadFit()/peakRampRate()/costs()/evaluate() above --
+   never a hardcoded literal. Note this deliberately never displays
+   the correct value back to the student, only ✓ / "try again".
+   ================================================================ */
+function checkD1(){
+  const {a,b,c} = quadFit(PARAMS);
+  fb('fb_d1_a', near(val('d1_a'), a, 0.001));
+  fb('fb_d1_b', near(val('d1_b'), b, 0.05));
+  fb('fb_d1_c', near(val('d1_c'), c, 5));
+  fb('fb_d1_m', near(val('d1_m'), 2*a, 0.005));
+  fb('fb_d1_k', near(val('d1_k'), b, 0.05));
+}
+function checkD2(){
+  const {a,b} = quadFit(PARAMS);
+  const dPdt = t => 2*a*t + b;
+  const t60r = dPdt(60), t180r = dPdt(180);
+  const steepestAt180 = t180r >= t60r;
+  const correctTime = steepestAt180 ? "19:00" : "17:00";
+  const correctSlope = steepestAt180 ? t180r : t60r;
+  const tSteep = steepestAt180 ? 180 : 60;
+  const yAtSteep = a*tSteep*tSteep + b*tSteep + (quadFit(PARAMS).c);
+  const correctK = yAtSteep - correctSlope*tSteep;
+  fb('fb_d2_time', document.getElementById('d2_time').value === correctTime);
+  fb('fb_d2_slope', near(val('d2_slope'), correctSlope, 0.5));
+  fb('fb_d2_k', near(val('d2_k'), correctK, 25));
+}
+function checkD3(){
+  const c = costs(PARAMS);
+  const okACap = near(val('d3_a_cap'), c.batCap, 50);
+  const okBCap = near(val('d3_b_cap'), c.peakerCap, 0.5);
+  const aCoveredTrue = c.batCap >= c.peak;
+  const bCoveredTrue = c.peakerCap >= c.peak;
+  const okACovered = document.getElementById('d3_a_covered').value === (aCoveredTrue ? 'yes' : 'no');
+  const okBCovered = document.getElementById('d3_b_covered').value === (bCoveredTrue ? 'yes' : 'no');
+  fb('fb_d3', okACap && okBCap && okACovered && okBCovered);
+}
+function checkD4(){
+  const applyTwist = document.getElementById('applyTwist') && document.getElementById('applyTwist').checked;
+  const c = costs(PARAMS);
+  let costA = c.costA, costB = c.costB;
+  if(applyTwist){
+    // Recompute B under the twist the same way evaluate_twist() does, but in
+    // dollar terms (evaluate_twist returns the inverted 1/cost form).
+    const shortfall = Math.max(0, c.peak - c.peakerCap);
+    const backstopPowerMw = shortfall * PARAMS.battery_response_time_s / 60.0;
+    const backstopCost = backstopPowerMw * 1000.0 * PARAMS.battery_cost_per_kw;
+    const combined = PARAMS.capB_total_usd + backstopCost;
+    const rateBTwisted = Math.min(c.peakerCap + shortfall, c.peak);
+    costB = rateBTwisted > 0 ? combined / rateBTwisted : Infinity;
+  }
+  const margin = 100.0 * (costA - costB) / costA;
+  const okA = near(val('d4_a'), costA, costA*0.01);
+  const okB = near(val('d4_b'), costB, Math.max(costB*0.01, 1));
+  const okMargin = near(val('d4_margin'), margin, 1.0);
+  fb('fb_d4', okA && okB && okMargin);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-sunset-ramp";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ['ch1','Challenge 1 -- posted a "how to..." resource link'],
+  ['ch2','Challenge 2 -- 250+ word pitch, with visual'],
+  ['D1','D1 -- P(t) model and power-rule derivative'],
+  ['D2','D2 -- tangent line at the steepest instant + differentiability justification'],
+  ['D3','D3 -- ramp-response capability table'],
+  ['D4','D4 -- cost-per-MW/min calculation and percent margin'],
+  ['ch4','Challenge 4 -- appendix of your work/process'],
+  ['ch5','Challenge 5 -- discussion participation (2x, or 500-word makeup)']
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). Every URL below was fetched and
+   confirmed live 2026-08-15 (this session).
+   ================================================================ */
+const GLOSSARY = {
+  "Derivative": {def: "A measure of how a function's output changes as its input changes -- the instantaneous rate of change, or the slope of the tangent line at a point.",
+    url: "https://www.cuemath.com/calculus/derivatives/"},
+  "Instantaneous Rate Of Change": {def: "The rate of change of a quantity at one exact instant, rather than averaged over an interval -- found by taking a derivative and evaluating it at that instant.",
+    url: "https://www.cuemath.com/rate-of-change-formula/"},
+  "Tangent Line": {def: "A straight line that touches a curve at exactly one point and has the same slope as the curve at that point.",
+    url: "https://www.cuemath.com/calculus/tangent-line/"},
+  "Differentiable": {def: "A function is differentiable at a point if its derivative exists there -- the graph has no break, cusp, or corner at that point.",
+    url: "https://www.cuemath.com/calculus/differentiable/"},
+  "Power Rule": {def: "A shortcut for differentiating a term a·t^n: multiply by the exponent and reduce the exponent by one, giving n·a·t^(n-1).",
+    url: "https://www.cuemath.com/calculus/power-rule/"},
+  "Polynomial": {def: "An expression built from variables raised to whole-number powers, combined with addition, subtraction, and multiplication -- e.g. a·t² + b·t + c.",
+    url: "https://www.mathsisfun.com/algebra/polynomials.html"},
+  "Slope": {def: "How steep a line is -- the change in the vertical direction divided by the change in the horizontal direction.",
+    url: "https://www.mathsisfun.com/geometry/slope.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.mathsisfun.com/percentage.html"},
+  "Unit Conversion": {def: "Rewriting a measured quantity in different units (e.g. seconds to minutes) without changing the quantity itself.",
+    url: "https://www.mathsisfun.com/measure/index.html"}
+};
+const HOWTO = [
+  ["How to find a derivative using the power rule", "Power Rule"],
+  ["How to find the equation of a tangent line at a point", "Tangent Line"],
+  ["How to convert an amount with compound units", "Unit Conversion"],
+  ["How to find the percent of a number", "Percent"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){ checkD4(); }
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

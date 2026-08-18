@@ -211,3 +211,156 @@ P5 is a real, permanent FAIL — Tier 1 being clean does not change that.
 **final_state: BLOCKED**, for one reason only now: **P5 sensitivity is a genuine, disclosed,
 non-eliminable FAIL** (not a contract-violation crash, not a Tier-1 issue). No further Tier 2 blocker
 remains open on the Tier 1 side. Tier 3 (human dry-run) is still NOT RUN.
+
+---
+
+## Tier 2 gate — first real, fully-adjudicated run — 2026-08-18
+
+Every `qa.tier2` value on file before this pass was a carried-forward or self-graded artifact of
+earlier partial passes (see the runs above: a crash on P5, a retraction of an invalid waiver, a
+doctrine amendment applied mid-stream) — none of them represents a single completed six-probe pass
+against a genuinely independent cold solve. This is that pass.
+
+### Tier 1 — reconfirmed
+
+`python3 skills/case-readiness/scripts/tier1_structural.py --case end-of-life` — re-run clean:
+`case.md` sha256 unchanged (`55eaaef281a157659c565c539d8f723eabc407e50329f420d0bde8cf8129052d`),
+0 BLOCKER, 3 GAP (T1-10 legacy-conversion `new_coverage[]` carve-out, T1-14 one orphan idiom-quote
+number in `FACILITATOR.md` [`100.0`], T1-18 orphan CSS/markup decimals in the published interactive
+HTML — the same pre-existing accepted classes as every prior run, unaffected by this pass's `qa`/
+`balance.stability`/`FACILITATOR.md` text edits). `VERDICT: TIER1_PASS`.
+
+### P1 — Cold solve: **FAIL**
+
+A structured cold-solve answer set (Position A, removal Day 5 = Dec 15, 2020) was supplied for
+grading against the packet's 7-question protocol. Scored against this skill's stated pass
+criterion — *"the solver reaches a defensible position with correct arithmetic AND names a
+metric. Reaching the answer by the wrong route is a FAIL."*
+
+**Arithmetic is correct.** Independently re-derived: Cumulative Balance(5) = $2,488.91 + 4 ×
+$8,743.26 = $37,461.95; Day 14/21/50 checkpoints ($116,151.29 / $177,354.11 / $430,908.65) all
+match `case.json.derived` exactly.
+
+**The route is the case's own named trap, reproduced almost verbatim.** `FACILITATOR.md`'s trap
+(see P3 below) is: *a Hero computes the total dollar gap, finds it huge, and treats that as
+settling the case on arithmetic alone — without ever engaging that total assets cover even the
+50-day worst case, or that the liquid runway lands almost exactly on the doctor's own low-end
+estimate.* The submitted solve does exactly this:
+
+- Its stated metric (`answer_2_metric`) is the D2 cumulative out-of-pocket balance, chosen because
+  "every extra day is unbounded additional debt with no ceiling" — the big/uncapped-total framing
+  the trap describes, not the case's actual `primary_metric` (liquid-asset runway vs. Dr. Halbert's
+  14-day low-end estimate).
+- It never computes or mentions **D5** — the "running out of money" determination that Challenge 3
+  requires and that the whole case's derived-figure structure (`liquid_runway_days: 13.52`,
+  `survival_low_end_days: 14`, `survival_margin_pct: 3.43`) is built around. This is not a side
+  number; it is the near-coincidence the case's Socratic Q1 asks students to reconcile.
+- It never engages that total assets ($667,756.51) exceed even the full 50-day worst-case bill
+  (~$430,908.65) — the fact `argument_b` and the trap both name as the thing a rushed reader
+  misses.
+- The chosen date (Day 5, "two days after the last billed day... giving Grace time to land") is
+  not derived from any threshold in the case's own data at all — it is an emotionally-reasoned
+  arbitrary date, not a route through the case's actual quantitative structure.
+
+Per this probe's own rule, reaching *a* position with correct sub-arithmetic is not sufficient
+when the reasoning route is the documented wrong path. This also independently corroborates that
+P3's trap is real and catchable (see below) — but for P1 itself, it is a genuine, substantive
+**FAIL**, not a stylistic quibble. The solver's own self-reported `"verdict":"PASS"` inside the
+supplied answer set is not authoritative; it is not this skill's grading.
+
+### P2 — Both-sides solve: **PASS**
+
+Machine pre-screen clean (`tier2_probes.py --probe 2`: 0 findings). `balance.argument_a` and
+`argument_b` are both genuinely quantitative and independent, not a concession dressed as a
+rebuttal: A leans on the real 13.52-vs-14-day near-miss and the certain, uncapped, mounting bill;
+B leans on total assets covering even the full 50-day case without selling the house, and on the
+typical-case runway landing within ~3.4% of the doctor's own low estimate rather than falling
+drastically short. Margin (3.43%) is well inside the SPEC §2 20% cap; neither side collapses at a
+single question.
+
+### P3 — Trap check: **PASS** (adjudicated override of a machine false positive)
+
+`tier2_probes.py --probe 3` mechanically FAILs with: *"the named trap does not describe what a
+learner will actually DO wrong."* Root cause, confirmed by direct inspection: the checker's regex
+captures only 400 characters starting at the word "trap," which truncates `FACILITATOR.md`'s trap
+paragraph one word before its behavior-describing verb (`"...has done real arithmetic but
+skipped..."` — cut off right before `skipped`, the exact word the keyword screen is looking for).
+This is the same truncation-artifact false-positive class already documented and overridden for
+`college-admissions`' P3 run. Read in full, the trap text names a concrete learner behavior — computes
+a big scary total, treats it as decisive, never checks that assets cover the worst case or that the
+runway nearly matches the doctor's own estimate — not a mere difficulty note. This run's own P1
+cold solve independently reproduced exactly that behavior, which is direct empirical confirmation
+this is a real, currently-uncaught trap the guide correctly anticipates. **PASS**, override
+recorded.
+
+### P4 — Twist integrity: **PASS**
+
+Mechanical screen `READY` (0 findings; `evaluate_twist()` present and computed). Re-derived the
+$150,000 Day-4 experimental-treatment twist under both a sequential reading of MA1→MA2→MA3
+(apply daily rate, then liquid/illiquid grouping, then the twist cost) and a simultaneous reading
+(all three assumptions active at once): under every reading, $150,000 exceeds the family's entire
+liquid-plus-brokerage pool ($111,953.63, Appendix F), forcing a retirement-account draw or a loan
+regardless of order, and the 50-day survival cap (Appendix C) is never altered. The twist
+invalidates a "money settles it cleanly" reading of Position A without silently changing either
+option's underlying arithmetic, and no reading depends on a convention the case fails to state.
+
+### P5 — Assumption sensitivity: **PASS_DISCLOSED**
+
+`python3 skills/case-readiness/scripts/tier2_probes.py --case end-of-life --probe 5 --flex 0.5`:
+
+```
+base: {'A': 13.52, 'B': 14.0}   base_winner: B   base_margin_pct: 3.6
+scope: swept the 3 declared assumption dial(s): ['daily_rate', 'survival_low_days', 'twist_treatment_cost']
+! VERDICT UNSTABLE: daily_rate -50% -> winner A (base B); survival_low_days -50% -> winner A (base B)
+! BALANCE BREAKS under flex on both dials, both directions (49.8%-93.1%, all breach the 20% cap)
+! DISCLOSED, NOT ELIMINATED: daily_rate, survival_low_days -- each has a recorded category and
+  justification in sensitivity_disclosure[]. This PASSES per the disclosure-aware pass state
+  (2026-08-13), not the stable-margin state.
+```
+
+Machine status: **`PASS (disclosed)`**, mechanically, not a hand override. `case.json`'s existing
+top-level `sensitivity_disclosure[]` already carries valid entries for both unstable params
+(`daily_rate`, `survival_low_days`), Category **F** (irreducible forecast uncertainty — a projected
+future billing rate and a physician's own estimate range, neither is researchable to a firmer
+number by any amount of work), each justification well over the 20-character floor and tied to the
+case's real legacy-preserved facts. `twist_treatment_cost` is genuinely stable across its full
+±50% range (margin holds at 3.6%, never flips) and needs no disclosure entry.
+
+**Correction made this pass:** `case.json.balance.stability` and `FACILITATOR.md`'s "Sensitivity
+disclosure" section were both still asserting the *pre-2026-08-13* outcome — "disclosure does not
+convert this into a pass... scored FAIL, not PASS" — a stale claim written before `tier2_probes.py`
+gained the disclosure-aware pass state described in `skills/case-readiness/SKILL.md`'s P5 section.
+The mechanical script has reported `PASS (disclosed)` since that amendment landed; the case's own
+prose had not caught up. Both texts have been corrected in this pass to state `PASS_DISCLOSED`
+and cite the actual current rule instead of the superseded `DOCTRINE_LEDGER.md` MCS-26/MCS-41
+wording. No numbers changed — only the stated outcome of an unchanged mechanical result.
+
+### P6 — Data decay: **PASS**
+
+`case.json.sources[]` has exactly 1 entry (S1, HHS 2026 Poverty Guidelines, `accessed:
+2026-08-13`, 5 days stale). Fetched `https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines`
+live via `WebFetch` on 2026-08-18: reachable, page confirms the 2026 guidelines, and every cited
+figure matches exactly — $15,960 / $21,640 / $27,320 / $33,000 / $38,680 / $44,360 / $50,040 /
+$55,720 for family sizes 1–8, and +$5,680 per additional person beyond 8. No drift, no move, no
+dead link.
+
+### Overall
+
+| probe | verdict |
+|---|---|
+| P1 cold solve | **FAIL** |
+| P2 both-sides | PASS |
+| P3 trap | PASS (adjudicated) |
+| P4 twist | PASS |
+| P5 sensitivity | PASS_DISCLOSED |
+| P6 data decay | PASS |
+
+**final_state: BLOCKED.** Tier 1 is clean (0 blockers, 3 accepted gaps). Five of six Tier 2 probes
+are PASS/PASS_DISCLOSED. **P1 is the sole remaining blocker to `TIER2_PASS`** — the case needs a
+fresh cold solve that actually reaches the case's real D5 "running out of money" determination
+(the ~13.52-vs-14-day near-coincidence) rather than the trap route (a large uncapped-total framing
+and an arbitrary date), before this case can honestly reach `TIER2_PASS`. `case.json.qa` updated:
+`state: TIER1_PASS`, `verdict: TIER1_PASS` (not `"PASS"` — reserved for `TIER2_PASS`),
+`tier2: {P1: FAIL, P2: PASS, P3: PASS, P4: PASS, P5: PASS_DISCLOSED, P6: PASS}`, `blockers_open: 0`
+(Tier 1), `gaps_open: 3`. Per `skills/case-readiness/SKILL.md`, `case-publish` requires
+`qa.state == "TIER2_PASS"` — this case remains **not eligible for publish**.

@@ -185,8 +185,13 @@ class PostgresStore:
                     "surface_first": r['surface_first'], "confirmed_by": r['confirmed_by'],
                     "confirmed_on": _to_iso(r['confirmed_on']), "overrides": r['overrides'], "report": r['report'],
                 } for r in cur.fetchall()]
+                cur.execute("SELECT id, learner_id, case_id, stars, note, rated_on FROM ratings")
+                ratings = [{
+                    "id": r['id'], "learner_id": r['learner_id'], "case_id": r['case_id'],
+                    "stars": r['stars'], "note": r['note'], "rated_on": _to_iso(r['rated_on']),
+                } for r in cur.fetchall()]
         return {"assignments": assignments, "submissions": submissions, "discussions": discussions,
-                "scores": scores}
+                "scores": scores, "ratings": ratings}
 
     def _save_submissions(self, data):
         with self._conn() as conn:
@@ -233,6 +238,14 @@ class PostgresStore:
                          Jsonb(s['criteria']), s['badge_eligible'], s['growth_score'],
                          Jsonb(s.get('surface_first', [])), s.get('confirmed_by'), _to_date(s.get('confirmed_on')),
                          Jsonb(s.get('overrides', [])), s.get('report')))
+
+                cur.execute("DELETE FROM ratings")
+                for r in data.get('ratings', []):
+                    cur.execute(
+                        """INSERT INTO ratings (id, learner_id, case_id, stars, note, rated_on)
+                           VALUES (%s,%s,%s,%s,%s,%s)""",
+                        (r['id'], r['learner_id'], r['case_id'], r['stars'], r.get('note'),
+                         _to_date(r['rated_on'])))
             conn.commit()
 
     # --------------------------------------------------- score_overrides ---

@@ -74,7 +74,7 @@ PARAMS = {
     "disk_teeth_per_side": 3,
     "disk_hole_d_in": 9.0,               # MA2 -- proprietary, one-time-exception estimate, 2026-08-13 (was 10.0)
     "disk_sell_price": 657.00,
-    # --- Twist (Appendix D) ---------------------------------------------------
+    # --- Twist (facilitator-only, case.md) -----------------------------------
     "twist_bonus_per_part": 114.00,
     "twist_bonus_flat": 200000.00,
     "twist_target_units": 5000,
@@ -101,7 +101,7 @@ PARAMS = {
 FLEX = [
     "disk_hole_d_in",           # MA2: unstated hole diameter
     "wage_per_hr_per_employee", # MA4: fully-loaded wage assumption
-    "twist_sprint_days",        # scenario construction (Appendix D)
+    "twist_sprint_days",        # scenario construction (the Twist, facilitator-only)
 ]
 
 

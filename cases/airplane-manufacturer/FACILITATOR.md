@@ -71,8 +71,9 @@ uses either in a formula has taken the bait on irrelevant data, which is itself 
 
 ## Twist — drop this at ~15 minutes into the discussion
 
-**Appendix D.** A supplier fire in China. Boeing offers $114/part plus a $200,000 bonus for more
-than 5,000 units delivered within 10 days, running the machine up to 20 hours a day for the whole
+Read from `case.md`'s facilitator-only "The Twist" section, do not hand out or paraphrase in
+advance: a supplier fire in China. Boeing offers $114/part plus a $200,000 bonus for more than
+5,000 units delivered within 10 days, running the machine up to 20 hours a day for the whole
 sprint. Ask: "Can you actually hit 5,000? Do you take the deal?"
 
 The real, computed answer (see `sensitivity_model.py`) is that **neither option clears 5,000 units
@@ -137,7 +138,7 @@ chose — but it's a good gut-check moment before the deep dive.)
 | 0:00–0:03 | Intro — frame the format, broadcast the Stout Aviation logo |
 | 0:03–0:07 | Launch — read the Background aloud, cold-call for a gut read on sale price alone, Anchor 1 vote |
 | 0:07–0:15 | Anchors 2–4 — is sale price the right question, what's the process, what don't we know (tooth geometry, hole diameter) |
-| **0:15** | **DROP THE TWIST** — Appendix D, the Boeing emergency order, delivered slowly |
+| **0:15** | **DROP THE TWIST** — the Boeing emergency order, delivered slowly |
 | 0:15–0:20 | Immediate recommit — does the Twist change anyone's Challenge 3 pick |
 | 0:20–0:40 | Threaded deep conflict — volume thread, margin thread, breakeven thread |
 | 0:40–0:45 | Close, re-vote, reflection, Lessons Learned |

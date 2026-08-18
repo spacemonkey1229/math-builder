@@ -57,8 +57,9 @@ not have another pilot to check her arithmetic against. Where a figure below is 
 public record, it is stated as an explicit modeling assumption (SEE APPENDIX E) rather than
 guessed.
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix F** —
-that is where Challenge 1 sends you.
+The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix G** —
+that is where Challenge 1 sends you. (SEE APPENDIX F for further reading on harbor pilotage and
+tide prediction.)
 
 ## Dilemma
 
@@ -70,8 +71,7 @@ B.) Hold for the Slack Tide — wait for the next high tide, missing the contrac
 
 ## Challenges
 
-1.) Research and find an online resource that answers one of the "how to…" questions from the
-case study launch. Post a link to the resource as your submission.
+1.) Research and find an online resource that answers one of the "how to…" questions from the case study launch. Post a link to the resource as your submission.
 
 2.) Post 250 or more "excellent" words pitching a firm stance to your audience on which you
 would choose and why. Your pitch must include:
@@ -113,7 +113,7 @@ discussion post 500 "excellent" words on the questions above.
 | | Value |
 |---|---|
 | *Solveig Trader* loaded draft (ft) | 49 ft (modeled on the Maersk A-class, 8,272 TEU, 15 m draft) [S5] |
-| Charted channel depth at the pilot station (ft) | 54 ft (entrance channel); 52 ft (inner harbor) [S6] |
+| Charted channel depth at the pilot station (ft) | 54 ft (entrance channel); 52 ft (inner harbor) [S6]. **This case's clearance figures use the 54 ft entrance-channel depth as the governing depth for the Dawn Transit — see Modeling Assumptions, MA4.** |
 | Pilots' Association minimum under-keel clearance policy | 1 meter (≈3.28 ft) during channel/basin transit [S7] |
 
 ## Appendix C: Charter & Delivery Terms
@@ -125,24 +125,41 @@ discussion post 500 "excellent" words on the questions above.
 
 ## Appendix D: Barometric & Storm-Surge Variability
 
+A nearby storm can move the water level away from its predicted tide curve in **two different,
+opposite-signed ways**, and getting the Dawn Transit's clearance right depends on telling them apart:
+
 | | Value |
 |---|---|
-| Inverse-barometer water-level rate | ≈1 cm sea-level rise per 1 hPa (millibar) drop in air pressure, ≈0.39 in per mb [S8] |
-| Local pressure-drop range modeled for a nearby-but-offshore system | See Modeling Assumptions, MA3 — the rate above is real; the specific pressure drop on this specific night is not knowable in advance |
+| Inverse-barometer water-level effect | Low air pressure lets the sea surface **rise** — roughly 1 cm of rise per 1 hPa (millibar) of pressure drop, ≈0.39 in per mb [S8]. This is the mechanism behind ordinary storm surge. |
+| Wind-driven setdown | A **separate, opposite-signed** effect: when a storm's wind blows *away* from the coast, it physically pushes water offshore, **lowering** the local water level below the predicted curve — "reverse storm surge." Real, documented, and not small: Tampa Bay's water level dropped roughly 4 ft below prediction from wind-driven setdown during Hurricane Ian (2022) [S10]. |
+| Local water-level effect modeled for a nearby-but-offshore system | See Modeling Assumptions, MA3. Kesterhaven's exposure on this specific night is modeled as a **net setdown** (water-level reduction), consistent with an offshore, non-landfalling system whose wind pushes water away from the harbor rather than piling it in — the specific magnitude is not knowable in advance. |
 
 ## Appendix E: Modeling Assumptions
 
 > These figures are **not sourced**. They are stated scenario assumptions chosen by the case
 > author, each with a real basis named below. A Hero may challenge them in discussion — that is a
-> legitimate move, and Appendix F names the skill a Hero would need to test one.
+> legitimate move, and Appendix G names the skill a Hero would need to test one.
 
 | # | Assumption | Value used | Basis | Sensitivity |
 |---|---|---|---|---|
 | MA1 | Contracted delivery window | The Dawn Transit meets it; the Slack Tide misses it by enough to trigger MA2 | No public source states a specific fictional charter's delivery window; the case needs only that the Slack Tide option misses it, not a specific hour count | Does not flip the dilemma on its own — the case's tension is clearance vs. penalty, not the exact window width |
 | MA2 | Late-delivery penalty | **$18,000 flat penalty** — roughly one day of a real worked charter-party demurrage example ($20,000/day; real range for container demurrage generally runs $75–$300 per container per day) | This fictional charter's exact penalty clause cannot exist publicly; $18,000 is grounded in real industry figures, not invented from nothing | Directly load-bearing on Argument A — if set materially lower, Option B dominates outright; if materially higher, Option A does. `case-qa` Tier 2 should flex this ±50% once a `sensitivity_model.py` exists for this case. |
-| MA3 | Local pressure drop modeled for the Twist's storm | **28 mb → 0.91 ft water-level reduction** — toward the upper end of the real tropical-storm-strength range (980–1000+ mb central pressure vs. a ~1013 mb fair-weather baseline [S9]), modeled as the *local* drop Kesterhaven feels from an offshore-not-landfalling system, converted via S8's real rate | Chosen from within a real range, not picked to force an outcome — see RESEARCH_LOG.md for the full arithmetic | Reduces the Dawn Transit's margin over the Pilots' Association's policy from 1.544 ft to 0.634 ft — a real ~59% erosion. **It does not flip the clearance negative under this value** (that would take roughly a 47.5 mb drop, itself close to real tropical-storm strength). The twist is a genuine erosion of confidence, not a guaranteed reversal — see FACILITATOR.md. |
+| MA3 | Local water-level reduction modeled for the nearby storm | **0.91 ft wind-driven setdown** — a genuine but non-extreme fraction of the real, documented magnitude such setdowns reach (Tampa Bay measured ~4 ft during Hurricane Ian [S10]), modeled for an offshore, non-landfalling system with pressure at or just above the real Category-1-hurricane threshold (>980 mb, vs. a ~1013 mb fair-weather baseline [S9]) whose wind pushes water away from Kesterhaven rather than piling it in — **CORRECTED 2026-08-12**: earlier drafts of this case misattributed this reduction to the inverse-barometer rate in Appendix D (S8), which is a real relationship but produces a **rise**, not a reduction, and cannot honestly justify this row's sign. The mechanism is wind-driven setdown (S10), a separate, real, opposite-signed effect — see RESEARCH_LOG.md. | Chosen well within the real documented range for this phenomenon, not picked to force an outcome — see RESEARCH_LOG.md for the correction and the full arithmetic | This reduction directly narrows the Dawn Transit's clearance margin over the Pilots' Association's policy floor — work out D3/D4's own comparison to see by how much, and whether it changes the recommendation. |
+| MA4 | Governing depth for the Dawn Transit's clearance calculation | **54 ft (the entrance-channel depth)** | Appendix B cites two real, both-sourced, dated depths for this harbor — 54 ft (entrance channel) and 52 ft (inner harbor) [S6] — without which one applies to this fictional vessel's specific route, which is not a matter of public record for a fictional charter. This case models the Dawn Transit's controlling clearance moment as occurring at the harbor entrance itself (the transit's final and most exposed segment on the way to open water), which is where the real NOAA tide station this case's Appendix A predictions are drawn from is sited. **CORRECTED 2026-08-12**: earlier drafts used 54 ft without stating this as a choice — a Hero reading Appendix B literally could equally defensibly apply the shallower 52 ft figure instead. | This is the single largest lever in the whole case. A Hero who challenges this convention and argues for the shallower 52 ft reading has a legitimate, defensible point worth exploring in discussion. |
 
-## Appendix F: "How To…" Math Questions To Research
+## Appendix F: Learn More
+
+Optional further reading for the curious — not required to complete the Challenges or resolve the
+Dilemma.
+
+- [The American Pilots' Association](https://www.americanpilots.org) — the real national association representing U.S. marine/harbor pilots, with background on what pilotage is and why ports require it.
+- [NOAA: Tides and Water Levels tutorial](https://oceanservice.noaa.gov/education/tutorial_tides/welcome.html) — NOAA's own educational tutorial on what causes tides and how they are monitored and predicted.
+- [NOAA: What is storm surge?](https://oceanservice.noaa.gov/facts/stormsurge-stormtide.html) — NOAA's explainer distinguishing storm surge from storm tide, the real phenomenon behind Appendix D.
+- [Math Is Fun: The Unit Circle](https://www.mathsisfun.com/geometry/unit-circle.html) — a clear walkthrough of the unit circle and how it defines sine, cosine, and tangent, useful background for Challenge 3's D1.
+
+*Links verified live 2026-08-18.*
+
+## Appendix G: "How To…" Math Questions To Research
 
 **Vocabulary terms**
 
@@ -172,26 +189,27 @@ contracted late-delivery penalty, a real and immediate cost with no offsetting b
 predicted clearance holds.
 
 **Argument for B (Slack Tide).** The predicted clearance at the marginal low is thin enough that a
-plausible, real storm-surge/barometric adjustment (Appendix D) could erase it, and the Pilots'
+plausible, real wind-driven setdown (Appendix D) could erase it, and the Pilots'
 Association's policy exists precisely to bar a pilot from authorizing a transit on a margin that
 thin. The penalty for missing the window is a known, bounded cost; a grounding is not.
 
-**Margin basis (resolved 2026-08-05).** Comparing Option A's clearance margin directly against
+**Margin basis (resolved 2026-08-05, mechanism corrected 2026-08-12).** Comparing Option A's clearance margin directly against
 Option B's is not the right shape for this case — the Slack Tide is a high-tide transit and will
 always clear by several times more than the Dawn Transit's marginal-low transit; that gap is a
 structural fact of the two options, not a close call, and Appendix A/B's real sourced NOAA/vessel
 figures cannot honestly be adjusted to force one. Instead, `margin_pct` measures how close the
 Dawn Transit's real safety margin comes to the Pilots' Association's policy floor under MA3's
 storm twist — the only genuinely adjustable, disclosed-as-uncertain quantity in this case. Under
-the predicted (non-adjusted) water level, Option A clears the floor by 1.544 ft (47% of the 3.28
+the predicted (non-adjusted) water level and MA4's governing-depth convention, Option A clears the floor by 1.544 ft (47% of the 3.28
 ft floor) — a real, comfortable margin, not artificially forced close. Under MA3's storm twist
-(28 mb, toward the upper end of a real tropical-storm-strength range), that margin erodes to 0.634
+(a 0.91 ft wind-driven setdown, well inside the real documented range for the phenomenon — see
+Appendix D and RESEARCH_LOG.md), that margin erodes to 0.634
 ft — **19.33% of the policy floor**, inside SPEC's ~20% cap. `margin_pct` = 19.33.
 
 **Five Socratic questions (draft — refine once numbers land).**
 
 1. Your model says the Dawn Transit clears the harbor floor by a real margin. What would the
-   storm-surge adjustment have to be for that margin to reach zero?
+   wind-driven setdown have to be for that margin to reach zero?
 2. The Pilots' Association's minimum-clearance policy exists for a reason. Whose job is it to
    decide when a "thin but positive" margin is not thin enough — the model, or the pilot?
 3. If you were the shipping line's dispatcher instead of the pilot, would you weigh the penalty
@@ -199,14 +217,17 @@ ft — **19.33% of the policy floor**, inside SPEC's ~20% cap. `margin_pct` = 19
 4. Your D1 table required sine, cosine, *and* tangent of the reference angle. Which of the three
    did you actually use in your final clearance number — and why did the case ask for all three
    anyway?
-5. Suppose the real data shows the barometric adjustment on the actual night was smaller than the
+5. Suppose the real data shows the wind-driven setdown on the actual night was smaller than the
    worst case you modeled in D4. Was Amara wrong to be cautious, or just unlucky in a good way?
+6. Appendix B gives two different charted depths for this harbor. This case uses the deeper one
+   (54 ft) as the governing depth (see MA4) — what happens to your answer if you use the
+   shallower one (52 ft) instead, and is that a legitimate challenge to raise?
 
-**The trap.** A Hero computes the *predicted* clearance, finds it positive, and stops — treating a
-model's central prediction as a guarantee. The case's real tension is that "positive under the
-predicted curve" and "safe under the association's minimum-clearance policy across the real range
-of conditions" are two different questions, and the second one is the one Amara is actually
-accountable for.
+**The trap (two — see FACILITATOR.md for the full breakdown).** (1) Most Heroes will compute the
+*predicted* clearance, find it positive, and stop there, never touching D4's sensitivity check. (2)
+**Added 2026-08-12, the more dangerous one:** a Hero applies the familiar inverse-barometer rule
+(pressure drop -> water rises) to this storm instead of the wind-driven setdown Appendix D actually
+models, and produces a complete, confident-looking D4 that gets the twist's direction backwards.
 
 **Sensitivity note (SPEC §6).** None required — the stakes here are commercial and professional
 (schedule penalty, a pilot's license), not personal loss or hardship.

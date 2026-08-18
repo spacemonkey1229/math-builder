@@ -30,12 +30,19 @@ LEARNING GOAL CHECK
 
 ## new_coverage note
 
-Checked every claimed skill's `n` value in `readmodel/standards_spine.json`. Only `number-sense-place-value`
-is n=0 (genuinely uncovered anywhere in the spine before this case) — D1/D2 force it honestly,
-since rounding every computed percentage to a stated decimal place requires identifying which
-digit sits in that place. `statistics-and-probability-independent-event` (n=2) and
-`statistics-and-probability-how-to-determine-the-probability-of-a-compound-event` (n=3) are also
-genuinely forced by D3/D4 but are not n=0, so they stay in `standards[]` without counting toward
-`new_coverage[]`. Checked the full n=0 list in the spine (137 skills, dominated by geometry,
+Checked every claimed skill's `n` value in `readmodel/standards_spine.json` at conversion time.
+Only `number-sense-place-value` was n=0 (genuinely uncovered anywhere in the spine before this
+case) — D1/D2 force it honestly, since rounding every computed percentage to a stated decimal
+place requires identifying which digit sits in that place. `statistics-and-probability-independent-event`
+(n=2) and `statistics-and-probability-how-to-determine-the-probability-of-a-compound-event` (n=3)
+are also genuinely forced by D3/D4 but are not n=0, so they stay in `standards[]` without counting
+toward `new_coverage[]`. Checked the full n=0 list in the spine (137 skills, dominated by geometry,
 pre-calculus, calculus, and discrete-math) for anything else this case might naturally force —
 nothing else fit without padding.
+
+**Update (2026-08-18, Tier 1 run):** the spine now shows `number-sense-place-value` at n=2,
+`covered_by=['Cinema','Air Traffic Controller']` — two other cases claimed it first since this
+note was written. `case.json.new_coverage[]` has been corrected to `[]` accordingly (the skill
+remains in `standards[]`, still genuinely forced by D1/D2, but this case is no longer the one that
+closes that gap). This is the legacy-conversion carve-out on T1-10, not a new defect in this
+case's deliverable mapping — see `case.json.new_coverage_note`.

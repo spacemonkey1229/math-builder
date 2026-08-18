@@ -32,7 +32,7 @@ Carly cannot hire both. She has to read what each lineup says about how Ash and 
 
 The full spring training numbers for every player either candidate could have chosen are in **APPENDIX A**. The two lineups Ash and Venicia actually submitted are in **APPENDIX B**. **APPENDIX C** states exactly how this case defines an at-bat, a plate appearance, and every rounding rule — use it, or your numbers will not match anyone else's.
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **APPENDIX D** — that is where Challenge 1 sends you.
+The vocabulary and the "how to…" skills this case will ask of you are listed in **APPENDIX E** — that is where Challenge 1 sends you. If you want real-world background beyond the required math, **APPENDIX D** lists a few outside articles and videos worth a look (SEE APPENDIX D for further reading).
 
 Carly picks up her phone to call Tony back.
 
@@ -116,7 +116,19 @@ Five players — Chow, Sabathia, Abraham, Tranjier, and Yoder — appear on both
 
 ---
 
-## Appendix D: "How To…" Math Questions To Research
+## Appendix D: Learn More
+
+These are real, currently-live resources for students who want background beyond what the Challenges require. None of them are required reading.
+
+- [MLB.com Glossary — Batting Average](https://www.mlb.com/glossary/standard-stats/batting-average) — Major League Baseball's own official explanation of how batting average (AVG) is defined and used.
+- [The Hardball Times (FanGraphs) — Constructing Lineups](https://tht.fangraphs.com/constructing-lineups/) — a sabermetrics writer's analysis of which batting-order slots get the most plate appearances and why that should drive lineup construction.
+- [Wikipedia — Batting Order (baseball)](https://en.wikipedia.org/wiki/Batting_order_(baseball)) — an overview of the traditional role of each spot in a lineup, from leadoff hitter to cleanup.
+- [Khan Academy — Fundamental Principle of Counting](https://www.khanacademy.org/math/class-12-bridge/x09646558c1ff0797:advanced-counting/x09646558c1ff0797:permutations/v/fundamental-principle-of-counting) — a free video walkthrough of the counting rule Challenge 3 (D5) asks you to apply.
+- [Sports Betting Dime — How Sabermetrics Influence Baseball Batting Order Strategy](https://www.sportsbettingdime.com/guides/strategy/batting-order-sabermetrics/) — a plain-language look at how modern front offices use statistics, rather than tradition, to decide who bats where.
+
+---
+
+## Appendix E: "How To…" Math Questions To Research
 
 **Vocabulary**
 

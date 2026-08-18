@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Phone Plans — Interactive</title>
+<!-- Math Builder interactive-case shell, filled for cases/phone-plans. Built from
+     templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md.
+     This shell must never print a case's balance_test verdict as a static
+     literal anywhere outside a script tag -- the calculator computes it live. -->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="icon-signal" viewBox="0 0 24 24"><path d="M2 20h2v-4H2z"/><path d="M7 20h2v-8H7z"/><path d="M12 20h2v-12H12z"/><path d="M17 20h2v-16H17z"/></symbol>
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Phone Plans</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Percent &middot; Currency &middot; Comparison &middot; Bar Graph</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">The truck's cargo door rattles shut on the last box, and Jake Markenan wipes his palms on his jeans. &ldquo;Can you hear me now?&rdquo; he calls out, grinning, and Alyssa laughs from the porch &mdash; an old joke from a commercial neither of them can fully remember anymore. Then her phone buzzes on the kitchen counter, face-down, ignored for the second time in ten minutes.</p>
+  <p>Two years in Belgium taught them to stop thinking about phone bills. Vodafone just worked, everywhere, and neither of them ever opened the app to check. That phone on the counter isn't connected to anything now &mdash; the international SIM stopped working the moment their flight landed in Portland.</p>
+  <p>&ldquo;Work starts Monday,&rdquo; Jake says. &ldquo;I need a phone that actually works before then.&rdquo;</p>
+  <p>Alyssa picks hers up, turns it over, sets it back down screen-first. &ldquo;Two phones. Two iPads. And Charity's been asking about a phone of her own for school.&rdquo; She looks at the ceiling, doing math she can't finish out loud. &ldquo;Pick one tomorrow. Whichever it is, we're stuck with it a while.&rdquo;</p>
+  <p>Jake nods slowly, already reaching for his laptop.</p>
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  <p>Jake and Alyssa Markenan are back in Eugene, Oregon after two years in Belgium, where Jake sold medical equipment to hospitals across Europe. Jake has just been hired at a medical device sales firm based in Eugene; Alyssa is looking forward to being close to her family again. Their two iPhones, brought back from Belgium, are unlocked and ready to use &mdash; what they don't have is an American carrier.</p>
+  <p>Extended family has recommended both of the country's two largest wireless carriers: Verizon and AT&amp;T (<strong>see Appendices A and B</strong>). Both offer several tiers of &ldquo;unlimited&rdquo; plans, and the tier that actually fits the Markenans' needs is not automatically the cheapest one on the page.</p>
+  <p>Jake's new job has him driving to hospitals and clinics across Oregon &mdash; specifically Bend, Astoria, Eugene, Portland, Burns, and Florence &mdash; at least four days a week, with occasional trips to Las Vegas, Seattle, and Canada. On the road, his phone doubles as his internet connection: the Markenans are not installing home internet service, and Jake also needs to be able to turn his phone into a mobile hotspot for his laptop while working from hotel rooms and rental cars. Alyssa wants to be reachable the entire time he's driving, especially through Oregon winters, and she streams Disney+ for the kids (Charity, 12; Tommy, 8; Samantha, 5) &mdash; including a lot of <em>Bluey</em> &mdash; on her own phone at home.</p>
+  <p>For now, the family needs service for <strong>two phones and two iPads</strong> (four lines). Charity is old enough that a phone of her own &mdash; a third line &mdash; is a near-term addition, for school, lessons, and activities. A fourth phone, for one of the younger kids, is likely within the next four years, and Jake and Alyssa want to know what that will cost before they're locked into a plan (<strong>see Appendices A, B, and C</strong>).</p>
+  <p>Jake's new job pays well, but Eugene's housing market has the family watching every recurring expense closely. They want a plan that genuinely covers what they need &mdash; reliable coverage on Jake's routes, a real mobile hotspot, Canada roaming for his occasional cross-border trips (<strong>see Appendix E</strong>) &mdash; at the lowest monthly cost that actually delivers all of it, including Oregon's own wireless taxes and fees (<strong>see Appendix D</strong>). Curious about the real-world context behind this case &mdash; cell towers, hotspots, roaming, and what &ldquo;unlimited&rdquo; really means? <strong>See Appendix G, Learn More.</strong></p>
+
+  <!-- ENRICHMENT: real, web-sourced photos, all Wikimedia Commons, credited
+       and license-checked. Purely illustrative -- no case-solving info. -->
+  <div style="display:flex;flex-wrap:wrap;gap:16px;margin:16px 0">
+    <figure style="flex:1 1 260px;margin:0">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/f/ff/Cell_tower_on_Sexton_Mountain_-_Beaverton%2C_Oregon.JPG" alt="A cellular transmission tower on Sexton Mountain in Beaverton, Oregon" style="width:100%;height:170px;object-fit:cover;border-radius:6px" loading="lazy">
+      <figcaption style="font-family:var(--sans);font-size:.76rem;color:var(--sub);margin-top:8px">A cell tower near Beaverton, Oregon &mdash; the kind of infrastructure that determines whose network actually reaches Jake's driving routes.<br>Photo: M.O. Stevens, Wikimedia Commons, CC BY 3.0.</figcaption>
+    </figure>
+    <figure style="flex:1 1 260px;margin:0">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Siuslaw_River_Bridge_%28Florence%2C_Oregon%29.jpg" alt="The Siuslaw River Bridge in Florence, Oregon" style="width:100%;height:170px;object-fit:cover;border-radius:6px" loading="lazy">
+      <figcaption style="font-family:var(--sans);font-size:.76rem;color:var(--sub);margin-top:8px">The Siuslaw River Bridge in Florence, Oregon &mdash; one of the stops on Jake's regular route.<br>Photo: Visitor7, Wikimedia Commons, CC BY-SA 3.0.</figcaption>
+    </figure>
+    <figure style="flex:1 1 260px;margin:0">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Businessman_holds_smartphone_while_sitting_with_a_laptop_closeup.jpg" alt="A man holding a smartphone next to an open laptop" style="width:100%;height:170px;object-fit:cover;border-radius:6px" loading="lazy">
+      <figcaption style="font-family:var(--sans);font-size:.76rem;color:var(--sub);margin-top:8px">Working from a laptop tethered to a phone &mdash; the mobile-hotspot setup Jake relies on from hotel rooms and rental cars.<br>Photo: Nenad Stojković, Wikimedia Commons, CC BY 2.0.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are the Markenan family. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Purchase a Verizon plan</h4>
+      <p style="margin:0">Sign the family up with Verizon &mdash; the carrier extended family already recommended.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Purchase an AT&amp;T plan</h4>
+      <p style="margin:0">Sign the family up with AT&amp;T &mdash; the country's other major nationwide carrier.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include D1&ndash;D5: an eligibility comparison, today's total monthly bill, a 3rd-/4th-phone growth projection, an original bar graph, and a mobile-hotspot capacity comparison. See the Deliverables checklist below and Appendices A&ndash;D.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; AT&amp;T Phone Plans</summary>
+    <div class="inner">
+      <p>AT&amp;T's current &ldquo;2.0&rdquo; unlimited plan family includes several tiers. The two relevant to this case:</p>
+      <table>
+        <tr><th></th><th>Unlimited Value 2.0</th><th>Unlimited Extra 2.0</th></tr>
+        <tr><td>1 line</td><td class="num">$50/mo</td><td class="num">$70/mo</td></tr>
+        <tr><td>2 lines</td><td class="num">&mdash;</td><td class="num">$60/mo per line ($120/mo total)</td></tr>
+        <tr><td>3 lines</td><td class="num">&mdash;</td><td class="num">$50/mo per line ($150/mo total)</td></tr>
+        <tr><td>4 lines</td><td class="num">$30/mo per line ($120/mo total)</td><td class="num">$40/mo per line ($160/mo total)</td></tr>
+        <tr><td>Premium data</td><td>5 GB, then reduced speed</td><td>Unlimited premium data</td></tr>
+        <tr><td>Mobile hotspot data</td><td>3 GB, then reduced speed</td><td>50 GB, then reduced speed</td></tr>
+        <tr><td>Canada/Mexico talk, text, data</td><td>Included</td><td>Included</td></tr>
+      </table>
+      <p class="side-note">All prices assume AutoPay and paperless billing; without AutoPay each line runs $10/mo higher. Value 2.0's 2-line/3-line rates were not part of this research pass &mdash; D1 rules Value 2.0 out for lacking hotspot before those figures are needed (see Appendix F).</p>
+      <p><a href="https://www.att.com/maps/wireless-coverage.html" target="_blank" rel="noopener">AT&amp;T coverage map &rarr;</a></p>
+    </div>
+  </details>
+
+  <details open id="apx-b">
+    <summary>Appendix B &mdash; Verizon Phone Plans</summary>
+    <div class="inner">
+      <p>Verizon's myPlan unlimited family includes several tiers. The two relevant to this case:</p>
+      <table>
+        <tr><th></th><th>Unlimited Welcome</th><th>Unlimited Plus</th></tr>
+        <tr><td>1 line</td><td class="num">$65/mo</td><td class="num">$80/mo</td></tr>
+        <tr><td>2 lines</td><td class="num">$55/mo per line ($110/mo total)</td><td class="num">$70/mo per line ($140/mo total)</td></tr>
+        <tr><td>3 lines</td><td class="num">$40/mo per line ($120/mo total)</td><td class="num">$55/mo per line ($165/mo total)</td></tr>
+        <tr><td>4 lines</td><td class="num">$30/mo per line ($120/mo total)</td><td class="num">$45/mo per line ($180/mo total)</td></tr>
+        <tr><td>Video streaming</td><td>Capped at 480p SD</td><td>Full HD</td></tr>
+        <tr><td>Mobile hotspot data</td><td>Not included at all</td><td>30 GB, then reduced speed</td></tr>
+        <tr><td>Canada/Mexico talk, text, data</td><td>Included</td><td>Included</td></tr>
+      </table>
+      <p class="side-note">All prices assume AutoPay and paperless billing; without AutoPay each line runs $10/mo higher.</p>
+      <p><a href="https://www.verizon.com/coverage-map/" target="_blank" rel="noopener">Verizon coverage map &rarr;</a></p>
+    </div>
+  </details>
+
+  <details open id="apx-c">
+    <summary>Appendix C &mdash; Tablet (iPad) Line Pricing</summary>
+    <div class="inner">
+      <p>Both carriers price a data-only tablet line as an add-on to an existing phone account, separate from the phone-line pricing in Appendices A and B. The Markenans need <strong>two</strong> tablet lines (one iPad per adult).</p>
+      <table>
+        <tr><th>Carrier</th><th>Price per tablet line, per month</th></tr>
+        <tr><td>Verizon (any eligible smartphone plan)</td><td class="num">$20.00</td></tr>
+        <tr><td>AT&amp;T (any eligible smartphone plan)</td><td class="num">$20.00</td></tr>
+      </table>
+      <p class="side-note">See Appendix F, Modeling Assumption 1: each tablet line is priced at this flat per-line rate regardless of phone-plan tier.</p>
+    </div>
+  </details>
+
+  <details open id="apx-d">
+    <summary>Appendix D &mdash; Oregon Wireless Taxes and Fees</summary>
+    <div class="inner">
+      <p>Cell phone bills carry state, local, and federal charges on top of the advertised plan price. The Tax Foundation tracks the combined rate by state each year.</p>
+      <table>
+        <tr><th></th><th>Rate</th></tr>
+        <tr><td>Oregon combined wireless tax/fee rate (state-local + federal), 2025</td><td class="num">22.53%</td></tr>
+        <tr><td>&mdash; state and local portion</td><td class="num">9.17%</td></tr>
+        <tr><td>&mdash; federal Universal Service Fund portion</td><td class="num">13.36%</td></tr>
+        <tr><td>National average combined rate, for comparison</td><td class="num">27.61%</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; Canada Roaming and Coverage</summary>
+    <div class="inner">
+      <p>Jake occasionally drives into Canada for work. Both carriers currently include unlimited talk, text, and data roaming in Canada and Mexico at no extra charge with an eligible unlimited plan &mdash; this is the same for both options and does not change which plan is cheaper, but it does rule out needing a separate international add-on for either carrier.</p>
+      <p><strong>Nationwide network coverage.</strong> Verizon's 4G LTE network covers about 70% of U.S. land area, the largest nationwide footprint of any carrier. AT&amp;T's 4G LTE network covers about 68% of the nation &mdash; a real but smaller footprint, particularly in rural and remote regions.</p>
+    </div>
+  </details>
+
+  <details id="apx-f">
+    <summary>Appendix F &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p><strong>Tablet-line pricing.</strong> Appendix C's tablet add-on rate is applied per tablet line regardless of the number of phone lines already on the account, and regardless of which phone-plan tier is selected. The research for this case found a clear &ldquo;additional tablet line&rdquo; rate for each carrier, but could not confirm a reliable, currently-live &ldquo;first tablet vs. additional tablet&rdquo; price split for every plan tier &mdash; a flat per-tablet rate is the more defensible number to build on than a guessed split.</p>
+      <p><strong>Tax and fee rate.</strong> Appendix D's combined 22.53% Oregon rate is applied to the full pre-tax monthly bill (phone lines plus tablet lines together) as a single combined multiplier, rather than trying to separately model which specific charges are percentage-based versus flat per-line fees.</p>
+      <p><strong>AT&amp;T Value 2.0's middle tiers.</strong> Appendix A does not give a 2-line or 3-line price for Value 2.0 &mdash; D1 rules it out for lacking hotspot before any deeper cost modeling happens, so this case does not require those figures.</p>
+    </div>
+  </details>
+
+  <details id="apx-g">
+    <summary>Appendix G &mdash; Learn More</summary>
+    <div class="inner">
+      <p>Real, freely available resources for going deeper on the world behind this case &mdash; not required for the Challenges.</p>
+      <ul>
+        <li><a href="https://taxfoundation.org/data/all/state/wireless-taxes-cell-phone-tax-rates-by-state-2024/" target="_blank" rel="noopener">Tax Foundation &mdash; Wireless Taxes and Fees by State</a> &mdash; the annual report tracking combined state, local, and federal wireless tax rates, the same kind of data behind Appendix D's Oregon figure.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Tethering" target="_blank" rel="noopener">Wikipedia &mdash; Tethering</a> &mdash; explains what &ldquo;mobile hotspot&rdquo; means: sharing a phone's cellular data connection so a laptop or tablet can get online through it.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Mobile_network_operator" target="_blank" rel="noopener">Wikipedia &mdash; Mobile Network Operator</a> &mdash; background on what a carrier like Verizon or AT&amp;T actually owns and operates to deliver service.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Roaming" target="_blank" rel="noopener">Wikipedia &mdash; Roaming (telecommunications)</a> &mdash; how a phone connects to a &ldquo;visited&rdquo; network when it crosses into another carrier's coverage area, relevant to Appendix E.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Data_cap" target="_blank" rel="noopener">Wikipedia &mdash; Data Cap</a> &mdash; what carriers mean by &ldquo;unlimited&rdquo; data and why plans still throttle after a certain amount of high-speed data.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-17. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Today's total bill (D2)</h4>
+    <div class="goal">Compute the total monthly bill for the family's current 2 phone lines + 2 tablet lines, on the eligible (hotspot-including) tier for each carrier, including Oregon's wireless tax rate.</div>
+    <div class="fieldrow"><label for="s1verizon">Your Verizon total ($, to the cent)</label><input type="number" step="0.01" id="s1verizon"><button onclick="checkStep1()">Check</button><span class="fb" id="fb1v"></span></div>
+    <div class="fieldrow"><label for="s1att">Your AT&amp;T total ($, to the cent)</label><input type="number" step="0.01" id="s1att"><button onclick="checkStep1()">Check</button><span class="fb" id="fb1a"></span></div>
+    <p class="side-note">Use Appendix A/B's 2-line rate for the eligible tier, add Appendix C's 2 tablet lines, then multiply by (1 + Appendix D's Oregon rate).</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Growth projection (D3)</h4>
+    <div class="goal">Extend Step 1 to 3 phone lines (Charity's phone) and 4 phone lines (the anticipated 4th), tablets held at 2, for both carriers.</div>
+    <div class="fieldrow"><label for="s2lines">Number of phone lines</label>
+      <select id="s2lines"><option value="3">3 lines</option><option value="4">4 lines</option></select>
+    </div>
+    <div class="fieldrow"><label for="s2verizon">Your Verizon total ($, to the cent)</label><input type="number" step="0.01" id="s2verizon"><button onclick="checkStep2()">Check</button><span class="fb" id="fb2v"></span></div>
+    <div class="fieldrow"><label for="s2att">Your AT&amp;T total ($, to the cent)</label><input type="number" step="0.01" id="s2att"><button onclick="checkStep2()">Check</button><span class="fb" id="fb2a"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Hotspot capacity (D5)</h4>
+    <div class="goal">How much MORE mobile hotspot data does the AT&amp;T Extra 2.0 plan include than Verizon Plus?</div>
+    <div class="fieldrow"><label for="s3gap">Difference (GB)</label><input type="number" id="s3gap"><button onclick="checkStep3()">Check</button><span class="fb" id="fb3"></span></div>
+  </div>
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>Jake's hotspot habit is not a hypothetical: he drives to clinics across Oregon at least four days a week, using his phone as his and Alyssa's home internet connection, and needs the hotspot specifically for his laptop. Verizon Plus's 30GB mobile hotspot allowance is a real, finite monthly cap &mdash; a working professional hotspotting a laptop for email, video calls, and account software four days a week for a full month can realistically approach or exceed 30GB, at which point Verizon throttles hotspot speed for the rest of the billing cycle. AT&amp;T Extra 2.0's 50GB cap has meaningfully more headroom for the identical use pattern.</p>
+      <p>This doesn't change which plan is cheaper on paper &mdash; it changes whether the cheaper plan on paper is actually the plan that reliably does the job Jake needs it to do every week.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist: assume Verizon needs a $10/mo hotspot-tier upgrade to reliably cover Jake's usage &mdash; recompute Step 1's Verizon total.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>UpPhone, &ldquo;Verizon Unlimited Welcome&rdquo; pricing pages &mdash; <a href="https://www.upphone.com/cell-phone-plans/verizon/verizon-unlimited-welcome-plans-review-cost-price/" target="_blank" rel="noopener">upphone.com</a> (accessed 2026-08-17)</li>
+      <li>BestPhonePlans.net, &ldquo;Verizon Unlimited Plus&rdquo; &mdash; <a href="https://www.bestphoneplans.net/plans/verizon-unlimited-plus-4-lines" target="_blank" rel="noopener">bestphoneplans.net</a> (accessed 2026-08-17)</li>
+      <li>Reviews.org / BestPhonePlans.net, AT&amp;T Unlimited Value 2.0 / Extra 2.0 pricing &mdash; <a href="https://www.reviews.org/mobile/att-unlimited-plans-explained/" target="_blank" rel="noopener">reviews.org</a> (accessed 2026-08-17)</li>
+      <li>AT&amp;T, Canada &amp; Mexico Roaming &mdash; <a href="https://www.att.com/international/canada-roaming/" target="_blank" rel="noopener">att.com</a> (accessed 2026-08-17)</li>
+      <li>Verizon, tablet data plans &mdash; <a href="https://www.verizon.com/plans/devices/tablets/" target="_blank" rel="noopener">verizon.com</a> (accessed 2026-08-17)</li>
+      <li>BestPhonePlans.net, AT&amp;T tablet/hotspot plans &mdash; <a href="https://www.bestphoneplans.net/news/att-tablet-hotspot-plans-explained" target="_blank" rel="noopener">bestphoneplans.net</a> (accessed 2026-08-17)</li>
+      <li>Tax Foundation, &ldquo;Taxes on Wireless Services: Cell Phone Tax Rates by State, 2025&rdquo; &mdash; <a href="https://taxfoundation.org/data/all/state/wireless-taxes-cell-phone-tax-rates-by-state-2025/" target="_blank" rel="noopener">taxfoundation.org</a> (accessed 2026-08-17)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Phone Plans &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+/* Ported verbatim from cases/phone-plans/sensitivity_model.py.
+   case.md sha256 recorded in case.json.qa.case_md_sha256 once Tier 1 runs. */
+const PARAMS = {
+  verizon_plus_2line: 140.00,
+  att_extra_2line: 120.00,
+  verizon_tablet_rate: 20.00,
+  att_tablet_rate: 20.00,
+  n_tablets: 2,
+  oregon_tax_rate: 0.2253
+};
+const FLEX = ["verizon_tablet_rate", "att_tablet_rate", "oregon_tax_rate"];
+const CEILING = 1000.0;
+
+// Real, sourced per-line phone totals at 2/3/4 lines (Appendix A/B) -- fixed
+// given data, not a flexed assumption; used by Step 2's growth projection.
+const PHONE_TABLE = {
+  verizon: {2: 140.00, 3: 165.00, 4: 180.00},
+  att:     {2: 120.00, 3: 150.00, 4: 160.00}
+};
+
+function _total(phoneCost, tabletRate, nTablets, taxRate){
+  const pretax = phoneCost + tabletRate * nTablets;
+  return round(pretax * (1 + taxRate), 2);
+}
+function _totals(p){
+  const aTotal = _total(p.verizon_plus_2line, p.verizon_tablet_rate, p.n_tablets, p.oregon_tax_rate);
+  const bTotal = _total(p.att_extra_2line, p.att_tablet_rate, p.n_tablets, p.oregon_tax_rate);
+  return [aTotal, bTotal];
+}
+function evaluate(params){
+  const [aTotal, bTotal] = _totals(params);
+  return {A: round(CEILING - aTotal, 2), B: round(CEILING - bTotal, 2), A_cost: aTotal, B_cost: bTotal};
+}
+function evaluate_twist(params){
+  const twistedAPretax = params.verizon_plus_2line + 10.0 + params.verizon_tablet_rate * params.n_tablets;
+  const aTotal = round(twistedAPretax * (1 + params.oregon_tax_rate), 2);
+  const [, bTotal] = _totals(params);
+  return {A: round(CEILING - aTotal, 2), B: round(CEILING - bTotal, 2), A_cost: aTotal, B_cost: bTotal};
+}
+function projectedTotal(carrier, lines, params, taxRate){
+  const phoneCost = PHONE_TABLE[carrier][lines];
+  const tabletRate = carrier === 'verizon' ? params.verizon_tablet_rate : params.att_tablet_rate;
+  return _total(phoneCost, tabletRate, params.n_tablets, taxRate);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+function checkStep1(){
+  const r = evaluate(PARAMS);
+  const v = parseFloat(val('s1verizon'));
+  const a = parseFloat(val('s1att'));
+  fb('fb1v', near(v, r.A_cost, 0.02), r.A_cost);
+  fb('fb1a', near(a, r.B_cost, 0.02), r.B_cost);
+}
+function checkStep2(){
+  const lines = parseInt(val('s2lines') || document.getElementById('s2lines').value, 10);
+  const vExpected = projectedTotal('verizon', lines, PARAMS, PARAMS.oregon_tax_rate);
+  const aExpected = projectedTotal('att', lines, PARAMS, PARAMS.oregon_tax_rate);
+  const v = parseFloat(val('s2verizon'));
+  const a = parseFloat(val('s2att'));
+  fb('fb2v', near(v, vExpected, 0.02), vExpected);
+  fb('fb2a', near(a, aExpected, 0.02), aExpected);
+}
+function checkStep3(){
+  const expected = 50 - 30; // AT&T Extra 2.0 hotspot GB minus Verizon Plus hotspot GB (Appendix A/B)
+  const g = parseFloat(val('s3gap'));
+  fb('fb3', near(g, expected, 0.5), expected);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "phone-plans"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Eligibility comparison: name each carrier's two tiers, their 1-line price, and whether mobile hotspot is included -- explain why the cheaper tier doesn't meet the family's needs."],
+  ["D2", "Today's total monthly bill for 2 phone + 2 tablet lines, including Oregon's tax rate, for both recommended plans."],
+  ["D3", "Growth-projection table extending D2 to 3 and 4 phone lines for both carriers."],
+  ["D4", "An original bar graph comparing total monthly cost for Verizon vs. AT&T at 2, 3, and 4 phone lines."],
+  ["D5", "A written hotspot-capacity comparison (30GB vs. 50GB) and whether it matters given Jake's road usage."]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Unit": {def: "A defined quantity -- a centimeter, an hour, a gigabyte -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Measurement": {def: "Assigning a number to a physical quantity using a chosen unit.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Rounding": {def: "Making a number simpler while keeping its value close to the original -- e.g. rounding to the nearest cent.",
+    url: "https://www.mathsisfun.com/rounding-numbers.html"},
+  "Currency": {def: "Money in a specific system -- U.S. dollars and cents, for this case's monthly bills.",
+    url: "https://www.mathsisfun.com/money/index.html"},
+  "Multiplication": {def: "Repeated addition of the same number -- e.g. a per-line price times a number of lines.",
+    url: "https://www.cuemath.com/numbers/multiplication/"},
+  "Addition": {def: "Combining two or more numbers into a total sum.",
+    url: "https://www.cuemath.com/numbers/addition/"},
+  "Subtraction": {def: "Taking one number away from another to find the difference.",
+    url: "https://www.mathsisfun.com/numbers/subtraction.html"}
+};
+const HOWTO = [
+  ["how to find the percent of a number", "Percent"],
+  ["how to round a number to a specified place value", "Rounding"],
+  ["how to multiply 2-digit numbers by single-digit numbers", "Multiplication"],
+  ["how to compare two or more values", "Data"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const apply = document.getElementById('applyTwist').checked;
+  const r = apply ? evaluate_twist(PARAMS) : evaluate(PARAMS);
+  const vField = document.getElementById('s1verizon');
+  if(vField && vField.value){
+    // Re-check Step 1 against the twisted (or base) figures, whichever is active.
+    fb('fb1v', near(parseFloat(vField.value), r.A_cost, 0.02), r.A_cost);
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

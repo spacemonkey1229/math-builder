@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Tide Window — Interactive</title>
+<!--
+  cases/tide-window/published/Tide Window - Interactive.html
+  Built from templates/interactive_shell.html (A7). See
+  templates/INTERACTIVE_HTML_CONTRACT.md before hand-editing.
+  case.md sha256 at time of build: 5fabf88968e7771a834d9832fa9e31fab9ed1ba9421ff398d45aead27cb5edc5
+  HARD LINE (the interactive-artifact-leak doctrine rule): this file must never print balance_test's margin_pct or
+  the clearance-vs-floor verdict as a static literal outside a <script> tag's
+  live computation. Every number in the Working Notebook is computed by the
+  JS port of cases/tide-window/sensitivity_model.py at read time, never
+  pre-rendered into markup.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC — tide curve banner + clearance bar visuals */
+  .tide-curve-note{font-family:var(--sans);font-size:.78rem;color:var(--sub);text-align:left;margin-top:8px}
+  .depthbar-row{display:flex;align-items:center;gap:10px;font-family:var(--sans);font-size:.82rem;margin:6px 0}
+  .depthbar-row .lbl{min-width:150px;color:var(--sub)}
+  .depthbar-track{flex:1;height:14px;background:#e4e9ee;border-radius:7px;position:relative;overflow:visible}
+  .depthbar-fill{height:100%;border-radius:7px;background:var(--navy)}
+  .depthbar-floor{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--bad)}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-ship" viewBox="0 0 24 24"><path d="M3 15l1.5 5h15L21 15z"/><path d="M6 15V6h9l3 5"/><path d="M9 6V3h3v3"/></symbol>
+  <symbol id="icon-wave" viewBox="0 0 24 24"><path d="M2 8c2 0 2-3 4-3s2 3 4 3 2-3 4-3 2 3 4 3 2-3 4-3"/><path d="M2 14c2 0 2-3 4-3s2 3 4 3 2-3 4-3 2 3 4 3 2-3 4-3"/><path d="M2 20c2 0 2-3 4-3s2 3 4 3 2-3 4-3 2 3 4 3 2-3 4-3"/></symbol>
+  <symbol id="icon-storm" viewBox="0 0 24 24"><path d="M5 16a4 4 0 0 1 1-7.9A5 5 0 0 1 16 8a3.5 3.5 0 0 1 1 6.9"/><path d="M12 15l-2 4h3l-2 4"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">HS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Launchpad</div>
+        <h1>Case Study: Tide Window</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">HS</span>
+      <span class="pill">Pre-Calculus &middot; Trigonometric Functions</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <figure>
+    <svg viewBox="0 0 700 160" role="img" aria-label="Two tide curves side by side, one at the marginal low, one at the high, with a ship silhouette between them">
+      <rect x="0" y="0" width="700" height="160" fill="#eef3f8"/>
+      <path d="M0 110 Q 40 60 80 110 T 160 110 T 240 110 T 320 110" fill="none" stroke="#1a3a5c" stroke-width="2.5"/>
+      <path d="M360 110 Q 400 30 440 110 T 520 110 T 600 110 T 680 110" fill="none" stroke="#c9a227" stroke-width="2.5"/>
+      <use href="#icon-ship" x="130" y="88" width="34" height="34" style="stroke:#122943;stroke-width:1.4"/>
+      <text x="80" y="140" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#5b6472">Dawn Transit — marginal low</text>
+      <text x="520" y="140" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#5b6472">Slack Tide — next high</text>
+    </svg>
+    <figcaption>Two curves, one decision. Neither one is drawn with numbers yet — that comes later.</figcaption>
+  </figure>
+  <p class="lede">The radio in Amara Osei's hand goes quiet the second the tug captain stops talking, and for a
+  moment all she can hear is water sliding along the hull below her boots. She is standing on the
+  bridge wing of the <em>Solveig Trader</em>, loaded and waiting in the dark, and the call in front of her
+  is hers alone to make. Six months a licensed harbor pilot, and this is the first time no one
+  senior is standing beside her.</p>
+  <p>Behind her, on the chart table, two tide curves are pinned side by side, and neither one is
+  comfortable. The rain that soaked her jacket on the walk down to the pilot boat has stopped, but
+  the barometer in the wheelhouse hasn't moved the way she'd like. Somewhere below the waterline,
+  the <em>Solveig Trader</em>'s keel is closer to the harbor bottom than either of the ship's own officers
+  seem to appreciate.</p>
+  <p>The tug captain wants an answer before the current turns. The shipping line wants the berth kept
+  on schedule. And Amara — whose name goes on the pilotage log either way — wants the arithmetic to
+  be right before she says a word into the radio.</p>
+  <p>She looks at the chart, then at the clock, then at the chart again.</p>
+  <blockquote>"Two options," the tug captain says. "Tell me which one."</blockquote>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Amara Osei is a harbor pilot for the Port of Kesterhaven Pilots' Association, licensed six months
+  ago after a multi-year apprenticeship. Once she boards a vessel and takes the conn for a transit,
+  she is legally responsible for its safe passage through the harbor channel — the ship's own
+  captain retains command, but the pilotage log carries her name and her judgment.</p>
+  <p>The <em>Solveig Trader</em> is a loaded cargo vessel under charter to a shipping line with a fixed
+  delivery window at the container berth (see Appendix C). Two transit options are on the table
+  tonight.</p>
+  <div class="card">
+    <p><strong>The Dawn Transit</strong> would move the ship out through the channel during the marginal low
+    tide before sunrise, keeping the delivery on its contracted schedule. The tide prediction for the
+    station (see Appendix A) shows the water level at that hour is low enough that the under-keel
+    clearance — the gap between the ship's loaded draft and the charted channel depth (see Appendix
+    B) — is real but thin.</p>
+    <p><strong>The Slack Tide</strong> would hold the ship at berth until the next high tide, several hours later,
+    when the clearance is comfortable under any reasonable reading of the data. It guarantees a safe
+    transit but breaks the shipping line's contracted delivery window, triggering a penalty (see
+    Appendix C).</p>
+  </div>
+  <p>Two complicating conditions apply to either choice. First, the harbor's tide station reports
+  water level as a predicted curve, not a fixed number — the actual level at any given moment can
+  run higher or lower than predicted under real barometric and wind conditions (see Appendix D).
+  Second, the Pilots' Association's own safety manual sets a minimum acceptable under-keel
+  clearance below which a pilot may not authorize a transit, regardless of schedule pressure (see
+  Appendix B).</p>
+  <p>Amara has the tide predictions, the ship's draft, and the contract terms in front of her. She does
+  not have another pilot to check her arithmetic against. Where a figure below is not a matter of
+  public record, it is stated as an explicit modeling assumption (see Appendix E) rather than
+  guessed.</p>
+  <p>The vocabulary and the "how to&hellip;" skills this case will ask of you are listed in Appendix G —
+  that is where Challenge 1 sends you. (See Appendix F for further reading on harbor pilotage and
+  tide prediction.)</p>
+
+  <figure>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/Charleston-Harbor-Pilots-boat-sc.jpg" alt="The Fort Sumter, a real harbor pilot boat operated by Charleston Harbor Pilots, Charleston, South Carolina" style="max-width:100%;height:auto;border-radius:6px;display:block;margin:0 auto">
+    <figcaption>A real harbor pilot boat, similar to the one that would carry Amara out to board an incoming ship. Photo: Brian Stansberry, Wikimedia Commons, CC BY 4.0.</figcaption>
+  </figure>
+  <figure>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5d/8400_TEU_ship_at_Port_of_Charleston.jpg" alt="A loaded container ship, the 8,400 TEU Northern Justice, working at the Port of Charleston's Wando Welch Terminal" style="max-width:100%;height:auto;border-radius:6px;display:block;margin:0 auto">
+    <figcaption>A real loaded container ship of the scale modeled by the <em>Solveig Trader</em> in this case. Photo: South Carolina Ports Authority, Wikimedia Commons, CC BY-SA 3.0.</figcaption>
+  </figure>
+  <figure>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/6/68/Aerial_view_of_Charleston%2C_South_Carolina_Harbor%2C_May_2017.jpg" alt="Aerial view of Charleston, South Carolina harbor and its shipping channel" style="max-width:100%;height:auto;border-radius:6px;display:block;margin:0 auto">
+    <figcaption>An aerial view of a real working harbor and its entrance channel, the kind of setting this case's channel transit is modeled on. Photo: Carol M. Highsmith, Library of Congress / Wikimedia Commons, public domain.</figcaption>
+  </figure>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Amara Osei. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Authorize the Dawn Transit</h4>
+      <p style="margin:0">Move the <em>Solveig Trader</em> out through the channel on the marginal low tide, keeping the delivery on schedule.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Hold for the Slack Tide</h4>
+      <p style="margin:0">Wait for the next high tide, missing the contracted delivery window.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which option you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a worked angle table for each key clock time across the transit window (degrees, radians, reference angle, sine/cosine/tangent via the unit circle); <strong>D2</strong> a stated sine or cosine function modeling the tide station's predicted water level, naming its amplitude and period, fitted to Appendix A's real harmonic data; <strong>D3</strong> an under-keel clearance table comparing the Dawn Transit and the Slack Tide, built by evaluating your D2 model at D1's times; <strong>D4</strong> a written sensitivity check using Appendix D's barometric/storm-surge range, showing whether the Dawn Transit's clearance margin survives the worst case, with the modeling assumption you used stated explicitly.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Tide Station Predictions</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Station name and NOAA station id</td><td>Charleston, SC &mdash; NOAA station 8665530 [S1]</td></tr>
+        <tr><td>Mean sea level datum (ft, station datum)</td><td>5.69 ft (epoch 1983&ndash;2001) [S2]</td></tr>
+        <tr><td>Dominant tidal constituent (M2) <span class="gterm-placeholder" data-term="Amplitude">amplitude</span> (ft)</td><td class="num">2.52 ft [S3]</td></tr>
+        <tr><td>Dominant tidal constituent (M2) <span class="gterm-placeholder" data-term="Period (Of A Function)">period</span> (h)</td><td class="num">12.42 h (derived from the constituent's published speed, 28.984104&deg;/hour) [S3]</td></tr>
+        <tr><td>Predicted water level, key times across the transit window (ft, MLLW)</td><td>Low 04:33 (&minus;0.176 ft) &middot; High 10:51 (5.831 ft) &middot; Low 16:52 (0.016 ft) &middot; High 23:01 (5.865 ft) &mdash; 2026-08-15/16 [S4]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Vessel Draft &amp; Channel Clearance</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Value</th></tr>
+        <tr><td><em>Solveig Trader</em> loaded draft (ft)</td><td class="num">49 ft (modeled on the Maersk A-class, 8,272 TEU, 15 m draft) [S5]</td></tr>
+        <tr><td>Charted channel depth at the pilot station (ft)</td><td>54 ft (entrance channel); 52 ft (inner harbor) [S6]. This case's clearance figures use the 54 ft entrance-channel depth as the governing depth for the Dawn Transit &mdash; see Appendix E, MA4.</td></tr>
+        <tr><td>Pilots' Association minimum under-keel clearance policy</td><td class="num">1 meter (&asymp;3.28 ft) during channel/basin transit [S7]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Charter &amp; Delivery Terms</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Contracted delivery window</td><td>See Appendix E, MA1 &mdash; no public figure exists for this fictional charter's own terms.</td></tr>
+        <tr><td>Late-delivery penalty</td><td>See Appendix E, MA2 &mdash; no public figure exists for this fictional charter's own terms.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Barometric &amp; Storm-Surge Variability</summary>
+    <div class="inner">
+      <p>A nearby storm can move the water level away from its predicted tide curve in two different, opposite-signed ways, and getting the Dawn Transit's clearance right depends on telling them apart.</p>
+      <table>
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Inverse-barometer water-level effect</td><td>Low air pressure lets the sea surface <strong>rise</strong> &mdash; roughly 1 cm of rise per 1 hPa (millibar) of pressure drop, &asymp;0.39 in per mb [S8]. This is the mechanism behind ordinary storm surge.</td></tr>
+        <tr><td>Wind-driven setdown</td><td>A separate, opposite-signed effect: when a storm's wind blows <em>away</em> from the coast, it physically pushes water offshore, <strong>lowering</strong> the local water level below the predicted curve &mdash; "reverse storm surge." Real and documented: Tampa Bay's water level dropped roughly 4 ft below prediction from wind-driven setdown during Hurricane Ian (2022) [S10].</td></tr>
+        <tr><td>Local water-level effect modeled for a nearby-but-offshore system</td><td>See Appendix E, MA3. Kesterhaven's exposure on this specific night is modeled as a net setdown, consistent with an offshore, non-landfalling system whose wind pushes water away from the harbor rather than piling it in &mdash; the specific magnitude is not knowable in advance.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="side-note">These figures are not sourced. They are stated scenario assumptions chosen by the case author, each with a real basis named below. You may challenge them in discussion &mdash; that is a legitimate move.</p>
+      <table>
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+        <tr><td>MA1</td><td>Contracted delivery window</td><td>Dawn Transit meets it; Slack Tide misses it, triggering MA2</td><td>No public source states a specific fictional charter's delivery window; only the qualitative fact (Slack Tide misses it) is needed.</td></tr>
+        <tr><td>MA2</td><td>Late-delivery penalty</td><td class="num">$18,000 flat</td><td>Roughly one day of a real worked charter-party demurrage example ($20,000/day); real container demurrage generally runs $75&ndash;$300/container/day.</td></tr>
+        <tr><td>MA3</td><td>Local water-level reduction for the nearby storm</td><td class="num">0.91 ft wind-driven setdown</td><td>A genuine, non-extreme fraction of the real documented magnitude such setdowns reach (Tampa Bay measured ~4 ft during Hurricane Ian [S10]), for an offshore, non-landfalling system.</td></tr>
+        <tr><td>MA4</td><td>Governing depth for the Dawn Transit's clearance calculation</td><td class="num">54 ft (entrance channel)</td><td>Appendix B cites two real, sourced depths for this harbor [S6]; this case models the transit's controlling moment as occurring at the harbor entrance, where the real NOAA station is sited. A Hero applying the shallower 52 ft reading instead has a legitimate, case-breaking point.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Learn More</summary>
+    <div class="inner">
+      <p>Optional further reading for the curious &mdash; not required for the Challenges, and not needed to solve the Dilemma.</p>
+      <ul>
+        <li><a href="https://www.americanpilots.org" target="_blank" rel="noopener">The American Pilots' Association</a> &mdash; the real national association representing U.S. marine/harbor pilots, with background on what pilotage is and why ports require it.</li>
+        <li><a href="https://oceanservice.noaa.gov/education/tutorial_tides/welcome.html" target="_blank" rel="noopener">NOAA: Tides and Water Levels tutorial</a> &mdash; NOAA's own educational tutorial on what causes tides and how they're monitored and predicted.</li>
+        <li><a href="https://oceanservice.noaa.gov/facts/stormsurge-stormtide.html" target="_blank" rel="noopener">NOAA: What is storm surge?</a> &mdash; NOAA's explainer distinguishing storm surge from storm tide, the real phenomenon behind Appendix D.</li>
+        <li><a href="https://www.mathsisfun.com/geometry/unit-circle.html" target="_blank" rel="noopener">Math Is Fun: The Unit Circle</a> &mdash; a clear walkthrough of the unit circle and how it defines sine, cosine, and tangent, useful background for D1.</li>
+      </ul>
+      <p class="side-note">Links verified working 2026-08-18.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-15. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Angle table (D1)</h4>
+    <div class="goal">Convert a key clock time into the tide model's angle, in degrees and radians, then find its reference angle and the sine/cosine/tangent of that reference angle using the unit circle. This notebook's model places the first Low tide (04:33) at 180&deg; on a cosine-style tide curve, and advances at 360&deg; per 12.42&nbsp;h (the M2 period, Appendix A).</div>
+    <div class="fieldrow">
+      <label for="s1time">Key time</label>
+      <select id="s1time">
+        <option value="0">Low 04:33 (Dawn Transit hour)</option>
+        <option value="1">High 10:51</option>
+        <option value="2">Low 16:52</option>
+        <option value="3">High 23:01 (Slack Tide hour)</option>
+      </select>
+    </div>
+    <div class="fieldrow"><label for="s1deg">Angle (degrees, 0&ndash;360)</label><input type="number" id="s1deg" step="0.1"><span id="fb1a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1rad">Angle (radians)</label><input type="number" id="s1rad" step="0.001"><span id="fb1b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1ref">Reference angle (degrees)</label><input type="number" id="s1ref" step="0.1"><span id="fb1c" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1sin">sin(reference angle)</label><input type="number" id="s1sin" step="0.001"><span id="fb1d" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1cos">cos(reference angle)</label><input type="number" id="s1cos" step="0.001"><span id="fb1e" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1tan">tan(reference angle)</label><input type="number" id="s1tan" step="0.001"><span id="fb1f" class="fb"></span></div>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Amplitude &amp; period of the tide model (D2)</h4>
+    <div class="goal">State the amplitude and period you'll fit your sine/cosine model to, sourced directly from Appendix A's real M2 harmonic data.</div>
+    <div class="fieldrow"><label for="s2amp">Amplitude (ft)</label><input type="number" id="s2amp" step="0.01"><span id="fb2a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2per">Period (hours)</label><input type="number" id="s2per" step="0.01"><span id="fb2b" class="fb"></span></div>
+    <button onclick="checkStep2()">Check</button>
+    <p class="side-note">Your model: level(t) = MSL &minus; amplitude&middot;cos(angle(t)), where angle(t) is what you built in Step 1. This is an approximation of the real predicted curve in Appendix A &mdash; a pure two-constituent sinusoid won't land exactly on NOAA's published highs/lows, and that's expected, not an error.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Under-keel clearance table (D3)</h4>
+    <div class="goal">Using Appendix A's real predicted water levels and Appendix B's real draft and governing depth (MA4), compute the achieved under-keel clearance for each option, pre-twist. Clearance = governing depth + predicted water level &minus; draft.</div>
+    <div class="fieldrow"><label for="s3dawn">Dawn Transit clearance (ft)</label><input type="number" id="s3dawn" step="0.001"><span id="fb3a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3slack">Slack Tide clearance (ft)</label><input type="number" id="s3slack" step="0.001"><span id="fb3b" class="fb"></span></div>
+    <button onclick="checkStep3()">Check</button>
+    <div id="s3bars" style="margin-top:14px"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Sensitivity check (D4)</h4>
+    <div class="goal">Using Appendix D's wind-driven-setdown mechanism and Appendix E's MA3 assumption, compute the Dawn Transit's clearance <em>after</em> the setdown is applied, and state whether it still clears the Pilots' Association's policy floor (3.28 ft, Appendix B). Try the slider below to see how the answer moves as the setdown assumption changes &mdash; this is exactly what Tier 2 probe 5 checks mechanically against <code>sensitivity_model.py</code>.</div>
+    <div class="fieldrow"><label for="s4clear">Dawn Transit clearance after MA3's setdown (ft)</label><input type="number" id="s4clear" step="0.001"><span id="fb4a" class="fb"></span></div>
+    <button onclick="checkStep4()">Check</button>
+    <div class="sliderow">
+      <label for="s4slider" style="min-width:220px;font-family:var(--sans);font-size:.86rem">Explore: wind-driven setdown (ft)</label>
+      <input type="range" id="s4slider" min="0" max="2" step="0.01" value="0.91" oninput="onS4Slider()">
+      <span class="val" id="s4sliderVal">0.91 ft</span>
+    </div>
+    <div id="s4live" class="side-note"></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-storm"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>"It's the middle of the discussion. A new marine forecast comes in. The barometric pressure is
+      dropping faster than tonight's Appendix D range assumed &mdash; the storm that was supposed to stay
+      offshore is closer than predicted."</p>
+      <p>"The dispatcher radios: the delivery penalty clock hasn't stopped. But neither has the storm."</p>
+      <p>"You have sixty seconds. Does your Dawn Transit clearance number still hold &mdash; and would you still authorize it?"</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply MA3's wind-driven setdown to the Dawn Transit's clearance in Step 3/4 above</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] NOAA CO-OPS Station Metadata API &mdash; 8665530 (station identity). <a href="https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/8665530.json" target="_blank" rel="noopener">api.tidesandcurrents.noaa.gov</a></li>
+      <li>[S2] NOAA CO-OPS Station Datums API &mdash; 8665530 (MSL datum).</li>
+      <li>[S3] NOAA CO-OPS Harmonic Constituents API &mdash; 8665530 (M2 amplitude &amp; speed).</li>
+      <li>[S4] NOAA CO-OPS Tide Predictions API &mdash; 8665530, 2026-08-15/16 (predicted highs/lows).</li>
+      <li>[S5] Wikipedia, Maersk A-class container ship (loaded draft, citing Maersk/ABS records).</li>
+      <li>[S6] South Carolina Ports Authority; gCaptain (charted channel depths, Charleston).</li>
+      <li>[S7] Canaveral Pilots Association, Operations page (minimum under-keel clearance policy).</li>
+      <li>[S8] Inverse barometer effect &mdash; corroborated technical/oceanographic sources.</li>
+      <li>[S9] Sciencing, Barometric Pressure &amp; Hurricanes (Saffir-Simpson category thresholds).</li>
+      <li>[S10] Penn State IEE, "What is reverse storm surge and is it related to climate change?" (wind-driven setdown, Hurricane Ian/Tampa Bay 2022).</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Tide Window &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, ported from cases/tide-window/case.json
+   and cases/tide-window/sensitivity_model.py (verified 2026-08-15 to
+   reproduce case.json.derived exactly). Every field here is either a
+   real sourced figure (S1-S10) or a stated Modeling Assumption
+   (MA1-MA4) -- never a pre-computed verdict.
+   ================================================================ */
+const CASE_ID = "tide-window";
+
+// --- JS port of sensitivity_model.py --------------------------------------
+const PARAMS = {
+  governing_depth_ft: 54.0,   // Appendix B / MA4
+  dawn_low_ft: -0.176,        // Appendix A, S4 (real NOAA prediction)
+  slack_high_ft: 5.831,       // Appendix A, S4 (real NOAA prediction)
+  draft_ft: 49.0,             // Appendix B, S5
+  policy_floor_ft: 3.28,      // Appendix B, S7
+  setdown_ft: 0.91,           // Appendix E, MA3 (the Twist)
+  late_penalty_usd: 18000.0,  // Appendix E, MA2
+};
+// Probe 5 flexes exactly these two -- the case's actual stated, author-chosen
+// Modeling Assumptions. governing_depth_ft (MA4) is deliberately excluded: a
+// disclosed either/or between two real sourced figures, not a scenario dial.
+const FLEX = ["setdown_ft", "late_penalty_usd"];
+
+function dawnClearanceFt(p, setdownFt){
+  setdownFt = setdownFt || 0;
+  const actualDepth = p.governing_depth_ft + p.dawn_low_ft - setdownFt;
+  return actualDepth - p.draft_ft;
+}
+function slackClearanceFt(p){
+  const actualDepth = p.governing_depth_ft + p.slack_high_ft;
+  return actualDepth - p.draft_ft;
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  return {A: dawnClearanceFt(p, 0), B: p.policy_floor_ft};
+}
+function evaluateTwist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  return {A: dawnClearanceFt(p, p.setdown_ft), B: p.policy_floor_ft};
+}
+
+// --- Key clock times (Appendix A, S4) + the tide-model angle helper this
+// notebook's Step 1 checks against. t0 = first Low (04:33) placed at 180 deg
+// on a cosine-style curve; advances 360 deg per 12.42h (the M2 period). ----
+const M2_PERIOD_H = 12.42;
+const KEY_TIMES = [
+  {label:"Low 04:33",  hoursFromLow: 0.0,                level: -0.176},
+  {label:"High 10:51", hoursFromLow: 6 + 18/60,           level: 5.831},
+  {label:"Low 16:52",  hoursFromLow: 12 + 19/60,          level: 0.016},
+  {label:"High 23:01", hoursFromLow: 18 + 28/60,          level: 5.865},
+];
+function angleDegFor(hoursFromLow){
+  let deg = 180 + (360 / M2_PERIOD_H) * hoursFromLow;
+  deg = ((deg % 360) + 360) % 360;
+  return deg;
+}
+function referenceAngleDeg(deg){
+  if(deg <= 90) return deg;
+  if(deg <= 180) return 180 - deg;
+  if(deg <= 270) return deg - 180;
+  return 360 - deg;
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions. Step 3/4 call the
+   JS port of sensitivity_model.py (evaluate()/evaluateTwist()) rather
+   than re-deriving the arithmetic inline.
+   ================================================================ */
+function checkStep1(){
+  const kt = KEY_TIMES[parseInt(document.getElementById('s1time').value, 10)];
+  const deg = angleDegFor(kt.hoursFromLow);
+  const rad = deg * Math.PI / 180;
+  const refDeg = referenceAngleDeg(deg);
+  const refRad = refDeg * Math.PI / 180;
+  fb('fb1a', near(val('s1deg'), deg, 3));
+  fb('fb1b', near(val('s1rad'), rad, 0.05));
+  fb('fb1c', near(val('s1ref'), refDeg, 3));
+  fb('fb1d', near(val('s1sin'), Math.sin(refRad), 0.03));
+  fb('fb1e', near(val('s1cos'), Math.cos(refRad), 0.03));
+  const tanRef = Math.abs(refDeg - 90) < 1 ? NaN : Math.tan(refRad);
+  fb('fb1f', isNaN(tanRef) ? true : near(val('s1tan'), tanRef, 0.05));
+}
+function checkStep2(){
+  fb('fb2a', near(val('s2amp'), 2.52, 0.05));
+  fb('fb2b', near(val('s2per'), 12.42, 0.05));
+}
+function checkStep3(){
+  const base = evaluate({});
+  const slack = slackClearanceFt(PARAMS);
+  fb('fb3a', near(val('s3dawn'), base.A, 0.05));
+  fb('fb3b', near(val('s3slack'), slack, 0.05));
+  renderStep3Bars(base.A, slack, PARAMS.policy_floor_ft);
+}
+function renderStep3Bars(dawnFt, slackFt, floorFt){
+  const maxScale = Math.max(dawnFt, slackFt, floorFt) * 1.15;
+  const barsEl = document.getElementById('s3bars');
+  function row(label, ft){
+    const pct = Math.max(0, Math.min(100, 100 * ft / maxScale));
+    const floorPct = 100 * floorFt / maxScale;
+    return `<div class="depthbar-row"><span class="lbl">${label}</span>
+      <div class="depthbar-track"><div class="depthbar-fill" style="width:${pct}%"></div>
+        <div class="depthbar-floor" style="left:${floorPct}%"></div></div>
+      <span style="min-width:70px;text-align:right">${round(ft,3)} ft</span></div>`;
+  }
+  barsEl.innerHTML = row('Dawn Transit', dawnFt) + row('Slack Tide', slackFt) +
+    '<div class="tide-curve-note">Red line = the Pilots\' Association\'s 3.28 ft policy floor. Bars are your entered/computed clearance, not the case\'s graded answer.</div>';
+}
+function checkStep4(){
+  const tw = evaluateTwist({});
+  fb('fb4a', near(val('s4clear'), tw.A, 0.05));
+}
+function onS4Slider(){
+  const sd = parseFloat(document.getElementById('s4slider').value);
+  document.getElementById('s4sliderVal').textContent = sd.toFixed(2) + ' ft';
+  const tw = evaluateTwist({setdown_ft: sd});
+  const status = tw.A > tw.B ? 'still clears the policy floor' : 'no longer clears the policy floor';
+  document.getElementById('s4live').textContent =
+    `At a ${sd.toFixed(2)} ft setdown: Dawn Transit clearance = ${round(tw.A,3)} ft — ${status}.`;
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Worked angle table (degrees, radians, reference angle, sin/cos/tan) for each key clock time"],
+  ["D2", "Stated sine/cosine tide model: amplitude and period, fitted to Appendix A"],
+  ["D3", "Under-keel clearance table, Dawn Transit vs. Slack Tide"],
+  ["D4", "Written sensitivity check using Appendix D's storm-surge range"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 real terms, verified
+   live 2026-08-15, allowlisted domains only).
+   ================================================================ */
+const GLOSSARY = {
+  "Radian": {def: "An angle measure based on the circle's own radius: the angle swept when the arc length equals the radius. 2π radians = 360°.",
+    url: "https://www.mathsisfun.com/geometry/radians.html"},
+  "Unit Circle": {def: "A circle of radius 1 centered at the origin, used to define sine and cosine directly as coordinates for any angle.",
+    url: "https://www.mathsisfun.com/geometry/unit-circle.html"},
+  "Sine Function": {def: "For an angle in a right triangle (or on the unit circle), the ratio of the opposite side to the hypotenuse (or the y-coordinate).",
+    url: "https://www.mathsisfun.com/sine-cosine-tangent.html"},
+  "Cosine Function": {def: "For an angle in a right triangle (or on the unit circle), the ratio of the adjacent side to the hypotenuse (or the x-coordinate).",
+    url: "https://www.mathsisfun.com/sine-cosine-tangent.html"},
+  "Tangent Function": {def: "For an angle in a right triangle, the ratio of the opposite side to the adjacent side; equivalently sine divided by cosine.",
+    url: "https://www.mathsisfun.com/sine-cosine-tangent.html"},
+  "Amplitude": {def: "Half the distance from a sine/cosine wave's highest point to its lowest point — how far the curve swings from its middle line.",
+    url: "https://www.mathsisfun.com/algebra/amplitude-period-frequency-phase-shift.html"},
+  "Period (Of A Function)": {def: "The horizontal distance it takes a repeating function, like a tide curve, to complete one full cycle.",
+    url: "https://www.mathsisfun.com/algebra/amplitude-period-frequency-phase-shift.html"},
+  "Reference Angle": {def: "The positive acute angle between the terminal side of an angle and the x-axis — used to find sine/cosine/tangent for angles outside 0–90°.",
+    url: "https://www.mathsisfun.com/algebra/trig-four-quadrants.html"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b — sine, cosine, and tangent are all ratios of a triangle's sides.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+};
+const HOWTO = [
+  ["How to convert between degrees and radians", "Radian"],
+  ["How to find the sine, cosine, and tangent of an angle using the unit circle", "Unit Circle"],
+  ["How to find the amplitude and period of a sine or cosine function", "Amplitude"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  document.querySelectorAll('.gterm-placeholder[data-term]').forEach(span => {
+    const key = span.dataset.term;
+    if(GLOSSARY[key]){
+      span.outerHTML = gtermHTML(key, span.textContent);
+      linked.add(key);
+    }
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const metric = applied ? evaluateTwist({}) : evaluate({});
+  const slack = slackClearanceFt(PARAMS);
+  renderStep3Bars(metric.A, slack, PARAMS.policy_floor_ft);
+  document.getElementById('s4slider').value = applied ? PARAMS.setdown_ft : 0;
+  onS4Slider();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+
+// Initialize Step 3 bars / Step 4 live readout on load
+renderStep3Bars(evaluate({}).A, slackClearanceFt(PARAMS), PARAMS.policy_floor_ft);
+onS4Slider();
+</script>
+</body>
+</html>

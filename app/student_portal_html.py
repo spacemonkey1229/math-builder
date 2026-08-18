@@ -121,6 +121,7 @@ async function call(path, payload) {
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+function starStr(n) { n = n || 0; return "★".repeat(n) + "☆".repeat(5 - n); }
 function val(id) { const el = document.getElementById(id); return el ? el.value : ""; }
 function caseHref(caseId, filename) {
   return "/cases/" + encodeURIComponent(caseId) + "/published/" + encodeURIComponent(filename);
@@ -193,8 +194,11 @@ function renderAssignments() {
   if (!A.length) return '<div class="card empty">No cases assigned yet — check with your guide.</div>';
   return '<h3 style="margin:var(--s5) 0 var(--s3)">Your cases</h3>' + A.map((a) => {
     const sub = a.latest_submission;
-    let body = '<div class="hd"><div><div class="who">' + esc(a.case_title) + '</div>' +
-      '<div class="det">' + (a.due_on ? "due " + esc(a.due_on) + " &middot; " : "") + "assigned " + esc(a.assigned_on) + "</div></div>" +
+    let body = '<div class="hd"><div><div class="who">' + esc(a.case_title) +
+      ' <span class="det" style="letter-spacing:1px" title="complexity">' + esc(starStr(a.complexity)) + '</span></div>' +
+      '<div class="det">' + (a.due_on ? "due " + esc(a.due_on) + " &middot; " : "") + "assigned " + esc(a.assigned_on) +
+      " &middot; " + (a.rating_count ? a.avg_rating + "★ &middot; " + a.rating_count + " rating" + (a.rating_count === 1 ? "" : "s") : "not yet rated") +
+      "</div></div>" +
       '<span class="pill accent">' + esc(a.status) + "</span></div><div class=\"body\">";
 
     if (a.has_interactive) {
@@ -215,6 +219,10 @@ function renderAssignments() {
         : sub && sub.outcome === "not-accepted" ? "Try again" : "Submit your work";
       body += submitForm(a, label);
     }
+
+    if (a.status === "submitted" || a.status === "reviewed" || a.status === "complete") {
+      body += ratePicker(a);
+    }
     return '<div class="casecard">' + body + "</div></div>";
   }).join("");
 }
@@ -227,6 +235,18 @@ function submitForm(a, label) {
     '<div class="field"><label>Deliverables you\'re turning in (comma-separated)</label><input id="c3-' + uid + '" placeholder="D1,D2,D3"></div>' +
     '<div class="field"><label>Appendix / visual — link or path (optional)</label><input id="c4-' + uid + '"></div>' +
     '<button class="btn" data-submit="' + uid + '" data-case="' + esc(a.case_id) + '">' + esc(label) + "</button></div>";
+}
+
+function ratePicker(a) {
+  const mine = a.my_rating || 0;
+  const stars = [1, 2, 3, 4, 5].map((n) =>
+    '<button class="btn ghost" data-rate="' + n + '" data-case="' + esc(a.case_id) + '" ' +
+    'style="padding:2px 8px;font-size:14px' + (n <= mine ? ";color:var(--accent)" : "") + '">' +
+    (n <= mine ? "★" : "☆") + "</button>"
+  ).join("");
+  return '<div class="sub-panel" style="margin-top:10px"><strong style="font-size:12.5px">Rate this case</strong> ' +
+    (mine ? '<span class="det">your rating: ' + mine + '★</span>' : '<span class="det">not rated yet</span>') +
+    '<div style="margin-top:4px">' + stars + "</div></div>";
 }
 
 function wireView() {
@@ -251,6 +271,9 @@ function wireView() {
         challenge_4_appendix_url: val("c4-" + uid) || null,
       },
     });
+  });
+  document.querySelectorAll("[data-rate]").forEach((b) => b.onclick = (e) => {
+    call("/api/student/rate", {case_id: e.target.dataset.case, stars: parseInt(e.target.dataset.rate, 10)});
   });
 }
 

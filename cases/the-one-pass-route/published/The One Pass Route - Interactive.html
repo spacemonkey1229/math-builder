@@ -1,0 +1,1592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The One-Pass Route — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The One-Pass Route</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Discrete Mathematics &middot; Graphs &amp; Euler Paths</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+<p class="lede">Renata Kwan has the district&rsquo;s paper street map taped across the hood of the
+sweeper truck, its corners lifting in the diesel exhaust, and a red grease pencil already chewed
+flat on one end. Leaf season starts soon, and the route she inherited last spring has her trucks
+doubling back down Larkspur over and over before the shift ever reaches Birchwood. The radio on her
+hip crackles &mdash; the division director wants her routing memo by end of day, the one that
+decides whether the department pays for a short stretch of new pavement or just keeps eating the
+extra diesel every single week. Behind her, the sweeper idles, gutter broom folded up, waiting on
+her to draw the line. She traces Larkspur with the pencil, then Birchwood, then the short dead-end
+nub off Persimmon that has bothered her for two sweeps running. Somewhere on this map is the exact
+reason none of this ever closes into one clean loop, and she is fairly sure she has finally found it
+&mdash; not a guess this time, a number. She uncaps the pencil, looks up at the idling truck, and
+starts counting corners.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+<p>Renata Kwan is the Route Supervisor for the Streets and Sanitation Division of the Department of
+Public Works in the city of Talbrook. She is responsible for sweeper-truck routing across
+Talbrook&rsquo;s residential neighborhoods and is accountable to the division director for the fuel
+and labor cost of every route she designs &mdash; including every &ldquo;deadhead&rdquo; mile her
+crews drive over a street segment they have already swept that same shift (SEE APPENDIX A). She
+does not control the city&rsquo;s road-construction budget, but her annual routing memo is what the
+division director uses to decide whether that budget funds a new residential connector street this
+cycle.</p>
+<p>This year&rsquo;s memo covers Larkspur Hollow, a real residential neighborhood whose full street
+network &mdash; every block, every intersection, every dead end &mdash; has been mapped as a graph:
+each intersection or dead end a vertex, each street segment between two of them a path. The real
+network contains <strong>58</strong> vertices connected by <strong>86</strong> edges, totaling
+<strong>3.96 miles</strong> of street (SEE APPENDIX A). A sweeper truck that starts and ends at the
+same depot corner and drives every street segment exactly once, with nothing repeated, closing into
+one continuous cycle, is only possible if every vertex in that graph touches an even number of
+street segments &mdash; Euler&rsquo;s theorem, applied literally to pavement (SEE APPENDIX B).
+Larkspur Hollow&rsquo;s real intersection layout does not have that property: <strong>48 of its 58
+vertices</strong> touch an odd number of segments, which means a true single-pass route is not
+merely hard to find &mdash; on the network as it exists today, it is mathematically impossible (SEE
+APPENDIX B).</p>
+<p>Larkspur Hollow&rsquo;s graph is modeled on a real neighborhood&rsquo;s real street layout, not
+an invented grid &mdash; building it honestly required a few disclosed modeling choices about where
+the district&rsquo;s boundary is drawn and how often a route like this really runs (SEE APPENDIX
+E).</p>
+<p>Two responses are on Renata&rsquo;s desk before the memo is due, and the division can only fund
+one this cycle. <strong>The As-Is Loop</strong> keeps Larkspur Hollow&rsquo;s street network exactly
+as it is and instead computes the specific, calculable minimum amount of already-swept street the
+route must drive a second time to close into one continuous loop &mdash; no capital request, a fixed
+and predictable increase in fuel cost every single week the crew sweeps (SEE APPENDIX C). <strong>The
+Persimmon Connector</strong> asks the division to fund a short new stretch of pavement joining two of
+the network&rsquo;s vertices, at a one-time construction cost of roughly <strong>$1,600 per linear
+foot</strong> for an estimated <strong>302-foot</strong> connector &mdash; a change to the graph
+itself that reduces, though it does not eliminate, how much repeat mileage every future sweep needs
+(SEE APPENDICES C AND D). Every sourced figure in this case is listed in <strong>APPENDIX F</strong>;
+the vocabulary and &ldquo;how to&hellip;&rdquo; skills the case will ask of you are listed in
+<strong>APPENDIX G</strong> &mdash; that is where Challenge 1 sends you.</p>
+
+<div class="card">
+  <div class="grid2" style="grid-template-columns:repeat(3,1fr)">
+    <figure style="margin:0">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/f/f9/Las_Vegas_Street_Sweeper.jpg" alt="A City of Las Vegas municipal street sweeper truck cleaning a residential street" style="width:100%;height:auto;border-radius:8px;display:block">
+      <figcaption>A municipal street sweeper on a residential street &mdash; the same kind of route Renata plans for Talbrook.<br>Photo: Noah Wulf, Wikimedia Commons, CC BY-SA 4.0.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Seaside%2C_Florida.jpg" alt="A street of pastel cottages in Seaside, Florida" style="width:100%;height:auto;border-radius:8px;display:block">
+      <figcaption>Seaside, Florida &mdash; the real town whose street layout Larkspur Hollow&rsquo;s graph is modeled on (SEE APPENDIX A).<br>Photo: paigeh, Wikimedia Commons, CC BY-SA 2.5.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5d/Konigsberg_bridges.png" alt="Historical map diagram of the Seven Bridges of Konigsberg, the origin of Euler's theorem" style="width:100%;height:auto;border-radius:8px;display:block;background:#fff">
+      <figcaption>The Seven Bridges of K&ouml;nigsberg &mdash; the 1736 puzzle that produced the same even/odd-degree theorem behind Appendix B.<br>Bogdan Giu&#537;c&#259;, Wikimedia Commons, CC BY-SA 3.0 / GFDL, based on a public-domain 1652 map.</figcaption>
+    </figure>
+  </div>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Renata Kwan, Route Supervisor. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The As-Is Loop</h4>
+      <p style="margin:0">Accept the calculated minimum repeat-mileage route on Larkspur Hollow&rsquo;s street network exactly as it exists today &mdash; no capital request.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Persimmon Connector</h4>
+      <p style="margin:0">Petition for a new connector street that shrinks the required repeat mileage, at a one-time construction cost.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include:
+    <ul style="margin:8px 0 0">
+    <li><strong>D1.</strong> A vertex-degree table for every vertex in the Larkspur Hollow Practice
+    Block (SEE APPENDIX C), a real 23-intersection excerpt of the full network small enough to tally
+    by hand: each vertex listed with the number of street segments touching it, and each one labeled
+    EVEN or ODD.</li>
+    <li><strong>D2.</strong> A written Euler-circuit determination for the full Larkspur Hollow
+    network (SEE APPENDIX B): state which of the three possible cases applies &mdash; an Euler
+    circuit exists, an Euler path exists but no circuit, or neither exists &mdash; and justify your
+    answer using the specific count of odd-degree vertices given there, not just a restatement of
+    the theorem.</li>
+    <li><strong>D3.</strong> A minimum repeat-mileage route for the Practice Block (SEE APPENDIX C):
+    using the provided shortest-connecting-path distance table, pair up every odd-degree vertex from
+    D1 with another odd-degree vertex, show every paired distance and how you chose the pairing, then
+    compute the resulting deadhead ratio &mdash; total miles driven divided by total miles of street
+    actually serviced &mdash; for one full sweep of the Practice Block. Then compare your Practice
+    Block ratio to the full network&rsquo;s official deadhead ratio (SEE APPENDIX C) and explain in
+    words why the two numbers are close but not identical.</li>
+    <li><strong>D4.</strong> A capital-cost-versus-savings comparison for The Persimmon Connector on
+    the full network (SEE APPENDIX D): recompute the degree of the two vertices the connector would
+    join, reapply the Euler test from D2 to the changed network, and show how much repeat mileage the
+    connector removes. Then compare its one-time construction cost against the fuel-cost savings that
+    reduced repeat mileage produces every sweep, with the payback period stated in years.</li>
+    </ul></li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+<details id="apxA">
+<summary>Appendix A &mdash; The Larkspur Hollow Street Network</summary>
+<div class="inner">
+<p>The full real street-network graph for the Larkspur Hollow neighborhood: every intersection and
+dead end as a vertex, every street segment between two of them as an edge, with the length of each
+segment. Depot corner: <strong>I1</strong> (Smolian Circle).</p>
+<table>
+<tr><th></th><th>Value</th></tr>
+<tr><td>Vertices (intersections and dead ends)</td><td><strong>58</strong> [S3, derived]</td></tr>
+<tr><td>Edges (street segments)</td><td><strong>86</strong> [S3, derived]</td></tr>
+<tr><td>Total street mileage (sum of every edge length)</td><td><strong>3.9597 mi</strong> [S3, derived]</td></tr>
+</table>
+<h3>Full vertex list</h3>
+<p class="side-note">Label, cross streets, degree, and even/odd &mdash; the degree and even/odd columns
+are reproduced from Appendix B so this table stands alone.</p>
+<table class="datatbl">
+<tr><th>Label</th><th>Cross streets</th><th>Degree</th><th>Even/Odd</th></tr>
+<tr><td>I1</td><td>Smolian Circle</td><td>3</td><td>ODD</td></tr>
+<tr><td>I2</td><td>Forest Street & Smolian Circle</td><td>3</td><td>ODD</td></tr>
+<tr><td>I3</td><td>Grayton Street & Smolian Circle</td><td>3</td><td>ODD</td></tr>
+<tr><td>I4</td><td>Butler Street & Smolian Circle</td><td>3</td><td>ODD</td></tr>
+<tr><td>I5</td><td>Butler Street & Pensacola Street</td><td>4</td><td>EVEN</td></tr>
+<tr><td>I6</td><td>Butler Street & Grayton Street & Odessa Street</td><td>5</td><td>ODD</td></tr>
+<tr><td>I7</td><td>Quincy Circle & Seaside Avenue</td><td>3</td><td>ODD</td></tr>
+<tr><td>I8</td><td>East Ruskin Street & Seaside Avenue</td><td>4</td><td>EVEN</td></tr>
+<tr><td>I9</td><td>Forest Street & Seaside Avenue</td><td>3</td><td>ODD</td></tr>
+<tr><td>I10</td><td>Grayton Street & Natchez Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I11</td><td>East County Highway 30A & Natchez Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I12</td><td>Roberts Way & West Grove Avenue</td><td>2</td><td>EVEN</td></tr>
+<tr><td>I13</td><td>Savannah Street & West Grove Avenue</td><td>4</td><td>EVEN</td></tr>
+<tr><td>I14</td><td>East Ruskin Street & West Grove Avenue</td><td>3</td><td>ODD</td></tr>
+<tr><td>I15</td><td>East County Highway 30A & Savannah Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I16</td><td>East County Highway 30A & West Ruskin Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I17</td><td>Forest Street & Savannah Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I18</td><td>Grayton Street & Pensacola Street</td><td>4</td><td>EVEN</td></tr>
+<tr><td>I19</td><td>Forest Street & Grayton Street</td><td>2</td><td>EVEN</td></tr>
+<tr><td>I20</td><td>Quincy Circle & Seaside Avenue</td><td>3</td><td>ODD</td></tr>
+<tr><td>I21</td><td>Quincy Circle & Ruskin Place</td><td>3</td><td>ODD</td></tr>
+<tr><td>I22</td><td>East County Highway 30A & Quincy Circle</td><td>3</td><td>ODD</td></tr>
+<tr><td>I23</td><td>East County Highway 30A & Roberts Way</td><td>2</td><td>EVEN</td></tr>
+<tr><td>I24</td><td>East County Highway 30A & Tupelo Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I25</td><td>Forest Street & Tupelo Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I26</td><td>East County Highway 30A & Rosewalk Alley</td><td>3</td><td>ODD</td></tr>
+<tr><td>I27</td><td>East County Highway 30A & East Ruskin Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I28</td><td>East County Highway 30A & Quincy Circle</td><td>3</td><td>ODD</td></tr>
+<tr><td>I29</td><td>Central Square & East County Highway 30A</td><td>3</td><td>ODD</td></tr>
+<tr><td>I30</td><td>Central Square & East County Highway 30A</td><td>3</td><td>ODD</td></tr>
+<tr><td>I31</td><td>East County Highway 30A & Pensacola Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I32</td><td>East County Highway 30A & Odessa Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I33</td><td>Rosewalk Alley</td><td>1</td><td>ODD</td></tr>
+<tr><td>I34</td><td>Forest Street & Pensacola Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I35</td><td>East Ruskin Street & Ruskin Place</td><td>3</td><td>ODD</td></tr>
+<tr><td>I36</td><td>Forest Street & Ruskin Place</td><td>3</td><td>ODD</td></tr>
+<tr><td>I37</td><td>Ruskin Place & West Ruskin Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I38</td><td>Forest Street & Odessa Street</td><td>4</td><td>EVEN</td></tr>
+<tr><td>I39</td><td>Forest Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I40</td><td>Forest Street & Venice Circle</td><td>3</td><td>ODD</td></tr>
+<tr><td>I41</td><td>Forest Street & Seaside Avenue</td><td>3</td><td>ODD</td></tr>
+<tr><td>I42</td><td>Forest Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I43</td><td>Forest Street & Venice Circle</td><td>2</td><td>EVEN</td></tr>
+<tr><td>I44</td><td>Venice Circle & Wakulla Lane</td><td>3</td><td>ODD</td></tr>
+<tr><td>I45</td><td>Venice Circle & Wakulla Lane</td><td>3</td><td>ODD</td></tr>
+<tr><td>I46</td><td>(unnamed lane) & West Grove Avenue</td><td>3</td><td>ODD</td></tr>
+<tr><td>I47</td><td>(unnamed lane) & West Grove Avenue</td><td>3</td><td>ODD</td></tr>
+<tr><td>I48</td><td>(unnamed lane) & Tupelo Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I49</td><td>(unnamed lane) & Tupelo Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I50</td><td>Odessa Street (dead end)</td><td>1</td><td>ODD</td></tr>
+<tr><td>I51</td><td>East Ruskin Street & Seaside Avenue</td><td>4</td><td>EVEN</td></tr>
+<tr><td>I52</td><td>Forest Street & Ruskin Place</td><td>3</td><td>ODD</td></tr>
+<tr><td>I53</td><td>Quincy Circle & Smolian Circle</td><td>3</td><td>ODD</td></tr>
+<tr><td>I54</td><td>Quincy Circle & Smolian Circle</td><td>3</td><td>ODD</td></tr>
+<tr><td>I55</td><td>Smolian Circle & West Ruskin Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I56</td><td>Smolian Circle & West Ruskin Street</td><td>3</td><td>ODD</td></tr>
+<tr><td>I57</td><td>Ruskin Place & Smolian Circle</td><td>3</td><td>ODD</td></tr>
+<tr><td>I58</td><td>East County Highway 30A (district-boundary vertex)</td><td>1</td><td>ODD</td></tr>
+</table>
+<h3>Full edge list (86 segments)</h3>
+<table class="datatbl">
+<tr><th>Segment</th><th>Street</th><th>Length (mi)</th></tr>
+<tr><td>I46–I48</td><td>(unnamed lane)</td><td>0.0035</td></tr>
+<tr><td>I47–I49</td><td>(unnamed lane)</td><td>0.0073</td></tr>
+<tr><td>I48–I47</td><td>(unnamed lane)</td><td>0.0106</td></tr>
+<tr><td>I49–I46</td><td>(unnamed lane)</td><td>0.0073</td></tr>
+<tr><td>I4–I5</td><td>Butler Street</td><td>0.0442</td></tr>
+<tr><td>I5–I6</td><td>Butler Street</td><td>0.0452</td></tr>
+<tr><td>I29–I30</td><td>Central Square</td><td>0.1453</td></tr>
+<tr><td>I11–I58</td><td>East County Highway 30A</td><td>0.1004</td></tr>
+<tr><td>I15–I27</td><td>East County Highway 30A</td><td>0.0445</td></tr>
+<tr><td>I16–I31</td><td>East County Highway 30A</td><td>0.0453</td></tr>
+<tr><td>I22–I16</td><td>East County Highway 30A</td><td>0.0435</td></tr>
+<tr><td>I23–I26</td><td>East County Highway 30A</td><td>0.0342</td></tr>
+<tr><td>I24–I15</td><td>East County Highway 30A</td><td>0.0445</td></tr>
+<tr><td>I26–I24</td><td>East County Highway 30A</td><td>0.0238</td></tr>
+<tr><td>I27–I28</td><td>East County Highway 30A</td><td>0.0442</td></tr>
+<tr><td>I28–I29</td><td>East County Highway 30A</td><td>0.0282</td></tr>
+<tr><td>I29–I30</td><td>East County Highway 30A</td><td>0.0665</td></tr>
+<tr><td>I30–I22</td><td>East County Highway 30A</td><td>0.0285</td></tr>
+<tr><td>I31–I32</td><td>East County Highway 30A</td><td>0.0447</td></tr>
+<tr><td>I32–I11</td><td>East County Highway 30A</td><td>0.0452</td></tr>
+<tr><td>I8–I51</td><td>East Ruskin Street</td><td>0.0071</td></tr>
+<tr><td>I14–I8</td><td>East Ruskin Street</td><td>0.0236</td></tr>
+<tr><td>I27–I14</td><td>East Ruskin Street</td><td>0.0860</td></tr>
+<tr><td>I51–I35</td><td>East Ruskin Street</td><td>0.0658</td></tr>
+<tr><td>I2–I39</td><td>Forest Street</td><td>0.0256</td></tr>
+<tr><td>I9–I17</td><td>Forest Street</td><td>0.0200</td></tr>
+<tr><td>I17–I40</td><td>Forest Street</td><td>0.0084</td></tr>
+<tr><td>I19–I38</td><td>Forest Street</td><td>0.0748</td></tr>
+<tr><td>I25–I43</td><td>Forest Street</td><td>0.0129</td></tr>
+<tr><td>I34–I2</td><td>Forest Street</td><td>0.0682</td></tr>
+<tr><td>I36–I42</td><td>Forest Street</td><td>0.0539</td></tr>
+<tr><td>I38–I34</td><td>Forest Street</td><td>0.0451</td></tr>
+<tr><td>I39–I52</td><td>Forest Street</td><td>0.0523</td></tr>
+<tr><td>I40–I25</td><td>Forest Street</td><td>0.0237</td></tr>
+<tr><td>I41–I9</td><td>Forest Street</td><td>0.0071</td></tr>
+<tr><td>I42–I41</td><td>Forest Street</td><td>0.0648</td></tr>
+<tr><td>I42–I39</td><td>Forest Street</td><td>0.1620</td></tr>
+<tr><td>I52–I36</td><td>Forest Street</td><td>0.0515</td></tr>
+<tr><td>I6–I18</td><td>Grayton Street</td><td>0.0450</td></tr>
+<tr><td>I10–I6</td><td>Grayton Street</td><td>0.0456</td></tr>
+<tr><td>I18–I3</td><td>Grayton Street</td><td>0.0451</td></tr>
+<tr><td>I19–I10</td><td>Grayton Street</td><td>0.0345</td></tr>
+<tr><td>I10–I11</td><td>Natchez Street</td><td>0.0786</td></tr>
+<tr><td>I6–I38</td><td>Odessa Street</td><td>0.0393</td></tr>
+<tr><td>I32–I6</td><td>Odessa Street</td><td>0.0785</td></tr>
+<tr><td>I38–I50</td><td>Odessa Street</td><td>0.0102</td></tr>
+<tr><td>I5–I34</td><td>Pensacola Street</td><td>0.0388</td></tr>
+<tr><td>I18–I5</td><td>Pensacola Street</td><td>0.0164</td></tr>
+<tr><td>I31–I18</td><td>Pensacola Street</td><td>0.0783</td></tr>
+<tr><td>I7–I20</td><td>Quincy Circle</td><td>0.0072</td></tr>
+<tr><td>I20–I21</td><td>Quincy Circle</td><td>0.0226</td></tr>
+<tr><td>I21–I53</td><td>Quincy Circle</td><td>0.0463</td></tr>
+<tr><td>I28–I7</td><td>Quincy Circle</td><td>0.0650</td></tr>
+<tr><td>I53–I54</td><td>Quincy Circle</td><td>0.0620</td></tr>
+<tr><td>I54–I22</td><td>Quincy Circle</td><td>0.0376</td></tr>
+<tr><td>I12–I23</td><td>Roberts Way</td><td>0.0909</td></tr>
+<tr><td>I26–I33</td><td>Rosewalk Alley</td><td>0.0198</td></tr>
+<tr><td>I21–I35</td><td>Ruskin Place</td><td>0.0453</td></tr>
+<tr><td>I35–I36</td><td>Ruskin Place</td><td>0.0421</td></tr>
+<tr><td>I37–I52</td><td>Ruskin Place</td><td>0.0421</td></tr>
+<tr><td>I57–I37</td><td>Ruskin Place</td><td>0.0335</td></tr>
+<tr><td>I13–I17</td><td>Savannah Street</td><td>0.0576</td></tr>
+<tr><td>I15–I13</td><td>Savannah Street</td><td>0.0860</td></tr>
+<tr><td>I7–I8</td><td>Seaside Avenue</td><td>0.0603</td></tr>
+<tr><td>I8–I9</td><td>Seaside Avenue</td><td>0.0577</td></tr>
+<tr><td>I41–I51</td><td>Seaside Avenue</td><td>0.0575</td></tr>
+<tr><td>I51–I20</td><td>Seaside Avenue</td><td>0.0604</td></tr>
+<tr><td>I1–I2</td><td>Smolian Circle</td><td>0.0278</td></tr>
+<tr><td>I1–I4</td><td>Smolian Circle</td><td>0.0272</td></tr>
+<tr><td>I3–I55</td><td>Smolian Circle</td><td>0.0189</td></tr>
+<tr><td>I4–I3</td><td>Smolian Circle</td><td>0.0297</td></tr>
+<tr><td>I53–I57</td><td>Smolian Circle</td><td>0.0199</td></tr>
+<tr><td>I55–I54</td><td>Smolian Circle</td><td>0.0428</td></tr>
+<tr><td>I56–I1</td><td>Smolian Circle</td><td>0.0510</td></tr>
+<tr><td>I57–I56</td><td>Smolian Circle</td><td>0.0219</td></tr>
+<tr><td>I24–I49</td><td>Tupelo Street</td><td>0.0813</td></tr>
+<tr><td>I25–I48</td><td>Tupelo Street</td><td>0.0647</td></tr>
+<tr><td>I43–I44</td><td>Venice Circle</td><td>0.0457</td></tr>
+<tr><td>I44–I45</td><td>Venice Circle</td><td>0.0262</td></tr>
+<tr><td>I45–I40</td><td>Venice Circle</td><td>0.0285</td></tr>
+<tr><td>I44–I45</td><td>Wakulla Lane</td><td>0.1473</td></tr>
+<tr><td>I12–I46</td><td>West Grove Avenue</td><td>0.0277</td></tr>
+<tr><td>I13–I47</td><td>West Grove Avenue</td><td>0.0398</td></tr>
+<tr><td>I14–I13</td><td>West Grove Avenue</td><td>0.0440</td></tr>
+<tr><td>I37–I56</td><td>West Ruskin Street</td><td>0.0297</td></tr>
+<tr><td>I55–I16</td><td>West Ruskin Street</td><td>0.0723</td></tr>
+</table>
+<h3>How Appendix A was built</h3>
+<p>[S3] Larkspur Hollow's street network is modeled on the real street
+layout of the town of Seaside, Florida, pulled directly from OpenStreetMap (SEE APPENDIX E, MA1).
+The raw geometry was collapsed into a graph the same way a real GIS routing tool does: every node
+where two or more differently-named streets meet, and every dead end, becomes a vertex; every
+uninterrupted run of the same-named street between two such vertices, however many shape points it
+takes to draw its curve, becomes a single edge whose length is the summed real-world distance along
+that curve (computed with the great-circle/haversine formula from the raw GPS coordinates, not a
+straight-line guess). Three OSM way segments that leave Seaside's built area and run for over a
+fifth of a mile toward neighboring, unmapped communities were excluded as outside Renata's assigned
+route district (SEE APPENDIX E, MA2); one small, disconnected two-node fragment with no path back to
+the rest of the network was also excluded.</p>
+</div>
+</details>
+
+<details id="apxB">
+<summary>Appendix B &mdash; Vertex Degree Table and Euler Determination</summary>
+<div class="inner">
+<p>The degree of every vertex is given in Appendix A&rsquo;s vertex list. This appendix states the
+theorem-level summary D2 asks you to justify.</p>
+<table>
+<tr><th></th><th>Value</th></tr>
+<tr><td>Number of odd-degree vertices</td><td><strong>48</strong> [S3, derived]</td></tr>
+<tr><td>Number of even-degree vertices</td><td><strong>10</strong> [S3, derived]</td></tr>
+<tr><td>Euler's theorem outcome for this network</td><td><strong>Neither an Euler circuit nor an Euler path exists.</strong> A graph has an Euler circuit only if every vertex has even degree (0 odd vertices), and an Euler path (but no circuit) only if exactly 2 vertices have odd degree. Larkspur Hollow has 48 odd-degree vertices — far more than 2 — so neither special case applies, and *some* repeated driving is unavoidable no matter how the route is planned [S3, derived].</td></tr>
+</table>
+</div>
+</details>
+
+<details open id="apxC">
+<summary>Appendix C &mdash; Larkspur Hollow Practice Block, and the Official As-Is Loop Numbers</summary>
+<div class="inner">
+<h3>Part 1 &mdash; The Practice Block (for D1 and D3)</h3>
+<p>A real, connected, 23-vertex excerpt of the full network &mdash; the Smolian Circle / Quincy
+Circle loop and its immediate connections &mdash; small enough to tally and pair by hand. Vertices
+where a named street exits this excerpt toward the rest of the real network are treated as this
+excerpt&rsquo;s own edge for practice purposes; they are not necessarily true physical dead ends in
+the full network.</p>
+<h4>Practice Block vertices</h4>
+<table>
+<tr><th>Practice label</th><th>Full-network label</th><th>Practice-Block degree</th></tr>
+<tr><td>P1</td><td>I1</td><td>3</td></tr>
+<tr><td>P2</td><td>I2</td><td>2</td></tr>
+<tr><td>P3</td><td>I3</td><td>2</td></tr>
+<tr><td>P4</td><td>I4</td><td>2</td></tr>
+<tr><td>P5</td><td>I7</td><td>2</td></tr>
+<tr><td>P6</td><td>I16</td><td>2</td></tr>
+<tr><td>P7</td><td>I20</td><td>2</td></tr>
+<tr><td>P8</td><td>I21</td><td>3</td></tr>
+<tr><td>P9</td><td>I22</td><td>3</td></tr>
+<tr><td>P10</td><td>I27</td><td>1</td></tr>
+<tr><td>P11</td><td>I28</td><td>3</td></tr>
+<tr><td>P12</td><td>I29</td><td>3</td></tr>
+<tr><td>P13</td><td>I30</td><td>3</td></tr>
+<tr><td>P14</td><td>I35</td><td>2</td></tr>
+<tr><td>P15</td><td>I36</td><td>2</td></tr>
+<tr><td>P16</td><td>I37</td><td>3</td></tr>
+<tr><td>P17</td><td>I39</td><td>2</td></tr>
+<tr><td>P18</td><td>I52</td><td>3</td></tr>
+<tr><td>P19</td><td>I53</td><td>3</td></tr>
+<tr><td>P20</td><td>I54</td><td>3</td></tr>
+<tr><td>P21</td><td>I55</td><td>3</td></tr>
+<tr><td>P22</td><td>I56</td><td>3</td></tr>
+<tr><td>P23</td><td>I57</td><td>3</td></tr>
+</table>
+<h4>Practice Block edges (29 segments)</h4>
+<table>
+<tr><th>Segment</th><th>Street</th><th>Length (mi)</th></tr>
+<tr><td>P1–P2</td><td>Smolian Circle</td><td>0.0278</td></tr>
+<tr><td>P1–P4</td><td>Smolian Circle</td><td>0.0272</td></tr>
+<tr><td>P4–P3</td><td>Smolian Circle</td><td>0.0297</td></tr>
+<tr><td>P3–P21</td><td>Smolian Circle</td><td>0.0189</td></tr>
+<tr><td>P21–P20</td><td>Smolian Circle</td><td>0.0428</td></tr>
+<tr><td>P22–P1</td><td>Smolian Circle</td><td>0.0510</td></tr>
+<tr><td>P19–P23</td><td>Smolian Circle</td><td>0.0199</td></tr>
+<tr><td>P23–P22</td><td>Smolian Circle</td><td>0.0219</td></tr>
+<tr><td>P2–P17</td><td>Forest Street</td><td>0.0256</td></tr>
+<tr><td>P17–P18</td><td>Forest Street</td><td>0.0523</td></tr>
+<tr><td>P18–P15</td><td>Forest Street</td><td>0.0515</td></tr>
+<tr><td>P8–P14</td><td>Ruskin Place</td><td>0.0453</td></tr>
+<tr><td>P14–P15</td><td>Ruskin Place</td><td>0.0421</td></tr>
+<tr><td>P16–P18</td><td>Ruskin Place</td><td>0.0421</td></tr>
+<tr><td>P23–P16</td><td>Ruskin Place</td><td>0.0335</td></tr>
+<tr><td>P16–P22</td><td>West Ruskin Street</td><td>0.0297</td></tr>
+<tr><td>P21–P6</td><td>West Ruskin Street</td><td>0.0723</td></tr>
+<tr><td>P10–P11</td><td>East County Highway 30A</td><td>0.0442</td></tr>
+<tr><td>P11–P12</td><td>East County Highway 30A</td><td>0.0282</td></tr>
+<tr><td>P12–P13</td><td>East County Highway 30A</td><td>0.0665</td></tr>
+<tr><td>P13–P9</td><td>East County Highway 30A</td><td>0.0285</td></tr>
+<tr><td>P9–P6</td><td>East County Highway 30A</td><td>0.0435</td></tr>
+<tr><td>P12–P13</td><td>Central Square</td><td>0.1453</td></tr>
+<tr><td>P5–P7</td><td>Quincy Circle</td><td>0.0072</td></tr>
+<tr><td>P7–P8</td><td>Quincy Circle</td><td>0.0226</td></tr>
+<tr><td>P8–P19</td><td>Quincy Circle</td><td>0.0463</td></tr>
+<tr><td>P11–P5</td><td>Quincy Circle</td><td>0.0650</td></tr>
+<tr><td>P19–P20</td><td>Quincy Circle</td><td>0.0620</td></tr>
+<tr><td>P20–P9</td><td>Quincy Circle</td><td>0.0376</td></tr>
+</table>
+<h4>Shortest-connecting-path distances between every odd-degree Practice Block vertex</h4>
+<p class="side-note">P1, P8, P9, P10, P11, P12, P13, P16, P18, P19, P20, P21, P22, P23 &mdash; 14
+vertices; distances in miles, computed along the Practice Block&rsquo;s own streets. This is your
+raw data for D3 &mdash; the notebook&rsquo;s Step 3 calculator below pairs these up live from this
+table, it does not hand you a pre-computed answer.</p>
+<table class="disttbl">
+<tr><th></th><th>P1</th><th>P8</th><th>P9</th><th>P10</th><th>P11</th><th>P12</th><th>P13</th><th>P16</th><th>P18</th><th>P19</th><th>P20</th><th>P21</th><th>P22</th><th>P23</th></tr>
+<tr><td><strong>P1</strong></td><td>—</td><td>0.1390</td><td>0.1562</td><td>0.2779</td><td>0.2337</td><td>0.2512</td><td>0.1847</td><td>0.0806</td><td>0.1056</td><td>0.0928</td><td>0.1186</td><td>0.0758</td><td>0.0510</td><td>0.0729</td></tr>
+<tr><td><strong>P8</strong></td><td>0.1390</td><td>—</td><td>0.1458</td><td>0.1388</td><td>0.0947</td><td>0.1229</td><td>0.1744</td><td>0.0997</td><td>0.1388</td><td>0.0463</td><td>0.1083</td><td>0.1510</td><td>0.0881</td><td>0.0662</td></tr>
+<tr><td><strong>P9</strong></td><td>0.1562</td><td>0.1458</td><td>—</td><td>0.1674</td><td>0.1233</td><td>0.0951</td><td>0.0285</td><td>0.1530</td><td>0.1951</td><td>0.0996</td><td>0.0376</td><td>0.0804</td><td>0.1414</td><td>0.1195</td></tr>
+<tr><td><strong>P10</strong></td><td>0.2779</td><td>0.1388</td><td>0.1674</td><td>—</td><td>0.0442</td><td>0.0724</td><td>0.1389</td><td>0.2385</td><td>0.2776</td><td>0.1851</td><td>0.2050</td><td>0.2478</td><td>0.2269</td><td>0.2050</td></tr>
+<tr><td><strong>P11</strong></td><td>0.2337</td><td>0.0947</td><td>0.1233</td><td>0.0442</td><td>—</td><td>0.0282</td><td>0.0947</td><td>0.1943</td><td>0.2335</td><td>0.1409</td><td>0.1608</td><td>0.2036</td><td>0.1827</td><td>0.1608</td></tr>
+<tr><td><strong>P12</strong></td><td>0.2512</td><td>0.1229</td><td>0.0951</td><td>0.0724</td><td>0.0282</td><td>—</td><td>0.0665</td><td>0.2225</td><td>0.2617</td><td>0.1691</td><td>0.1326</td><td>0.1754</td><td>0.2109</td><td>0.1890</td></tr>
+<tr><td><strong>P13</strong></td><td>0.1847</td><td>0.1744</td><td>0.0285</td><td>0.1389</td><td>0.0947</td><td>0.0665</td><td>—</td><td>0.1815</td><td>0.2236</td><td>0.1281</td><td>0.0661</td><td>0.1089</td><td>0.1699</td><td>0.1480</td></tr>
+<tr><td><strong>P16</strong></td><td>0.0806</td><td>0.0997</td><td>0.1530</td><td>0.2385</td><td>0.1943</td><td>0.2225</td><td>0.1815</td><td>—</td><td>0.0421</td><td>0.0534</td><td>0.1154</td><td>0.1564</td><td>0.0297</td><td>0.0335</td></tr>
+<tr><td><strong>P18</strong></td><td>0.1056</td><td>0.1388</td><td>0.1951</td><td>0.2776</td><td>0.2335</td><td>0.2617</td><td>0.2236</td><td>0.0421</td><td>—</td><td>0.0955</td><td>0.1575</td><td>0.1814</td><td>0.0718</td><td>0.0756</td></tr>
+<tr><td><strong>P19</strong></td><td>0.0928</td><td>0.0463</td><td>0.0996</td><td>0.1851</td><td>0.1409</td><td>0.1691</td><td>0.1281</td><td>0.0534</td><td>0.0955</td><td>—</td><td>0.0620</td><td>0.1048</td><td>0.0418</td><td>0.0199</td></tr>
+<tr><td><strong>P20</strong></td><td>0.1186</td><td>0.1083</td><td>0.0376</td><td>0.2050</td><td>0.1608</td><td>0.1326</td><td>0.0661</td><td>0.1154</td><td>0.1575</td><td>0.0620</td><td>—</td><td>0.0428</td><td>0.1038</td><td>0.0819</td></tr>
+<tr><td><strong>P21</strong></td><td>0.0758</td><td>0.1510</td><td>0.0804</td><td>0.2478</td><td>0.2036</td><td>0.1754</td><td>0.1089</td><td>0.1564</td><td>0.1814</td><td>0.1048</td><td>0.0428</td><td>—</td><td>0.1268</td><td>0.1247</td></tr>
+<tr><td><strong>P22</strong></td><td>0.0510</td><td>0.0881</td><td>0.1414</td><td>0.2269</td><td>0.1827</td><td>0.2109</td><td>0.1699</td><td>0.0297</td><td>0.0718</td><td>0.0418</td><td>0.1038</td><td>0.1268</td><td>—</td><td>0.0219</td></tr>
+<tr><td><strong>P23</strong></td><td>0.0729</td><td>0.0662</td><td>0.1195</td><td>0.2050</td><td>0.1608</td><td>0.1890</td><td>0.1480</td><td>0.0335</td><td>0.0756</td><td>0.0199</td><td>0.0819</td><td>0.1247</td><td>0.0219</td><td>—</td></tr>
+</table>
+<h3>Part 2 &mdash; The official As-Is Loop numbers (full network, for D2, D3&rsquo;s comparison
+step, and D4)</h3>
+<p>These are computed the same way &mdash; shortest-path pairing of all 48 odd-degree vertices
+&mdash; but over the full 58-vertex network, using a minimum-weight matching algorithm rather than
+hand pairing.</p>
+<table>
+<tr><th></th><th>Value</th></tr>
+<tr><td>Minimum total repeat mileage, full network (optimal pairing of all 48 odd vertices)</td><td><strong>0.9046 mi</strong> [S3, derived]</td></tr>
+<tr><td>Total miles driven, one full sweep (3.9597 + 0.9046)</td><td><strong>4.8643 mi</strong> [S3, derived]</td></tr>
+<tr><td><strong>Official deadhead ratio, The As-Is Loop</strong></td><td><strong>1.2285</strong> (4.8643 ÷ 3.9597) [S3, derived]</td></tr>
+<tr><td>Sweeper truck fuel efficiency (proxy, SEE APPENDIX F, S1)</td><td><strong>5.2 miles per gallon</strong> [S1]</td></tr>
+<tr><td>Diesel fuel price</td><td><strong>$5.257 per gallon</strong> [S2]</td></tr>
+<tr><td>Sweep frequency</td><td><strong>6 sweeps per year</strong> (SEE APPENDIX E, MA3) [S4]</td></tr>
+</table>
+</div>
+</details>
+
+<details open id="apxD">
+<summary>Appendix D &mdash; The Persimmon Connector: Cost and Savings Data</summary>
+<div class="inner">
+<table>
+<tr><th></th><th>Value</th></tr>
+<tr><td>Identified vertex pair the connector would join</td><td><strong>I16</strong> (East County Highway 30A & West Ruskin Street) and <strong>I54</strong> (Quincy Circle & Smolian Circle) — the closest pair of currently-unconnected odd-degree vertices whose connection meaningfully improves the network [S3, derived]</td></tr>
+<tr><td>Estimated connector length</td><td><strong>302 feet</strong> (0.0572 mi), straight-line distance between I16 and I54 [S3, derived]</td></tr>
+<tr><td>Construction cost per linear foot, new local residential street</td><td><strong>$1,600</strong> (full reconstruction, including paving, drainage, and base) [S5]</td></tr>
+<tr><td>Total estimated one-time construction cost</td><td><strong>$483,200</strong> (302 ft × $1,600/ft) [S5, derived]</td></tr>
+<tr><td>Recomputed degree of I16 and I54 after the connector is built</td><td>Both rise from <strong>3 (ODD)</strong> to <strong>4 (EVEN)</strong> [S3, derived]</td></tr>
+<tr><td>New total street mileage (3.9597 + 0.0572)</td><td><strong>4.0169 mi</strong> [S3, derived]</td></tr>
+<tr><td>New odd-degree vertex count</td><td><strong>46</strong> (down from 48) [S3, derived]</td></tr>
+<tr><td>New minimum total repeat mileage (optimal pairing of remaining 46 odd vertices)</td><td><strong>0.8236 mi</strong> [S3, derived]</td></tr>
+<tr><td>New total miles driven, one full sweep (4.0169 + 0.8236)</td><td><strong>4.8405 mi</strong> [S3, derived]</td></tr>
+<tr><td><strong>New deadhead ratio, with the connector</strong></td><td><strong>1.2050</strong> (4.8405 ÷ 4.0169) [S3, derived]</td></tr>
+<tr><td>Absolute miles driven saved per sweep (4.8643 − 4.8405)</td><td><strong>0.0238 mi</strong> [S3, derived]</td></tr>
+<tr><td>Annual miles saved (0.0238 mi × 6 sweeps/year)</td><td><strong>0.1428 mi/year</strong> [derived]</td></tr>
+<tr><td>Annual gallons saved (0.1428 ÷ 5.2 mpg)</td><td><strong>0.0275 gal/year</strong> [derived]</td></tr>
+<tr><td><strong>Annual fuel-cost savings</strong> (0.0275 gal × $5.257)</td><td><strong>$0.14/year</strong> [derived]</td></tr>
+<tr><td><strong>Payback period</strong> ($483,200 ÷ $0.14/year)</td><td><strong>≈ 3.35 million years</strong> [derived]</td></tr>
+<tr><td>Reference construction-cost figure (lower bound, dated)</td><td><strong>$345/linear foot</strong> avg ($315–$375 range), State of Michigan Treasury subdivision-cost schedule, 2003 dollars, unadjusted for inflation — implies <strong>$104,190</strong> total and a payback of <strong>≈ 722,000 years</strong> [S6, derived]</td></tr>
+</table>
+<p class="side-note"><strong>A discrepancy this case does not hide.</strong> However the construction-cost estimate is sourced, the
+payback period is not close to any real capital-planning horizon (typically 20–40 years for
+municipal infrastructure) — it is off by roughly five orders of magnitude. On a pure fuel-cost
+basis, The Persimmon Connector is not a defensible capital request. D4 asks you to compute this
+yourself and reckon with it: the connector genuinely, measurably lowers the deadhead ratio (compare
+Appendix C's official figure against this appendix's recomputed figure), which is this case's
+stated primary metric — but "measurably better on the primary metric" and "worth building" are not
+the same question, and this case does not resolve that tension for you.</p>
+</div>
+</details>
+
+<details id="apxE">
+<summary>Appendix E &mdash; Modeling Assumptions</summary>
+<div class="inner">
+<p class="side-note">These figures are <strong>not sourced</strong>. They are stated scenario
+assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a
+legitimate move.</p>
+<table class="disttbl">
+<tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+<tr><td>MA1</td><td>The Larkspur Hollow street network's identity</td><td>Modeled using the real, public street layout of the town of Seaside, Florida (OpenStreetMap contributors, ODbL license) as a structural stand-in for the fictional city of Talbrook's Larkspur Hollow neighborhood</td><td>Talbrook is fictional, so no real street-network data exists for it. Seaside is a real, small, densely-platted town with a real, irregular, non-grid street layout — exactly the kind of authentic vertex-degree irregularity a hand-drawn or invented grid could not honestly provide, and its full network is public and directly downloadable.</td><td>The entire case — the 48 odd-degree count, the deadhead ratio, the connector's effect — depends on this specific real network's actual topology. A different real neighborhood would give different numbers and could change which vertices are the best connector candidates, though the qualitative finding (most real street networks have many odd-degree vertices, and a single new connector helps only marginally) is a general graph-theory fact, not an artifact of this one network.</td></tr>
+<tr><td>MA2</td><td>District boundary treatment</td><td>Three OSM way segments that extend more than 0.2 miles beyond Seaside's built area toward neighboring, separately-mapped communities were excluded from the graph, along with one small disconnected fragment</td><td>OpenStreetMap draws some streets (notably East County Highway 30A, Forest Street, and West Grove Avenue) as single continuous ways that run well past any sensible neighborhood boundary. Including their full real length would mean Renata's "neighborhood" route actually extends over a mile into unrelated communities, which the case's own Background does not describe. The excluded segments are real pavement — they are just outside Larkspur Hollow's assigned route district, the same way any real route supervisor's district has a boundary drawn somewhere.</td><td>Vertices where an excluded segment used to continue (I11, I2, I40 in the underlying data) are treated as this district's own edge, not as literal physical dead ends — the street continues in reality, just outside Renata's assignment. This does not change the odd/even count of any vertex that remains in-district; it only removes mileage and dead-end status that were never really Renata's to route.</td></tr>
+<tr><td>MA3</td><td>Sweep frequency</td><td>Fixed at <strong>6 sweeps per year</strong></td><td>Talbrook is fictional and has no real published sweeping schedule. The City of Austin, Texas's Resource Recovery Department publicly states residential streets are swept "up to six times a year" (SEE APPENDIX F, S4) — a real US municipal program's stated maximum, adopted here as Larkspur Hollow's assumed annual frequency.</td><td>Sweep frequency is a linear multiplier on every dollar figure in Appendix D — halving it to 3/year would halve the (already astronomical) annual savings and double the payback period; it does not change the deadhead ratio itself, which is a per-sweep, frequency-independent quantity.</td></tr>
+</table>
+</div>
+</details>
+
+<details id="apxF">
+<summary>Appendix F &mdash; Sources</summary>
+<div class="inner">
+<table class="disttbl">
+<tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Accessed</th><th>Confidence</th></tr>
+<tr><td>S1</td><td>Fuel efficiency of a heavy-duty municipal service vehicle in a stop-and-go urban duty cycle, used as a proxy for a street-sweeper truck</td><td>5.2 miles per gasoline-gallon-equivalent (refuse-truck category)</td><td>U.S. Department of Energy, Alternative Fuels Data Center, "Average Fuel Economy by Major Vehicle Category," sourced from Federal Highway Administration *Highway Statistics 2024* (Table VM-1). [afdc.energy.gov/data/10310](https://afdc.energy.gov/data/10310)</td><td>2026-08-13</td><td>MEDIUM — primary federal data series, but no street-sweeper-specific mpg figure is publicly published; refuse trucks are the closest published vocational-truck category (similar weight class, similar low-speed stop-and-go duty cycle). Units are gasoline-gallon-equivalent, applied here directly to diesel gallons as a working approximation; this is a disclosed proxy, not a sweeper-specific measurement.</td></tr>
+<tr><td>S2</td><td>U.S. average retail on-highway diesel fuel price</td><td>$5.257 per gallon</td><td>U.S. Energy Information Administration, "Gasoline and Diesel Fuel Update," U.S. average, week of August 10, 2026. [eia.gov/petroleum/gasdiesel/](https://www.eia.gov/petroleum/gasdiesel/)</td><td>2026-08-13</td><td>HIGH — primary federal statistical agency, weekly-dated series, directly fetched.</td></tr>
+<tr><td>S3</td><td>Larkspur Hollow's street-network graph: raw geometry, vertex/edge structure, degree distribution, minimum-repeat-mileage matchings, and the Persimmon Connector's computed effect</td><td>58 vertices, 86 edges, 3.9597 mi total (base network); see Appendices A–D for full derived figures</td><td>OpenStreetMap contributors, Seaside, Florida street data, retrieved via the Overpass API, [overpass-api.de](https://overpass-api.de/) (query region: administrative boundary of Seaside, FL, per Nominatim). Data © OpenStreetMap contributors, [ODbL 1.0](https://www.openstreetmap.org/copyright).</td><td>2026-08-13</td><td>HIGH — primary, directly-queried real street-network data. All graph derivations (vertex/edge collapsing, degree counts, minimum-weight odd-vertex matching, connector candidate search) are this case's own computation, not a figure printed on any source page — full methodology and code logic in RESEARCH_LOG.md.</td></tr>
+<tr><td>S4</td><td>Residential street-sweeping frequency for a real US municipal program</td><td>"up to six times a year"</td><td>City of Austin, Texas, Austin Resource Recovery, "Street Sweeping" program page. [austintexas.gov/resource-recovery/programs/street-sweeping](https://www.austintexas.gov/resource-recovery/programs/street-sweeping)</td><td>2026-08-13</td><td>HIGH — primary municipal government source, current program page. Adopted for the fictional Talbrook as a stated Modeling Assumption (SEE APPENDIX E, MA3), since Austin's own figure is not literally Talbrook's.</td></tr>
+<tr><td>S5</td><td>Cost per linear foot of full municipal road reconstruction (paving, drainage, base, and other essential road functions), as recommended by a city engineer</td><td>$1,600 per linear foot</td><td>City of Fate, Texas, staff memorandum to the Honorable Mayor & City Council, "Street Replacement Plan," dated November 13, 2024 (Michael Kovacs, City Manager; Omar Williams, Assistant to the City Manager). [fatetx.gov/AgendaCenter/ViewFile/Item/11449?fileID=40396](https://www.fatetx.gov/AgendaCenter/ViewFile/Item/11449?fileID=40396)</td><td>2026-08-13</td><td>MEDIUM — primary municipal government document, recently dated, City-Engineer-recommended figure. Used here as a proxy: the source figure is for full reconstruction of an existing 12-foot-lane road (a maintenance/replacement project), not new construction of a short local connector on previously unpaved land, and no public per-linear-foot figure specific to a short new local residential connector could be located with comparable provenance. Likely an overestimate for Larkspur Hollow's small connector, which the case discloses rather than hides.</td></tr>
+<tr><td>S6</td><td>Cost per linear foot of a complete new residential subdivision street (grading, base, paving, curb and gutter, in an ordinary level subdivision)</td><td>$315–$375 per linear foot (avg. $345), 2003 dollars</td><td>State of Michigan Department of Treasury, "Subdivision Development Costs," Underwriting Investment Program manual, Section UIP 16, ©2003.</td><td>2026-08-13</td><td>MEDIUM — primary state-government reference document, exactly on-target for a new local subdivision street, but dated (2003, unadjusted for over two decades of construction-cost inflation) and no current equivalent with the same specificity could be located. Presented as a disclosed lower-bound reference alongside S5, not as the primary planning figure.</td></tr>
+</table>
+</div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-15. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+<div class="stepbox">
+  <h4>Step 1 &middot; Practice Block Vertex-Degree Table (D1)</h4>
+  <div class="goal">Appendix C&rsquo;s Practice Block edge list gives you every street segment. For
+  each vertex, count how many edges touch it, then mark it EVEN or ODD.</div>
+  <table id="notebookD1">
+    <tr><th>Vertex</th><th>Degree</th><th>Even/Odd</th><th></th></tr>
+    <tr><td>P1</td><td><input type="number" id="d1_P1" step="1"></td><td><select id="eo_P1"><option value="">?</option><option>EVEN</option><option>ODD</option></select></td><td id="fb_d1_P1"></td></tr>
+    <tr><td>P8</td><td><input type="number" id="d1_P8" step="1"></td><td><select id="eo_P8"><option value="">?</option><option>EVEN</option><option>ODD</option></select></td><td id="fb_d1_P8"></td></tr>
+    <tr><td>P9</td><td><input type="number" id="d1_P9" step="1"></td><td><select id="eo_P9"><option value="">?</option><option>EVEN</option><option>ODD</option></select></td><td id="fb_d1_P9"></td></tr>
+    <tr><td>P16</td><td><input type="number" id="d1_P16" step="1"></td><td><select id="eo_P16"><option value="">?</option><option>EVEN</option><option>ODD</option></select></td><td id="fb_d1_P16"></td></tr>
+    <tr><td>P19</td><td><input type="number" id="d1_P19" step="1"></td><td><select id="eo_P19"><option value="">?</option><option>EVEN</option><option>ODD</option></select></td><td id="fb_d1_P19"></td></tr>
+  </table>
+  <button onclick="checkD1()">Check Step 1</button>
+  <p class="side-note">This checker verifies 5 sample vertices from the Practice Block&rsquo;s own
+  edge list (Appendix C) &mdash; do the remaining 18 by hand for your actual submission. A vertex&rsquo;s
+  degree is the number of edges in the Practice Block edge table that name it.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &middot; Euler Determination, Full Network (D2)</h4>
+  <div class="goal">Using Appendix B&rsquo;s odd-degree vertex count for the full 58-vertex network,
+  state which of the three Euler cases applies.</div>
+  <div class="fieldrow"><label>Number of odd-degree vertices (Appendix B)</label><input type="number" id="d2_odd" step="1"><span id="fb_d2_odd"></span></div>
+  <div class="fieldrow"><label>Which case applies?</label>
+    <select id="d2_case">
+      <option value="">choose one</option>
+      <option value="circuit">Euler circuit exists</option>
+      <option value="path">Euler path exists, no circuit</option>
+      <option value="neither">Neither exists</option>
+    </select>
+    <span id="fb_d2_case"></span>
+  </div>
+  <button onclick="checkD2()">Check Step 2</button>
+  <p class="side-note">Rule: 0 odd vertices &rarr; circuit exists. Exactly 2 odd vertices &rarr; path
+  exists, no circuit. Any other odd count &rarr; neither.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &middot; Practice Block Minimum Repeat-Mileage Pairing (D3)</h4>
+  <div class="goal">Pair up all 14 odd-degree Practice Block vertices using Appendix C&rsquo;s
+  distance table so the total paired distance is as small as possible, then compute the resulting
+  deadhead ratio for one full sweep of the Practice Block.</div>
+  <p class="side-note">Enter your 7 pairs below (one vertex per box; order within a pair
+  doesn&rsquo;t matter). Every one of the 14 odd vertices &mdash; P1, P8, P9, P10, P11, P12, P13,
+  P16, P18, P19, P20, P21, P22, P23 &mdash; must appear exactly once.</p>
+  <table>
+    <tr><th>Pair 1</th><td><input type="text" id="d3_p1a" size="4" placeholder="e.g. P1"><input type="text" id="d3_p1b" size="4"></td></tr>
+    <tr><th>Pair 2</th><td><input type="text" id="d3_p2a" size="4"><input type="text" id="d3_p2b" size="4"></td></tr>
+    <tr><th>Pair 3</th><td><input type="text" id="d3_p3a" size="4"><input type="text" id="d3_p3b" size="4"></td></tr>
+    <tr><th>Pair 4</th><td><input type="text" id="d3_p4a" size="4"><input type="text" id="d3_p4b" size="4"></td></tr>
+    <tr><th>Pair 5</th><td><input type="text" id="d3_p5a" size="4"><input type="text" id="d3_p5b" size="4"></td></tr>
+    <tr><th>Pair 6</th><td><input type="text" id="d3_p6a" size="4"><input type="text" id="d3_p6b" size="4"></td></tr>
+    <tr><th>Pair 7</th><td><input type="text" id="d3_p7a" size="4"><input type="text" id="d3_p7b" size="4"></td></tr>
+  </table>
+  <div class="fieldrow"><label>Your total repeat mileage (mi)</label><input type="number" id="d3_total" step="any"><span id="fb_d3_total"></span></div>
+  <div class="fieldrow"><label>Your Practice Block deadhead ratio</label><input type="number" id="d3_ratio" step="any"><span id="fb_d3_ratio"></span></div>
+  <button onclick="checkD3()">Check Step 3</button>
+  <p id="d3_optimal_note" class="side-note"></p>
+  <p class="side-note">Deadhead ratio = (Practice Block base mileage + your total repeat mileage)
+  &divide; Practice Block base mileage. The Check button verifies your 7 pairs form a valid, complete
+  pairing and computes the true minimum-weight pairing live from Appendix C&rsquo;s own distance
+  table (a brute-force search over every possible pairing) &mdash; it will tell you if a cheaper
+  pairing exists, not hand you one.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &middot; The Persimmon Connector: Cost vs. Savings (D4)</h4>
+  <div class="goal">Recompute the degree of I16 and I54 after the connector is added, reapply the
+  Euler test, then compare the connector&rsquo;s one-time construction cost to its annual fuel-cost
+  savings.</div>
+  <table>
+    <tr><th></th><th>I16</th><th>I54</th></tr>
+    <tr><td>New degree</td><td><input type="number" id="d4_deg16" step="1"></td><td><input type="number" id="d4_deg54" step="1"></td></tr>
+    <tr><td>Even/Odd</td>
+      <td><select id="d4_eo16"><option value="">?</option><option>EVEN</option><option>ODD</option></select></td>
+      <td><select id="d4_eo54"><option value="">?</option><option>EVEN</option><option>ODD</option></select></td></tr>
+  </table>
+  <button onclick="checkD4a()">Check degrees</button> <span id="fb_d4_deg"></span>
+  <div class="fieldrow" style="margin-top:14px"><label>Repeat mileage removed (mi)</label><input type="number" id="d4_removed" step="any"><span id="fb_d4_removed"></span></div>
+  <div class="fieldrow"><label>Construction cost ($, at $1,600/ft)</label><input type="number" id="d4_cost" step="any"><span id="fb_d4_cost"></span></div>
+  <div class="fieldrow"><label>Annual fuel-cost savings ($/yr)</label><input type="number" id="d4_savings" step="any"><span id="fb_d4_savings"></span></div>
+  <div class="fieldrow"><label>Payback period (years)</label><input type="number" id="d4_payback" step="any"><span id="fb_d4_payback"></span></div>
+  <button onclick="checkD4b()">Check Step 4</button>
+  <p class="side-note">Payback period = construction cost &divide; annual fuel-cost savings. Try
+  flexing the sweep-frequency slider below and watch which of these numbers move &mdash; and which
+  one never does.</p>
+  <div class="sliderow">
+    <label for="d4_freq_slider" style="min-width:220px;font-family:var(--sans);font-size:.9rem">Sweep frequency (sweeps/yr)</label>
+    <input type="range" id="d4_freq_slider" min="3" max="9" step="0.5" value="6" oninput="onFreqSlide()">
+    <span class="val" id="d4_freq_val">6.0</span>
+  </div>
+  <div id="d4_freq_readout" class="side-note"></div>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="card">
+    <p><strong>No scripted twist for this case.</strong> Unlike a case where a mid-discussion event
+    forces a recompute, the whole pedagogical payload here is a tension between two lenses that are
+    both fully knowable from Appendix C and D from the start: the deadhead-ratio margin (which favors
+    the connector) and the payback period (which does not come close). Ask your facilitator what
+    question they want to press on once you have both lenses computed &mdash; that discussion carries
+    the weight a twist would otherwise add.</p>
+  </div>
+</section>
+
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+<li>U.S. Department of Energy, Alternative Fuels Data Center &mdash; average fuel economy by major
+vehicle category (refuse-truck proxy), sourced from FHWA Highway Statistics 2024.</li>
+<li>U.S. Energy Information Administration &mdash; Gasoline and Diesel Fuel Update, U.S. average
+diesel price.</li>
+<li>OpenStreetMap contributors &mdash; Seaside, Florida street-network data, retrieved via the
+Overpass API. Data &copy; OpenStreetMap contributors, ODbL 1.0.</li>
+<li>City of Austin, Texas, Austin Resource Recovery &mdash; Street Sweeping program page.</li>
+<li>City of Fate, Texas &mdash; staff memorandum, &ldquo;Street Replacement Plan,&rdquo; 2024.</li>
+<li>State of Michigan Department of Treasury &mdash; Subdivision Development Costs, Underwriting
+Investment Program manual, Section UIP 16, 2003.</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The One-Pass Route &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+/* Given data, copied verbatim from cases/the-one-pass-route/case.json and
+   case.md Appendices A-D. JS port of sensitivity_model.py's
+   PARAMS / FLEX / evaluate() -- see
+   templates/INTERACTIVE_HTML_CONTRACT.md section 2. This case has no
+   twist, so there is no evaluate_twist() (see FACILITATOR.md, "Twist: N/A"). */
+const PARAMS = {
+  base_mileage_mi: 3.9597,
+  repeat_mileage_asis_mi: 0.9046,
+  connector_length_ft: 302.0,
+  repeat_mileage_connector_mi: 0.8236,
+  fuel_efficiency_mpg: 5.2,
+  diesel_price_usd_per_gal: 5.257,
+  sweep_frequency_per_year: 6.0,
+  construction_cost_per_ft_usd: 1600.0,
+  full_network_odd_vertex_count: 48,
+};
+// Probe 5 flexes THESE and only these -- see sensitivity_model.py's docstring
+// for why every other PARAMS entry is cited/given data, not a stated
+// assumption, and is therefore excluded.
+const FLEX = ["sweep_frequency_per_year"];
+
+function ratios(p){
+  const totalA = p.base_mileage_mi + p.repeat_mileage_asis_mi;
+  const ratioA = totalA / p.base_mileage_mi;
+  const connectorLenMi = p.connector_length_ft / 5280.0;
+  const newBaseMi = p.base_mileage_mi + connectorLenMi;
+  const totalB = newBaseMi + p.repeat_mileage_connector_mi;
+  const ratioB = totalB / newBaseMi;
+  return {ratioA, ratioB, totalA, totalB, newBaseMi};
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const r = ratios(p);
+  return {A: 0.0, B: r.ratioA - r.ratioB};
+}
+function annualFuelSavingsUsd(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const r = ratios(p);
+  const milesSavedPerSweep = r.totalA - r.totalB;
+  const annualMilesSaved = milesSavedPerSweep * p.sweep_frequency_per_year;
+  const gallonsSaved = annualMilesSaved / p.fuel_efficiency_mpg;
+  return gallonsSaved * p.diesel_price_usd_per_gal;
+}
+function paybackYears(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const cost = p.connector_length_ft * p.construction_cost_per_ft_usd;
+  const savings = annualFuelSavingsUsd(p);
+  return savings ? cost / savings : Infinity;
+}
+
+/* Practice Block raw data (Appendix C) -- for the Step 1 / Step 3 live
+   calculators. Never a pre-computed "answer": Step 1's degree count and
+   Step 3's minimum pairing are both computed from this raw table, live,
+   in the browser, the same way case-research's own pipeline computed the
+   full network's matching from its own raw distance data. */
+const PB_EDGES = [["P1", "P2", 0.0278], ["P1", "P4", 0.0272], ["P4", "P3", 0.0297], ["P3", "P21", 0.0189], ["P21", "P20", 0.0428], ["P22", "P1", 0.051], ["P19", "P23", 0.0199], ["P23", "P22", 0.0219], ["P2", "P17", 0.0256], ["P17", "P18", 0.0523], ["P18", "P15", 0.0515], ["P8", "P14", 0.0453], ["P14", "P15", 0.0421], ["P16", "P18", 0.0421], ["P23", "P16", 0.0335], ["P16", "P22", 0.0297], ["P21", "P6", 0.0723], ["P10", "P11", 0.0442], ["P11", "P12", 0.0282], ["P12", "P13", 0.0665], ["P13", "P9", 0.0285], ["P9", "P6", 0.0435], ["P12", "P13", 0.1453], ["P5", "P7", 0.0072], ["P7", "P8", 0.0226], ["P8", "P19", 0.0463], ["P11", "P5", 0.065], ["P19", "P20", 0.062], ["P20", "P9", 0.0376]];
+const PB_DIST = {"P1": {"P8": 0.139, "P9": 0.1562, "P10": 0.2779, "P11": 0.2337, "P12": 0.2512, "P13": 0.1847, "P16": 0.0806, "P18": 0.1056, "P19": 0.0928, "P20": 0.1186, "P21": 0.0758, "P22": 0.051, "P23": 0.0729}, "P8": {"P1": 0.139, "P9": 0.1458, "P10": 0.1388, "P11": 0.0947, "P12": 0.1229, "P13": 0.1744, "P16": 0.0997, "P18": 0.1388, "P19": 0.0463, "P20": 0.1083, "P21": 0.151, "P22": 0.0881, "P23": 0.0662}, "P9": {"P1": 0.1562, "P8": 0.1458, "P10": 0.1674, "P11": 0.1233, "P12": 0.0951, "P13": 0.0285, "P16": 0.153, "P18": 0.1951, "P19": 0.0996, "P20": 0.0376, "P21": 0.0804, "P22": 0.1414, "P23": 0.1195}, "P10": {"P1": 0.2779, "P8": 0.1388, "P9": 0.1674, "P11": 0.0442, "P12": 0.0724, "P13": 0.1389, "P16": 0.2385, "P18": 0.2776, "P19": 0.1851, "P20": 0.205, "P21": 0.2478, "P22": 0.2269, "P23": 0.205}, "P11": {"P1": 0.2337, "P8": 0.0947, "P9": 0.1233, "P10": 0.0442, "P12": 0.0282, "P13": 0.0947, "P16": 0.1943, "P18": 0.2335, "P19": 0.1409, "P20": 0.1608, "P21": 0.2036, "P22": 0.1827, "P23": 0.1608}, "P12": {"P1": 0.2512, "P8": 0.1229, "P9": 0.0951, "P10": 0.0724, "P11": 0.0282, "P13": 0.0665, "P16": 0.2225, "P18": 0.2617, "P19": 0.1691, "P20": 0.1326, "P21": 0.1754, "P22": 0.2109, "P23": 0.189}, "P13": {"P1": 0.1847, "P8": 0.1744, "P9": 0.0285, "P10": 0.1389, "P11": 0.0947, "P12": 0.0665, "P16": 0.1815, "P18": 0.2236, "P19": 0.1281, "P20": 0.0661, "P21": 0.1089, "P22": 0.1699, "P23": 0.148}, "P16": {"P1": 0.0806, "P8": 0.0997, "P9": 0.153, "P10": 0.2385, "P11": 0.1943, "P12": 0.2225, "P13": 0.1815, "P18": 0.0421, "P19": 0.0534, "P20": 0.1154, "P21": 0.1564, "P22": 0.0297, "P23": 0.0335}, "P18": {"P1": 0.1056, "P8": 0.1388, "P9": 0.1951, "P10": 0.2776, "P11": 0.2335, "P12": 0.2617, "P13": 0.2236, "P16": 0.0421, "P19": 0.0955, "P20": 0.1575, "P21": 0.1814, "P22": 0.0718, "P23": 0.0756}, "P19": {"P1": 0.0928, "P8": 0.0463, "P9": 0.0996, "P10": 0.1851, "P11": 0.1409, "P12": 0.1691, "P13": 0.1281, "P16": 0.0534, "P18": 0.0955, "P20": 0.062, "P21": 0.1048, "P22": 0.0418, "P23": 0.0199}, "P20": {"P1": 0.1186, "P8": 0.1083, "P9": 0.0376, "P10": 0.205, "P11": 0.1608, "P12": 0.1326, "P13": 0.0661, "P16": 0.1154, "P18": 0.1575, "P19": 0.062, "P21": 0.0428, "P22": 0.1038, "P23": 0.0819}, "P21": {"P1": 0.0758, "P8": 0.151, "P9": 0.0804, "P10": 0.2478, "P11": 0.2036, "P12": 0.1754, "P13": 0.1089, "P16": 0.1564, "P18": 0.1814, "P19": 0.1048, "P20": 0.0428, "P22": 0.1268, "P23": 0.1247}, "P22": {"P1": 0.051, "P8": 0.0881, "P9": 0.1414, "P10": 0.2269, "P11": 0.1827, "P12": 0.2109, "P13": 0.1699, "P16": 0.0297, "P18": 0.0718, "P19": 0.0418, "P20": 0.1038, "P21": 0.1268, "P23": 0.0219}, "P23": {"P1": 0.0729, "P8": 0.0662, "P9": 0.1195, "P10": 0.205, "P11": 0.1608, "P12": 0.189, "P13": 0.148, "P16": 0.0335, "P18": 0.0756, "P19": 0.0199, "P20": 0.0819, "P21": 0.1247, "P22": 0.0219}};
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+/* ---- Step 1: Practice Block degree/even-odd, checked against the Practice
+   Block edge list embedded in PB_EDGES below (computed live, not hardcoded). */
+function degreeOf(vertex){
+  let n = 0;
+  PB_EDGES.forEach(([a,b]) => { if(a === vertex || b === vertex) n++; });
+  return n;
+}
+function checkD1(){
+  ['P1','P8','P9','P16','P19'].forEach(v => {
+    const deg = parseInt(val('d1_'+v), 10);
+    const eo = document.getElementById('eo_'+v).value;
+    const trueDeg = degreeOf(v);
+    const trueEo = (trueDeg % 2 === 0) ? 'EVEN' : 'ODD';
+    fb('fb_d1_'+v, deg === trueDeg && eo === trueEo);
+  });
+}
+
+/* ---- Step 2: Euler determination for the full network. ---- */
+function checkD2(){
+  const odd = parseInt(val('d2_odd'), 10);
+  fb('fb_d2_odd', odd === PARAMS.full_network_odd_vertex_count);
+  const c = document.getElementById('d2_case').value;
+  let correct;
+  if(PARAMS.full_network_odd_vertex_count === 0) correct = 'circuit';
+  else if(PARAMS.full_network_odd_vertex_count === 2) correct = 'path';
+  else correct = 'neither';
+  fb('fb_d2_case', c === correct);
+}
+
+/* ---- Step 3: Practice Block minimum-weight pairing, computed live by
+   brute-force search over the raw distance table (same operation
+   sensitivity_model.py's research pipeline used networkx's blossom
+   algorithm for on the full network -- brute force is fine at n=14). ---- */
+const PB_ODD_VERTICES = ['P1','P8','P9','P10','P11','P12','P13','P16','P18','P19','P20','P21','P22','P23'];
+function pbDist(a,b){
+  const row = PB_DIST[a];
+  return row ? row[b] : undefined;
+}
+function minPerfectMatching(remaining){
+  if(remaining.length === 0) return {total: 0, pairs: []};
+  const a = remaining[0];
+  const rest = remaining.slice(1);
+  let best = null;
+  for(let i=0;i<rest.length;i++){
+    const b = rest[i];
+    const d = pbDist(a,b);
+    if(d === undefined) continue;
+    const subRest = rest.slice(0,i).concat(rest.slice(i+1));
+    const sub = minPerfectMatching(subRest);
+    const total = d + sub.total;
+    if(best === null || total < best.total){
+      best = {total: total, pairs: [[a,b]].concat(sub.pairs)};
+    }
+  }
+  return best;
+}
+function pbBaseMileage(){
+  return PB_EDGES.reduce((s,[a,b,len]) => s + len, 0);
+}
+function checkD3(){
+  const entered = [];
+  for(let i=1;i<=7;i++){
+    const a = val('d3_p'+i+'a').toString().trim().toUpperCase();
+    const b = val('d3_p'+i+'b').toString().trim().toUpperCase();
+    if(a) entered.push(a);
+    if(b) entered.push(b);
+  }
+  const sortedEntered = entered.slice().sort();
+  const sortedExpected = PB_ODD_VERTICES.slice().sort();
+  const validSet = sortedEntered.length === 14 &&
+    sortedEntered.every((v,i) => v === sortedExpected[i]);
+
+  const total = parseFloat(val('d3_total'));
+  const ratio = parseFloat(val('d3_ratio'));
+  const base = pbBaseMileage();
+  const trueRatio = (base + total) / base;
+
+  const optimal = minPerfectMatching(PB_ODD_VERTICES);
+  const note = document.getElementById('d3_optimal_note');
+  if(validSet){
+    let enteredTotal = 0, ok = true;
+    for(let i=1;i<=7;i++){
+      const a = val('d3_p'+i+'a').toString().trim().toUpperCase();
+      const b = val('d3_p'+i+'b').toString().trim().toUpperCase();
+      const d = pbDist(a,b);
+      if(d === undefined){ ok = false; continue; }
+      enteredTotal += d;
+    }
+    const isOptimal = ok && near(enteredTotal, optimal.total, 0.0005);
+    note.textContent = isOptimal
+      ? 'Your 7 pairs form a valid, minimum-weight pairing.'
+      : (ok ? ('Your 7 pairs are valid but do not sum to the minimum possible total ('
+              + round(enteredTotal,4) + ' mi entered). Try a different pairing.')
+            : 'One or more of your pairs is not a currently-tracked vertex pair -- check your labels.');
+  } else {
+    note.textContent = 'Enter all 7 pairs, using each of the 14 odd Practice Block vertices exactly once.';
+  }
+  fb('fb_d3_total', validSet && near(total, optimal.total, 0.0005));
+  fb('fb_d3_ratio', near(ratio, trueRatio, 0.0005));
+}
+
+/* ---- Step 4: connector recompute + cost/savings, via the JS port of
+   sensitivity_model.py's evaluate()/annualFuelSavingsUsd()/paybackYears(). ---- */
+function checkD4a(){
+  const deg16 = parseInt(val('d4_deg16'), 10);
+  const deg54 = parseInt(val('d4_deg54'), 10);
+  const eo16 = document.getElementById('d4_eo16').value;
+  const eo54 = document.getElementById('d4_eo54').value;
+  const ok = deg16 === 4 && deg54 === 4 && eo16 === 'EVEN' && eo54 === 'EVEN';
+  fb('fb_d4_deg', ok);
+}
+function checkD4b(){
+  const p = Object.assign({}, PARAMS);
+  const r = ratios(p);
+  const removed = p.repeat_mileage_asis_mi - p.repeat_mileage_connector_mi;
+  const cost = p.connector_length_ft * p.construction_cost_per_ft_usd;
+  const savings = annualFuelSavingsUsd(p);
+  const payback = paybackYears(p);
+
+  fb('fb_d4_removed', near(parseFloat(val('d4_removed')), removed, 0.0005));
+  fb('fb_d4_cost', near(parseFloat(val('d4_cost')), cost, 1));
+  fb('fb_d4_savings', near(parseFloat(val('d4_savings')), savings, 0.01));
+  fb('fb_d4_payback', near(parseFloat(val('d4_payback')), payback, payback*0.02));
+}
+function onFreqSlide(){
+  const freq = parseFloat(document.getElementById('d4_freq_slider').value);
+  document.getElementById('d4_freq_val').textContent = freq.toFixed(1);
+  const p = Object.assign({}, PARAMS, {sweep_frequency_per_year: freq});
+  const savings = annualFuelSavingsUsd(p);
+  const payback = paybackYears(p);
+  const r = ratios(p);
+  document.getElementById('d4_freq_readout').innerHTML =
+    'At ' + freq.toFixed(1) + ' sweeps/yr: annual fuel savings &asymp; $' + round(savings,4) +
+    ', payback &asymp; ' + Math.round(payback).toLocaleString() + ' years. ' +
+    'Deadhead-ratio margin: unchanged &mdash; sweep frequency never enters that computation.';
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "the-one-pass-route"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [["D1", "Vertex-degree table for the Practice Block (23 vertices, EVEN/ODD)"], ["D2", "Written Euler-circuit determination for the full network"], ["D3", "Minimum repeat-mileage route for the Practice Block + deadhead ratio comparison"], ["D4", "Persimmon Connector cost-vs-savings comparison and payback period"]];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Vertex": {def: "A point in a graph where edges meet -- here, a street intersection or dead end.",
+    url: "https://www.mathsisfun.com/definitions/vertex-graph-.html"},
+  "Path": {def: "A route through a graph from one vertex to another, following a sequence of edges.",
+    url: "https://www.cuemath.com/geometry/path-in-graph-theory/"},
+  "Cycle": {def: "A path that starts and ends at the same vertex, without repeating any edge.",
+    url: "https://www.cuemath.com/geometry/cycle-graph/"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Degree": {def: "The number of edges touching a vertex -- how many streets meet at that corner.",
+    url: "https://www.mathsisfun.com/definitions/degree-of-a-vertex-graph-.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Distance": {def: "How far apart two points or places are.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Unit": {def: "A defined quantity -- a mile, a gallon, a dollar -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"},
+};
+const HOWTO = [
+  ["how to determine whether a graph has an Euler path or circuit", "How to determine whether a graph has an Euler path or circuit"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+// This case has no twist (see FACILITATOR.md, "Twist: N/A") -- no onTwistToggle() needed.
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

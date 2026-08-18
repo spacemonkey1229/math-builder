@@ -125,8 +125,6 @@ The "H2 2019 (projected)" column is what each employee is still owed for the sec
 
 **Assumption 2.** The $20,000 shortfall target and Option B's percent-cut base are both computed over the five named employees' H2-2019 projected pay ($111,500 total). Francesca's own H2-2019 projected pay ($11,500) is excluded from both, since the Dilemma is specifically about "employee" payroll and Francesca has already gone without pay this year (see Background).
 
-**Assumption 3 — Reserved for in-class disclosure.** Your facilitator may introduce one additional modeling assumption during the case discussion, tied to a specific branch of the Dilemma. If that happens, use the figure exactly as given at that time — do not substitute your own estimate, and do not treat its absence here as meaning no such assumption exists. It does not change any figure in Appendix B or Appendix C.
-
 ---
 
 ## Appendix E — "How To…" Math Questions To Research

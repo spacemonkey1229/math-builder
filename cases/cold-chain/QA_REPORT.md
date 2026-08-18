@@ -355,3 +355,64 @@ and is flagged back to the user rather than silently corrected either direction.
 on a different, uncited page and S13's `url` field needs correcting, or they were paraphrased from
 a part of the E004 page the fetch tool's summarization missed. A human should open the page
 directly and check before this is called resolved either way.
+
+## case-readiness run — 2026-08-12 (Tier 1 re-check, regression found)
+
+**State:** TIER1_PASS → **BLOCKED**   **Verdict:** BLOCKED (this is a real state change, not a
+re-run of an old result — see below)
+
+### Tier 1 — structural (19 checks)
+`python3 skills/case-readiness/scripts/tier1_structural.py --case cold-chain`
+checks run: 19 · PASS 14 · GAP 4 · FAIL 1
+
+| id | result | note |
+|---|---|---|
+| T1-09 | GAP | margin 17.1% is inside the cap but wide; the discussion will be one-sided (pre-existing, not new) |
+| **T1-10** | **BLOCKER** | `new_coverage[]` claims `advanced-operations-how-to-evaluate-an-absolute-value-expression` as new, but `readmodel/standards_spine.json` now shows `n=2`, `covered_by=["Cold Chain", "Survey Corner"]` |
+| T1-14 | GAP | CONTINUITY — 1 number in FACILITATOR.md (`971.0`) appears in neither case.md nor case.json (pre-existing) |
+| T1-15 | GAP | CONTINUITY — 2 numbers in `published/Guide Notes - Cold Chain.docx` (`60.0`, `971.0`) appear in neither case.md nor case.json (pre-existing) |
+| T1-18 | GAP | CONTINUITY — 112 numbers in the interactive HTML's prose/markup appear in neither case.md nor case.json (pre-existing; these read as CSS/SVG/layout figures, not leaked answers) |
+| all others | PASS | unchanged from prior runs |
+
+**This is the exact same failure mode already documented above under `new_coverage_correction_2026_08_05`, now recurring for a different skill.** Survey Corner was published today (2026-08-12) and its `new_coverage[]`/`standards[]` genuinely includes the same absolute-value skill Cold Chain claims as its own new coverage — case-publish promotes a case's full `standards[]`, not just `new_coverage[]`, so the spine now legitimately shows `n=2`. Cold Chain's claim was valid when Cold Chain was authored; it is no longer valid now that a second case covers the same skill. This is not a false positive — it is the gate doing its job on a second, unrelated case's side effect.
+
+**Per case-readiness's own rule, this is not fixed here.** The fix (drop
+`advanced-operations-how-to-evaluate-an-absolute-value-expression` from Cold Chain's `new_coverage[]`,
+leaving it in `standards[]` since D-whichever challenge genuinely still uses the skill) is
+mechanical and follows the exact precedent already set for `geometry-prism` in this same file's
+2026-08-05 entry — but QA does not edit case content. Handing back to `case-write`.
+
+### Tier 2 — not re-run
+Tier 2 requires `TIER1_PASS`. Cold Chain no longer holds it, so Tier 2 was not re-attempted this
+run. The prior Tier 2 record (P1-P4 PASS, P5 disclosed-not-eliminated FAIL, P6 partial per the
+entries above) stands as historical but the case is not currently `TIER2_PASS`.
+
+### Tier 3 — human dry-run
+NOT RUN (unchanged).
+
+**Next step: `case-write` removes the one stale skill from `new_coverage[]`, then re-run
+`tier1_structural.py --case cold-chain` to confirm `TIER1_PASS`, then Tier 2 can be re-verified
+(P6 in particular is still not clean — 7 of 11 URLs remain unconfirmed from the prior run).**
+
+## fix — 2026-08-12 (same day, following user request to resolve the blocker)
+
+Dropped `advanced-operations-how-to-evaluate-an-absolute-value-expression` from `new_coverage[]`
+in `case.json` (left in `standards[]` — D-whichever challenge genuinely still uses the skill, it
+just isn't *new* coverage anymore now that Survey Corner also covers it). `n_new_coverage` updated
+2 → 1. Synced the same change into `readmodel/cases_index.json`'s cold-chain entry. This is the
+exact mechanical fix named above and follows the identical precedent already set for
+`geometry-prism` in this file's 2026-08-05 entry. No `case.md`/`FACILITATOR.md`/interactive-HTML
+changes needed — `new_coverage[]` is bookkeeping, not student-facing content.
+
+Re-ran `tier1_structural.py --case cold-chain`: **TIER1_PASS restored** (0 blockers, 4 gaps — T1-09
+margin-width, T1-14/T1-15/T1-18 pre-existing continuity gaps, all unchanged from before the
+regression and none newly introduced by this fix).
+
+**Tier 2 was NOT re-run.** The historical Tier 2 record above (P1-P4 PASS, P5 disclosed-not-
+eliminated FAIL per MCS-26, P6 partial — 7 of 11 cited URLs still unconfirmed) stands as the case's
+last real Tier 2 attempt and has not been invalidated by today's fix, since nothing about the fix
+touched sourcing, the twist, or the balance test — it only removed a stale bookkeeping claim. The
+case is **not** `TIER2_PASS`: P6 still needs the 7 unconfirmed URLs resolved (mostly 403s from
+site-side bot protection, one platform-migration redirect) before that can be claimed, and P5 still
+needs the disclosed instability addressed or accepted as final per MCS-26 — both are follow-up work
+beyond today's fix, not something a `new_coverage[]` correction resolves.

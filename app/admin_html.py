@@ -214,6 +214,7 @@ function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 function val(id) { return document.getElementById(id).value; }
+function starStr(n) { n = n || 0; return "★".repeat(n) + "☆".repeat(5 - n); }
 
 // Definitions sourced from RUBRIC.md's "The seven criteria" + "Scoring" sections and
 // skills/submission-score/SKILL.md, kept short enough for a hover tooltip. If the rubric's
@@ -627,10 +628,13 @@ function caseInfoHTML(c) {
   const band = c.band && c.band.length ? c.band.join("/") : "band unrecorded";
   const domains = c.domains_touched && c.domains_touched.length ? c.domains_touched.join(", ") : "not recorded";
   const std = c.standards_count != null ? c.standards_count + " standards" : "standards count unrecorded";
+  const complexity = c.complexity != null ? starStr(c.complexity) : "not yet rated";
+  const rating = c.rating_count > 0 ? c.avg_rating + "★ from " + c.rating_count + " student" + (c.rating_count === 1 ? "" : "s") : "not yet rated by students";
   return '<div class="sub-panel" id="a-case-info" style="margin-top:8px">' +
     '<div class="mm">' + esc(c.title) + " &middot; " + esc(c.tier || "tier unrecorded") + " &middot; " + esc(band) +
     (c.status === "legacy" ? ' <span class="pill warn">LEGACY — no case.json/interactive page</span>' : "") + "</div>" +
     '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">Touches: ' + esc(domains) + " &middot; " + esc(std) + "</div>" +
+    '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">Complexity: ' + esc(complexity) + " &middot; Student rating: " + esc(rating) + "</div>" +
     "</div>";
 }
 // PLAN.md Phase 2d. Cards built from admin_core.suggest_cases()'s own rationale fields

@@ -180,3 +180,160 @@ remains, honestly, and is not converted to a PASS.
 in `QA_REPORT.md` and in `case.json.balance.stability` (P5 disclosure) rather than in `qa.verdict`.
 `status` remains `"draft"` — this case has not reached `TIER2_PASS` and is not eligible for
 `case-publish`.
+
+## Tier 2 — first FULL run (all six probes) — 2026-08-18
+
+This case's Tier 2 probes had never all been run and adjudicated in one pass before today. Tier 1
+re-confirmed clean first: `python3 skills/case-readiness/scripts/tier1_structural.py --case
+seton-hall` → **0 blockers, 2 GAP** (T1-10 legacy-conversion carve-out, T1-18 the same
+already-accepted MCS-37-numeral false-positive class) → **TIER1_PASS**, unchanged from 2026-08-13.
+
+### P1 · Cold solve — PASS
+
+Adjudicated a fresh, structured cold-solve submission (all 7 required answers) against `case.md`
+read cold this session, independent of the submission. Every factual and arithmetic claim was
+independently re-derived and checked against Appendix B's actual table and Appendix D's actual
+MA1 formula, not taken on faith:
+
+- **Q3 arithmetic** (Power Score = Team Rtg Diff + Opp Rtg Diff, all 25 Appendix B teams):
+  re-summed every row from `case.md` Appendix B — Kansas 30.23+12.66=42.89, Michigan St.
+  24.03+12.04=36.07, Baylor 25.49+10.20=35.69, Ohio St. 22.23+11.10=33.33, Michigan
+  20.12+12.79=32.91, West Virginia 21.26+11.28=32.54, Maryland 21.12+11.35=32.47, Duke
+  24.62+7.28=31.90, Creighton 20.93+10.72=31.65, **Seton Hall 19.54+11.48=31.02** (rank 10th of
+  25), Iowa 18.65+12.28=30.93, Villanova 19.98+10.88=30.86, Purdue 18.57+12.19=30.76, Wisconsin
+  18.95+11.74=30.69, Minnesota 17.83+12.38=30.21 — every sum and the resulting rank-10-of-25
+  ordering is correct and matches the case's real data exactly.
+- **Q4 counterargument** (MA1's own stated average-of-4-national-ranks formula, using the `(rank)`
+  figures printed in Appendix B): Seton Hall (29+25+7+19)/4=20.0 — re-checked against Kansas
+  (8+2+26+1)/4=9.25, Michigan St. 10.5, Ohio St. 16.75, Maryland 17.75, Baylor 17.75, Michigan
+  19.0, Purdue 19.75, Wisconsin 20.0 (exact tie with Seton Hall) — all confirmed correct against
+  Appendix B's printed rank parentheticals.
+- **Q6/Q7** (ignored Appendix C corrupted-CSV, least-supported number = S6's un-lettered
+  spreadsheet) match `case.md` Appendix C's and Appendix E's actual disclosed content verbatim in
+  substance.
+- **Q1/Q2/Q5** correctly identify the real primary metric (AP No. 15 vs. the No. 16 cutoff), build
+  a genuine ≥3-column linear-combination D2 formula, and correctly name "which linear
+  combination/weighting" as the flip lever — matching this same session's independent P5 finding
+  below.
+
+No fabricated or misremembered number found anywhere in the submission. **P1 verdict: PASS.**
+
+### P2 · Both-sides solve — PASS
+
+`tier2_probes.py --probe 2` → `READY` (mechanical pre-screen). Adjudicated cold against `case.md`'s
+own Balance section and Appendix B/A data:
+
+- **Best sentence for A:** "Two real, independent rankings that existed the day the season
+  stopped — AP No. 15 and the NCAA's own NET at No. 12 — both place Seton Hall inside the top 16,
+  and the case's own MA1 composite has them 9th of 25." Real numbers: NET=12, MA1 composite rank
+  9th/25, Opp Rtg Diff 11.48 (12th nationally).
+- **Best sentence for B:** "Strip out opponent adjustment and Seton Hall's raw Off Rtg (29th) and
+  Def Rtg (25th) ranks are mediocre, landing them in a virtual tie for 14th-15th of 25 — right on
+  the line — with a résumé frozen before it could add a signature March win." Real numbers: Off
+  Rtg rank 29, Def Rtg rank 25, win-pct-only rank 50th of 270 (FACILITATOR.md's Socratic Q4).
+- **Which collapses first:** neither collapses outright — that is the point of a 6.25%-margin
+  case. A's weakest thread (AP is a popularity poll, not the committee's own formula) has a
+  real comeback (NET, the committee's actual tool, independently corroborates at a wider margin).
+  B's weakest thread (a first-pass raw-stats formula is exactly the case's own named trap) does not
+  invalidate B's position itself, since B does not depend on that formula — B stands on the AP
+  margin's own thinness and the incomplete-résumé argument.
+
+Both sides are defensible with real, distinct numbers from the case, not padding. **P2 verdict:
+PASS.**
+
+### P3 · Trap check — PASS (re-confirmed)
+
+`tier2_probes.py --probe 3` → `READY`. `FACILITATOR.md`'s `## The trap` section (fixed 2026-08-13)
+still names a concrete wrong-path BEHAVIOR, not a vague difficulty note: a Hero builds Power Score
+from only Team Off/Def Rating (the two "Seton Hall's own" columns), lands Seton Hall in a virtual
+tie for 14th-15th, and votes nay confidently — never touching the Opp Off/Def columns that carry
+the real strength-of-schedule signal. Re-read `case.md` cold this session before `FACILITATOR.md`:
+this is genuinely the most plausible mistake a hurried student produces (the two columns visually
+"belong" to Seton Hall; the other two require reading Appendix B's Key to understand why they
+matter). The guide names the identical path. **P3 verdict: PASS.**
+
+### P4 · Twist integrity — PASS
+
+`tier2_probes.py --probe 4` → `READY`. Re-derived the twist's effect under every reading of MA1-MA3
+this session, independent of `FACILITATOR.md`'s own "Twist soundness check" section (which reaches
+the same conclusion):
+
+1. **Does it invalidate a real position?** Yes, in both directions at once — Heroes who built an
+   opponent-adjusted Power Score and assumed Seton Hall was comfortably in (6th-9th of 25) learn
+   the real AP margin is a single spot, not comfortable; Heroes who built a raw-stats formula and
+   assumed Seton Hall was out learn the real committee's own NET tool has them solidly in at No.
+   12.
+2. **Does it survive every reading of MA1-MA3?** Sequentially and simultaneously, yes: the twist
+   (AP No. 15 / NET No. 12) is an external, independently sourced historical fact (S4, S5), not
+   derived from MA1's bubble-field curation, MA2's seed-line definition, or MA3's field size — no
+   combination of those three assumptions can suppress or invert it. No undisclosed convention is
+   required for the twist to land.
+
+**P4 verdict: PASS.**
+
+### P5 · Assumption sensitivity — PASS (disclosed), re-confirmed with `--flex 0.5`
+
+```
+python3 skills/case-readiness/scripts/tier2_probes.py --case seton-hall --probe 5 --flex 0.5
+```
+→ `machine_status: PASS (disclosed)`. Base: `A=1, B=0` (winner A, "yea"). Sweeping the declared
+`FLEX=["ap_rank"]` dial: `-50%` (ap_rank≈7.5) stays A (margin balloons, flagged only by the
+documented zero-floor `margin_pct` caveat, not a real balance break); `+50%` (ap_rank≈22.5) flips
+to B. `case.json.sensitivity_disclosure[]` already carries a matching entry —
+`{"param": "ap_rank", "category": "F", "justification": "..."}` (20+ chars, real justification,
+authored 2026-08-13) — so every param this run found unstable (`ap_rank`) has a disclosure entry,
+and the script's disclosure-aware pass state applies: **`PASS (disclosed)`**, not the old
+undisclosed FAIL this case carried before the 2026-08-13 doctrine addition. Re-confirmed this
+session that the disclosure is still accurate: `ap_rank` is genuinely Category F (a real,
+committee-outcome-shaped forecast question, not a knowable-in-principle proprietary figure), and
+the justification still correctly names the case's own reasoning. **P5 verdict: PASS_DISCLOSED.**
+
+### P6 · Data decay — FAIL (real, WebFetch-verified this session; first genuine check ever run)
+
+`tier2_probes.py --probe 6` → `DELEGATED` (worklist of all 7 `sources[]` rows). This project's
+QA sandbox has no outbound network, so every url was fetched for real via `WebFetch` plus the
+`Claude_Browser` tool (to rule out JS-rendering false negatives), not simulated:
+
+| id | url | result |
+|---|---|---|
+| S1 | ncaa.com bracketiq explainer (68-team, 4 regions of 16) | **DEAD.** HTTP 404, "Page not found \| NCAA.com" (confirmed via `curl` headers and browser navigation). A differently-titled live NCAA.com article on the same topic (`.../how-field-68-teams-picked-march-madness`) also now **redirects to a 76-team article** ("How the field of 76 DI men's teams is picked for March Madness") — the NCAA tournament has since expanded from 68 to 76 teams, so no live NCAA.com page currently describes the 68-team/4-region structure this case (correctly, for the real 2019-20 season) relies on. The underlying historical fact is still true for 2019-20 and is independently corroborated (Wikipedia's 2019/2020 tournament articles both state 68 teams), but the cited URL itself is dead and its live successor no longer supports the claim as written. |
+| S2 | Wikipedia — 2020 tournament cancellation | Reachable, content confirmed: "the tournament ... were canceled due to the COVID-19 pandemic," "the first time the tournament had been canceled since its creation in 1939," cancellation dated March 12, 2020. Matches the cited claim/value exactly. **OK.** |
+| S3 | Wikipedia — 2019-20 Seton Hall season | Reachable, content confirmed: "finished the season 21-9, 13-5 in Big East play ... three-way tie for first place," AP No. 15 in the infobox. Matches. **OK.** |
+| S4 | shupirates.com — AP No. 15 announcement | Reachable (HTTP 200, verified via `curl`; the AI-summarized `WebFetch` pass under-read the page, so raw HTML was grepped directly), page text contains both "No. 15" and "2019-20." Matches. **OK.** |
+| S5 | warrennolan.com — Seton Hall NET rank by week | **EFFECTIVELY DEAD.** HTTP resolves (200/301-chain to `https://warrennolan.com`), but the page body is genuinely empty — confirmed three ways: `curl` returns 0 bytes, `WebFetch` reports no extractable content, and a real rendered `Claude_Browser` screenshot shows a blank white page. The URL no longer serves the team-rank content it once did; the No. 12 NET figure is not retrievable from this URL today. This is the "resolves but no longer carries the figure" case the probe's own prompt calls out as worse than a plain 404. |
+| S6 | local legacy file path (not a URL) | Not web-fetchable by design — `source/Y1/Session 6/Seton Hall/NCAA Basketball Team Statistics.xlsx` is a local legacy-source path, not `http(s)`, consistent with `case.json`'s own S6 note ("no publisher letterhead... graded MEDIUM"). **N/A, not a decay finding** — nothing to fetch. |
+| S7 | Wikipedia — 2019 tournament qualifying teams (353-team count) | **DEAD.** Navigated directly (both `%27`- and raw-apostrophe-encoded forms); the article renders "Wikipedia does not have an article with this exact name... check alternative capitalizations." A `WebSearch` pass returned a plausible-looking summary claiming this page exists with real content — re-verified directly in the browser and that summary does not match what the page actually shows; the article genuinely does not exist at this title. |
+
+**Per the probe's own written criteria** ("a url that 404s while its figure is load-bearing is a
+BLOCKER; a url that resolves but no longer carries the figure is worse"): S1 backs MA2 (top-16
+structure), S7 backs MA3 (353-team field size), and S5 backs the real NET figure central to
+FACILITATOR.md's Twist — all three are load-bearing, and all three are genuinely broken. This is
+not a formatting nitpick or a false positive; it is exactly the class of defect P6 exists to catch,
+found for real, for the first time, this session. **P6 verdict: FAIL.**
+
+### Tier 2 summary — 2026-08-18
+
+| Probe | Verdict |
+|---|---|
+| P1 cold solve | PASS |
+| P2 both-sides | PASS |
+| P3 trap | PASS |
+| P4 twist | PASS |
+| P5 sensitivity | PASS_DISCLOSED |
+| P6 data decay | **FAIL** |
+
+Five of six probes are clean. **P6 is a genuine, newly-found FAIL** — three of this case's seven
+sources are dead or empty at their cited URLs, three sessions after the case first reached
+TIER1_PASS and was never actually checked end-to-end before now. Per this skill's own gating rule
+(all six probes must be PASS/PASS_DISCLOSED for `TIER2_PASS`), **this case does not reach
+`TIER2_PASS` today.** `case.json.qa.state` stays `TIER1_PASS`; `qa.verdict` is not changed to
+`"PASS"` (that string is reserved for a real `TIER2_PASS`, per `case-write` SKILL.md's rule that
+only a passing gate run may set it). `case-readiness` does not fix sources — per this skill's own
+scope ("it does not fix, does not source, does not publish") — the concrete next step is a
+`case-source`/`case-write` pass to either find live replacement URLs for S1/S5/S7 (verifying they
+still carry the same cited values, not just that they resolve) or, if no live replacement exists,
+downgrade/re-source those three claims, followed by a re-run of `tier2_probes.py --probe 6`.
+
+**Iterations used this session:** 1 full pass (all six probes run once, P1-P5 adjudicated cold
+against the case, P6 checked live over the network via `WebFetch` + `Claude_Browser`; no fixes
+attempted, per this skill's own no-fix scope).

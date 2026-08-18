@@ -79,17 +79,37 @@ offshore is closer than predicted."
 authorize it?"
 
 **Facilitator-only: what the numbers actually do (case.json.derived).** Under MA3's stated
-28 mb pressure drop, the Dawn Transit's margin over the Pilots' Association's policy shrinks from
+0.91 ft wind-driven setdown, the Dawn Transit's margin over the Pilots' Association's policy shrinks from
 1.544 ft to 0.634 ft — a real ~59% erosion (19.33% of the 3.28 ft policy floor, which is this
 case's graded `margin_pct`), but the clearance stays positive. **The twist does not flip the
-verdict; it erodes confidence in it.** This was computed honestly from a real range, not picked to
-force a reversal (see `RESEARCH_LOG.md`). Do not correct a Hero who treats this as "still fine,
+verdict; it erodes confidence in it.** This was computed honestly from a real documented range for
+this phenomenon, not picked to force a reversal (see `RESEARCH_LOG.md`). Do not correct a Hero who treats this as "still fine,
 barely" — that is a defensible read of the real numbers. The room's actual argument should be
 whether a margin that's lost more than half its size, on a threshold your own safety policy sets
 for exactly this reason, still deserves the same confidence it had five minutes ago. If a Hero asks
-"how much worse would it have to get to actually fail," the honest answer is "about 47.5 mb of
-local pressure drop, which is itself within real tropical-storm range" — a good follow-on question
-to have ready, not a script to hand over unprompted.
+"how much worse would it have to get to actually fail," the honest answer is "about 1.54 ft of
+setdown, well within the real range documented events reach (Tampa Bay saw ~4 ft during Hurricane
+Ian)" — a good follow-on question to have ready, not a script to hand over unprompted.
+
+**CORRECTED 2026-08-12 — mechanism, not magnitude.** Earlier drafts of this guide (and of
+`case.md` Appendix D) attributed this reduction to the *inverse-barometer effect* — but that
+effect is a **rise**, not a reduction, so it could not honestly justify MA3's sign. The real
+mechanism is *wind-driven setdown* — a distinct, opposite-signed, well-documented effect where a
+storm's offshore wind physically pushes water away from the coast (see Appendix D, S10). If a
+Hero who has researched storm surge pushes back — "wait, doesn't a pressure drop make the water
+*rise*?" — that is a sharp, correct catch, not a gap to talk around: agree with them, and use it
+to introduce the distinction directly (both effects are real; this twist models the one that cuts
+against Option A). The 0.91 ft figure itself has not changed.
+
+**Also new — MA4, the governing-depth convention.** Appendix B gives two real, both-sourced
+depths for this harbor (54 ft entrance channel, 52 ft inner harbor); this case's clearance math
+uses 54 ft, now stated explicitly as MA4 rather than left for a Hero to assume. If a Hero argues
+the shallower 52 ft figure should govern instead, they are not wrong to raise it — under that
+reading, Option A's *pre-twist* clearance is already **negative** (−0.456 ft), before the storm is
+even modeled. This is a legitimate, case-breaking challenge, not a gotcha to deflect: if a Hero
+finds it, treat it as exactly the kind of "is the model even asking the right question" move
+Anchor 2 primes the room for, and let the room sit with what it means that the case's whole premise
+depends on a convention, not a certainty.
 
 This does not hand anyone a clean answer. It should push some Dawn Transit votes toward doubt
 without making Slack Tide free of cost — the penalty is still real, and by the time the room
@@ -128,19 +148,38 @@ information a minute ago?" That distinction is the transferable skill, not the v
 
 ## The trap
 
-A Hero computes the *predicted* clearance, finds it positive, and stops — treating a model's
-central prediction as a guarantee. The case's real tension is that "positive under the predicted
-curve" and "safe under the association's minimum-clearance policy across the real range of
-conditions" are two different questions, and the second one is the one Amara is actually
-accountable for. Watch for a pitch that reports one clearance number and calls the case closed.
+There are two traps here, and the more dangerous one is the harder to spot.
+
+**Trap 1 — stopping at the predicted number.** Most Heroes will compute the *predicted* clearance,
+find it positive, and stop there — treating a model's central prediction as a guarantee and never
+checking it against anything else. Watch for a pitch that reports one clearance number and calls
+the case closed without ever touching D4's sensitivity check. This one is easy to catch: has D4
+been done at all?
+
+**Trap 2 — getting the twist's DIRECTION backwards, while looking rigorous (added 2026-08-12).**
+Appendix D deliberately names two real, opposite-signed storm effects: the inverse-barometer
+effect (a pressure drop makes water **rise** — the familiar "storm surge" fact) and wind-driven
+setdown (an offshore wind pushes water away, making it **fall** — the one this case's twist
+actually models). A Hero who reaches for the familiar, textbook rule instead of reading Appendix D
+carefully will apply the inverse-barometer relationship to the storm and conclude the twist makes
+the Dawn Transit *safer*, or has no effect — the opposite of the intended erosion. **This trap is
+more dangerous than Trap 1 because it produces a complete, confident-looking D4** — cited, worked,
+arithmetically clean — that arrives at a falsely reassuring answer. A Hero who fell into it will
+not look like they skipped anything. Watching only for "did they do D4" will not catch this — you
+have to check which direction they applied. (This is not hypothetical: earlier drafts of this very
+case made this exact mistake before an adversarial review caught it — see `case.json`'s MA3 note.)
+If a Hero gets this backwards, don't just correct the arithmetic — ask them to point to where in
+Appendix D they got the sign from, and let the room see the two effects are genuinely easy to
+conflate.
 
 ## Socratic questions
 
-1. Your model says the Dawn Transit clears the harbor floor by a real margin — what would the storm-surge adjustment have to be for that margin to reach zero?
+1. Your model says the Dawn Transit clears the harbor floor by a real margin — what would the wind-driven setdown have to be for that margin to reach zero?
 2. The Pilots' Association's minimum-clearance policy exists for a reason — whose job is it to decide when a "thin but positive" margin is not thin enough, the model or the pilot?
 3. If you were the shipping line's dispatcher instead of the pilot, would you weigh the penalty differently — and why is that not actually Amara's problem to solve?
 4. Your D1 table required sine, cosine, *and* tangent of the reference angle — which of the three did you actually use in your final clearance number, and why did the case ask for all three anyway?
-5. Suppose the real data shows the barometric adjustment on the actual night was smaller than the worst case you modeled in D4 — was Amara wrong to be cautious, or just unlucky in a good way?
+5. Suppose the real data shows the wind-driven setdown on the actual night was smaller than the worst case you modeled in D4 — was Amara wrong to be cautious, or just unlucky in a good way?
+6. Appendix B gives two different charted depths for this harbor. This case uses the deeper one (54 ft, MA4) as the governing depth — what happens to your answer if you use the shallower one (52 ft) instead, and is that a legitimate challenge to raise?
 
 ## Close
 

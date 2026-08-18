@@ -223,12 +223,18 @@ figures (see `legacy_conversion_note`), not authorial fudge, and the metric's cl
 doctor's own estimate is exactly why it was chosen over the naive total-cost gap (which is always a
 landslide for A and can never honestly clear the 20% cap at all -- see `case.json.balance.
 margin_basis`). A metric this genuinely close cannot also be flex-stable without becoming a less
-honest metric. Per this project's own doctrine (`DOCTRINE_LEDGER.md` MCS-26/MCS-41), a disclosed
-instability does not convert into a pass -- Tier 2 probe 5 is recorded as a real FAIL in
-`case.json.qa.tier2.P5`, the same permanent treatment Cold Chain's own flagship case carries for its
-own sensitivity finding. Full flex table: `cases/end-of-life/sensitivity_model.py` (FLEX = 
-`daily_rate`, `survival_low_days`, `twist_treatment_cost` -- the twist-cost dial is stable across
-its full range and does not flip anything).
+honest metric. Both unstable dials carry Category-F `case.json.sensitivity_disclosure[]` entries
+with real justifications (irreducible forecast uncertainty -- a projected future billing rate and a
+physician's own estimate range, neither is researchable to a firmer number by any amount of
+work). Per the 2026-08-13 disclosure-aware-pass-state amendment to `tier2_probes.py`, a genuinely
+unstable dial that is disclosed this way -- category, param, and a real justification on file --
+passes Tier 2 probe 5 as **PASS_DISCLOSED**, not FAIL. This supersedes the older `DOCTRINE_LEDGER.md`
+MCS-26/MCS-41 text (written before that amendment existed, when no disclosure-aware pass state
+existed at all), which is stale on this point and should not be read as still governing this case.
+Recorded in `case.json.qa.tier2.P5` as `PASS_DISCLOSED`. Full flex table:
+`cases/end-of-life/sensitivity_model.py` (FLEX = `daily_rate`, `survival_low_days`,
+`twist_treatment_cost` -- the twist-cost dial is stable across its full range and does not flip
+anything).
 
 **Twist soundness check (SPEC §6 / case-write §5).** The Twist above was checked against every
 stated Modeling Assumption (MA1–MA3) both sequentially (apply Appendix E's daily rate, then

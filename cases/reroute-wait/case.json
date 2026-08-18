@@ -1,0 +1,795 @@
+{
+ "id": "reroute-wait",
+ "title": "Reroute Or Wait",
+ "tier": "T4",
+ "band": [
+  "HS"
+ ],
+ "primary_metric": "total added rider-minutes per weekday, summed across every Line 20 rider",
+ "options": {
+  "A": "Run The Long Way Round - keep Line 20 whole, detour every bus around the closed bridge, and accept a wider headway on the same fleet",
+  "B": "Run The Clean Break - split Line 20 at the river, hold both halves to today's headway, and send every crossing rider through a transfer"
+ },
+ "margin_pct": 11.38,
+ "standards": [
+  "discrete-mathematics-graph-vertices-and-edges",
+  "discrete-mathematics-vertex",
+  "discrete-mathematics-edge",
+  "discrete-mathematics-path",
+  "discrete-mathematics-cycle",
+  "discrete-mathematics-weighted-graph",
+  "discrete-mathematics-how-to-find-the-shortest-path-between-two-vertices-in-a-weighted-graph",
+  "measurement-how-to-find-elapsed-time",
+  "measurement-how-to-convert-between-units-of-time"
+ ],
+ "new_coverage": [
+  "discrete-mathematics-graph-vertices-and-edges",
+  "discrete-mathematics-edge",
+  "discrete-mathematics-weighted-graph",
+  "discrete-mathematics-how-to-find-the-shortest-path-between-two-vertices-in-a-weighted-graph"
+ ],
+ "sources": [
+  {
+   "id": "S1",
+   "placeholder": "Appendix D — Line 20 and neighbouring-route ridership block",
+   "claim": "Route 20-Burnside/Stark weekday boarding rides, rides per revenue hour, rides per vehicle hour, cost per ride, passenger miles, passenger miles per revenue mile and average trip length; and boarding rides / passenger miles / average trip length / cost per ride for routes 12, 15, 19 and 77",
+   "value": "Route 20: 9,530 boarding rides; 35.2 rides/revenue hour; 28.5 rides/vehicle hour; $5.01 cost per ride; 32,726 passenger miles; 9.0 passenger miles per revenue mile; 3.4 mi average trip length",
+   "units": "rides, miles, USD",
+   "as_of": "Spring 2024 (report production date 06/27/2024)",
+   "org": "TriMet Service Performance and Analysis",
+   "title": "Route Ridership Report — Weekdays, Spring 2024",
+   "url": "https://trimet.org/about/pdf/route/2024spring/route_ridership_report_(sorted_by_route)_weekday.pdf",
+   "accessed": "2026-08-12",
+   "confidence": "HIGH",
+   "derived": false,
+   "note": "Re-verified 2026-08-12 by downloading the PDF and extracting the text layer; the Route 20 row reads '20-Burnside/Stark 9,530 35.2 28.5 $5.01 32,726 9.0 3.4' and routes 12/15/19/77 match Appendix D exactly. The four neighbouring routes are deliberately over-complete appendix data and carry no constraint."
+  },
+  {
+   "id": "S2",
+   "placeholder": "Appendix A served-by column; Appendix B Line 20 clock times; Line 20 headway",
+   "claim": "Line 20-Burnside/Stark weekday timepoints and printed clock times, to Portland and Gresham Central Transit Center",
+   "value": "Three consecutive midday trips departing Beaverton TC 12:35pm / 12:50pm / 1:05pm; 12 timepoints per trip; one-way BTC 12:35pm to GCT 2:35pm = 120 min; W5 1:18pm to E12 1:24pm = 6 min; headway 15 min",
+   "units": "clock time / minutes",
+   "as_of": "schedule as published and retrieved 2026-08-12",
+   "org": "TriMet",
+   "title": "20-Burnside/Stark Weekday To Portland and Gresham Central Transit Center",
+   "url": "https://trimet.org/schedules/w/t1020_1.htm",
+   "accessed": "2026-08-12",
+   "confidence": "HIGH",
+   "derived": false,
+   "note": "Re-verified 2026-08-12 against the raw page: all 12 timepoint headers and all three trip rows match Appendix B character for character. A live schedule — pinned by MA5's stated cutoff."
+  },
+  {
+   "id": "S3",
+   "placeholder": "Appendix B — MAX Blue Line RQ to PSN; MAX headway; BTC/STC served",
+   "claim": "MAX Blue Line weekday westbound printed clock times at Rose Quarter TC and Pioneer Square North; Beaverton TC and Sunset TC served",
+   "value": "Rose Quarter TC 11:50am/12:05pm/12:20pm/12:35pm/12:50pm to Pioneer Square North 11:59am/12:14pm/12:29pm/12:44pm/12:59pm — 9 minutes on every midday trip; midday headway 15 min",
+   "units": "clock time / minutes",
+   "as_of": "schedule as published and retrieved 2026-08-12",
+   "org": "TriMet",
+   "title": "MAX Blue Line Weekday Westbound to Portland City Center and Hillsboro",
+   "url": "https://trimet.org/schedules/w/t1100_1.htm",
+   "accessed": "2026-08-12",
+   "confidence": "HIGH",
+   "derived": false,
+   "note": "CORRECTED 2026-08-12. An earlier draft printed 11:57am->12:05pm and a running time of 8 minutes. That was a column mis-read: 12:05pm is the Rose Quarter value, not the Pioneer Square North value. Re-verified by parsing the raw HTML table by column index (RQ = col 5, PSN = col 6, stop IDs 8377 and 8383): every one of the 72 timed rows gives 9 or 10 minutes, and all midday rows give 9. Appendix B, sensitivity_model.py and the ledger were all corrected."
+  },
+  {
+   "id": "S4",
+   "placeholder": "Appendix B — MAX Red Line RQ to PSN; MAX headway; BTC/STC served",
+   "claim": "MAX Red Line weekday westbound printed clock times at Rose Quarter TC and Pioneer Square North; Beaverton TC and Sunset TC served",
+   "value": "Rose Quarter TC 12:28pm/12:43pm/12:58pm to Pioneer Square North 12:37pm/12:52pm/1:07pm — 9 minutes; midday headway 15 min",
+   "units": "clock time / minutes",
+   "as_of": "schedule as published and retrieved 2026-08-12",
+   "org": "TriMet",
+   "title": "MAX Red Line Weekday To Portland City Center and Hillsboro",
+   "url": "https://trimet.org/schedules/w/t1090_1.htm",
+   "accessed": "2026-08-12",
+   "confidence": "HIGH",
+   "derived": false,
+   "note": "Re-verified 2026-08-12 by raw-table column index (RQ = col 3, PSN = col 4). Appendix B's three Red Line rows are correct as printed. Red and Blue publish the SAME 9-minute running time over this pair — an earlier draft claimed the two lines disagreed; they do not."
+  },
+  {
+   "id": "S5",
+   "placeholder": "Appendix B — published MAX frequency statement",
+   "claim": "Published MAX service frequency statement",
+   "value": "\"MAX Light Rail runs every 15 minutes or less most of the day, every day.\"",
+   "units": "n/a",
+   "as_of": "2026-08-12",
+   "org": "TriMet",
+   "title": "MAX Blue Line Map and Schedule",
+   "url": "https://trimet.org/schedules/maxblueline.htm",
+   "accessed": "2026-08-12",
+   "confidence": "MEDIUM",
+   "derived": false,
+   "note": "Re-verified 2026-08-12; the sentence appears verbatim. Graded MEDIUM because \"or less\" is a floor, not a figure. The arithmetic uses the 15-minute headway read off the printed trip rows in S3/S4, never this sentence."
+  },
+  {
+   "id": "S6",
+   "placeholder": "Background — the closure itself",
+   "claim": "Recommended construction traffic option for the Burnside Bridge replacement, and closure duration",
+   "value": "\"fully close the bridge\" with traffic detoured to other bridges; \"Construction is scheduled to start in 2024 and last four to five years.\"",
+   "units": "years",
+   "as_of": "2026-08-12",
+   "org": "Multnomah County",
+   "title": "Earthquake Ready Burnside Bridge: Recommended Traffic Option During Construction",
+   "url": "https://multco.us/info/earthquake-ready-burnside-bridge-recommended-traffic-option-during-construction",
+   "accessed": "2026-08-12",
+   "confidence": "MEDIUM",
+   "derived": false,
+   "note": "Re-verified 2026-08-12; both quoted strings appear on the page. Graded MEDIUM because the page's printed start year has not been refreshed. The case uses only the closure LENGTH (top of the printed range), never a start date. Confirmed again on re-fetch: the page names NO specific detour bridge, so the case's \"next bridge north\" is a property of its own Option A, not a claim about the county's plan."
+  },
+  {
+   "id": "S7",
+   "placeholder": "Appendix D — MAX station counts near the crossing",
+   "claim": "Weekday ons, offs and totals at MAX stations near the crossing",
+   "value": "Pioneer Square North 2,028/823/2,851; Rose Quarter Tc 2,324/2,327/4,651; Old Town/Chinatown 766/857/1,623; Skidmore Fountain 531/537/1,068; Convention Center 1,255/1,077/2,332",
+   "units": "passengers per weekday",
+   "as_of": "Spring 2025",
+   "org": "TriMet",
+   "title": "MAX Light Rail Passenger Census — Spring 2025",
+   "url": "https://trimet.org/about/pdf/census/2025spring/max_station_passenger_census_report.pdf",
+   "accessed": "2026-08-12",
+   "confidence": "HIGH",
+   "derived": false,
+   "note": "Re-verified 2026-08-12 by downloading the PDF and extracting the text layer; all five station rows match Appendix D exactly. Over-complete on purpose: Skidmore Fountain and Old Town/Chinatown lie on neither option's path."
+  },
+  {
+   "id": "S8",
+   "placeholder": "Appendix A — walking connection W5 to PSN",
+   "claim": "Pedestrian design walking speed",
+   "value": "3.5",
+   "units": "feet per second",
+   "as_of": "MUTCD 2023",
+   "org": "Manual on Uniform Traffic Control Devices (republished by UpCodes)",
+   "title": "Section 4I.06 Pedestrian Intervals and Signal Phases",
+   "url": "https://up.codes/s/pedestrian-intervals-and-signal-phases",
+   "accessed": "2026-08-12",
+   "confidence": "MEDIUM",
+   "derived": false,
+   "note": "Re-verified 2026-08-12; paragraph 07 reads \"...to travel at a walking speed of 3.5 feet per second...\" and the page header confirms MUTCD 2023, Part 4, Chapter 4I, Section 4I.06. Graded MEDIUM because it is a faithful republication rather than the federal publication itself."
+  },
+  {
+   "id": "S9",
+   "placeholder": "Discussion-only precedent, no figure in Appendices A-E",
+   "claim": "Precedent for a multi-week loss of MAX across the Steel Bridge, and the shuttle frequency used",
+   "value": "upper deck \"closed Aug. 2-29\" (2020), four weeks; \"All MAX lines—Blue, Green, Orange, Red and Yellow—will be disrupted\"; \"shuttle buses will depart about every two to five minutes\"; the bridge \"the nucleus of the MAX system with more than 620 trains crossing it every day\"",
+   "units": "n/a",
+   "as_of": "2020-07-09",
+   "org": "TriMet press release, carried by Mass Transit",
+   "title": "TriMet announces four-week closure of Steel Bridge for major MAX improvements",
+   "url": "https://www.masstransitmag.com/rail/infrastructure/press-release/21145538/trimet-trimet-announces-four-week-closure-of-steel-bridge-for-major-max-improvements",
+   "accessed": "2026-08-12",
+   "confidence": "MEDIUM",
+   "derived": false,
+   "note": "Re-verified 2026-08-12; all quoted strings appear, article dated July 9, 2020. Quotation corrected: the page prints \"Aug. 2-29\", not \"August 2-29\". Trade press carrying an agency release verbatim. Used ONLY as background for a later discussion point; it carries no figure in Appendices A-E and no constraint."
+  },
+  {
+   "id": "S10",
+   "placeholder": "Appendix A — RQ served by Line 77",
+   "claim": "Line 77-Broadway/Halsey serves Rose Quarter Transit Center",
+   "value": "\"Rose Quarter Transit Center Stop ID 2592\" present as a timepoint",
+   "units": "n/a",
+   "as_of": "schedule as published and retrieved 2026-08-12",
+   "org": "TriMet",
+   "title": "77-Broadway/Halsey Weekday To Montgomery Park",
+   "url": "https://trimet.org/schedules/w/t1077_1.htm",
+   "accessed": "2026-08-12",
+   "confidence": "HIGH",
+   "derived": false,
+   "note": "Re-verified 2026-08-12; the timepoint appears in the published weekday schedule. Context only — Line 77 is not an edge of this case's graph (Appendix A states the scope rule)."
+  }
+ ],
+ "_ext": "keys below are pipeline extensions, additive to SPEC section 4",
+ "status": "published",
+ "studio": "Heroes Academy",
+ "year": "2026-27",
+ "protagonist": "Nadia Ferreiro, service planner at TriMet",
+ "concept_sheet": "cases/_concepts/CONCEPTS_precalc-calculus-discrete_2026-08-01.md (C12 - Reroute or Wait)",
+ "deliverables": [
+  {
+   "id": "D1",
+   "text": "A drawn weighted network graph of the corridor: every stop/station a labelled vertex, every segment an edge, every edge labelled with its running time in whole minutes computed as the elapsed time between the two printed clock times in Appendix B; vertex count and edge count stated.",
+   "skills": [
+    "discrete-mathematics-graph-vertices-and-edges",
+    "discrete-mathematics-vertex",
+    "discrete-mathematics-edge",
+    "discrete-mathematics-weighted-graph",
+    "measurement-how-to-find-elapsed-time"
+   ]
+  },
+  {
+   "id": "D2",
+   "text": "A cycle-and-cut inventory of that graph: the vertices of one cycle written out in order; every edge lying on no cycle listed with the two pieces the network breaks into if it is removed; and one sentence on why Option A exists for the closed edge and not for at least one other listed edge.",
+   "skills": [
+    "discrete-mathematics-cycle",
+    "discrete-mathematics-edge",
+    "discrete-mathematics-graph-vertices-and-edges"
+   ]
+  },
+  {
+   "id": "D3",
+   "text": "A shortest-path table for the five Appendix C trips: shortest path as a vertex sequence plus total weight in minutes, on today's network, the Option A network and the Option B network, with the comparison work that proves minimality.",
+   "skills": [
+    "discrete-mathematics-how-to-find-the-shortest-path-between-two-vertices-in-a-weighted-graph",
+    "discrete-mathematics-path",
+    "discrete-mathematics-weighted-graph"
+   ]
+  },
+  {
+   "id": "D4",
+   "text": "A rider-minutes ledger: total added rider-minutes per weekday under each option, waiting and in-vehicle minutes on separate lines, then converted to rider-hours per weekday and rider-hours over the whole closure, with a recommendation and a margin.",
+   "skills": [
+    "measurement-how-to-convert-between-units-of-time"
+   ]
+  }
+ ],
+ "appendices": [
+  {
+   "letter": "A",
+   "title": "The Corridor Network",
+   "referenced_from": [
+    "Background",
+    "D1"
+   ],
+   "kind": "table"
+  },
+  {
+   "letter": "B",
+   "title": "Published Weekday Running Times",
+   "referenced_from": [
+    "Background",
+    "D1"
+   ],
+   "kind": "table"
+  },
+  {
+   "letter": "C",
+   "title": "The Five Trips",
+   "referenced_from": [
+    "Background",
+    "D3"
+   ],
+   "kind": "table"
+  },
+  {
+   "letter": "D",
+   "title": "Published Ridership",
+   "referenced_from": [
+    "Background",
+    "D4"
+   ],
+   "kind": "table"
+  },
+  {
+   "letter": "E",
+   "title": "The Two Service Plans, And How To Count Rider-Minutes",
+   "referenced_from": [
+    "Background",
+    "D4"
+   ],
+   "kind": "narrative"
+  },
+  {
+   "letter": "F",
+   "title": "Sources",
+   "referenced_from": [
+    "Background",
+    "Appendix A"
+   ],
+   "kind": "table"
+  },
+  {
+   "letter": "G",
+   "title": "Modeling Assumptions",
+   "referenced_from": [
+    "Background",
+    "Appendix A",
+    "Appendix E"
+   ],
+   "kind": "table"
+  },
+  {
+   "letter": "H",
+   "title": "\"How To...\" Math Questions To Research",
+   "referenced_from": [
+    "Background",
+    "Challenge 1"
+   ],
+   "kind": "standards-bridge"
+  }
+ ],
+ "balance": {
+  "argument_a": "The line stays whole and nobody is asked to stand on a platform in January with a bag of groceries waiting for a second vehicle. The published counts say the number of people who would have to do that is small: Line 20's own average trip is 3.4 miles on a route the same report's figures derive to 26.861 miles, so only 12.658% -- 1206.3 of 9530 weekday boardings -- cross the river at all. Option B charges each of those riders 25.107 minutes. Option A charges them only the 2.5-minute detour, and charges everyone else 2.5 minutes of extra wait, the smallest per-person number anywhere in the case. Total: 26840.7 added rider-minutes per weekday against Option B's 30285.8.",
+  "argument_b": "2.5 minutes times EVERYBODY is not a small number, and that is the trick of Option A: it looks cheap per person because it is spread across 9530 riders who mostly never go near the bridge -- 23825.0 of its 26840.7 rider-minutes are pure waiting time charged to people whose trip the closure never touched. Option B charges nothing at all to the seven riders in eight who never cross, both halves keep today's 15-minute headway, and the cost lands on the people the closure actually affects. Option B's entire cost rests on one stated assumption rather than a measurement: shorten MA4's east-half extension from 8 minutes to 4 and Option B wins outright by 5.14%. And Option B is the plan that owns its own river crossing -- when the twist closes the detour's own bridge deck, Option A rises to 31665.7 and Option B, unchanged at 30285.8, wins by 4.36%.",
+  "margin_basis": "Total added rider-minutes per weekday, Option A vs Option B, computed in cases/reroute-wait/sensitivity_model.py from the published running times, headways and ridership in Appendix B/D and the stated plan parameters in Appendix E/G. Margin = (worse - better) / worse.",
+  "margin_pct": 11.38,
+  "winner": "A",
+  "instability": "NOT a stable margin, and the case discloses that fact -- without stating the resulting margin or winner -- in Appendix G MA4 and in case.md's Balance paragraph; the actual numbers are recorded here, in sensitivity_disclosure[] below, and in FACILITATOR.md. Of the three FLEX dials, MA4 (Option B's east-half extension, 8 min) flips the verdict at -50% (B wins by 5.14%) and pushes Option A past the 20% balance cap at +50% (23.55%). MA2 and MA3 do not flip it. The twist also flips it, by design."
+ },
+ "sensitivity_disclosure": [
+  {
+   "param": "rq_to_e12_bus_min",
+   "category": "X",
+   "justification": "Option B's east-half bus extension (E Burnside & SE 12th to Rose Quarter TC) does not operate today, so its true running time cannot be directly measured or cited -- it is a good-faith estimate built from the closest public analogue, Line 20's own published pace over the comparable ~1-mile segment from E Burnside & SE 12th to E Burnside & Cesar Chavez (8 minutes, source S2). This is a one-time proprietary/inaccessible exception, not a substitute for real sourcing, and it is the single dial that flips the verdict at -50% and breaches the SPEC section 2 20% cap at +50%."
+  }
+ ],
+ "needs_source": [
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint, from the published Line 20 and MAX weekday schedules}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet MAX lines serve this station, from the published weekday schedules}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet MAX lines serve this station}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: which TriMet services serve this timepoint}}",
+   "location": "Appendix A — The Corridor Network",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed departure time, Beaverton TC, midday weekday trip 1}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, Sunset TC, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, W Burnside & SW Osage, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, W Burnside & SW 18th, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, W Burnside & SW 5th, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, E Burnside & SE 12th, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, E Burnside & Cesar Chavez, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, E Burnside & SE 82nd, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, SE Stark & 122nd, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, SE Stark & 185th, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, MHCC, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, Gresham Central TC, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed times for the next Line 20 midday trip, all twelve timepoints}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed times for the third Line 20 midday trip, all twelve timepoints}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, Rose Quarter TC, MAX Blue Line midday westbound trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, Pioneer Square North, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, Rose Quarter TC, MAX Red Line midday westbound trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: printed time, Pioneer Square North, same trip}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday midday headway of TriMet Line 20, from the published schedule}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: published MAX service frequency statement}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: published MAX service frequency statement}}",
+   "location": "Appendix B — Published Weekday Running Times",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: TriMet Route 20 weekday boarding rides, most recent published route ridership report}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: TriMet Route 20 weekday passenger miles, same report}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: TriMet Route 20 rides per revenue hour, same report}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: TriMet Route 20 passenger miles per revenue mile, same report}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: TriMet Route 20 average trip length in miles, same report}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: TriMet Route 20 cost per ride, same report}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday boarding rides, Route 12}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: average trip length, Route 12}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday boarding rides, Route 19}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: average trip length, Route 19}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday boarding rides, Route 15}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: average trip length, Route 15}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday boarding rides, Route 77}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: average trip length, Route 77}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday ons, Pioneer Square North, published MAX station passenger census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday offs, same station, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday total, same station, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday ons, Rose Quarter TC, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday offs, same station, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday total, same station, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday ons, Old Town/Chinatown, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday offs, same station, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday total, same station, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday ons, Skidmore Fountain, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday offs, same station, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday total, same station, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday ons, Convention Center, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday offs, same station, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: weekday total, same station, same census}}",
+   "location": "Appendix D — Published Ridership",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: the full sources table — every claim, value, publisher, document title, URL, access date and confidence grade for every figure used above}}",
+   "location": "Appendix F — Sources",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: the modeling assumptions table — every figure that could not be sourced, with the value used, its basis, and its sensitivity}}",
+   "location": "Appendix G — Modeling Assumptions",
+   "status": "ASSUMPTION"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: the strongest quantitative argument for Option A, written once the ledger is computed}}",
+   "location": "Balance argument",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: the strongest quantitative argument for Option B, written once the ledger is computed}}",
+   "location": "Balance argument",
+   "status": "SOURCED"
+  },
+  {
+   "token": "{{NEEDS_SOURCE: the computed margin on total added rider-minutes per weekday}}",
+   "location": "Balance argument",
+   "status": "SOURCED"
+  }
+ ],
+ "modeling_assumptions": [
+  {
+   "id": "MA1",
+   "assumption": "Option A's headway",
+   "value_used": "20 minutes, up from the published 15 [S2]",
+   "basis": "Part of Option A's definition, not a measurement: detour every bus and hold the fleet fixed. A longer round trip on a fixed fleet buys a wider headway, and 20 is the next standard clock-face step above 15.",
+   "sensitivity": "EXCLUDED from the FLEX sweep as a plan parameter, not an uncertain quantity. Handed to the room directly at FACILITATOR.md Anchor 4 instead.",
+   "flexed": false
+  },
+  {
+   "id": "MA2",
+   "assumption": "Option A's extra in-vehicle time for a crossing rider",
+   "value_used": "2.5 minutes",
+   "basis": "Priced at the closed segment's own published pace [S2] rather than guessed: about six tenths of a mile added to a segment the timetable covers in 6 minutes over about a mile and a half.",
+   "sensitivity": "Swept +/-50%: A by 16.35% at 1.25 min, A by 6.40% at 3.75 min. Does not flip.",
+   "flexed": true
+  },
+  {
+   "id": "MA3",
+   "assumption": "Walking distance, Pioneer Square North to W Burnside & SW 5th",
+   "value_used": "600 feet",
+   "basis": "Three downtown Portland blocks. Converted to minutes at the cited pedestrian design speed [S8].",
+   "sensitivity": "Swept +/-50%: A by 6.03% at 300 ft, A by 16.15% at 900 ft. Does not flip.",
+   "flexed": true
+  },
+  {
+   "id": "MA4",
+   "assumption": "Running time of Option B's east-half extension, E Burnside & SE 12th to Rose Quarter TC",
+   "value_used": "8 minutes",
+   "basis": "About one mile of inner-eastside city street, priced at Line 20's own published pace [S2] rather than an outside estimate.",
+   "sensitivity": "THE DIAL THAT FLIPS THE CASE. Swept +/-50%: at 4 min Option B wins by 5.14%; at 12 min Option A leads by 23.55%, past the SPEC section 2 20% cap. Declared in balance.instability and in FACILITATOR.md.",
+   "flexed": true
+  },
+  {
+   "id": "MA5",
+   "assumption": "Case data cutoff, and closure length",
+   "value_used": "Ridership frozen at Spring 2024 [S1] and Spring 2025 station census [S7]; schedules frozen as retrieved 2026-08-12 [S2,S3,S4]; closure length five years = 1,300 weekdays at 260 weekdays/year",
+   "basis": "SPEC section 5 'as of' rule. TriMet's schedules and counts keep moving on three different cycles and the county page's printed start year is stale [S6]; every figure is pinned to the vintage named beside it and none is refreshed independently.",
+   "sensitivity": "Closure length scales both options identically and cannot change the winner; it changes only the size of the number reported.",
+   "flexed": false
+  },
+  {
+   "id": "MA6",
+   "assumption": "The crossing-share method",
+   "value_used": "share crossing an interior point = average trip length / route one-way length = 3.4 / 26.861 = 12.658%",
+   "basis": "Standard result for trips scattered uniformly along a line. Consumes only sourced figures.",
+   "sensitivity": "Stated rather than swept, because every number it consumes is sourced. Known direction of error: the closed edge sits nearer the middle of the route and in its densest stretch, so the true share is probably HIGHER, which pushes against Option A — the plan the arithmetic favours.",
+   "flexed": false
+  }
+ ],
+ "sensitivity_note": "SPEC section 6: no sensitive-subject flag required. The stake is access -- minutes of a rider's day -- not illness, death, money stress or family hardship. Guide note: keep the discussion on what is owed to the riders who cross, rather than treating 1206.3 people as an abstract quantity to minimise.",
+ "cohort_bands": [
+  {
+   "band": "Full (12-20)",
+   "note": "Socratic plan and anchor timings run as written in FACILITATOR.md (0:00-45:00). Anchor 1 vote is a real show-of-hands split; all three deep-conflict threads run; the graph is drawn on a shared board so the room argues over one drawing."
+  },
+  {
+   "band": "Compressed (6-11)",
+   "note": "Anchors 2 and 3 combine into one pass ('who actually pays, and in what units'). Run only one deep-conflict thread (flat cost vs targeted cost) at 20:00-30:00. Twist still drops at 15:00. Total runtime ~30 min. Draw the graph together rather than comparing separately-drawn graphs."
+  },
+  {
+   "band": "1:1 or pair (1-2)",
+   "note": "No vote to take at Anchor 1 - the learner states an initial position instead. The guide argues the other side directly rather than cold-calling. Skip the deep-conflict threads; go straight from twist-recommit to Close. Have the learner re-derive the crossing share aloud, since there is no room to catch an error in it."
+  }
+ ],
+ "overview_numerals_cleared": [],
+ "qa": {
+  "state": "TIER2_PASS",
+  "verdict": "PASS",
+  "run_on": "2026-08-17",
+  "blockers_open": 0,
+  "gaps_open": 0,
+  "tier1": {
+   "checks": 19,
+   "pass": 19,
+   "blockers": 0,
+   "gaps": 0,
+   "cleared_this_run": [
+    "re-confirmed 2026-08-17(c) via tier1_structural.py: 19/19 PASS, 0 BLOCKER, 0 GAP, sha256 unchanged since 2026-08-17(a)/(b)"
+   ]
+  },
+  "tier2": {
+   "P1": "PASS — fresh cold-solve (packet-only, no WebSearch) by an independent subagent. Chose Option A, named the primary metric verbatim (total added rider-minutes/weekday, decomposed into waiting+in-vehicle, converted to rider-hours and rider-hours over the 1,300-weekday closure). Reproduced route length (~26.86 mi vs model 26.861 mi), crossing share (~12.66% vs model 12.658%), A total (~26,841.6 vs model 26,840.7), B total (~30,467.7 vs model 30,285.8) — within rounding (walk time rounded to 3 min vs model's 2.857 min accounts for the ~180-min B gap). Correctly ran the MA4 ±50% sensitivity sweep unprompted and correctly identified the flip at -50%. PASS.",
+   "P2": "PASS — both options defensible with numbers from the packet alone; neither collapses. Best sentence for A and for B both quantitative, non-concessive. B is pressured first ('why accept ~3,445 more rider-minutes a day') and answers distributionally (concentration vs. spread, who controls their own crossing), not on the primary metric, which it does not win.",
+   "P3": "PASS — fresh read of the packet alone names the same trap FACILITATOR.md names: comparing per-rider penalties (2.5 vs ~25 min) and stopping without weighting by rider counts (9,530 vs ~1,207) — 'the denominators differ.' Same mechanism, same diagnostic tell.",
+   "P4": "PASS — twist flips A 31,665.7 vs B 30,285.8 (B by 4.36%), invalidating the Anchor-1 majority and the base-case winner. Survives every defensible reading of the stated assumptions (FACILITATOR.md works both headway-convention readings explicitly; winner B is unchanged under either, only the margin size moves).",
+   "P5": "PASS (disclosed) — re-confirmed 2026-08-17(c) via tier2_probes.py --probe 5 --flex 0.5. MA4 (rq_to_e12_bus_min) still mechanically flips the winner to B at -50% (5.1% margin) and breaches the SPEC §2 20% cap at +50% (23.6% margin); case.json.sensitivity_disclosure[] carries the required Category-X entry with a ≥20-char justification. Script reports PASS (disclosed).",
+   "P6": "PASS — all 10 sources[] URLs independently re-fetched 2026-08-17(c) via raw curl (8 HTML pages) + curl/pdftotext -layout (2 PDFs, S1/S7), not the summarizing WebFetch path. All 10 returned HTTP 200. Every cited figure/quote re-verified character-for-character: S1 '9,530 35.2 28.5 $5.01 32,726 9.0 3.4' exact; S2's three Trip rows (12:35pm...2:35pm / 12:50pm...2:50pm / 1:05pm...3:07pm) byte-identical, page now reads 'Effective August 16, 2026' (accessed-date one revision behind, POLISH not BLOCKER, figures unchanged); S3 all 5 Blue Line RQ→PSN pairs (11:50/11:59, 12:05/12:14, 12:20/12:29, 12:35/12:44, 12:50/12:59) present, all 9 min; S4 all 3 Red Line pairs (12:28/12:37, 12:43/12:52, 12:58/1:07) present, all 9 min; S5 'MAX Light Rail runs every 15 minutes or less...' verbatim; S6 both quoted strings present; S7 all 5 MAX station rows exact incl. Old Town/Chinatown 766/857/1,623; S8 '3.5 feet per second' present; S9 all 4 quoted fragments present; S10 'Rose Quarter Transit Center' present as a Line 77 timepoint. No figure decayed."
+  },
+  "tier2_clean": true,
+  "tier2_blocking": [],
+  "tier2_resolved": [
+   "Appendix B trip-3 inconsistency (E82→S122 13 vs 14 min; S122→S185 14 vs 15 min), on file as a BLOCKER since 2026-08-17(a)/(b): re-inspected case.md Appendix B directly on 2026-08-17(c) and found the governing sentence already present verbatim — 'Trip 1's running times govern every edge weight used in this case (the agency's own later trips pad a couple of segments by a minute or two for schedule recovery — use Trip 1's times consistently rather than mixing trips.)' (case.md lines 147-151). This is exactly the remedy the 2026-08-17(b) report prescribed. case_md_sha256 is unchanged from the (a)/(b) runs, so this sentence was already in the file when those runs recorded the BLOCKER as unresolved — that prior finding was a false positive (the reviewing agent did not re-read the current Appendix B text before writing the note), not a real defect requiring a case.md edit. Cross-checked for internal consistency: sensitivity_model.py's burnside_segment_min=6.0 comment cites '1:18pm to 1:24pm' (Trip 1), matching D1's edge weights; the fresh P1 cold-solve independently used Trip 1 throughout and reproduced the canonical figures. No case.md edit was needed or made this run."
+  ],
+  "tier3_runs": [],
+  "case_md_sha256": "b5a4bd6c08ea196b6ef6bf1bbd5a87c00f73e94a8de7e0302d9413de3db5aad3",
+  "note": "TIER2_PASS (2026-08-17(c)). Tier 1 re-confirmed clean (19/19, 0 BLOCKER, 0 GAP, sha256 unchanged). All six Tier 2 probes independently re-run and PASS or PASS (disclosed): fresh P1 cold-solve by an independent subagent, P2/P3/P4 verified against FACILITATOR.md's Anchor/trap/twist sections, P5 re-run mechanically via tier2_probes.py, P6 re-fetched all 10 sources via raw curl/pdftotext. The 2026-08-17(a)/(b) open BLOCKER (Appendix B trip-3 ambiguity) was re-investigated and found already resolved in case.md's current text (governing-trip sentence present, sha256 unchanged) — the prior 'still unresolved' finding was itself in error. 0 blockers open. case-publish may now run. | Carried forward: interactive HTML built (cases/reroute-wait/published/Reroute Wait - Interactive.html), JS port of sensitivity_model.py verified to match it exactly."
+ },
+ "authored_on": "2026-08-12",
+ "pipeline_version": "1.0",
+ "derived": {
+  "route_length_mi": 26.861,
+  "crossing_share_pct": 12.658,
+  "crossing_riders_weekday": 1206.3,
+  "option_a_added_wait_per_rider_min": 2.5,
+  "option_b_transfer_penalty_min": 25.107,
+  "A_wait_rider_min": 23825.0,
+  "A_ride_rider_min": 3015.7,
+  "A_cost_rider_min_weekday": 26840.7,
+  "B_cost_rider_min_weekday": 30285.8,
+  "A_rider_hours_weekday": 447.3,
+  "B_rider_hours_weekday": 504.8,
+  "A_rider_hours_closure": 581548,
+  "B_rider_hours_closure": 656192,
+  "max_wait_combined_min": 3.75,
+  "line20_wait_min": 7.5,
+  "walk_min": 2.857,
+  "rail_rq_psn_min": 9.0,
+  "burnside_segment_min": 6.0,
+  "rq_to_e12_bus_min": 8.0,
+  "twist_A_cost_rider_min_weekday": 31665.7,
+  "twist_B_cost_rider_min_weekday": 30285.8,
+  "twist_margin_pct": 4.36,
+  "margin_pct": 11.38,
+  "vertices": 14,
+  "edges": 14,
+  "superseded_B_cost_before_rail_correction": 29079.5,
+  "_superseded_note": "29079.5 was Option B's cost while case.md's MAX Blue table wrongly printed the RQ->PSN segment as 8 minutes instead of the published 9 (see sources[] S3). It is recorded here ONLY so FACILITATOR.md can warn a guide to recognise the stale figure in a Hero's ledger. It is not a figure of record and must not be used."
+ },
+ "complexity": 5,
+ "published_on": "2026-08-17"
+}

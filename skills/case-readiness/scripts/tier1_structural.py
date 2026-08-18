@@ -386,16 +386,22 @@ def run(project, cid):
             n = skill.get('n', 0)
             covered_by = skill.get('covered_by', [])
             title = c.get('title')
-            # n==0 (never covered) is always a valid new claim. n==1 is valid ONLY
-            # if the sole contributor is this case's own title -- i.e. this case's
-            # own earlier promotion already bumped 0->1 and we're re-checking after
-            # the fact (MCS: documented false-positive-after-own-promotion pattern).
-            # n==1 from a DIFFERENT case is not that: it means someone else covered
-            # this skill before this case ever claimed it, which is exactly the bug
-            # that let Nuclear Waste's original 'geometry-prism' claim (n=1, but the
-            # 1 was Cold Chain, not itself) pass this check even though the claim
-            # was never actually new. Never accept n>=2 regardless of who's in it.
-            valid = (n == 0) or (n == 1 and covered_by == [title])
+            # n==0 (never covered) is always a valid new claim. If THIS case's own
+            # title is already in covered_by, its historical claim is proven and
+            # permanent -- covered_by is append-only, so the case genuinely
+            # contributed at some point regardless of how many later, independently
+            # promoted sibling cases have since ALSO claimed the same skill (fixed
+            # 2026-08-18: this was previously n==1-only, which made every already-
+            # published case re-fail T1-10 the moment a second case claimed the
+            # same skill in a later batch -- a real, permanent drift bug found while
+            # promoting several Discrete-Math/Calculus cases the same session,
+            # e.g. Pattern Rights and The Keyspace Decision both later claiming a
+            # skill Baseball Lineup had already validly claimed first). Still never
+            # valid if this case's title is NOT in covered_by at all -- that means
+            # someone else covered it before this case ever claimed it, exactly the
+            # bug that let Nuclear Waste's original 'geometry-prism' claim (n=1, but
+            # the 1 was Cold Chain, not itself) pass this check wrongly.
+            valid = (n == 0) or (title in covered_by)
             if not valid:
                 R.blocker('T1-10', f"new_coverage[] claims '{s}' but the spine shows n={n} "
                                    f"(covered_by={covered_by})")
@@ -420,6 +426,25 @@ def run(project, cid):
                             "corpus scan, so no uncovered skill remains for it to honestly "
                             "claim -- downgraded from BLOCKER per 2026-08-13 doctrine "
                             "amendment, project-owner approved, not a per-case waiver)")
+        elif c.get('reinforcement_note'):
+            # Reinforcement carve-out (added 2026-08-17, project-owner approved):
+            # a FRESH case can end up with zero new_coverage honestly, not through
+            # padding or laziness -- e.g. two independently-designed cases in the
+            # same subject both land on the same skill (Curves Turn and The Optimal
+            # Can both do power-rule optimization). Forcing a case to claim a skill
+            # its real math doesn't reach, just to satisfy this check, is exactly
+            # the fabrication SPEC §8/T1-11 exist to prevent -- worse than an
+            # honest zero. This carve-out requires a written `reinforcement_note`
+            # explaining what was checked (which adjacent uncovered skills were
+            # considered and ruled out, and why) -- same evidentiary bar as
+            # `legacy_conversion_note`, not a rubber stamp. Does NOT relax T1-11 or
+            # the anti-padding rule above; a case still cannot claim a skill its
+            # deliverables don't force.
+            R.gap('T1-10', "SPEC §8 — new_coverage[] is empty; the case closes no NEW gap "
+                            "(reinforcement carve-out: case.json.reinforcement_note records "
+                            "that adjacent uncovered skills were checked and honestly ruled "
+                            "out -- downgraded from BLOCKER per 2026-08-17 doctrine amendment, "
+                            "project-owner approved, not a per-case waiver)")
         else:
             R.blocker('T1-10', "SPEC §8 — new_coverage[] is empty; the case closes no gap")
     R.ok('T1-10')
@@ -719,8 +744,12 @@ def run(project, cid):
                                        f"static literal a fresh reader could just read off the page.")
                 # Everything outside <script>...</script> (prose, labels, table cells) should
                 # still resolve against the case's own universe of numbers, same drift check
-                # every other published packet gets under T1-15.
-                script_stripped = re.sub(r'(?is)<script.*?</script>', ' ', txt)
+                # every other published packet gets under T1-15. HTML comments are excluded
+                # too (fixed 2026-08-18): template-boilerplate comments citing doctrine codes
+                # like "MCS-37"/"MCS-39"/"T1-19" produced false-positive orphan-number flags
+                # on every case using the shared interactive shell, since those numbers are
+                # never rendered to a student and can never be "the answer read off the page".
+                script_stripped = re.sub(r'(?is)<script.*?</script>|<!--.*?-->', ' ', txt)
                 dnums = numbers_in(script_stripped)
                 missing = sorted({v for v in dnums if not in_universe(v, universe)})
                 if missing:

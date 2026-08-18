@@ -28,9 +28,9 @@ Every net dimension, cost, and modeling convention this case depends on — incl
 
 Drew Larson has worked at Stout Aviation for 3 years, specializing in industry strategy and market research, including deciding which products the company produces and sells.
 
-Every dollar figure and dimension in this case is either given directly by Stout Aviation's own records above, resolved in the Modeling Assumptions, or backed by real-world plausibility context in **APPENDIX E** (Sources). A scenario twist your facilitator may introduce during the live discussion is held separately in **APPENDIX D**.
+Every dollar figure and dimension in this case is either given directly by Stout Aviation's own records above, resolved in the Modeling Assumptions, or backed by real-world plausibility context in **APPENDIX D** (Sources).
 
-The vocabulary and "how to…" skills this case will ask of you are listed in **Appendix F** — that is where Challenge 1 sends you.
+The vocabulary and "how to…" skills this case will ask of you are listed in **Appendix E** — that is where Challenge 1 sends you.
 
 ---
 
@@ -123,8 +123,8 @@ The turbine disk is a square with 12 teeth (triangular points) around its sides 
 
 | # | Assumption | Value used | Basis | Sensitivity |
 |---|---|---|---|---|
-| MA1 | Turbine disk tooth shape | Each of the 12 teeth is an isosceles triangle with base = 28 in ÷ 3 ≈ 9.33 in and height = 4 in (derived from the 36 in overall-height label minus the 28 in square side, split evenly top and bottom: (36 − 28) ÷ 2 = 4 in) | Appendix C's own source sketch labels the teeth "equilateral triangles," but its two stated dimensions (28 in square, 36 in overall height) are mathematically inconsistent with true equilateral teeth on a 3-per-side layout (true equilateral teeth on a 9.33 in base would stand 8.08 in tall, not 4 in, giving an overall height of ~44 in, not 36 in). This case treats the sketch as an illustrative, not-to-scale drawing (common for a vendor-facing engineering sketch) and uses its two labeled dimensions directly rather than override them with a stricter geometric rule the sketch itself doesn't satisfy. | If a Hero instead insists on true equilateral teeth (8.08 in height, ~44.2 in overall span), the disk's cut-path length and area both increase — recompute D2–D4 accordingly. This does not change the weekly-profit-based recommendation of Challenge 3, since the underlying sell price and cost structure are unaffected. **It does change D8, the case's actual graded balance metric**: a ±50% flex of the 36 in overall-height figure leaves D8 stable (though wide) at −50%, but **flips D8's winner to the O-ring at +50%** (54 in overall height) — see FACILITATOR.md's sensitivity note. |
-| MA2 | Turbine disk center hole diameter | 9 in | **PROPRIETARY — ESTIMATED (one-time exception, 2026-08-13).** Not labeled anywhere in the source sketch, and real turbine-disk bore sizing depends on proprietary centrifugal-loading and fatigue analysis with no public standard to cite — unlike this case's other sourced figures, this number cannot be looked up. Estimated instead from the closest available PUBLIC engineering analogue: general mechanical-design guidance for a circular hole in a finite plate recommends keeping the hole-to-width ratio under ~0.3 to stay within standard stress-concentration design practice [S6]. 9 in / 28 in = 0.32, just at that boundary — the original 10 in figure (0.36) sat further outside it. This is a best-effort estimate from a general analogue, NOT a turbine-disk-specific standard, and is disclosed as such rather than presented as equivalent to this case's cited figures. | A larger or smaller hole changes D4's net area and D6's material cost slightly, but the hole accounts for well under 10% of the disk's material cost either way (material cost is a small share of total disk cost — see D6) — it does not flip the weekly-profit-based Challenge 3 recommendation. **It does change D8, the case's actual graded balance metric, and remains genuinely unstable even at this re-estimated value**: a ±50% flex of the 9 in hole diameter leaves D8 stable (though wide, 36.4% margin) at −50%, but **flips D8's winner to the O-ring at +50%** (13.5 in hole) — see FACILITATOR.md's sensitivity note. This is disclosed, not eliminated: no choice of hole diameter survives a full ±50% swing (verified by sweeping the base value from 3 in to 14 in — every value either flips the winner or breaches the 20% cap on the opposite side), so the honest response is to state the estimate's basis and defend it, the same as any Category-X proprietary estimate. |
+| MA1 | Turbine disk tooth shape | Each of the 12 teeth is an isosceles triangle with base = 28 in ÷ 3 ≈ 9.33 in and height = 4 in (derived from the 36 in overall-height label minus the 28 in square side, split evenly top and bottom: (36 − 28) ÷ 2 = 4 in) | Appendix C's own source sketch labels the teeth "equilateral triangles," but its two stated dimensions (28 in square, 36 in overall height) are mathematically inconsistent with true equilateral teeth on a 3-per-side layout (true equilateral teeth on a 9.33 in base would stand 8.08 in tall, not 4 in, giving an overall height of ~44 in, not 36 in). This case treats the sketch as an illustrative, not-to-scale drawing (common for a vendor-facing engineering sketch) and uses its two labeled dimensions directly rather than override them with a stricter geometric rule the sketch itself doesn't satisfy. | If a Hero instead insists on true equilateral teeth (8.08 in height, ~44.2 in overall span), the disk's cut-path length and area both increase — recompute D2–D4 accordingly. This does not change the weekly-profit-based recommendation of Challenge 3, since the underlying sell price and cost structure are unaffected. **It does change D8, the case's actual graded balance metric — a ±50% flex of the 36 in overall-height figure is stable in one direction but not the other; the answer is sensitive to this value.** |
+| MA2 | Turbine disk center hole diameter | 9 in | **PROPRIETARY — ESTIMATED (one-time exception, 2026-08-13).** Not labeled anywhere in the source sketch, and real turbine-disk bore sizing depends on proprietary centrifugal-loading and fatigue analysis with no public standard to cite — unlike this case's other sourced figures, this number cannot be looked up. Estimated instead from the closest available PUBLIC engineering analogue: general mechanical-design guidance for a circular hole in a finite plate recommends keeping the hole-to-width ratio under ~0.3 to stay within standard stress-concentration design practice [S6]. 9 in / 28 in = 0.32, just at that boundary — the original 10 in figure (0.36) sat further outside it. This is a best-effort estimate from a general analogue, NOT a turbine-disk-specific standard, and is disclosed as such rather than presented as equivalent to this case's cited figures. | A larger or smaller hole changes D4's net area and D6's material cost slightly, but the hole accounts for well under 10% of the disk's material cost either way (material cost is a small share of total disk cost — see D6) — it does not flip the weekly-profit-based Challenge 3 recommendation. **It does change D8, the case's actual graded balance metric, and remains genuinely unstable even at this re-estimated value — the answer is sensitive to this value in one direction of a ±50% flex.** This is disclosed, not eliminated: no choice of hole diameter survives a full ±50% swing, so the honest response is to state the estimate's basis and defend it, the same as any Category-X proprietary estimate. |
 | MA3 | Sheet nesting (parts per sheet) | Both components are nested in a simple, non-rotated rectangular grid: each part's square bounding box is repeated in rows and columns across the 7 m x 5 m sheet, with no offset or rotation packing. | Keeps D5's "parts per sheet" calculation a direct, checkable division rather than an optimization problem — appropriate for this case's grade band. Stout Aviation's real production planning could likely nest more parts per sheet with rotation or offset packing. | A denser nesting scheme increases both options' weekly capacity roughly proportionally, so it does not change which option produces more per week — it would raise both D5 answers, not flip the comparison. |
 | MA4 | Employee wage as a machine-operating cost, not overtime/benefits-loaded | The $45.00/hour rate (Background) is treated as the fully-loaded cost Stout Aviation pays per hour, per employee, with no additional payroll burden added. | The case states $45.00/hour as "each employee is paid" with no further breakdown; adding one is inventing a number the source doesn't give. | A higher fully-loaded rate raises labor cost per part for both options roughly proportionally (labor is a small share of total cost for both parts — see D6) — it does not flip the recommendation. |
 
@@ -132,17 +132,7 @@ The turbine disk is a square with 12 teeth (triangular points) around its sides 
 
 ---
 
-## Appendix D: The Twist
-
-A parts-manufacturing facility in China has just burned to the ground. A Boeing representative calls: can Stout Aviation start production immediately on the component Boeing was sourcing from the destroyed facility? Boeing will pay **$114.00 per part**, plus a **$200,000 bonus** if Stout Aviation delivers **more than 5,000 units within 10 days**.
-
-Boeing needs whichever component Drew's pitch chose. The machine can run up to 20 hours a day during the sprint (not limited to 5 days a week, given the urgency) — but every load time and cut time from Challenge 3 still applies.
-
-Does Drew take the deal?
-
----
-
-## Appendix E: Sources
+## Appendix D: Sources
 
 | # | Claim | Value | Source | Date | Confidence |
 |---|---|---|---|---|---|
@@ -150,7 +140,7 @@ Does Drew take the deal?
 | S2 | 8,000 W all-in-one sheet-and-tube fiber laser cutter, StyleCNC ST-FC3015GAR family, confirms an 8,000 W configuration exists in this exact machine class | Configuration confirmed; no public list price found | StyleCNC — [All-In-One Fiber Laser Cutter for Sheet Metals & Tubes](https://www.stylecnclaser.com/fiber-laser-cutters/all-in-one-sheet-metal-tube-fiber-laser-cutter.html) | 2026-08-13 | MEDIUM |
 | S3 | US average CNC machine operator hourly pay, 2026 — context for this case's stated $45.00/hour wage | ~$23.65–$28/hour (national average, general CNC operator) | ZipRecruiter / Salary.com — [CNC Machine Operator Salary](https://www.ziprecruiter.com/Salaries/Cnc-Machine-Operator-Salary) | 2026-08-13 | MEDIUM (national average, not aerospace-specific or Arizona-specific) |
 | S4 | 6,000 W-class fiber laser electricity cost — quantitative basis for the O-ring's real-but-modest weekly energy savings, cited in the Balance Argument's argument for B | $5.40–$7.50/hour (18–25 kW wall draw at $0.12/kWh, $10,800–$15,000/year over 2,000 hr/year) | Remcor Technology — [Fiber Laser Cutting Machine Total Cost of Ownership (TCO) 2026](https://www.remcortechnology.com/fiber-laser-cutting-machine-total-cost-of-ownership-tco-2026-.html) | 2026-08-13 | MEDIUM (6,000 W class, extrapolated hourly from stated annual figures; this case's machine is 8,000 W class, so real draw would likely run somewhat higher) |
-| S6 | General hole-in-finite-plate stress-concentration design guideline — used as the closest PUBLIC analogue to re-estimate MA2's proprietary turbine-disk hole diameter | Hole-to-plate-width ratio recommended under ~0.3 for standard design practice | General mechanical/structural engineering references — [Stress Concentration Factor, Central Circular Hole in a Plate](https://amesweb.info/stress-concentration-factor-calculator/central-circular-hole-in-plate.aspx) | 2026-08-13 | LOW — a general analogue, not a turbine-disk-specific standard; see Appendix D MA2's PROPRIETARY-ESTIMATED disclosure |
+| S6 | General hole-in-finite-plate stress-concentration design guideline — used as the closest PUBLIC analogue to re-estimate MA2's proprietary turbine-disk hole diameter | Hole-to-plate-width ratio recommended under ~0.3 for standard design practice | General mechanical/structural engineering references — [Stress Concentration Factor, Central Circular Hole in a Plate](https://amesweb.info/stress-concentration-factor-calculator/central-circular-hole-in-plate.aspx) | 2026-08-13 | LOW — a general analogue, not a turbine-disk-specific standard; see the Modeling Assumptions section's MA2 PROPRIETARY-ESTIMATED disclosure |
 
 **2026-08-13 QA remediation note on S1.** The prior S1 citation (StyleCNC's fiber-laser buying guide, claimed "$88,000–$500,000+" for the 8,000 W class) was found during a Tier 2 data-decay check to no longer be supported by that page's live content — its current pricing table has no distinct 8,000 W tier (adjacent tiers are 6,000 W at $37,000–$80,000 and 12,000 W at $85,000–$190,000), and the only "$88,000" figure on the page today is the low end of an unrelated 20,000 W product. S1 has been replaced with the Jeesun CNC listing above, a real, current, directly-quoted price for this exact 8,000 W machine class.
 
@@ -158,7 +148,7 @@ No `{{NEEDS_SOURCE}}` placeholders remain open in this case. Every dollar figure
 
 ---
 
-## Appendix F: "How To…" Math Questions To Research
+## Appendix E: "How To…" Math Questions To Research
 
 **Vocabulary terms**
 
@@ -202,6 +192,14 @@ No `{{NEEDS_SOURCE}}` placeholders remain open in this case. Every dollar figure
 - How to compare two or more values
 
 <!-- FACILITATOR ONLY -->
+
+## The Twist (facilitator delivers at ~15 minutes)
+
+A parts-manufacturing facility in China has just burned to the ground. A Boeing representative calls: can Stout Aviation start production immediately on the component Boeing was sourcing from the destroyed facility? Boeing will pay **$114.00 per part**, plus a **$200,000 bonus** if Stout Aviation delivers **more than 5,000 units within 10 days**.
+
+Boeing needs whichever component Drew's pitch chose. The machine can run up to 20 hours a day during the sprint (not limited to 5 days a week, given the urgency) — but every load time and cut time from Challenge 3 still applies.
+
+Does Drew take the deal?
 
 ## Balance Argument (facilitator only — do not surface to students before discussion)
 

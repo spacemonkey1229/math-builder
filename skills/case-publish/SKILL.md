@@ -32,7 +32,8 @@ if q.get('verdict')!="PASS":            fail.append(f"qa.verdict is {q.get('verd
 if (q.get('blockers_open') or 0) != 0:  fail.append(f"{q.get('blockers_open')} BLOCKER(s) still open")
 if q.get('case_md_sha256') != h:        fail.append("QA is STALE: case.md changed since the QA run "
                                                     f"(qa hash {str(q.get('case_md_sha256'))[:12]}…, now {h[:12]}…)")
-if not c.get('new_coverage'):           fail.append("new_coverage[] empty — nothing to promote")
+if not c.get('new_coverage') and not (c.get('legacy_conversion_note') or c.get('reinforcement_note')):
+    fail.append("new_coverage[] empty — nothing to promote")
 print("GATE FAIL:" if fail else "GATE OPEN"); [print(" -",f) for f in fail]
 sys.exit(1 if fail else 0)
 PY
@@ -49,6 +50,16 @@ Tier 1 was clean on both. **Never gate `case-publish` on Tier 1 alone again.** I
 genuinely cannot reach `TIER2_PASS` (e.g. P5 has no `sensitivity_model.py`, or P6 has no web-connected
 subagent available), that is a real, nameable reason to hold the case at `TIER1_PASS`/`PUBLISHED`-pending,
 not a reason to weaken this gate.
+
+**Why the `new_coverage[]` check gained an exception (2026-08-17):** this gate used to refuse
+*any* case with an empty `new_coverage[]`, including cases holding a documented
+`legacy_conversion_note`/`reinforcement_note` carve-out that `tier1_structural.py`'s T1-10 already
+downgrades from BLOCKER to GAP for exactly this reason (see `skills/case-readiness/SKILL.md`'s two
+carve-out sections). Without this fix, a case could reach genuine `TIER2_PASS` — Tier 1 clean, all
+six Tier 2 probes recorded — and still be refused publication by this gate alone, which is not what
+either carve-out was written to do. The exception is narrow: it does not waive the other four
+conditions above (`state`, `verdict`, `blockers_open`, hash freshness), and a case with an empty
+`new_coverage[]` and *neither* note still fails here, correctly.
 
 If the gate fails, **stop and report**. Do not build a packet "so it's ready". A packet for an
 unpublishable case will be sent to a student by someone who did not read the caveat.

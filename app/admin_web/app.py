@@ -482,3 +482,11 @@ def api_student_self_assessment():
     admin_core.do_set_self_assessment(get_store(), session['student_id'], b.get('interests', []),
                                        b.get('note'), 'student', b.get('grade_level'), b.get('current_branch'))
     return {"ok": True}
+
+
+@app.route('/api/student/rate', methods=['POST'])
+@json_api
+def api_student_rate():
+    b = request.get_json(force=True) or {}
+    rid = admin_core.do_rate_case(get_store(), session['student_id'], b['case_id'], b.get('stars'), b.get('note'))
+    return {"ok": True, "id": rid}

@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Biostatician — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (Math Builder interactive-case
+  shell, A7, DOCTRINE_LEDGER MCS-37/MCS-39). See
+  templates/INTERACTIVE_HTML_CONTRACT.md for the full contract this file
+  follows.
+
+  HARD LINE (MCS-37): this page must never print case.json's balance_test
+  verdict (winner, margin_pct as a literal) anywhere outside a <script>
+  tag's live computation. The Working Notebook computes; it never hands
+  over the conclusion.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+  details.scroll .inner{max-height:420px;overflow-y:auto}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:260px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:110px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){ .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap} }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important;max-height:none !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M11 20V4"/><path d="M18 20v-7"/><path d="M2 20h20"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS/HS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Biostatician</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">HS</span>
+      <span class="pill">Statistics &middot; Percent</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">The comic strip on Dr. Okafor's door always gets a laugh out of Deondra Lamont on her walk past &mdash; today's is a doctor holding a chart, patient in a paper gown, some punchline about waiting rooms. Lamont, CEO of Benedictus Hospital Group, usually keeps walking. This time she stops.</p>
+  <p>Something about it doesn't sit right. She thinks about it through two meetings and a lunch she doesn't finish, and by mid-afternoon she's asked her assistant for every patient complaint on file about how the group's physicians treat overweight patients. The number that comes back is bigger than she expected.</p>
+  <p>She picks up the phone and dials the hospital's biostatistician.</p>
+  <p>"Ingrid, it's Deondra. I need you to look into something for me." A pause. "Do our physicians treat overweight and obese patients differently than everyone else? I don't want a guess. I want the numbers &mdash; and I want to know what, if anything, we should do about it."</p>
+  <p>Ingrid Robertson has run three years of surveys and studies for this hospital group &mdash; lab staffing models, admission-length analyses, the kind of work nobody outside her office reads closely. This one is different. She already knows what data exists to answer it, and she already knows the CEO will want a firm recommendation, not a shrug.</p>
+  <p>She opens a blank document and starts typing.</p>
+  <figure style="margin:18px 0 4px;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/0/0c/Doctor_talking_with_a_patient.jpg" alt="A physician in a white coat talking with a seated patient during an office visit" style="width:100%;max-width:100%;border-radius:10px;border:1px solid var(--line);display:block;">
+    <figcaption style="font-family:var(--sans);font-size:.76rem;color:var(--sub);margin-top:6px;">Photo: National Cancer Institute (NIH), public domain. Illustrative only — not a photo from the study in this case.</figcaption>
+  </figure>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <figure style="margin:0 0 18px;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Texas_Medical_Center_skyline_in_Houston.JPG" alt="Skyline of the Texas Medical Center in Houston, Texas, seen from Memorial Park" style="width:100%;max-width:100%;border-radius:10px;border:1px solid var(--line);display:block;">
+    <figcaption style="font-family:var(--sans);font-size:.76rem;color:var(--sub);margin-top:6px;">Photo: Kylelovesyou, Wikimedia Commons, CC BY 3.0. The Texas Medical Center in Houston — the real hospital campus where the 2001 study behind this case's Appendix B data (<a href="#apx-a">Appendix A</a>) was conducted. Benedictus Hospital Group and its Dallas&ndash;Fort Worth setting are fictional.</figcaption>
+  </figure>
+  <p>Benedictus Hospital Group operates 5 large hospitals and more than 30 smaller clinics across the Dallas&ndash;Fort Worth metro area, employing 1,852 physicians &mdash; 1,228 of them primary care physicians (<a href="#apx-c">Appendix C</a>). The group has averaged a thin 1.4% profit margin over the last ten years; its most recent six years of profit are on record (<a href="#apx-c">Appendix C</a>).</p>
+  <p>Patient complaints specifically alleging that a physician treated them differently because of their weight have been climbing: 15 of 435 total complaints last quarter, and 82 of 1,458 total complaints in the current year (<a href="#apx-c">Appendix C</a>). Lamont wants to know whether that trend reflects a real pattern in how physicians allocate their time and attention &mdash; and, if it does, whether it is large enough to justify spending real money to fix it.</p>
+  <p>The one tool available to answer the first half of that question is a real, published research study Ingrid has on file: a controlled experiment in which 122 primary care physicians affiliated with the hospital group each reviewed one of six versions of an identical patient medical chart &mdash; a patient presenting with an uncomplicated migraine headache, otherwise healthy &mdash; with only the patient's weight (given as average, overweight, or obese, by Body Mass Index), gender, and age varied across versions. Each physician was asked how much time they expected to spend with that patient during the visit. 109 of the 122 physicians' time estimates were recorded (<a href="#apx-b">Appendix B</a>); the rest of the study's design and its methodology are documented in <a href="#apx-a">Appendix A</a>.</p>
+  <p>If Ingrid recommends it, the hospital group's leadership has a specific fix ready to deploy: an outside firm's bias-awareness training program, at a fixed cost of $265 per physician trained, covering the physical and social-bias tools the training firm says reduce differential treatment over time (<a href="#apx-c">Appendix C</a>). Nobody has committed to who receives the training or what it would cost in total &mdash; that arithmetic, and the modeling choices it depends on, are recorded openly (<a href="#apx-d">Appendix D</a>) rather than decided quietly.</p>
+  <p>Real-world context for why this question matters at all &mdash; beyond Benedictus's own numbers &mdash; sits in <a href="#apx-e">Appendix E</a>; every externally sourced claim in this case is documented with its source in <a href="#apx-f">Appendix F</a>.</p>
+  <p>The vocabulary and "how to&hellip;" skills this case will ask you to research are listed in Appendix G &mdash; that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Ingrid Robertson. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Recommend</h4>
+      <p style="margin:0">Recommend the bias-awareness training.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Don't Recommend</h4>
+      <p style="margin:0">Do not recommend the training.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include the following: <strong>D1</strong> three histograms of the time spent with the physician, one each for the average-weight, overweight, and obese groups; <strong>D2</strong> three box-and-whisker plots for the same groups on a shared scale; <strong>D3</strong> a percent-above-median table &mdash; what percentage of average-weight patients ran longer than the overweight group's median, and than the obese group's median; <strong>D4</strong> a mean-and-range comparison by gender and by age, with a written judgment of which factor looks biggest; <strong>D5</strong> an outlier check on the obese group's box plot and how it changes mean vs. median.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; The Study</summary>
+    <div class="inner">
+      <p><strong>This case is presented as fiction:</strong> Benedictus Hospital Group, Deondra Lamont, and Ingrid Robertson are invented, and the hospital's own patient-complaint and physician-count figures (Appendix C) are this case's own fictional-but-fixed scenario data.</p>
+      <p><strong>Appendix B's dataset is different &mdash; it reproduces a real, published academic study.</strong> Hebl, M., &amp; Xu, J. (2001), "Weighing the care: physicians' reactions to the size of a patient," <em>International Journal of Obesity</em>, 25, 1246&ndash;1252, ran this experiment: physicians at hospitals in the Texas Medical Center of Houston (not Dallas &mdash; this case relocates the setting) were mailed a mock medical chart depicting a migraine-headache patient. The chart's patient weight was manipulated across three BMI levels &mdash; average (23), overweight (30), obese (36) &mdash; alongside gender and age, giving six chart versions. 122 physicians were randomly assigned one version each. A public teaching reproduction of part of the same study independently confirms the 122-physician count and Texas Medical Center Houston design, but reproduces only a simplified 2-condition slice for classroom use, noting the full study is larger &mdash; consistent with this case's fuller 3-condition dataset. The exact match of every individual value to the original 2001 journal article could not be independently re-verified, since the full article sits behind a publisher paywall (see Appendix F, S1/S2).</p>
+      <p>Real-world context, current as of this case's 2026 write-up: recent CDC data puts U.S. adult obesity prevalence at 40.3% and overweight-including-obesity at 72.4% (2021&ndash;2023 survey cycle) &mdash; real numbers, reported for context only; neither is load-bearing to any calculation in this case (Appendix F, S3).</p>
+    </div>
+  </details>
+
+  <details id="apx-b" class="scroll">
+    <summary>Appendix B &mdash; Physician Time-Estimate Data (n = 109)</summary>
+    <div class="inner">
+      <p>Each row is one physician's response: which weight-condition chart they reviewed, the chart patient's stated gender and age, and the minutes that physician expected to spend with the patient. 13 of the 122 physicians originally assigned a chart never had a time estimate recorded &mdash; see Appendix D, Assumption 3, before treating this as the complete original sample.</p>
+      <table id="apxBTable"><thead><tr><th>#</th><th>Group</th><th>Gender</th><th>Age</th><th>Time (min)</th></tr></thead><tbody>
+      <tr><td>1</td><td>Average</td><td>Female</td><td>64</td><td>15</td></tr>
+      <tr><td>2</td><td>Average</td><td>Male</td><td>17</td><td>15</td></tr>
+      <tr><td>3</td><td>Average</td><td>Female</td><td>78</td><td>45</td></tr>
+      <tr><td>4</td><td>Average</td><td>Female</td><td>86</td><td>40</td></tr>
+      <tr><td>5</td><td>Average</td><td>Female</td><td>57</td><td>45</td></tr>
+      <tr><td>6</td><td>Average</td><td>Female</td><td>63</td><td>20</td></tr>
+      <tr><td>7</td><td>Average</td><td>Female</td><td>71</td><td>40</td></tr>
+      <tr><td>8</td><td>Average</td><td>Female</td><td>39</td><td>30</td></tr>
+      <tr><td>9</td><td>Average</td><td>Male</td><td>64</td><td>40</td></tr>
+      <tr><td>10</td><td>Average</td><td>Female</td><td>52</td><td>30</td></tr>
+      <tr><td>11</td><td>Average</td><td>Male</td><td>28</td><td>30</td></tr>
+      <tr><td>12</td><td>Average</td><td>Female</td><td>68</td><td>50</td></tr>
+      <tr><td>13</td><td>Average</td><td>Male</td><td>41</td><td>30</td></tr>
+      <tr><td>14</td><td>Average</td><td>Male</td><td>39</td><td>45</td></tr>
+      <tr><td>15</td><td>Average</td><td>Female</td><td>36</td><td>45</td></tr>
+      <tr><td>16</td><td>Average</td><td>Male</td><td>30</td><td>30</td></tr>
+      <tr><td>17</td><td>Average</td><td>Male</td><td>17</td><td>50</td></tr>
+      <tr><td>18</td><td>Average</td><td>Male</td><td>24</td><td>30</td></tr>
+      <tr><td>19</td><td>Average</td><td>Female</td><td>75</td><td>30</td></tr>
+      <tr><td>20</td><td>Average</td><td>Male</td><td>86</td><td>20</td></tr>
+      <tr><td>21</td><td>Average</td><td>Male</td><td>48</td><td>30</td></tr>
+      <tr><td>22</td><td>Average</td><td>Male</td><td>60</td><td>20</td></tr>
+      <tr><td>23</td><td>Average</td><td>Male</td><td>60</td><td>30</td></tr>
+      <tr><td>24</td><td>Average</td><td>Female</td><td>60</td><td>20</td></tr>
+      <tr><td>25</td><td>Average</td><td>Female</td><td>76</td><td>20</td></tr>
+      <tr><td>26</td><td>Average</td><td>Female</td><td>65</td><td>30</td></tr>
+      <tr><td>27</td><td>Average</td><td>Male</td><td>21</td><td>25</td></tr>
+      <tr><td>28</td><td>Average</td><td>Male</td><td>68</td><td>20</td></tr>
+      <tr><td>29</td><td>Average</td><td>Male</td><td>28</td><td>40</td></tr>
+      <tr><td>30</td><td>Average</td><td>Female</td><td>22</td><td>30</td></tr>
+      <tr><td>31</td><td>Average</td><td>Male</td><td>33</td><td>30</td></tr>
+      <tr><td>32</td><td>Average</td><td>Male</td><td>67</td><td>30</td></tr>
+      <tr><td>33</td><td>Average</td><td>Female</td><td>26</td><td>30</td></tr>
+      <tr><td>34</td><td>Overweight</td><td>Male</td><td>50</td><td>20</td></tr>
+      <tr><td>35</td><td>Overweight</td><td>Female</td><td>23</td><td>30</td></tr>
+      <tr><td>36</td><td>Overweight</td><td>Male</td><td>54</td><td>30</td></tr>
+      <tr><td>37</td><td>Overweight</td><td>Male</td><td>51</td><td>20</td></tr>
+      <tr><td>38</td><td>Overweight</td><td>Male</td><td>35</td><td>25</td></tr>
+      <tr><td>39</td><td>Overweight</td><td>Male</td><td>16</td><td>20</td></tr>
+      <tr><td>40</td><td>Overweight</td><td>Female</td><td>37</td><td>20</td></tr>
+      <tr><td>41</td><td>Overweight</td><td>Male</td><td>68</td><td>30</td></tr>
+      <tr><td>42</td><td>Overweight</td><td>Male</td><td>37</td><td>15</td></tr>
+      <tr><td>43</td><td>Overweight</td><td>Female</td><td>75</td><td>30</td></tr>
+      <tr><td>44</td><td>Overweight</td><td>Female</td><td>50</td><td>20</td></tr>
+      <tr><td>45</td><td>Overweight</td><td>Male</td><td>89</td><td>5</td></tr>
+      <tr><td>46</td><td>Overweight</td><td>Male</td><td>72</td><td>20</td></tr>
+      <tr><td>47</td><td>Overweight</td><td>Male</td><td>88</td><td>15</td></tr>
+      <tr><td>48</td><td>Overweight</td><td>Male</td><td>58</td><td>30</td></tr>
+      <tr><td>49</td><td>Overweight</td><td>Male</td><td>43</td><td>25</td></tr>
+      <tr><td>50</td><td>Overweight</td><td>Female</td><td>57</td><td>30</td></tr>
+      <tr><td>51</td><td>Overweight</td><td>Female</td><td>24</td><td>30</td></tr>
+      <tr><td>52</td><td>Overweight</td><td>Female</td><td>84</td><td>20</td></tr>
+      <tr><td>53</td><td>Overweight</td><td>Female</td><td>85</td><td>15</td></tr>
+      <tr><td>54</td><td>Overweight</td><td>Male</td><td>88</td><td>15</td></tr>
+      <tr><td>55</td><td>Overweight</td><td>Male</td><td>56</td><td>20</td></tr>
+      <tr><td>56</td><td>Overweight</td><td>Female</td><td>85</td><td>45</td></tr>
+      <tr><td>57</td><td>Overweight</td><td>Female</td><td>82</td><td>15</td></tr>
+      <tr><td>58</td><td>Overweight</td><td>Female</td><td>31</td><td>60</td></tr>
+      <tr><td>59</td><td>Overweight</td><td>Female</td><td>83</td><td>15</td></tr>
+      <tr><td>60</td><td>Overweight</td><td>Male</td><td>50</td><td>15</td></tr>
+      <tr><td>61</td><td>Overweight</td><td>Male</td><td>53</td><td>20</td></tr>
+      <tr><td>62</td><td>Overweight</td><td>Female</td><td>51</td><td>15</td></tr>
+      <tr><td>63</td><td>Overweight</td><td>Male</td><td>65</td><td>30</td></tr>
+      <tr><td>64</td><td>Overweight</td><td>Male</td><td>67</td><td>30</td></tr>
+      <tr><td>65</td><td>Overweight</td><td>Female</td><td>76</td><td>30</td></tr>
+      <tr><td>66</td><td>Overweight</td><td>Male</td><td>17</td><td>30</td></tr>
+      <tr><td>67</td><td>Overweight</td><td>Female</td><td>71</td><td>30</td></tr>
+      <tr><td>68</td><td>Overweight</td><td>Male</td><td>78</td><td>30</td></tr>
+      <tr><td>69</td><td>Overweight</td><td>Male</td><td>85</td><td>30</td></tr>
+      <tr><td>70</td><td>Overweight</td><td>Female</td><td>16</td><td>20</td></tr>
+      <tr><td>71</td><td>Overweight</td><td>Female</td><td>29</td><td>25</td></tr>
+      <tr><td>72</td><td>Obese</td><td>Female</td><td>49</td><td>25</td></tr>
+      <tr><td>73</td><td>Obese</td><td>Male</td><td>59</td><td>25</td></tr>
+      <tr><td>74</td><td>Obese</td><td>Female</td><td>36</td><td>30</td></tr>
+      <tr><td>75</td><td>Obese</td><td>Female</td><td>89</td><td>15</td></tr>
+      <tr><td>76</td><td>Obese</td><td>Male</td><td>64</td><td>20</td></tr>
+      <tr><td>77</td><td>Obese</td><td>Female</td><td>67</td><td>20</td></tr>
+      <tr><td>78</td><td>Obese</td><td>Male</td><td>19</td><td>15</td></tr>
+      <tr><td>79</td><td>Obese</td><td>Male</td><td>26</td><td>20</td></tr>
+      <tr><td>80</td><td>Obese</td><td>Female</td><td>25</td><td>15</td></tr>
+      <tr><td>81</td><td>Obese</td><td>Female</td><td>70</td><td>20</td></tr>
+      <tr><td>82</td><td>Obese</td><td>Female</td><td>90</td><td>30</td></tr>
+      <tr><td>83</td><td>Obese</td><td>Male</td><td>68</td><td>10</td></tr>
+      <tr><td>84</td><td>Obese</td><td>Male</td><td>54</td><td>20</td></tr>
+      <tr><td>85</td><td>Obese</td><td>Male</td><td>55</td><td>20</td></tr>
+      <tr><td>86</td><td>Obese</td><td>Male</td><td>57</td><td>20</td></tr>
+      <tr><td>87</td><td>Obese</td><td>Male</td><td>40</td><td>25</td></tr>
+      <tr><td>88</td><td>Obese</td><td>Female</td><td>42</td><td>35</td></tr>
+      <tr><td>89</td><td>Obese</td><td>Male</td><td>68</td><td>20</td></tr>
+      <tr><td>90</td><td>Obese</td><td>Male</td><td>27</td><td>25</td></tr>
+      <tr><td>91</td><td>Obese</td><td>Male</td><td>27</td><td>15</td></tr>
+      <tr><td>92</td><td>Obese</td><td>Male</td><td>65</td><td>20</td></tr>
+      <tr><td>93</td><td>Obese</td><td>Female</td><td>25</td><td>25</td></tr>
+      <tr><td>94</td><td>Obese</td><td>Male</td><td>25</td><td>35</td></tr>
+      <tr><td>95</td><td>Obese</td><td>Male</td><td>61</td><td>20</td></tr>
+      <tr><td>96</td><td>Obese</td><td>Female</td><td>52</td><td>50</td></tr>
+      <tr><td>97</td><td>Obese</td><td>Male</td><td>45</td><td>20</td></tr>
+      <tr><td>98</td><td>Obese</td><td>Female</td><td>58</td><td>10</td></tr>
+      <tr><td>99</td><td>Obese</td><td>Female</td><td>42</td><td>10</td></tr>
+      <tr><td>100</td><td>Obese</td><td>Female</td><td>31</td><td>15</td></tr>
+      <tr><td>101</td><td>Obese</td><td>Male</td><td>58</td><td>20</td></tr>
+      <tr><td>102</td><td>Obese</td><td>Male</td><td>60</td><td>20</td></tr>
+      <tr><td>103</td><td>Obese</td><td>Female</td><td>54</td><td>20</td></tr>
+      <tr><td>104</td><td>Obese</td><td>Male</td><td>47</td><td>25</td></tr>
+      <tr><td>105</td><td>Obese</td><td>Female</td><td>73</td><td>15</td></tr>
+      <tr><td>106</td><td>Obese</td><td>Female</td><td>44</td><td>20</td></tr>
+      <tr><td>107</td><td>Obese</td><td>Male</td><td>41</td><td>30</td></tr>
+      <tr><td>108</td><td>Obese</td><td>Female</td><td>71</td><td>20</td></tr>
+      <tr><td>109</td><td>Obese</td><td>Female</td><td>32</td><td>25</td></tr>
+      </tbody></table>
+    </div>
+  </details>
+
+  <details open id="apx-c">
+    <summary>Appendix C &mdash; Benedictus Hospital Group: Scale, Complaints, Finances, and the Training Option</summary>
+    <div class="inner">
+      <p><strong>Staff and facilities.</strong> 5 hospitals, 30+ clinics, 1,852 physicians total, of whom 1,228 are primary care physicians.</p>
+      <p><strong>Weight-related patient complaints.</strong></p>
+      <table><thead><tr><th>Period</th><th>Total complaints</th><th>Weight-treatment complaints</th><th>% of total</th></tr></thead><tbody>
+        <tr><td>Last quarter</td><td>435</td><td>15</td><td>3.4%</td></tr>
+        <tr><td>Current year (to date)</td><td>1,458</td><td>82</td><td>5.6%</td></tr>
+      </tbody></table>
+      <p><strong>Six-year profit history</strong> (read from the hospital group's own internal chart; ten-year average profit margin is 1.4%):</p>
+      <table><thead><tr><th>Year</th><th>Profit (USD, millions)</th></tr></thead><tbody>
+        <tr><td>2013</td><td>$1.5M</td></tr><tr><td>2014</td><td>$1.7M</td></tr><tr><td>2015</td><td>$2.6M</td></tr>
+        <tr><td>2016</td><td>$4.5M</td></tr><tr><td>2017</td><td>$7.6M</td></tr><tr><td>2018</td><td>$4.0M</td></tr>
+      </tbody></table>
+      <p><strong>The training option.</strong> If recommended, an outside training firm will deliver bias-awareness training at a fixed <strong>$265 per physician trained</strong>. The hospital group has not decided exactly which physicians would be enrolled &mdash; that scope decision is a genuine open question this case asks you to reason about (Appendix D, MA1).</p>
+    </div>
+  </details>
+
+  <details open id="apx-d">
+    <summary>Appendix D &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p style="font-style:italic">These figures are not sourced &mdash; they are stated scenario choices made explicit so a Hero can challenge them in discussion.</p>
+      <p><strong>MA1 &mdash; which physicians the training covers:</strong> this case reads "provide training to its physicians" as all 1,852 physicians, not only the 1,228 primary care physicians the Appendix A study surveyed. A narrower reading is equally defensible and changes the total dollar cost substantially.</p>
+      <p><strong>MA2 &mdash; how many profit years count as "typical":</strong> this case averages all six given years equally. Weighting only the most recent years is an equally defensible reading and produces a different denominator.</p>
+      <p><strong>MA3 &mdash; how to treat the 13 missing responses:</strong> this case treats the 109 recorded responses as missing-at-random and analyzes them as the full working sample. Whether this missingness is random is an open question the data itself cannot settle &mdash; a Hero who raises it is reasoning correctly, not making an error.</p>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; Real-World Resources</summary>
+    <div class="inner">
+      <ul>
+        <li>CBC News, <a href="https://www.cbc.ca/news/canada/british-columbia/obese-woman-files-b-c-human-rights-complaint-over-alleged-rehab-denial-1.2916342" target="_blank" rel="noopener">"Obese woman files B.C. human rights complaint over alleged rehab denial"</a> &mdash; a real, current news account of a weight-based healthcare discrimination complaint.</li>
+        <li>Rabin, Roni Caryn. <a href="https://www.nytimes.com/2016/09/26/health/obese-patients-health-care.html" target="_blank" rel="noopener">"Why Do Obese Patients Get Worse Care? Many Doctors Don't See Past the Fat."</a> The New York Times, September 25, 2016.</li>
+      </ul>
+      <p class="side-note">Supplemental context, not load-bearing to any calculation.</p>
+    </div>
+  </details>
+
+  <details id="apx-f">
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table><thead><tr><th>#</th><th>Claim</th><th>Source</th><th>Date</th><th>Confidence</th></tr></thead><tbody>
+        <tr><td>S1</td><td>Real study behind Appendix B's design</td><td><a href="https://www.nature.com/articles/0801681" target="_blank" rel="noopener">Hebl &amp; Xu (2001), Int'l Journal of Obesity 25:1246-1252</a></td><td>2001</td><td>MEDIUM</td></tr>
+        <tr><td>S2</td><td>Independent confirmation of S1's design</td><td><a href="https://onlinestatbook.com/2/case_studies/weight.html" target="_blank" rel="noopener">Onlinestatbook.com case study</a></td><td>accessed 2026</td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Current US obesity/overweight prevalence</td><td><a href="https://www.cdc.gov/nchs/data/databriefs/db508.pdf" target="_blank" rel="noopener">CDC/NCHS Data Brief No. 508</a></td><td>Sept 2024</td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Real weight-discrimination news account</td><td><a href="https://www.cbc.ca/news/canada/british-columbia/obese-woman-files-b-c-human-rights-complaint-over-alleged-rehab-denial-1.2916342" target="_blank" rel="noopener">CBC News</a></td><td>2015</td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>Real news feature on obese-patient care</td><td><a href="https://www.nytimes.com/2016/09/26/health/obese-patients-health-care.html" target="_blank" rel="noopener">The New York Times</a></td><td>2016</td><td>HIGH</td></tr>
+      </tbody></table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-17. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &middot; Group Means (D1/D4 groundwork)</h4>
+    <div class="goal">From Appendix B, compute the mean time spent with the <strong>average-weight</strong> group (n=33), and the mean time spent with the <strong>overweight and obese groups pooled together</strong> (n=76). Round each to 1 decimal place.</div>
+    <div class="fieldrow"><label>Mean time &mdash; average-weight group (min)</label><input type="number" id="s1_avg" step="any"><span id="fb_s1_avg" class="fb"></span></div>
+    <div class="fieldrow"><label>Mean time &mdash; overweight+obese pooled (min)</label><input type="number" id="s1_heavier" step="any"><span id="fb_s1_heavier" class="fb"></span></div>
+    <button onclick="checkStep1()">Check Step 1</button>
+    <p class="side-note">Use the Download CSV button on Appendix B to pull all 109 rows into a spreadsheet if you'd rather compute there.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &middot; The Percentage Gap</h4>
+    <div class="goal">Using your Step 1 means, find the percent difference: (average mean &minus; heavier mean) &divide; average mean &times; 100. Round to 1 decimal place.</div>
+    <div class="fieldrow"><label>Percentage gap (%)</label><input type="number" id="s2_gap" step="any"><span id="fb_s2_gap" class="fb"></span></div>
+    <button onclick="checkStep2()">Check Step 2</button>
+    <p class="side-note">This is one of the two numbers Ingrid weighs side by side (D3/D4's foundation). Step 4 builds the other one.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &middot; Percent-Above-Median (D3)</h4>
+    <div class="goal">From Appendix B: what percentage of average-weight patients (n=33) had a time <em>strictly greater than</em> the overweight group's median (22.5 min)? And strictly greater than the obese group's median (20 min)? Round to 1 decimal place.</div>
+    <div class="fieldrow"><label>% of average-weight patients &gt; overweight median</label><input type="number" id="s3_ow" step="any"><span id="fb_s3_ow" class="fb"></span></div>
+    <div class="fieldrow"><label>% of average-weight patients &gt; obese median</label><input type="number" id="s3_ob" step="any"><span id="fb_s3_ob" class="fb"></span></div>
+    <button onclick="checkStep3()">Check Step 3</button>
+    <p class="side-note">Look closely at your two answers once you've checked them &mdash; is that a coincidence, or does it tell you something about the data?</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &middot; Explore the Cost Side (Appendix D, MA1/MA2)</h4>
+    <div class="goal">There's no single "correct" answer here &mdash; MA1 and MA2 are open assumptions. Drag the sliders to see how the training's total cost, as a percent of a typical year's profit, changes with each choice. Compare it to your Step 2 answer.</div>
+    <div class="sliderow">
+      <label style="min-width:230px;font-size:.9rem">Physicians trained (MA1)</label>
+      <input type="range" id="s4_trained" min="500" max="2778" step="1" value="1852" oninput="updateStep4()">
+      <span class="val" id="s4_trained_val">1852</span>
+    </div>
+    <div class="sliderow">
+      <label style="min-width:230px;font-size:.9rem">Profit-averaging window, years (MA2)</label>
+      <input type="range" id="s4_window" min="1" max="6" step="1" value="6" oninput="updateStep4()">
+      <span class="val" id="s4_window_val">6</span>
+    </div>
+    <div class="fieldrow"><label>Total training cost</label><span id="s4_cost" style="font-weight:700;color:var(--navy)"></span></div>
+    <div class="fieldrow"><label>Typical-year profit (this window)</label><span id="s4_profit" style="font-weight:700;color:var(--navy)"></span></div>
+    <div class="fieldrow"><label>Cost as % of typical-year profit</label><span id="s4_pct" style="font-weight:700;color:var(--navy)"></span></div>
+    <p class="side-note">Try to find a combination where this percentage crosses your Step 2 answer. How extreme does MA1 or MA2 have to get before it does?</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4>Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>122 physicians were mailed a chart. Only 109 answers are on record &mdash; 13 missing, about 1 in 9. Here's the breakdown by which chart they got: if the 122 physicians split evenly three ways across weight condition, you'd expect about 41 responses per group. The overweight and obese groups came in close to that (38 each &mdash; short about 3 apiece). The <strong>average-weight</strong> group came in at 33 &mdash; short about 8, roughly double either other group's shortfall, and more than half of everything missing across the whole study.</p>
+      <p>The physicians who got a completely unremarkable, average-weight chart were the ones most likely to never send back a time estimate at all.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">See the missing-response breakdown by group, side by side</label>
+      </div>
+      <div id="twistResult" style="display:none;margin-top:10px">
+        <table style="margin:0"><thead><tr><th>Group</th><th>Expected (of 122&divide;3)</th><th>Actual recorded</th><th>Shortfall</th></tr></thead>
+        <tbody id="twistTable"></tbody></table>
+      </div>
+      <p style="margin-top:14px;font-style:italic">This doesn't hand you an answer &mdash; it hands you a harder question. If "boring chart, skip the survey" explains the missing average-weight responses, does that make your Step 2 gap too big, too small, or is there no way to tell from this data alone? Write out your reasoning; that's the point.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>Hebl, M., &amp; Xu, J. (2001), <a href="https://www.nature.com/articles/0801681" target="_blank" rel="noopener">"Weighing the care: physicians' reactions to the size of a patient"</a>, International Journal of Obesity, 25, 1246-1252 &mdash; the real study behind Appendix B.</li>
+      <li>CDC/NCHS, <a href="https://www.cdc.gov/nchs/data/databriefs/db508.pdf" target="_blank" rel="noopener">Data Brief No. 508</a> &mdash; current US obesity/overweight prevalence.</li>
+      <li>CBC News, <a href="https://www.cbc.ca/news/canada/british-columbia/obese-woman-files-b-c-human-rights-complaint-over-alleged-rehab-denial-1.2916342" target="_blank" rel="noopener">Obese woman files B.C. human rights complaint</a>.</li>
+      <li>Rabin, R.C., The New York Times, <a href="https://www.nytimes.com/2016/09/26/health/obese-patients-health-care.html" target="_blank" rel="noopener">"Why Do Obese Patients Get Worse Care?"</a></li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Biostatician &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* Ported from cases/biostatician/sensitivity_model.py -- keep in sync by
+   hand. case.md sha256 recorded in case.json.qa.case_md_sha256. */
+const MEAN_AVG_TIME_MIN = 31.363636363636363;
+const MEAN_HEAVIER_TIME_MIN = 23.026315789473685;
+const PROFIT_HISTORY_USD = [1500000, 1700000, 2600000, 4500000, 7600000, 4000000];
+const COST_PER_PHYSICIAN_USD = 265;
+const PARAMS = { trained_physician_count: 1852, profit_window_years: 6 };
+function profitAvg(windowYears){
+  const n = Math.max(1, Math.min(PROFIT_HISTORY_USD.length, Math.round(windowYears)));
+  const recent = PROFIT_HISTORY_USD.slice(PROFIT_HISTORY_USD.length - n);
+  return recent.reduce((a,b)=>a+b,0) / recent.length;
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  const gapPct = 100 * (MEAN_AVG_TIME_MIN - MEAN_HEAVIER_TIME_MIN) / MEAN_AVG_TIME_MIN;
+  const totalCost = COST_PER_PHYSICIAN_USD * p.trained_physician_count;
+  const avgProfit = profitAvg(p.profit_window_years);
+  const costPct = 100 * totalCost / avgProfit;
+  return {A: gapPct, B: costPct, totalCost, avgProfit};
+}
+
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){ const el=document.getElementById(id); el.className='fb '+(ok?'ok':'bad'); el.textContent = ok ? '✓' : 'try again'; }
+function val(id){ return document.getElementById(id).value || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row => Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title, 'Heroes Academy Math Builder case study', '', 'Sources:', ...srcLis, '', location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `<h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission.</div>
+    <h2>Dilemma pick</h2><div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>${deliverableRows}`;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+function checkStep1(){
+  fb('fb_s1_avg', near(round(val('s1_avg'),1), round(MEAN_AVG_TIME_MIN,1), 0.15));
+  fb('fb_s1_heavier', near(round(val('s1_heavier'),1), round(MEAN_HEAVIER_TIME_MIN,1), 0.15));
+}
+function checkStep2(){
+  const gap = 100*(MEAN_AVG_TIME_MIN - MEAN_HEAVIER_TIME_MIN)/MEAN_AVG_TIME_MIN;
+  fb('fb_s2_gap', near(round(val('s2_gap'),1), round(gap,1), 0.2));
+}
+function checkStep3(){
+  fb('fb_s3_ow', near(round(val('s3_ow'),1), 75.8, 0.2));
+  fb('fb_s3_ob', near(round(val('s3_ob'),1), 75.8, 0.2));
+}
+function updateStep4(){
+  const trained = Number(document.getElementById('s4_trained').value);
+  const window_ = Number(document.getElementById('s4_window').value);
+  document.getElementById('s4_trained_val').textContent = trained;
+  document.getElementById('s4_window_val').textContent = window_ + (window_===1?' yr':' yrs');
+  const r = evaluate({trained_physician_count: trained, profit_window_years: window_});
+  document.getElementById('s4_cost').textContent = '$' + Math.round(r.totalCost).toLocaleString();
+  document.getElementById('s4_profit').textContent = '$' + Math.round(r.avgProfit).toLocaleString();
+  document.getElementById('s4_pct').textContent = round(r.B,1) + '%';
+}
+
+const CASE_ID = "biostatician";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+const DELIVERABLES = [
+  ["D1", "Three histograms of time spent, one per weight group."],
+  ["D2", "Three box-and-whisker plots on a shared scale."],
+  ["D3", "A percent-above-median table (average-weight vs. overweight/obese medians)."],
+  ["D4", "A mean-and-range comparison by gender and by age."],
+  ["D5", "An outlier check on the obese group's box plot, and its effect on mean vs. median."]
+];
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+const GLOSSARY = {
+  "Mean": {def: "The \"average\": add up every value, then divide by how many values there are.",
+    url: "https://www.mathsisfun.com/mean.html"},
+  "Median": {def: "The middle value in a sorted list of numbers (or the average of the two middle values, if the list has an even count).",
+    url: "https://www.mathsisfun.com/median.html"},
+  "Range": {def: "The difference between the highest and lowest values in a data set.",
+    url: "https://www.mathsisfun.com/data/range.html"},
+  "Quartiles": {def: "The three values that divide an ordered data set into four equal quarters.",
+    url: "https://www.mathsisfun.com/data/quartiles.html"},
+  "Outlier": {def: "A value that lies far outside most of the other values in a data set.",
+    url: "https://www.mathsisfun.com/definitions/outlier.html"},
+  "Histogram": {def: "A bar chart for numeric data, where each bar's height shows how many values fall in that range.",
+    url: "https://www.mathsisfun.com/data/histograms.html"},
+  "Box And Whisker Plot": {def: "A chart showing a data set's minimum, quartiles, and maximum as a box with lines (whiskers) extending to the extremes.",
+    url: "https://www.mathsisfun.com/data/quartiles.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"}
+};
+const HOWTO = [
+  ["How to find the mean of a set of data", "Mean"],
+  ["How to create a histogram given a set of data", "Histogram"],
+  ["How to create a box and whisker plot given a set of data", "Box And Whisker Plot"],
+  ["How to convert numbers to percents", "Percent"],
+  ["How to compare two or more values", "Range"]
+];
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => { if(!a.closest('#apx-glossary')) linked.add(a.dataset.term); });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = []; let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const box = document.getElementById('applyTwist');
+  const resultDiv = document.getElementById('twistResult');
+  if(!box.checked){ resultDiv.style.display = 'none'; return; }
+  const rows = [
+    ['Average-weight', '40.7', '33', '7.7'],
+    ['Overweight', '40.7', '38', '2.7'],
+    ['Obese', '40.7', '38', '2.7']
+  ];
+  document.getElementById('twistTable').innerHTML = rows.map(r =>
+    `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('');
+  resultDiv.style.display = 'block';
+}
+
+updateStep4();
+
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

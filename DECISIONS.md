@@ -188,3 +188,51 @@ nothing to judge with beyond a title and tier code. `assignable_cases` now also 
 through), and selecting a case renders a small info panel showing what it actually teaches, plus
 an explicit `LEGACY — no case.json/interactive page` flag when relevant, so "match the context and
 challenge to the student" is something the UI actually supports rather than asks for on faith.
+
+### D-020 · 2026-08-12 · The publish gate is `TIER2_PASS`, and ten cases are demoted to match
+A project review found that `status: "published"` had come to mean two different things, and that
+the difference was load-bearing: `app/admin_core.py` gates assignability on
+`status in ('published', 'legacy')`, so the flag decides what a real learner can be handed.
+
+**What the review found.** On 2026-08-01 Cold Chain's status was deliberately corrected
+`published` → `qa` on the stated rule "publish only on a confirmed QA-threshold pass," which made
+it unassignable. That rule was never written into SPEC or the ledger. The Aug 4–5 authoring batch
+then marked ten cases `published` at `TIER1_PASS` — no `sensitivity_model.py` (so Tier 2 probe 5
+returns `NOT RUN`, which MCS-26 says is never a pass), no `QA_REPORT.md`, and seven of the ten
+carrying a single `Interactive.html` instead of the packet `case-publish` specifies. The one case
+that *did* ship a sensitivity model and a QA report was the only one held unassignable. The
+ledger and reality disagreed, and the ledger is what `00_SESSION.md` tells a new session to trust.
+
+**The ruling: tighten, don't formalize downward.** `published` now requires `qa.state` of
+`TIER2_PASS` or better. Chosen over the two alternatives on the table — writing the lower bar down
+as the real one, or keeping the ten assignable with a disclosed `tier2: NOT_RUN` — because the
+project's own founding lesson is the one in `DOCTRINE_LEDGER.md`'s verification-status note: HIGH
+GRADE cleared thirteen structural checks and six simulated probes and still failed in a live room.
+A case with no sensitivity model has never had its verdict tested against a ±50% swing of its own
+stated assumptions (MCS-26), and Track A's whole premise is that shipping that to a real cohort is
+the specific failure this pipeline exists to prevent. Disclosure is the right answer for a
+*known* sensitivity; it is not the right answer for one nobody has measured.
+
+**Cost, stated plainly: this is a visible regression in the live app.** Ten cases that were
+assignable become unassignable until each has a `sensitivity_model.py` and a real Tier 2 run.
+Accepted deliberately. The backfill is now the top Track A queue item.
+
+**What made this affordable.** The same review found the pipeline had already fixed itself: the
+five cases authored on 2026-08-12 (`plaza-pavers`, `company-front`, `vent-cap`, `apron-order`,
+`survey-corner`) each ship `TIER2_PASS` across all six probes, a `sensitivity_model.py`, a
+`QA_REPORT.md`, and the full five-file packet — a *higher* bar than Cold Chain ever reached. So the
+new bar is not aspirational; it is what today's pipeline already produces. The regression is
+confined to one historical batch, not to the system's current output.
+
+**Cold Chain stays `qa`** under this rule, correctly and for the same reason as before: probe 5
+mechanically FAILs (disclosed, per MCS-26) and probe 6 is partial, so it has not reached
+`TIER2_PASS`. The rule that demoted it is now written down rather than applied once and forgotten.
+
+**Enforcement.** `scripts/apply_publish_gate.py` — derives the demotion set at run time from
+`qa.state` rather than a hardcoded id list (the corpus was being actively authored while this was
+written; a fixed list went stale inside ten minutes), dry-runs by default, requires `--confirm`
+(MCS-12), snapshots before every write (MCS-22), and demotes only — it names cases that now
+qualify for promotion but never moves them, because promotion is `case-publish`'s job. Codified as
+MCS-41. **Honest gap:** that script is a reconciliation sweep, not a pre-publish block —
+`case-publish` itself does not yet refuse to stamp `published` below `TIER2_PASS`. Until it does,
+MCS-41 is enforced after the fact rather than at the gate.

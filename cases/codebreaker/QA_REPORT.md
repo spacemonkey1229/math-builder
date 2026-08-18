@@ -155,3 +155,58 @@ Dive, The Trap, Socratic Question 2), and `cases/codebreaker/published/Codebreak
 MCS-26/MCS-41, a disclosed-but-not-eliminated instability would still be recorded as FAIL even
 with a write-up in `balance{}`; this is not that case — the instability itself is gone under the
 declared ±50% sweep.)
+
+---
+
+## case-readiness run — 2026-08-18 (first real, full Tier 2 run)
+
+The 2026-08-13 P5-fix entry above recorded `final_state = TIER2_PASS`, but its own note flagged
+that P1/P2/P4/P6 had been **carried forward** from the prior BLOCKED run rather than
+re-adjudicated by a fresh subagent after the Convention-4 retune, and recommended "a full
+re-run of P1/P2/P4/P6 before Tier 3 would be the conservative next step." This run is that
+full re-run — the first time all six Tier 2 probes have been genuinely re-checked against the
+case's current (retuned) state in one pass.
+
+### Tier 1 — structural (reconfirmed)
+No case files were edited before this run. `case.json.qa.case_md_sha256` (case.md unchanged
+since 2026-08-13) and the prior TIER1_PASS (18 PASS, 1 GAP — T1-18's accepted decorative-decimal
+class) stand. Not re-run mechanically this pass since no content changed; carried forward with
+confidence for that reason only.
+
+### Tier 2 — simulated play (6 probes)
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **FAIL** | Fresh structured cold-solve supplied for this run. Arithmetic checked line-by-line against `case.json.derived{}` and matches exactly: keyspace_A ≈3.63×10²⁷, p_blind_A≈2.755×10⁻²⁸; keyspace_B 22/26, p_blind_B≈0.0385–0.0455; total chars A=120/B=50; p_zero_error framing at 0.15% used correctly for the counterargument (92.8%/83.5%, matching `derived.p_zero_error_B/A` to rounding); correctly identified `char_error_rate` (MA4) as the least-supported, most sensitive number, and independently reasoned through a hypothetical 10x-higher error rate flipping the comparison — all seven answers are real, substantive, and arithmetically correct. **But answer_1 chose Option A**, and answer_2/answer_4's reasoning is explicitly: keyspace/catastrophic-failure risk should dominate over D7's graded transcription-probability metric, since a miscopied character is "a recoverable annoyance, not a catastrophic failure." This is not an alternate defensible reading of a close balance case — it is, word for word, the exact failure FACILITATOR.md's Trap section was retuned on 2026-08-13 to name: *"a Hero who has all eight numbers right on paper and still picks Option A has a confident, wrong-shaped recommendation, not a math error... at the weighing step they let D1's astronomical, catastrophic-sounding keyspace number override the graded D7 metric that actually favors Circle Shift."* Socratic Question 2 exists specifically to catch this move. Per SKILL.md's P1 doctrine ("reaching the intended answer by the wrong route is a FAIL"), the converse applies here: reaching the case's own explicitly-named wrong-shaped answer by the case's own explicitly-named wrong route is a FAIL, not a defensible alternate position — the case's balance is close (11.1%) but not undecided; it has a graded metric and a named trap for the solver who doesn't follow it. **Verdict: FAIL.** |
+| P2 both-sides | **PASS** | Strongest quantitative case for each option, both anchored in real, independently-verified numbers, neither reading as a concession. **A:** ~3.63×10²⁷-key one-time keyspace under Kerckhoffs's Principle gives a blind-guess probability of ~2.76×10⁻²⁸ — a ~25-order-of-magnitude margin. **B:** needs only 50 total handwritten characters against A's 120, giving a real, computed 92.8% zero-error transcription probability vs. 83.5% — the graded `primary_metric`, by a real 11.1% margin (current, post-retune figures; unchanged from `case.json.balance`). Neither side collapses; both would survive a "which side concedes first" read. |
+| P3 trap | **PASS** | FACILITATOR.md's current Trap section (a D8 synthesis-weighing failure: computing D1-D8 correctly, then letting D1's keyspace override D7's graded margin) is not just plausible on inspection — **this run's own fresh P1 cold-solve is direct empirical proof the guide is watching for the right failure.** The solver did exactly what the Trap section describes, unprompted, using almost the same language ("recoverable annoyance" vs. "occasionally miscopies a digit," in FACILITATOR.md's own Trap prose). Socratic Question 2 targets it directly. Trap named in the guide matches the trap a fresh, careful reader plausibly falls into — confirmed twice now (this run and the pre-retarget run) rather than once. |
+| P4 twist | **PASS** | Re-derived by hand against every stated-assumption reading; case.md/FACILITATOR.md's twist text unchanged since the prior hand-derivation, so the underlying analysis carries forward: frequency analysis defeating a reused monoalphabetic-style key survives independence from Convention 3's multiplier, independence from which of Appendix C's two messages is intercepted (strengthens with message count, which Background's six-months-of-messages guarantees), and does not contradict D1-D3's one-shot blind-guess arithmetic. Invalidates the common "A wins on keyspace, done" position. Non-blocking GAP carried forward: `evaluate_twist()` in `sensitivity_model.py` still computes raw keyspace-in-bits rather than a genuine frequency-analysis-specific metric, though its docstring (re-read this run) is now explicit that this is "deliberately NOT the graded primary_metric" rather than promising the twist mechanism itself — an improvement over the wording flagged in the 2026-08-13 run, but the rename/genuine-model suggestion still stands. |
+| P5 sensitivity | **PASS** | `python3 skills/case-readiness/scripts/tier2_probes.py --case codebreaker --probe 5 --flex 0.5` re-run this pass → mechanical `PASS`, exit 0. `base_margin_pct: 11.1`. All 6 swept scenarios (multiplier ±50%, multiplier_search_max ±50%, char_error_rate ±50%) stay within SPEC §2's 20% cap and never flip the winner (B wins throughout); worst case is char_error_rate +50% at margin_pct 17.1%, `breaks_20pct_cap: false`. Confirms the 2026-08-13 Convention-4 retune (0.2%→0.15%) still holds under the declared FLEX[] dials — this is a genuine re-run, not a carry-forward, and it reproduces the same numbers the retune fix recorded. |
+| P6 data decay | **PASS** | All 5 `sources[]` URLs re-fetched live 2026-08-18 via both `curl` (HTTP status) and `WebFetch` (content match), independent of the 2026-08-13 fetch. S1 (Wikipedia, Kerckhoffs's principle): HTTP 200, quote confirmed verbatim — "a cryptosystem should be secure, even if everything about the system, except the key, is public knowledge" — backs Convention 1. S2 (Wikipedia, Frequency analysis): HTTP 200, confirms "such properties of the natural language plaintext are preserved in the ciphertext... exploited in a ciphertext-only attack" — backs the twist's mechanism. S3 (Khan Academy, Cryptography course) and S4 (Khan Academy, Intro to cryptography): both HTTP 200 via `curl`; `WebFetch` returned only the bare SPA shell (JS-rendered, content not extractable by the fetch tool, same limitation noted 2026-08-13) — reachability itself is what their "n/a"-value, link-only claim requires, and both resolved live with no redirect to an error page. S5 (Math Is Fun, Combinations and Permutations): HTTP 200, confirmed live with substantive worked permutation content ("10!/(10−2)! = 10!/8! = 3,628,800/40,320 = 90") matching D1's how-to deliverable. Both `excluded_sources[]` entries independently re-checked and remain correctly dropped: Guardian URL HTTP 404, Exploratorium URL HTTP 403 — neither is cited live anywhere in the case. No dead or drifted load-bearing links. |
+
+### Blocker to close before TIER2_PASS
+1. **P1 — the case still lets a careful, fully-correct solver land on the wrong-shaped answer.**
+   A fresh cold-solve computed all of D1–D7 correctly and named its metric explicitly, then chose
+   Option A at D8 by weighing keyspace/catastrophic-risk over the graded transcription-probability
+   margin — precisely the trap FACILITATOR.md's Trap section was retuned on 2026-08-13 to name.
+   That the guide correctly anticipates this failure (see P3, PASS) does not clear P1: P1 grades
+   whether a genuinely fresh, unbriefed reader reaches a defensible position *for the intended
+   reasons*, and this solver did not. This is not a case-content defect requiring a new retune —
+   the balance, twist, and sensitivity are all sound (P2/P4/P5/P6 all PASS) — but `case-write`/
+   `case-research` should consider whether Anchor 3's framing or Appendix D's presentation order
+   telegraphs D1's keyspace too early/too forcefully relative to D7, making the trap easier to
+   fall into than intended. Re-run a fresh P1 cold-solve after any such change and confirm it
+   reaches Option B for the graded reasons before recording TIER2_PASS. QA does not fix.
+
+### Non-blocking findings carried forward
+- P4: `evaluate_twist()`'s implementation still computes raw pre-twist keyspace-in-bits rather
+  than a genuine frequency-analysis-specific metric; its docstring is now honest about this
+  (no longer over-promises), but a rename (e.g. `evaluate_context_axis`) or a real twist-effect
+  model remains the cleaner fix.
+
+### Tier 3 — human dry-run
+NOT RUN.
+
+**RESULT: final_state = BLOCKED.** Tier 1 clean (TIER1_PASS, 0 blockers). Tier 2: 5 of 6 probes
+PASS (P2, P3, P4, P5, P6); P1 FAIL. `case.json.qa.verdict` set to `"BLOCKED"` (not `"PASS"` —
+reserved for `TIER2_PASS`), `tier2.P1` set to `"FAIL"`, `blockers_open: 1`.

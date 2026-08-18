@@ -57,6 +57,11 @@ def live(rows):
     return [r for r in rows if not r.get('_example')]
 
 
+def _rating_summary(ratings, case_id):
+    rs = [r['stars'] for r in ratings if r['case_id'] == case_id]
+    return {"avg_rating": round(sum(rs) / len(rs), 1) if rs else None, "rating_count": len(rs)}
+
+
 def slugify(s):
     # NFKD + drop combining marks first, so "Théo" -> "theo" (transliterated) rather than
     # silently vanishing into "th-o" the moment the regex below hits a non-ASCII character.
@@ -235,7 +240,8 @@ def build_state(store):
     def _case_view(c):
         title = c.get('title') or c['id']
         filename, has_interactive = _case_interactive_info(c['id'], title)
-        return {"id": c['id'], "title": title, "tier": c.get('tier'), "status": c.get('status'),
+        return {"id": c['id'], "title": title, "tier": c.get('tier'), "complexity": c.get('complexity'),
+                "status": c.get('status'),
                 "band": c.get('band') or [], "standards_count": c.get('standards_count'),
                 "domains_touched": c.get('domains_touched') or [],
                 "interactive_file": filename, "has_interactive": has_interactive}
@@ -247,6 +253,10 @@ def build_state(store):
         # alphabetical list was landing on a legacy case by default. Within
         # each group, sort by band then title so MS/HS don't interleave.
         key=lambda c: (c['status'] != 'published', ','.join(sorted(c['band'])), c['title']))
+
+    ratings = subs.get('ratings', [])
+    for c in assignable_cases:
+        c.update(_rating_summary(ratings, c['id']))
 
     A = live(subs['assignments'])
     S = live(subs['submissions'])
@@ -267,7 +277,13 @@ def build_state(store):
                                   "discussion_count": dcount, "n_submissions": len(my_subs),
                                   "case_title": c['title'] if c else a['case_id'],
                                   "interactive_file": c['interactive_file'] if c else None,
-                                  "has_interactive": bool(c and c['has_interactive'])})
+                                  "has_interactive": bool(c and c['has_interactive']),
+                                  "complexity": c.get('complexity') if c else None,
+                                  "avg_rating": c.get('avg_rating') if c else None,
+                                  "rating_count": c.get('rating_count') if c else 0,
+                                  "my_rating": next((r['stars'] for r in ratings
+                                                      if r['learner_id'] == a['learner_id']
+                                                      and r['case_id'] == a['case_id']), None)})
 
     domains_doc = store.load('domains.json')
     tree_doc = store.load('curriculum_tree.json')
@@ -698,6 +714,28 @@ def do_add_discussion(store, learner_id, case_id, date, mode, recorded_by, note)
     })
     store.save('submissions.json', subs)
     return did, n
+
+
+def do_rate_case(store, learner_id, case_id, stars, note=None):
+    if not isinstance(stars, int) or not (1 <= stars <= 5):
+        raise ApiError(400, "stars must be an integer 1-5")
+    subs = store.load('submissions.json')
+    subs.setdefault('ratings', [])
+    live_asg = live(subs['assignments'])
+    asg = next((a for a in live_asg if a['learner_id'] == learner_id and a['case_id'] == case_id
+                and a['status'] in ('submitted', 'reviewed', 'complete')), None)
+    if not asg:
+        raise ApiError(400, "rate a case only after submitting work for it")
+    existing = next((r for r in subs['ratings'] if r['learner_id'] == learner_id and r['case_id'] == case_id), None)
+    if existing:
+        existing['stars'], existing['note'], existing['rated_on'] = stars, note or None, today()
+        rid = existing['id']
+    else:
+        rid = f"{learner_id}__{case_id}__rating"
+        subs['ratings'].append({"id": rid, "learner_id": learner_id, "case_id": case_id,
+                                 "stars": stars, "note": note or None, "rated_on": today()})
+    store.save('submissions.json', subs)
+    return rid
 
 
 def do_review(store, submission_id, outcome, review_note, reviewed_by):

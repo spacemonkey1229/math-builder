@@ -22,7 +22,7 @@ Betsy grew up in Ohio in the 1990s and fell in love with the sport watching Mich
 
 Both players' full regular-season and playoff statistics are in **APPENDIX A** and **APPENDIX B**. Both players' real career seasons and accolades are in **APPENDIX C** and **APPENDIX D**. Exactly how career averages are calculated — and how to compare seasons of different lengths fairly — is fixed in **APPENDIX E**; use those conventions, or your numbers won't match anyone else's.
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix F** — that is where Challenge 1 sends you.
+The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix G** — that is where Challenge 1 sends you. Want to read more about the two players and the debate itself, beyond the required math? See **Appendix F**.
 
 ---
 
@@ -156,7 +156,18 @@ Stats as of the end of the 2020-21 season — see Appendix E, Assumption 5.
 
 ---
 
-## Appendix F: "How To…" Math Questions To Research
+## Appendix F: Learn More
+
+Real, currently-live external resources for further reading — not required for the challenges, and not sourced from the case's math standards.
+
+- [LeBron James — career stats (Basketball-Reference.com)](https://www.basketball-reference.com/players/j/jamesle01.html) — his full season-by-season and career statistical record, straight from the sport's standard reference site.
+- [Michael Jordan — career stats (Basketball-Reference.com)](https://www.basketball-reference.com/players/j/jordami01.html) — his full season-by-season and career statistical record, straight from the sport's standard reference site.
+- [Michael Jordan vs. LeBron James: Everything you need to know about the NBA GOAT debate (ESPN)](https://www.espn.com/nba/story/_/id/30108804/michael-jordan-vs-lebron-james-everything-need-know-nba-goat-debate) — an overview of the arguments, poll data, and history behind the debate Betsy has been assigned to settle.
+- [History of the Naismith Memorial Basketball Hall of Fame (Hoophall.com)](https://www.hoophall.com/explore/about/history) — the story of James Naismith inventing the game in 1891, fitting background given Betsy's own last name.
+
+---
+
+## Appendix G: "How To…" Math Questions To Research
 
 **Vocabulary**
 

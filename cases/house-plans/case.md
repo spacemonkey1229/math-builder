@@ -26,7 +26,7 @@ Each floor plan can be built at one of three finish tiers — Standard, Plus, or
 
 The Davidsons want the finish quality and extra amenities that make a house feel like *their* dream home — but not at the cost of going over what the lender, and their own savings, can actually support.
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix E** — that is where Challenge 1 sends you.
+The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix F** — that is where Challenge 1 sends you. (SEE APPENDIX E for further reading on home construction, financing, and square footage.)
 
 ---
 
@@ -115,7 +115,18 @@ Unheated areas — front porch, covered veranda, and attic — do not count towa
 
 ---
 
-## Appendix E: "How To…" Math Questions To Research
+## Appendix E: Learn More
+
+Curious about the real-world side of house plans, building loans, and finish tiers beyond the math in this case? These are real, currently-live resources — not part of any Challenge requirement.
+
+- [What is a construction loan? — Consumer Financial Protection Bureau](https://www.consumerfinance.gov/ask-cfpb/what-is-a-construction-loan-en-108/) — the CFPB's plain-language explainer on how construction loans like the Davidsons' actually get paid out and repaid.
+- [Cost of Constructing a Home — 2024 — National Association of Home Builders](https://www.nahb.org/news-and-economics/housing-economics-plus/special-studies/special-studies-pages/cost-of-constructing-a-home-in-2024) — NAHB's real industry survey on what share of a new home's price goes to construction, land, and builder profit (opens as a PDF report).
+- [Percent word problem: guavas — Khan Academy](https://www.khanacademy.org/math/cc-seventh-grade-math/cc-7th-fractions-decimals/cc-7th-percent-word-problems/v/another-percent-word-problem) — a video walking through finding a full price from a known discounted price, the same "find the whole" move D2 asks of you.
+- [How to Measure the Square Footage of a House — U.S. News Real Estate](https://realestate.usnews.com/real-estate/articles/how-to-measure-the-square-footage-of-your-house) — explains which spaces count toward a house's square footage and which don't, the same heated-vs-unheated distinction behind Appendices A and B.
+
+---
+
+## Appendix F: "How To…" Math Questions To Research
 
 **Vocabulary**
 

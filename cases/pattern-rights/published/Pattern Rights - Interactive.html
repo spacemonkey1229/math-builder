@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Pattern Rights — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:260px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — Pattern Rights: swatch comparison strip used
+     in the Overview banner and Appendix A.
+     ============================================================ */
+  .swatchrow{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;align-items:flex-start;padding:6px 0 4px}
+  .swatchrow .swcol{text-align:center;font-family:var(--sans)}
+  .swatchrow .swlabel{font-weight:700;color:var(--navy);margin-top:6px;font-size:.85rem}
+  .swatchrow .swsub{color:var(--sub);font-size:.75rem;max-width:190px;margin:2px auto 0}
+  .twistresult{margin-top:14px;padding:14px 16px;background:#2b323b;border:1px solid #444;border-radius:8px;font-family:var(--sans);font-size:.88rem;color:#e8e3d5}
+  .twistresult table{font-size:.82rem}
+  .twistresult th{background:#3a4250}
+  .twistresult td{background:transparent !important;color:#e8e3d5;border-color:#444}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 8.5 20 20M20 4 8.5 15.5"/></symbol>
+  <symbol id="icon-roll" viewBox="0 0 24 24"><ellipse cx="6" cy="12" rx="3" ry="9"/><path d="M6 3v18"/><path d="M9 4h11v16H9"/></symbol>
+  <symbol id="icon-tag" viewBox="0 0 24 24"><path d="M3 12 12 3h8v8l-9 9z"/><circle cx="15" cy="6" r="1.4" fill="currentColor" stroke="none"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: Pattern Rights</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Discrete Math &middot; Combinatorics</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <figure style="border:none;box-shadow:none;padding:0;background:transparent">
+    <svg viewBox="0 0 640 170" role="img" aria-label="Two repeat schemes: a straight-grid tile at left, a half-drop offset tile at right">
+      <g transform="translate(30,15)">
+        <text x="70" y="0" text-anchor="middle" font-family="var(--sans)" font-size="12" fill="#1a3a5c" font-weight="700">The Straight Set</text>
+        <g stroke="#c9a227" stroke-width="1.4" fill="#eef3f8">
+          <rect x="0" y="14" width="46" height="34"/><rect x="48" y="14" width="46" height="34"/><rect x="96" y="14" width="46" height="34"/>
+          <rect x="0" y="50" width="46" height="34"/><rect x="48" y="50" width="46" height="34"/><rect x="96" y="50" width="46" height="34"/>
+          <rect x="0" y="86" width="46" height="34"/><rect x="48" y="86" width="46" height="34"/><rect x="96" y="86" width="46" height="34"/>
+        </g>
+        <path d="M4 31 Q23 18 42 31 T4 31" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M52 31 Q71 18 90 31 T52 31" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M100 31 Q119 18 138 31 T100 31" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M4 67 Q23 54 42 67 T4 67" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M52 67 Q71 54 90 67 T52 67" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M100 67 Q119 54 138 67 T100 67" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+      </g>
+      <g transform="translate(320,15)">
+        <text x="90" y="0" text-anchor="middle" font-family="var(--sans)" font-size="12" fill="#1a3a5c" font-weight="700">The Half-Drop</text>
+        <g stroke="#c9a227" stroke-width="1.4" fill="#f7edcf">
+          <rect x="0" y="14" width="46" height="34"/><rect x="48" y="31" width="46" height="34"/><rect x="96" y="14" width="46" height="34"/><rect x="144" y="31" width="46" height="34"/>
+          <rect x="0" y="50" width="46" height="34"/><rect x="48" y="67" width="46" height="34"/><rect x="96" y="50" width="46" height="34"/><rect x="144" y="67" width="46" height="34"/>
+          <rect x="0" y="86" width="46" height="34"/><rect x="96" y="86" width="46" height="34"/>
+        </g>
+        <path d="M4 31 Q23 18 42 31 T4 31" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M52 48 Q71 35 90 48 T52 48" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M100 31 Q119 18 138 31 T100 31" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M148 48 Q167 35 186 48 T148 48" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M4 67 Q23 54 42 67 T4 67" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M52 84 Q71 71 90 84 T52 84" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+        <path d="M100 67 Q119 54 138 67 T100 67" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+      </g>
+    </svg>
+    <figcaption>The same trailing-vine motif, tiled two different ways. Left: a uniform grid, every column identical. Right: every other column dropped by half the motif's height &mdash; the standard half-drop offset.</figcaption>
+  </figure>
+  <p class="lede">Priya Deshmukh is elbow-deep in a stack of hand-inked florals when her phone buzzes against the light table. Thistlebrook's production manager, calling for the third time today. Behind her, pinned across two corkboards, hangs the same trailing-vine motif rendered two different ways: one tiled in a plain, brick-straight grid, the edge of each square meeting the next like tile in a bathroom; the other staggered, every other column dropped, the seams disappearing into the pattern's own rhythm. Both are the same drawing. Neither is wrong.</p>
+  <p>The studio smells like spray-mount and burnt coffee. Somewhere under the pile is the licensing term sheet her lawyer marked up last week, half the clauses still in red. Thistlebrook wants an answer before their engraving room opens a job ticket Thursday morning &mdash; whichever repeat scheme Priya signs off on gets burned onto the press cylinder, and cylinders are not something anyone re-cuts on a whim.</p>
+  <p>She's spent years building a client list on this vine pattern's reputation for looking expensive without being unreasonable to print. This is the first time a mill this size has wanted it for a whole yardage program instead of one throw-pillow run. Get the repeat scheme right and it's the biggest single royalty check of her career. Get it wrong and either the seams show on every sofa cushion made from her fabric, or Thistlebrook eats a setup cost that kills the reorder.</p>
+  <p>Priya opens the term sheet, pulls both corkboard photos into one browser tab, and starts typing.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Priya Deshmukh is an independent surface-pattern designer who licenses original repeat artwork to fabric manufacturers for a running royalty per yard sold. She does not own or operate a press and is not a party to Thistlebrook Textiles' own production economics, but the <strong>repeat scheme</strong> named in the license is a term she controls and must choose before signing. Thistlebrook Textiles is a mid-size home-d&eacute;cor fabric printer being asked to commit its printing setup &mdash; an engraved cylinder that is expensive and slow to change once cut &mdash; to whichever repeat scheme the signed license specifies.</p>
+  <p>Two repeat schemes are under negotiation for Priya's vine motif, each a fully alternative way of tiling the same artwork across a bolt of fabric:</p>
+  <p><strong>The Straight Set</strong> would tile the motif in a uniform grid: every repeat unit placed identically, with no offset between adjacent columns. Under this scheme, every printed unit must run exactly as drawn &mdash; a mirrored or rotated unit would create a visible break in the grid's straight lines (see Appendix A).</p>
+  <p><strong>The Half-Drop</strong> would offset every other column by half the motif's repeat height, the standard technique surface-pattern designers use to break up a straight grid's visible seams. Because alternating columns are already offset from one another, Thistlebrook's plate room confirms that each column can independently run mirrored or as-drawn from the same single engraving with no visible edge mismatch &mdash; a flexibility The Straight Set's zero-offset grid cannot offer (see Appendix A). The Half-Drop's offset lattice also does not repeat with a single column's width: the offset pattern itself (dropped column, un-dropped column, dropped column, &hellip;) only returns to its starting arrangement every <em>second</em> column, so the smallest rectangular block that tiles the whole fabric by pure straight-line translation alone &mdash; the scheme's <em>true</em> repeating tile &mdash; is twice as wide as a single visual column, and contains more of the vine motif's distinct floral elements before the tile genuinely closes (see Appendix A).</p>
+  <p>Both schemes must fit within Thistlebrook's actual printable fabric width on the rotary-screen press it plans to run the job on (see Appendix B). Cutting a new engraved cylinder &mdash; one per repeat scheme, one time, before any yardage prints &mdash; is Thistlebrook's dominant one-time setup cost, and the two schemes do not cost the same to engrave, because the Half-Drop's offset lattice requires tighter cross-column registration during engraving than the Straight Set's uniform grid (see Appendix C). Once engraved, a cylinder is only rated for a fixed length of fabric before it wears past tolerance and Thistlebrook has to re-cut it &mdash; that rated print run, combined with the real fabric width, sets the total yardage either scheme can produce from a single setup (see Appendix B).</p>
+  <p>Thistlebrook also wants the option to release a small "featured" capsule from whichever scheme wins &mdash; a limited run recoloring a chosen subset of the vine motif's distinct floral elements in a contrast thread, sold as a premium companion piece. How many distinct subsets of that size are even possible depends on how many floral elements sit inside one <em>true</em> repeating tile &mdash; which, per Appendix A, differs between the two schemes (see Appendix A).</p>
+  <p>Every dollar and yard figure Priya and Thistlebrook use to compare the two schemes is sourced in Appendix E, or stated as an explicit modeling assumption in Appendix D where no public figure exists. The vocabulary and "how to&hellip;" skills this case will ask of you are listed in Appendix F &mdash; that is where Challenge 1 sends you.</p>
+  <figure>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Honeysuckle_MET_80664.jpg" alt="Honeysuckle, a trailing floral repeat-pattern textile designed by William Morris in 1876, printed on linen" style="max-width:100%;height:auto;border-radius:6px">
+    <figcaption><em>Honeysuckle</em> (1876), a trailing floral repeat designed by William Morris and printed on linen &mdash; a real example of the kind of hand-drawn vine motif a surface-pattern designer like Priya would license. Photo: The Metropolitan Museum of Art, CC0 (public domain).</figcaption>
+  </figure>
+  <figure>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e6/Fabric_printing%2C_Bikaner.jpg" alt="Two workers hand-printing a repeat pattern onto a length of fabric in Bikaner, India" style="max-width:100%;height:auto;border-radius:6px">
+    <figcaption>Fabric printing in progress in Bikaner, India &mdash; production workers running a repeat pattern down a bolt of cloth, the same kind of print-run process Thistlebrook's engraving room performs at industrial scale. Photo: Rick Bradley, CC BY 2.0.</figcaption>
+  </figure>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Priya Deshmukh. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Straight Set</h4>
+      <p style="margin:0">License the vine pattern as a straight-grid repeat: every column identical, no offset, no independent mirror choice.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Half-Drop</h4>
+      <p style="margin:0">License the vine pattern as a half-drop repeat: alternating columns offset by half the motif height, each column independently mirrored or as-drawn.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which repeat scheme you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a configuration-count table for both schemes, computed by the Fundamental Counting Principle, with the full application shown for at least one scheme; <strong>D2</strong> a featured-capsule selection table using combinations, computed for both schemes, with the full binomial-coefficient computation shown for at least one scheme; <strong>D3</strong> a guaranteed-repeat collision analysis using the Pigeonhole Principle, comparing each scheme's guarantee threshold to a real production run's actual repeat count; <strong>D4</strong> a setup-dollar synthesis table computing each scheme's yards producible per dollar of engraving setup cost (the case's primary metric) and its featured-capsule count per dollar, with full arithmetic shown for both.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; Repeat Scheme &amp; Configuration Definitions</summary>
+    <div class="inner">
+      <p><strong>Licensing terms fixed for both schemes</strong></p>
+      <table id="apxA1">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Colorways covered under this license</td><td class="num">4</td></tr>
+        <tr><td>Featured-capsule subset size (floral elements recolored)</td><td class="num">2</td></tr>
+        <tr><td>One column's printed width (both schemes use the same artwork column)</td><td class="num">18 inches</td></tr>
+        <tr><td>One column's repeat height (both schemes use the same artwork column)</td><td class="num">27 inches</td></tr>
+      </table>
+      <p><strong>The Straight Set (Option A)</strong></p>
+      <table id="apxA2">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Adjacent-column offset</td><td>None &mdash; uniform grid</td></tr>
+        <tr><td>Independent mirror-or-as-drawn choice per column?</td><td>No &mdash; a mirrored unit breaks the grid's straight seam</td></tr>
+        <tr><td>Width of the <em>true</em>, fully-tiling repeat unit</td><td>18 inches (one column &mdash; the visual tile and the true tile are the same unit)</td></tr>
+        <tr><td>Floral elements per <em>true</em> repeating tile</td><td class="num">6</td></tr>
+      </table>
+      <p><strong>The Half-Drop (Option B)</strong></p>
+      <table id="apxA3">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Adjacent-column offset</td><td>Half the motif's repeat height</td></tr>
+        <tr><td>Independent mirror-or-as-drawn choice per column?</td><td>Yes &mdash; each column may run mirrored or as-drawn from the same engraving</td></tr>
+        <tr><td>Width of the <em>true</em>, fully-tiling repeat unit</td><td>36 inches (two columns &mdash; see note below)</td></tr>
+        <tr><td>Floral elements per <em>true</em> repeating tile</td><td class="num">12 (double The Straight Set's count &mdash; see note below)</td></tr>
+      </table>
+      <p><strong>Why The Half-Drop's true tile is twice as wide, and holds double the floral elements.</strong> A half-drop offsets every other column by exactly half the repeat height. The offset <em>pattern itself</em> (dropped, un-dropped, dropped, un-dropped, &hellip;) only returns to its starting arrangement every second column, so the smallest rectangular block that tiles the whole fabric by pure straight-line translation alone &mdash; the scheme's true repeating tile &mdash; is twice as <em>wide</em> as a single visual column, and therefore contains twice as many of the motif's floral elements before the pattern genuinely closes <a href="https://www.linda-matthews.com/how-to-make-a-half-drop-repeat-pattern-using-photoshop-elements/" target="_blank" rel="noopener">[S5]</a>.</p>
+      <p class="side-note"><strong>A note on symmetry, for context (not load-bearing).</strong> The number of ways any 2-dimensional repeating pattern's own rotational and reflective symmetry can combine with a translational grid is not unlimited &mdash; it is a proven, closed classification: every possible periodic 2-D pattern's symmetry falls into exactly <a href="https://mathworld.wolfram.com/WallpaperGroups.html" target="_blank" rel="noopener">17 "wallpaper groups" [S4]</a>, first proven in 1891. This license's own configuration count (Challenge 3 D1) is far smaller than that &mdash; it is not attempting to exhaust the mathematical space, only the specific choices this negotiation covers.</p>
+    </div>
+  </details>
+
+  <details id="apx-b">
+    <summary>Appendix B &mdash; Fabric &amp; Press Specification</summary>
+    <div class="inner">
+      <table id="apxB">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Thistlebrook's real printable fabric width on its rotary-screen press</td><td class="num">54 inches <a href="https://indigoandluxe.com/how-wide-is-drapery-fabric/" target="_blank" rel="noopener">[S1]</a></td></tr>
+        <tr><td>Rated print run of one engraved rotary screen/cylinder before it must be re-cut</td><td class="num">30,000 meters (32,808 yards) <a href="https://www.hanzeltd.com/how-to-choose-the-right-nickel-mesh-screen.html" target="_blank" rel="noopener">[S3]</a> &mdash; the conservative end of a published 30,000&ndash;50,000 meter range for water-based-paste printing; see Appendix D, MA1</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-c">
+    <summary>Appendix C &mdash; Engraving Setup Cost</summary>
+    <div class="inner">
+      <table id="apxC">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>The Straight Set &mdash; one-time engraving/setup cost</td><td class="num">$650.00 &mdash; see Appendix D, MA2</td></tr>
+        <tr><td>The Half-Drop &mdash; one-time engraving/setup cost</td><td class="num">$750.00 &mdash; see Appendix D, MA2</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="side-note">These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+      <table id="apxD">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr>
+          <td>MA1</td>
+          <td>Which end of the sourced 30,000&ndash;50,000 meter screen-life range to use for both schemes</td>
+          <td class="num">30,000 meters (the low, conservative end)</td>
+          <td>[S3] states a range, not a single figure, and does not break the range out by pattern type (straight vs. offset); no source ties a specific figure within the range to either scheme specifically. The low end is used so the primary metric is not inflated by an optimistic assumption.</td>
+          <td>Scales both schemes' total yardage &mdash; and therefore both schemes' yards-per-dollar figure &mdash; by the same proportion. Because both schemes share the same rated print run in this model, this choice does not change which scheme wins the primary metric or the size of the margin between them; it only changes both absolute figures together.</td>
+        </tr>
+        <tr>
+          <td>MA2</td>
+          <td>One-time engraving/setup cost, in USD, for each scheme</td>
+          <td class="num">Straight Set: $650.00. Half-Drop: $750.00 (a $100 premium)</td>
+          <td>No public, dated 2026 price list for rotary-screen engraving could be located. <a href="https://www.finetex.net/screens1.htm" target="_blank" rel="noopener">[S2]</a> is a real, named engraving vendor's own price list, but it is dated 2011 and does not break pricing out by straight-grid vs. offset/half-drop repeat &mdash; only by repeat size and color count. The $650/$750 figures are stated scenario values informed by [S2]'s real (if dated) per-screen range, with a modest premium assumed for The Half-Drop on the stated basis that its offset lattice requires tighter cross-column registration during engraving than a uniform grid.</td>
+          <td>The case's answer is sensitive to this value &mdash; a Hero who argues the registration premium is unrealistically large or small has found the case's real fault line.</td>
+        </tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxE">
+        <tr><th>id</th><th>Claim</th><th>Value</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Standard printable width of US home-d&eacute;cor/decorator fabric</td><td class="num">54 inches</td><td><a href="https://indigoandluxe.com/how-wide-is-drapery-fabric/" target="_blank" rel="noopener">Indigo &amp; Luxe, "How Wide Is Drapery (Decorator) Fabric?"</a></td><td>MEDIUM</td></tr>
+        <tr><td>S2</td><td>Rotary-screen engraving price, by repeat size and color count</td><td class="num">$410&ndash;$470 (27" repeat, single color)</td><td><a href="https://www.finetex.net/screens1.htm" target="_blank" rel="noopener">Fine Line Engraving, "Rotary Screen Engraving Prices"</a> (dated 2011)</td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Service life of a rotary printing screen before replacement</td><td class="num">30,000&ndash;50,000 meters</td><td><a href="https://www.hanzeltd.com/how-to-choose-the-right-nickel-mesh-screen.html" target="_blank" rel="noopener">HANZE INTL, "How to Choose the Right Nickel Mesh Screen"</a></td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Total number of distinct plane symmetry ("wallpaper") groups</td><td class="num">17</td><td><a href="https://mathworld.wolfram.com/WallpaperGroups.html" target="_blank" rel="noopener">Wolfram MathWorld, "Wallpaper Groups"</a></td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>A half-drop's true tile is twice the width, not the height, of one visual column</td><td>true tile width = 2&times; column width</td><td><a href="https://www.linda-matthews.com/how-to-make-a-half-drop-repeat-pattern-using-photoshop-elements/" target="_blank" rel="noopener">Linda Matthews, "How to Make a Half Drop Repeat Pattern"</a></td><td>MEDIUM</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-15. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: printable configurations (Fundamental Counting Principle)</h4>
+    <div class="goal">4 licensed colorways. The Straight Set has no independent per-column choice (a mirrored unit would break the grid); The Half-Drop lets each column run mirrored or as-drawn, independently, from the same engraving. Multiply each scheme's independent stages.</div>
+    <div class="fieldrow"><label for="n1A">The Straight Set &mdash; total distinct configurations</label><input type="number" id="n1A"><button onclick="checkD1()">Check</button><span class="fb" id="fb1A"></span></div>
+    <div class="fieldrow"><label for="n1B">The Half-Drop &mdash; total distinct configurations</label><input type="number" id="n1B"><button onclick="checkD1()">Check</button><span class="fb" id="fb1B"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: featured-capsule subsets (binomial coefficient)</h4>
+    <div class="goal">A featured capsule recolors 2 floral elements chosen from one true, fully-repeating tile. The Straight Set's true tile holds 6 floral elements; The Half-Drop's holds 12 (Appendix A). Compute C(n, 2) for each.</div>
+    <div class="fieldrow"><label for="n2A">The Straight Set &mdash; C(6, 2)</label><input type="number" id="n2A"><button onclick="checkD2()">Check</button><span class="fb" id="fb2A"></span></div>
+    <div class="fieldrow"><label for="n2B">The Half-Drop &mdash; C(12, 2)</label><input type="number" id="n2B"><button onclick="checkD2()">Check</button><span class="fb" id="fb2B"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: guaranteed-repeat collision (Pigeonhole Principle)</h4>
+    <div class="goal">Use your Step 1 configuration counts as the number of pigeonholes. How many repeat units (pigeons) does a run need before two are <em>guaranteed</em> to show the identical configuration? Then compute the actual repeat units in a real production run: repeats across Thistlebrook's real 54&Prime; fabric width &times; repeats along one engraving's full rated print run (same for both schemes &mdash; identical cylinder circumference and screen life).</div>
+    <div class="fieldrow"><label for="n3A">The Straight Set &mdash; minimum units before a guaranteed repeat</label><input type="number" id="n3A"><button onclick="checkD3()">Check</button><span class="fb" id="fb3A"></span></div>
+    <div class="fieldrow"><label for="n3B">The Half-Drop &mdash; minimum units before a guaranteed repeat</label><input type="number" id="n3B"><button onclick="checkD3()">Check</button><span class="fb" id="fb3B"></span></div>
+    <div class="fieldrow"><label for="n3Actual">Actual repeat units in one real production run (both schemes)</label><input type="number" id="n3Actual"><button onclick="checkD3Actual()">Check</button><span class="fb" id="fb3Actual"></span></div>
+    <p class="side-note">Compare your two guarantee thresholds to that actual run size. Could Thistlebrook honestly market a featured capsule as "no two repeats identical"? Write your reasoning in your pitch &mdash; the calculator won't answer that part for you.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: setup-dollar synthesis (the case's primary metric)</h4>
+    <div class="goal">Convert one engraving's full rated print run to yards. Divide by each scheme's one-time engraving setup cost (Appendix C) to get yards producible per dollar of setup cost &mdash; this case's primary metric. Then, separately, divide your Step 2 capsule count by the same setup cost for a second, secondary dollar-efficiency figure.</div>
+    <div class="fieldrow"><label for="n4yards">Total yards producible from one engraving (both schemes)</label><input type="number" id="n4yards" step="0.1"><button onclick="checkD4Yards()">Check</button><span class="fb" id="fb4yards"></span></div>
+    <div class="fieldrow"><label for="n4A">The Straight Set &mdash; yards per dollar of setup cost</label><input type="number" id="n4A" step="0.01"><button onclick="checkD4()">Check</button><span class="fb" id="fb4A"></span></div>
+    <div class="fieldrow"><label for="n4B">The Half-Drop &mdash; yards per dollar of setup cost</label><input type="number" id="n4B" step="0.01"><button onclick="checkD4()">Check</button><span class="fb" id="fb4B"></span></div>
+    <div class="fieldrow"><label for="n4cA">The Straight Set &mdash; capsule variants per dollar of setup cost</label><input type="number" id="n4cA" step="0.0001"><button onclick="checkD4Capsule()">Check</button><span class="fb" id="fb4cA"></span></div>
+    <div class="fieldrow"><label for="n4cB">The Half-Drop &mdash; capsule variants per dollar of setup cost</label><input type="number" id="n4cB" step="0.0001"><button onclick="checkD4Capsule()">Check</button><span class="fb" id="fb4cB"></span></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-tag"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>Everyone in this room has now computed D1 and D2. Someone read the featured-capsule subset count out loud &mdash; and The Half-Drop's number is visibly, dramatically larger than The Straight Set's. On design flexibility alone, The Half-Drop looks like a landslide winner.</p>
+      <p>That number is real. Every digit of it is correctly computed. And it might not be the number that decides this. Priya doesn't get paid in configurations &mdash; she gets paid in royalties on yards actually printed and sold. Go back to your Step 4 notebook. Compute the primary metric: yards per dollar of setup cost. Does your recommendation survive?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Recompute live: show D4's yards-per-dollar result for both schemes, side by side</label>
+      </div>
+      <div id="twistResultBox" class="twistresult" style="display:none"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] Indigo &amp; Luxe, "How Wide Is Drapery (Decorator) Fabric?" &mdash; <a href="https://indigoandluxe.com/how-wide-is-drapery-fabric/" target="_blank" rel="noopener">indigoandluxe.com</a></li>
+      <li>[S2] Fine Line Engraving, "Rotary Screen Engraving Prices" &mdash; <a href="https://www.finetex.net/screens1.htm" target="_blank" rel="noopener">finetex.net</a> (2011, anchoring reference only)</li>
+      <li>[S3] HANZE INTL, "How to Choose the Right Nickel Mesh Screen for Peak Textile Performance" &mdash; <a href="https://www.hanzeltd.com/how-to-choose-the-right-nickel-mesh-screen.html" target="_blank" rel="noopener">hanzeltd.com</a></li>
+      <li>[S4] Wolfram MathWorld, "Wallpaper Groups" &mdash; <a href="https://mathworld.wolfram.com/WallpaperGroups.html" target="_blank" rel="noopener">mathworld.wolfram.com</a></li>
+      <li>[S5] Linda Matthews, "How to Make a Half Drop Repeat Pattern using Photoshop Elements" &mdash; <a href="https://www.linda-matthews.com/how-to-make-a-half-drop-repeat-pattern-using-photoshop-elements/" target="_blank" rel="noopener">linda-matthews.com</a></li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Pattern Rights &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, ported from cases/pattern-rights/case.json
+   and a JS port of sensitivity_model.py's PARAMS/FLEX/evaluate() (kept
+   in exact sync by hand -- see templates/INTERACTIVE_HTML_CONTRACT.md §2).
+   sha256(case.md) recorded in case.json.qa.case_md_sha256.
+   ================================================================ */
+const PARAMS = {
+  colorways: 4,
+  capsule_k: 2,
+  column_width_in: 18,
+  column_height_in: 27,
+  half_drop_mirror_states: 2,
+  floral_elements_straight: 6,
+  floral_elements_half_drop: 12,
+  fabric_width_in: 54,
+  screen_life_m: 30000,
+  setup_cost_straight_usd: 650.0,
+  setup_cost_half_drop_usd: 750.0,
+};
+const FLEX = ["screen_life_m", "setup_cost_straight_usd", "setup_cost_half_drop_usd"];
+const INCH_PER_M = 39.3701;
+
+function comb(n, k) {
+  if (k < 0 || k > n) return 0;
+  k = Math.min(k, n - k);
+  let r = 1;
+  for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1);
+  return Math.round(r);
+}
+function configCounts(p) {
+  p = Object.assign({}, PARAMS, p || {});
+  return { A: p.colorways * 1, B: p.colorways * p.half_drop_mirror_states };
+}
+function capsuleCounts(p) {
+  p = Object.assign({}, PARAMS, p || {});
+  return { A: comb(p.floral_elements_straight, p.capsule_k), B: comb(p.floral_elements_half_drop, p.capsule_k) };
+}
+function pigeonholeThresholds(p) {
+  const cc = configCounts(p);
+  return { A: cc.A + 1, B: cc.B + 1 };
+}
+function yardage(p) {
+  p = Object.assign({}, PARAMS, p || {});
+  const repeatsAcross = Math.floor(p.fabric_width_in / p.column_width_in);
+  const screenLifeIn = p.screen_life_m * INCH_PER_M;
+  const screenLifeYards = screenLifeIn / 36.0;
+  const repeatsAlong = Math.floor(screenLifeIn / p.column_height_in);
+  return { repeatsAcross, repeatsAlong, totalRepeatUnits: repeatsAcross * repeatsAlong, screenLifeYards };
+}
+function evaluate(params) {
+  const p = Object.assign({}, PARAMS, params || {});
+  const yd = yardage(p);
+  return { A: yd.screenLifeYards / p.setup_cost_straight_usd, B: yd.screenLifeYards / p.setup_cost_half_drop_usd };
+}
+function evaluateCapsulePerDollar(params) {
+  const p = Object.assign({}, PARAMS, params || {});
+  const cap = capsuleCounts(p);
+  return { A: cap.A / p.setup_cost_straight_usd, B: cap.B / p.setup_cost_half_drop_usd };
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions. Every check reads
+   configCounts()/capsuleCounts()/pigeonholeThresholds()/yardage()/
+   evaluate()/evaluateCapsulePerDollar() above rather than re-deriving
+   the arithmetic inline, so the notebook and sensitivity_model.py can
+   never silently drift apart.
+   ================================================================ */
+function checkD1(){
+  const cc = configCounts();
+  const okA = near(Number(val('n1A')), cc.A, 0.001);
+  const okB = near(Number(val('n1B')), cc.B, 0.001);
+  fb('fb1A', okA); fb('fb1B', okB);
+}
+function checkD2(){
+  const cap = capsuleCounts();
+  fb('fb2A', near(Number(val('n2A')), cap.A, 0.001));
+  fb('fb2B', near(Number(val('n2B')), cap.B, 0.001));
+}
+function checkD3(){
+  const th = pigeonholeThresholds();
+  fb('fb3A', near(Number(val('n3A')), th.A, 0.001));
+  fb('fb3B', near(Number(val('n3B')), th.B, 0.001));
+}
+function checkD3Actual(){
+  const yd = yardage();
+  fb('fb3Actual', near(Number(val('n3Actual')), yd.totalRepeatUnits, 0.5));
+}
+function checkD4Yards(){
+  const yd = yardage();
+  fb('fb4yards', near(Number(val('n4yards')), yd.screenLifeYards, 0.5));
+}
+function checkD4(){
+  const ev = evaluate();
+  fb('fb4A', near(Number(val('n4A')), ev.A, 0.05));
+  fb('fb4B', near(Number(val('n4B')), ev.B, 0.05));
+}
+function checkD4Capsule(){
+  const cd = evaluateCapsulePerDollar();
+  fb('fb4cA', near(Number(val('n4cA')), cd.A, 0.001));
+  fb('fb4cB', near(Number(val('n4cB')), cd.B, 0.001));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "pattern-rights";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Configuration-count table (Fundamental Counting Principle)"],
+  ["D2", "Featured-capsule selection table (binomial coefficient)"],
+  ["D3", "Guaranteed-repeat collision analysis (Pigeonhole Principle)"],
+  ["D4", "Setup-dollar synthesis table (yards per dollar + capsule variants per dollar)"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). Every URL below was fetched and
+   confirmed live 2026-08-15 (khanacademy.org's JS-rendered unit page
+   is skipped in favor of statically-verifiable pages on the same
+   allowlist); the ck12.org PLIX page was confirmed by title match via
+   search (ck12.org blocks the fetcher directly with HTTP 403, a known
+   bot-block on that domain, not evidence the page is missing).
+   ================================================================ */
+const GLOSSARY = {
+  "Fundamental Counting Principle": {def: "If one event can happen in m ways and a second, independent event can happen in n ways, both together can happen in m x n ways -- multiply the stage counts.",
+    url: "https://www.cuemath.com/data/fundamental-counting-principle/"},
+  "Combination": {def: "A way of selecting items from a group where the order chosen does NOT matter.",
+    url: "https://www.mathsisfun.com/combinatorics/combinations-permutations.html"},
+  "Permutation": {def: "A way of arranging items from a group where the order DOES matter.",
+    url: "https://www.mathsisfun.com/combinatorics/combinations-permutations.html"},
+  "Binomial Coefficient": {def: "The number of ways to choose k items from n, written C(n,k) or \"n choose k\" -- computed as n! / (k!(n-k)!).",
+    url: "https://www.mathsisfun.com/combinatorics/combinations-permutations.html"},
+  "Pigeonhole Principle": {def: "If more items are placed into containers than there are containers, at least one container must hold more than one item.",
+    url: "https://www.ck12.org/c/probability/combination-problems/plix/Pigeonhole-Principle-Friends-at-a-Party-5627cebf9616aa13eeaa5ac3/"},
+  "Factorial": {def: "The product of every whole number from a chosen number down to 1, written n! -- e.g. 4! = 4x3x2x1 = 24.",
+    url: "https://www.mathsisfun.com/numbers/factorial.html"},
+  "Set": {def: "A well-defined collection of distinct objects, considered as an object in its own right.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Subset": {def: "A set every one of whose elements is also a member of some larger set.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Configuration": {def: "One specific, fully-determined arrangement of every independent choice in a system -- e.g. one colorway paired with one mirror state.",
+    url: "https://www.cuemath.com/data/fundamental-counting-principle/"},
+};
+const HOWTO = [
+  ["How to apply the Fundamental Counting Principle to count outcomes", "Fundamental Counting Principle"],
+  ["How to compute a binomial coefficient", "Binomial Coefficient"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC shape — twist reveal. CASE-SPECIFIC — onTwistToggle()
+   computes D4 live via evaluate() and renders it into the DOM; it
+   never prints a pre-computed verdict as a static literal.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const box = document.getElementById('twistResultBox');
+  const on = document.getElementById('applyTwist').checked;
+  if(!on){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  const ev = evaluate();
+  const cap = evaluateCapsulePerDollar();
+  const cc = configCounts();
+  const capsule = capsuleCounts();
+  box.innerHTML = `
+    <table>
+      <tr><th></th><th>The Straight Set</th><th>The Half-Drop</th></tr>
+      <tr><td>D1 &mdash; configurations</td><td class="num">${cc.A}</td><td class="num">${cc.B}</td></tr>
+      <tr><td>D2 &mdash; capsule subsets</td><td class="num">${capsule.A}</td><td class="num">${capsule.B}</td></tr>
+      <tr><td><strong>D4(a) &mdash; yards per dollar (primary metric)</strong></td><td class="num">${round(ev.A,2)}</td><td class="num">${round(ev.B,2)}</td></tr>
+      <tr><td>D4(b) &mdash; capsule variants per dollar</td><td class="num">${round(cap.A,4)}</td><td class="num">${round(cap.B,4)}</td></tr>
+    </table>
+    <p style="margin:10px 0 0">Notice which row moves the recommendation and which rows don't. That gap is the whole point of this Twist.</p>`;
+  box.style.display = 'block';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

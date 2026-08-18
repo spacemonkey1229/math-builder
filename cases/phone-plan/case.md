@@ -28,7 +28,9 @@ Two carriers have been recommended: **Carrier V** and **Carrier T**. Both price 
 
 Nate and Fiona want the plan that fits their budget now — but not at the cost of getting stuck with the more expensive option once Charity's line is added.
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix D** — that is where Challenge 1 sends you.
+Curious how carriers actually price plans, or want a refresher on the math skills below? SEE APPENDIX D for further reading.
+
+The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix E** — that is where Challenge 1 sends you.
 
 ---
 
@@ -93,7 +95,16 @@ Both carriers' coverage maps show strong service along Nate's regular Bend, Las 
 
 ---
 
-## Appendix D: "How To…" Math Questions To Research
+## Appendix D: Learn More
+
+Want to go beyond the required math? These are real, freely available resources — not required for any Challenge, but useful if you want more background.
+
+- [Linear Equation — Wikipedia](https://en.wikipedia.org/wiki/Linear_equation) — a reference on how linear equations work, including the slope-intercept form used in Challenge 3's D1.
+- [System of Linear Equations — Wikipedia](https://en.wikipedia.org/wiki/System_of_linear_equations) — explains what it means to solve two equations together, the method Challenge 3's D3 (break-even) relies on.
+- [Percentage — Wikipedia](https://en.wikipedia.org/wiki/Percentage) — a refresher on what a percentage is and how to apply one, useful for the tax calculation in Appendix B.
+- [Idaho State Tax Commission — Sales and Use Tax](https://tax.idaho.gov/taxes/sales-use/) — Idaho's own tax agency page on how sales and use tax works in the state, for context on the plan tax referenced in Appendix B.
+
+## Appendix E: "How To…" Math Questions To Research
 
 **Vocabulary**
 

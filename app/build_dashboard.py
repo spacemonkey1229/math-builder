@@ -699,6 +699,17 @@ def build_data():
     # branch id -> corpus case titles reachable through its domains
     cases_by_branch = {b["branch"]: b["existing_cases"] for b in dcov["by_branch"]}
 
+    # avg_rating/rating_count per case_id, computed here rather than imported from
+    # admin_core (this generator is deliberately self-contained) -- same tiny
+    # averaging logic as admin_core._rating_summary().
+    ratings_by_case = {}
+    for r in subs.get("ratings", []):
+        ratings_by_case.setdefault(r["case_id"], []).append(r["stars"])
+
+    def _rating_summary(case_id):
+        rs = ratings_by_case.get(case_id, [])
+        return {"avg_rating": round(sum(rs) / len(rs), 1) if rs else None, "rating_count": len(rs)}
+
     lib = []
     for c in corpus_cases:
         r = recon[c["title"]]
@@ -743,6 +754,7 @@ def build_data():
             "match": r["match"],
             "score": r["score"],
             "tier": (ci or {}).get("tier") or (cj or {}).get("tier"),
+            "complexity": (cj or {}).get("complexity", (ci or {}).get("complexity")),
             "standards_count": (ci or {}).get("standards_count"),
             "domains_touched": (ci or {}).get("domains_touched") or [],
             # skill ids are NOT shipped: the page derives them from heat[].by,
@@ -750,6 +762,7 @@ def build_data():
             "n_skill_ids": len(skills_by_col.get(r["col"], [])) if r["col"] else None,
             "root_domains": doms_by_case.get(c["title"], []),
             "case_id": (ci or {}).get("id") or (cj or {}).get("id"),
+            **_rating_summary((ci or {}).get("id") or (cj or {}).get("id")),
             # narrative detail: only the pipeline case carries it today. Legacy
             # cases keep null so the panel says "not recorded", never invents.
             "protagonist": (cj or {}).get("protagonist"),
@@ -938,18 +951,24 @@ def build_data():
     scoring = build_scoring(subs, ovr, roster, rubric)
     domains_block = build_domains_block(domsrc, dcov, skill_label)
 
-    # ---- student payload -------------------------------------------------
+    # ---- student payload ---------------------------------------------------
+    # Built for EVERY active learner (not just one) so each gets their own
+    # role-locked file -- see student_doc()/build(). "student" below stays the
+    # first one for back-compat with dashboard.html's guide-only preview toggle,
+    # which only ever needs a single example to render, never a real roster pick.
     actives = [l for l in roster["learners"] if l.get("status") == "active"]
     real_actives = [l for l in actives if not l.get("_example")]
     pick = (real_actives or actives)
-    student_id = pick[0]["id"] if pick else None
-    student = build_student(
-        student_id, roster, subs, lib_by_title, ci_by_id, all_spine_skills,
-        scoring["example" if (student_id and not real_actives) else "real"],
-    ) if student_id else None
-    if student is not None:
-        student["preview_only"] = not bool(real_actives)
-        student["n_real_learners"] = len(real_actives)
+    students = {}
+    for l in pick:
+        st = build_student(
+            l["id"], roster, subs, lib_by_title, ci_by_id, all_spine_skills,
+            scoring["example" if not real_actives else "real"],
+        )
+        st["preview_only"] = not bool(real_actives)
+        st["n_real_learners"] = len(real_actives)
+        students[l["id"]] = st
+    student = students[pick[0]["id"]] if pick else None
 
     # ---- headline --------------------------------------------------------
     headline = {
@@ -1019,6 +1038,7 @@ def build_data():
         "scoring": scoring,
         "rootc": domains_block,
         "student": student,
+        "students": students,
         "links": {"total": len(LINKS), "ok": sum(1 for l in LINKS if l["exists"]),
                   "missing": [l["rel"] for l in LINKS if not l["exists"]]},
     }
@@ -1590,6 +1610,7 @@ const DATA = __DATA_JSON__;
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const starStr = (n) => { n = n || 0; return "★".repeat(n) + "☆".repeat(5 - n); };
   const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));
   const H = DATA.headline || {};
   const S = DATA.student || null;                 // redacted per-learner payload
@@ -2331,6 +2352,9 @@ const DATA = __DATA_JSON__;
         (c.mapped ? '<span class="pill ok">standards-mapped</span>' : '<span class="pill flag">no standards row</span>') +
         (c.standards_count != null ? '<span class="mono" style="font-size:11px;color:var(--muted)">' + c.standards_count + " skills</span>"
           : '<span class="mono" style="font-size:11px;color:var(--faint)">skills unknown</span>') +
+        '<span class="mono" style="font-size:11px;color:var(--muted)" title="complexity">' +
+          (c.complexity != null ? starStr(c.complexity) : "complexity unknown") + "</span>" +
+        (c.rating_count ? '<span class="mono" style="font-size:11px;color:var(--muted)">' + c.avg_rating + "★ (" + c.rating_count + ")</span>" : "") +
         "</div></button>";
     }).join("");
 
@@ -2472,6 +2496,8 @@ const DATA = __DATA_JSON__;
       '<h3 id="sheetTitle">' + esc(c.title) + "</h3>" +
       '<div style="margin-top:7px;display:flex;flex-wrap:wrap;gap:4px">' +
       (c.tier ? '<span class="pill">' + esc(c.tier) + "</span>" : '<span class="pill warn">tier unknown</span>') +
+      (c.complexity != null ? '<span class="pill" title="complexity">' + esc(starStr(c.complexity)) + "</span>" : '<span class="pill warn">complexity unknown</span>') +
+      (c.rating_count ? '<span class="pill" title="student rating">' + c.avg_rating + "★ (" + c.rating_count + ")</span>" : "") +
       (c.mapped ? '<span class="pill ok">standards-mapped</span>' : '<span class="pill flag">no standards row</span>') +
       (c.has_guide ? '<span class="pill ok">guide notes</span>' : '<span class="pill warn">no guide notes</span>') +
       (c.has_socratic_plan ? '<span class="pill ok">socratic plan</span>' : '<span class="pill warn">no socratic plan</span>') +
@@ -3562,8 +3588,9 @@ def render(data, role_lock):
             .replace("__DATA_JSON__", payload))
 
 
-def student_doc(data):
-    """The learner-facing payload. Everything else is not hidden — it is absent.
+def student_doc(data, student):
+    """The learner-facing payload for ONE learner. Everything else is not
+    hidden — it is absent.
 
     The only spine data that survives is the skill id/label/group shape needed
     to draw the learner's own map: no covered_by, no per-skill case counts, no
@@ -3574,7 +3601,7 @@ def student_doc(data):
                     "skills": [{"id": s["id"], "label": s["label"], "kind": s["kind"]}
                                for s in g["skills"]]} for g in d["groups"]],
     } for d in data["heat"]]
-    st = dict(data["student"])
+    st = dict(student)
     st["rubric"] = data["rubric"]
     st["domains"] = data["rootc"]
     return {
@@ -3590,16 +3617,81 @@ def student_doc(data):
     }
 
 
+def student_file_path(learner_id):
+    return ROOT / "app" / ("student-%s.html" % learner_id)
+
+
+LANDING_TEMPLATE = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Math Builder — My Cases</title>
+<style>
+:root{--paper:#FAF8F4;--ink:#16140F;--muted:#5F594E;--accent:#164A3D;--accent-soft:#E3F0EA;
+  --accent-line:#AFCFC3;--rule:#DED8CC;--card:#FFFFFF}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.wrap{max-width:520px;margin:0 auto;padding:64px 20px}
+h1{font-size:22px;margin:0 0 6px}
+p.lead{color:var(--muted);margin:0 0 28px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+a.row{display:block;padding:16px 18px;color:var(--ink);text-decoration:none;
+  border-bottom:1px solid var(--rule)}
+a.row:last-child{border-bottom:none}
+a.row:hover{background:var(--accent-soft)}
+a.row .n{font-weight:600}
+a.row .go{float:right;color:var(--accent)}
+.empty{color:var(--muted);font-size:13.5px;padding:16px 18px}
+.guide{margin-top:28px;font-size:13px;color:var(--muted)}
+.guide a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Math Builder</h1>
+  <p class="lead">Find your name below to open your own cases, progress and skills.</p>
+  <div class="card">__ROWS__</div>
+  <p class="guide">Guiding, not learning? <a href="dashboard.html">Open the Guide Dashboard</a>.</p>
+</div>
+</body>
+</html>
+"""
+
+
+def render_student_landing(students):
+    """A generic, unauthenticated index -- deliberately carries no case,
+    score, or assignment data for anyone. Just names and a link to each
+    learner's own role-locked file, so every published case's shared
+    '../../../app/student.html' back-link keeps resolving to something real
+    once a single learner build no longer lives at that exact path."""
+    rows = "".join(
+        '<a class="row" href="student-%s.html"><span class="n">%s</span>'
+        '<span class="go">Open &rarr;</span></a>'
+        % (l["learner"]["id"], esc_py(l["learner"]["name"]))
+        for l in sorted(students.values(), key=lambda s: s["learner"]["name"])
+    ) or '<div class="empty">No active learners yet.</div>'
+    return LANDING_TEMPLATE.replace("__ROWS__", rows)
+
+
+def esc_py(s):
+    return (str(s).replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"))
+
+
 def build():
     data = build_data()
     html = render(data, None)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html, encoding="utf-8")
-    shtml = ""
-    if data.get("student"):
-        shtml = render(student_doc(data), "student")
-        OUT_STUDENT.write_text(shtml, encoding="utf-8")
-    return data, html, shtml
+    shtmls = {}
+    for learner_id, st in data.get("students", {}).items():
+        shtmls[learner_id] = render(student_doc(data, st), "student")
+        student_file_path(learner_id).write_text(shtmls[learner_id], encoding="utf-8")
+    landing = render_student_landing(data.get("students", {}))
+    OUT_STUDENT.write_text(landing, encoding="utf-8")
+    return data, html, shtmls, landing
 
 
 # --------------------------------------------------------------------------
@@ -3976,59 +4068,75 @@ def verify(quiet=False):
        len(SCe["dangling_override_refs"]),
        len([o for o in ovr if o.get("score_id") and o["score_id"] not in {s["id"] for s in subs_scores}]))
 
-    # ---- student payload: redaction, not hiding
-    st = data["student"]
-    ck("student payload exists", st is not None, True)
-    sj = json.dumps(st, ensure_ascii=False)
-    ck("student payload names exactly one learner",
-       sorted({l["id"] for l in roster["learners"] if ('"' + l["id"] + '"') in sj}), [st["learner"]["id"]])
-    ck("no other learner id appears in the student payload",
-       [l["id"] for l in roster["learners"] if l["id"] != st["learner"]["id"] and l["id"] in sj], [])
-    ck("no growth score in the student payload", '"growth_score"' in sj, False)
-    ck("no twist FIELD in the student payload", '"twist"' in sj, False)
+    # ---- student payload(s): redaction, not hiding
     # RUBRIC C6 legitimately explains that a Twist exists; a *case's* twist text
     # must not. Check the one real twist we have, verbatim.
     cold_twist = json.loads((ROOT / "cases/cold-chain/case.json").read_text(encoding="utf-8"))["facilitator"]["twist"]
-    ck("no case twist text in the student payload", cold_twist[:40] in sj, False)
-    ck("no QA verdict in the student payload", '"qa"' in sj, False)
-    ck("no override bias in the student payload", '"overrides"' in sj or '"bias"' in sj, False)
-    ck("no gap queue in the student payload", '"gaps"' in sj, False)
-    ck("student case assets are student-safe kinds only",
-       sorted({a["kind"] for c in st["cases"] for a in c["assets"]} - STUDENT_SAFE_KINDS), [])
-    ck("no guide-notes or socratic file reaches a student case",
-       [a["label"] for c in st["cases"] for a in c["assets"]
-        if re.search(r"guide|socratic|facilitator", a["label"], re.I)], [])
-    ck("no folder link in the student payload (a listing would expose Guide Notes)",
-       [a for c in st["cases"] for a in c["assets"] if a.get("kind") == "folder"], [])
-    ck("student skill map counts only completed cases",
-       st["skills"]["n_exercised"] <= st["skills"]["n_total"], True)
-    ck("student payload flags itself as preview while the roster is seed-only",
-       st["preview_only"], len([l for l in roster["learners"] if not l.get("_example")]) == 0)
+    all_learner_ids = {l["id"] for l in roster["learners"]}
+    students = data.get("students") or {}
+    ck("at least one student payload exists", len(students) > 0, True)
 
-    # ---- the emitted student build
+    for learner_id, st in students.items():
+        tag = "student payload (%s)" % learner_id
+        sj = json.dumps(st, ensure_ascii=False)
+        ck("%s names exactly one learner" % tag,
+           sorted({l for l in all_learner_ids if ('"' + l + '"') in sj}), [st["learner"]["id"]])
+        ck("no other learner id appears in %s" % tag,
+           [l for l in all_learner_ids if l != st["learner"]["id"] and l in sj], [])
+        ck("no growth score in %s" % tag, '"growth_score"' in sj, False)
+        ck("no twist FIELD in %s" % tag, '"twist"' in sj, False)
+        ck("no case twist text in %s" % tag, cold_twist[:40] in sj, False)
+        ck("no QA verdict in %s" % tag, '"qa"' in sj, False)
+        ck("no override bias in %s" % tag, '"overrides"' in sj or '"bias"' in sj, False)
+        ck("no gap queue in %s" % tag, '"gaps"' in sj, False)
+        ck("%s case assets are student-safe kinds only" % tag,
+           sorted({a["kind"] for c in st["cases"] for a in c["assets"]} - STUDENT_SAFE_KINDS), [])
+        ck("no guide-notes or socratic file reaches %s" % tag,
+           [a["label"] for c in st["cases"] for a in c["assets"]
+            if re.search(r"guide|socratic|facilitator", a["label"], re.I)], [])
+        ck("no folder link in %s (a listing would expose Guide Notes)" % tag,
+           [a for c in st["cases"] for a in c["assets"] if a.get("kind") == "folder"], [])
+        ck("%s skill map counts only completed cases" % tag,
+           st["skills"]["n_exercised"] <= st["skills"]["n_total"], True)
+        ck("%s flags itself as preview while the roster is seed-only" % tag,
+           st["preview_only"], len([l for l in roster["learners"] if not l.get("_example")]) == 0)
+
+        # ---- the emitted per-learner build
+        path = student_file_path(learner_id)
+        if path.exists():
+            shtml = path.read_text(encoding="utf-8")
+            sm = re.search(r"const DATA = (.*?);\n", shtml, re.S)
+            sdata = json.loads(sm.group(1).replace("<\\/", "</")) if sm else {}
+            body = sm.group(1) if sm else ""
+            btag = "student build (%s)" % learner_id
+            ck("%s is role-locked" % btag, 'const ROLE_LOCK = "student";' in shtml, True)
+            ck("%s carries no corpus" % btag, sdata.get("cases"), None)
+            ck("%s carries no tracker" % btag, sdata.get("tracker"), None)
+            ck("%s carries no scoring block" % btag, sdata.get("scoring"), None)
+            ck("%s carries no gap queue" % btag, sdata.get("gaps"), None)
+            ck("%s inlines no other learner" % btag,
+               [l for l in all_learner_ids if l != st["learner"]["id"] and l in body], [])
+            ck("%s inlines no case twist text" % btag, cold_twist[:40] in body, False)
+            ck("%s inlines no twist FIELD" % btag, '"twist"' in body, False)
+            ck("%s inlines no facilitator asset" % btag,
+               bool(re.search(r'Guide Notes[^"]*\.docx|FACILITATOR\.md|QA_REPORT\.md', body)), False)
+            ck("%s inlines no growth score" % btag, '"growth_score"' in body, False)
+            ck("%s still carries the full rubric" % btag,
+               len(sdata["student"]["rubric"]["criteria"]), 7)
+            ck("%s still carries all root domains" % btag,
+               len(sdata["student"]["domains"]["domains"]), len(domsrc["domains"]))
+            ck("%s is self-contained" % btag,
+               bool(re.search(r'<(script|link|img|iframe)[^>]+(src|href)="https?://', shtml)), False)
+
+    # ---- the shared, unauthenticated landing page every case's back-link resolves to
     if OUT_STUDENT.exists():
-        shtml = OUT_STUDENT.read_text(encoding="utf-8")
-        sm = re.search(r"const DATA = (.*?);\n", shtml, re.S)
-        sdata = json.loads(sm.group(1).replace("<\\/", "</")) if sm else {}
-        body = sm.group(1) if sm else ""
-        ck("student build is role-locked", 'const ROLE_LOCK = "student";' in shtml, True)
-        ck("student build carries no corpus", sdata.get("cases"), None)
-        ck("student build carries no tracker", sdata.get("tracker"), None)
-        ck("student build carries no scoring block", sdata.get("scoring"), None)
-        ck("student build carries no gap queue", sdata.get("gaps"), None)
-        ck("student build inlines no other learner",
-           [l["id"] for l in roster["learners"] if l["id"] != st["learner"]["id"] and l["id"] in body], [])
-        ck("student build inlines no case twist text", cold_twist[:40] in body, False)
-        ck("student build inlines no twist FIELD", '"twist"' in body, False)
-        ck("student build inlines no facilitator asset",
-           bool(re.search(r'Guide Notes[^"]*\.docx|FACILITATOR\.md|QA_REPORT\.md', body)), False)
-        ck("student build inlines no growth score", '"growth_score"' in body, False)
-        ck("student build still carries the full rubric",
-           len(sdata["student"]["rubric"]["criteria"]), 7)
-        ck("student build still carries all root domains",
-           len(sdata["student"]["domains"]["domains"]), len(domsrc["domains"]))
-        ck("student build is self-contained",
-           bool(re.search(r'<(script|link|img|iframe)[^>]+(src|href)="https?://', shtml)), False)
+        landing = OUT_STUDENT.read_text(encoding="utf-8")
+        ck("landing page inlines no DATA payload at all", "const DATA = " in landing, False)
+        ck("landing page names no score, case, or assignment field",
+           any(k in landing for k in ('"growth_score"', '"badge_index"', '"qa"', '"twist"')), False)
+        ck("landing page links to every active learner's own file",
+           all(("student-%s.html" % lid) in landing for lid in students), True)
+        ck("landing page links to the guide dashboard", "dashboard.html" in landing, True)
 
     # ---- WCAG AA contrast, computed
     fails = [(lab, contrast(f, b), mn) for f, b, mn, lab in CONTRAST_PAIRS if contrast(f, b) < mn]
@@ -4071,8 +4179,10 @@ if __name__ == "__main__":
     ap.add_argument("--verify", action="store_true", help="verify the existing dashboard.html only")
     a = ap.parse_args()
     if not a.verify:
-        d, h, sh = build()
+        d, h, shtmls, landing = build()
         print("wrote %s (%.0f KB)" % (OUT, len(h.encode("utf-8")) / 1024))
-        if sh:
-            print("wrote %s (%.0f KB) — role-locked student build" % (OUT_STUDENT, len(sh.encode("utf-8")) / 1024))
+        for learner_id, sh in shtmls.items():
+            print("wrote %s (%.0f KB) — role-locked student build" %
+                  (student_file_path(learner_id), len(sh.encode("utf-8")) / 1024))
+        print("wrote %s (%.0f KB) — student landing page" % (OUT_STUDENT, len(landing.encode("utf-8")) / 1024))
     sys.exit(0 if verify() else 1)

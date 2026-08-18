@@ -22,9 +22,9 @@ Karen Dobson has coordinated Archery 360, LLC's summer camp for 4 years, growing
 
 Archery 360 already owns enough bows, targets, and equipment for up to 200 attendees. Karen estimates it costs about **$26.30 per attendee** for a T-shirt and disposable equipment (arrows, replacement parts, and other consumables). Camp counselors are paid **$145.00 per counselor per day**. For safety, every archery range requires **at least 2 counselors**, and each range holds up to **12 youth participants** (SEE APPENDIX B). Archery 360's board has also set a real goal for every camp: keep the per-participant charge at or under **$110.00** whenever realistically possible.
 
-The Simplot Sports Complex has nine rentable field sections, each a different size and price (SEE APPENDIX A). Karen has narrowed her choice to two combinations of sections. The planning figures she budgets from — how many attendees to plan for, and how a field's range count is treated — are fixed in **APPENDIX C**; use them, or your numbers won't match anyone else's.
+The Simplot Sports Complex has nine rentable field sections, each a different size and price (SEE APPENDIX A). Karen has narrowed her choice to two combinations of sections. The planning figures she budgets from — how many attendees to plan for, and how a field's range count is treated — are fixed in **APPENDIX C**; use them, or your numbers won't match anyone else's. (SEE APPENDIX D for further reading on archery camps and the real venue.)
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix D** — that is where Challenge 1 sends you.
+The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix E** — that is where Challenge 1 sends you.
 
 ---
 
@@ -105,7 +105,18 @@ Each field section holds a fixed number of full archery ranges, based on its siz
 
 ---
 
-## Appendix D: "How To…" Math Questions To Research
+## Appendix D: Learn More
+
+Curious about the real people, places, and math beyond this case? These are real, live resources as of 2026-08-18.
+
+- [City of Boise Parks & Recreation — Simplot Sports Complex](https://www.cityofboise.org/departments/parks-and-recreation/parks/simplot-sports-complex/): the official city page for the real 161-acre facility this case is set at, with hours, access, and policies.
+- [USA Archery — Archery Safety](https://www.usarchery.org/participate/archery-safety): the national governing body's official safety guidance, coach certification standards, and injury-rate data behind the counselor and range rules this case uses.
+- [Archery 360 — Ultimate Beginner's Guide to Archery](https://archery360.com/2020/04/30/ultimate-beginners-guide-to-archery/): a real beginner's guide covering bow types, equipment, and how to find a local program to try archery yourself.
+- [Math Is Fun — Combinations and Permutations](https://www.mathsisfun.com/combinatorics/combinations-permutations.html): a clear walkthrough of the counting method behind D4's "how many 5-field combinations" question.
+
+---
+
+## Appendix E: "How To…" Math Questions To Research
 
 **Vocabulary**
 

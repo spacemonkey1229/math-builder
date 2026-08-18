@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Key Length — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  .boardnum{font-family:var(--sans);font-weight:700;fill:#fff}
+  .boardnum.hi{fill:var(--gold)}
+  .searcharc{fill:none;stroke:var(--gold);stroke-width:1.5;stroke-dasharray:3 4;opacity:.7}
+  .diagram-label{font-family:var(--sans);font-size:11px;fill:var(--ink)}
+  .diagram-label.sm{font-size:9.5px;fill:var(--sub)}
+  .primerow{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+  .primechip{font-family:var(--sans);font-size:.78rem;background:#eef3f8;border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <!-- case-specific: a padlock/key marker and a magnifying-glass search marker, used in the
+       overview banner and the trial-division diagram -->
+  <symbol id="icon-key" viewBox="0 0 24 24"><circle cx="7" cy="14" r="4"/><path d="M10 11l10-10"/><path d="M16 5l3 3M19 2l3 3"/></symbol>
+  <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="M21 21l-5.5-5.5"/></symbol>
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Key Length</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Prime Factorization + Logical Statements</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  <figure style="padding:0;border:none;box-shadow:none;background:none;margin:0 0 18px">
+    <svg class="banner-art" viewBox="0 0 700 190" role="img" aria-label="A whiteboard with two candidate numbers written on it, a padlock icon standing between them, and a magnifying glass searching one of the numbers.">
+      <rect width="700" height="190" rx="10" fill="var(--navy)"/>
+      <rect width="700" height="190" rx="10" fill="url(#skyfade3)" opacity=".55"/>
+      <defs>
+        <linearGradient id="skyfade3" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#12294300"/>
+          <stop offset="1" stop-color="#0c1c30"/>
+        </linearGradient>
+      </defs>
+      <rect x="60" y="34" width="580" height="122" rx="8" fill="#fdfdfb" opacity=".08"/>
+      <rect x="60" y="34" width="580" height="122" rx="8" fill="none" stroke="#cdd9e6" stroke-width="1.5" opacity=".55"/>
+      <text x="200" y="100" text-anchor="middle" class="boardnum" font-size="34">143</text>
+      <text x="500" y="100" text-anchor="middle" class="boardnum hi" font-size="34">323</text>
+      <text x="200" y="128" text-anchor="middle" class="diagram-label sm" fill="#cdd9e6">CANDIDATE A</text>
+      <text x="500" y="128" text-anchor="middle" class="diagram-label sm" fill="#cdd9e6">CANDIDATE B</text>
+      <g transform="translate(350,62)"><use href="#icon-lock" width="30" height="30" x="-15" y="-15" fill="none" stroke="var(--gold)" stroke-width="1.6"/></g>
+      <circle cx="500" cy="100" r="34" class="searcharc"/>
+      <g transform="translate(524,124)"><use href="#icon-search" width="22" height="22" x="-11" y="-11" fill="none" stroke="#e8e3d5" stroke-width="1.7"/></g>
+    </svg>
+    <figcaption style="color:#cdd9e6;background:var(--navy-dk);margin:-6px 0 0;padding:8px 14px;border-radius:0 0 10px 10px;text-align:center">Two candidate numbers on Elena's whiteboard &mdash; only one goes on tomorrow's slide.</figcaption>
+  </figure>
+  <p class="lede">Elena Kowalski has forty minutes, a whiteboard, and a room full of employees who think cybersecurity training is going to be boring. She is about to prove them wrong with two numbers.</p>
+  <p>Every time someone logs into a bank, a hospital portal, or a company's internal system, a real mathematical fact is quietly doing the work of keeping that connection private: multiplying two huge prime numbers together is fast, but taking the result apart again &mdash; factoring it back into those two primes &mdash; is so slow it can take longer than a human lifetime, even on a fast computer, once the numbers get big enough. That gap between &ldquo;easy one way, brutal the other way&rdquo; is the whole reason online security works at all.</p>
+  <p>Elena cannot hand a room of trainees a real key-sized number &mdash; nobody is factoring anything close to that by hand in a forty-minute session. So she has built two small, honest stand-ins: two numbers, each one built the exact same way real keys are, each one crackable by hand if a trainee is patient enough. The exercise only works if the number is hard enough to feel real, but not so hard the room gives up before the lesson lands.</p>
+  <p>She has two candidates on her desk. Only one of them is going on the slide tomorrow morning.</p>
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  <p>Elena Kowalski is a cybersecurity trainer designing a hands-on &ldquo;factor this practice key&rdquo; exercise for a company's security-awareness training session. The exercise is built on a real fact: modern public-key cryptography (like RSA) generates a key by multiplying two large prime numbers together, and the entire security of the system depends on the fact that multiplying is fast but factoring the result back apart is slow &mdash; and gets dramatically slower as the numbers grow larger (see Appendix A).</p>
+  <p>For training purposes, Elena needs small, hand-factorable numbers that still demonstrate the real process: a trainee tests candidate prime divisors, one at a time, until a factor is found &mdash; and a real, provable fact from number theory means nobody ever needs to test past the square root of the number being factored, because if no factor exists below that point, none exists at all (see Appendix B).</p>
+  <p>Two candidate practice numbers exist. <strong>Candidate A</strong> is 143. <strong>Candidate B</strong> is 323. Elena has worked out, from the session's real time budget, roughly how much searching she wants the exercise to demand &mdash; not so little that it feels trivial, not so much that trainees give up before the lesson lands (see Appendix C). Whichever candidate's actual difficulty lands closer to that target is the one that goes on tomorrow's slide.</p>
+  <p>All figures in this case are sourced in Appendix E, or stated as explicit modeling assumptions in Appendix D where no public figure exists. The vocabulary and the &ldquo;how to&hellip;&rdquo; skills this case will ask of you are listed in Appendix G &mdash; that is where Challenge 1 sends you. Curious how far this idea goes beyond tomorrow's training session? See Appendix F for further reading.</p>
+
+  <figure>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/f/f9/Public_key_encryption.svg" alt="Diagram of public-key encryption: anyone can encrypt a message using the public key, but only the holder of the matching private key can decrypt it" style="max-width:100%;height:auto;border-radius:6px;background:#fff">
+    <figcaption>How public-key cryptography actually works &mdash; the same anyone-can-lock, only-one-key-unlocks idea Elena's exercise is built to teach. <em>Credit: Davidgothberg, Wikimedia Commons, public domain.</em></figcaption>
+  </figure>
+
+  <figure>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Sieve_of_Eratosthenes_animation.gif" alt="Animated sieve of Eratosthenes, showing multiples of each prime being eliminated to reveal the primes up to a limit" style="max-width:100%;height:auto;border-radius:6px;background:#fff">
+    <figcaption>The sieve of Eratosthenes &mdash; a classic way of finding the primes a trainee tests against Candidate A and Candidate B. <em>Credit: SKopp, Wikimedia Commons, CC BY-SA 3.0.</em></figcaption>
+  </figure>
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Elena Kowalski. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Use Candidate A (143)</h4>
+      <p style="margin:0">Candidate A takes fewer trial divisions to fully factor &mdash; a quick, comfortable exercise that leaves the room time to spare, but it may or may not land near Elena's actual target difficulty.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Use Candidate B (323)</h4>
+      <p style="margin:0">Candidate B takes more trial divisions to fully factor &mdash; closer to what the session's real time budget calls for, but it costs the room more of its forty minutes to get there.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include:
+      <ul style="margin:8px 0 0 18px">
+        <li><strong>D1</strong> &mdash; Candidate A, fully factored: list every prime you test, in order, until you find Candidate A's two prime factors. Report how many primes you had to test.</li>
+        <li><strong>D2</strong> &mdash; Candidate B, fully factored: do the same for Candidate B.</li>
+        <li><strong>D3</strong> &mdash; Both of Candidate A's and Candidate B's prime factors are odd numbers. Explain why a candidate built this way (as the product of two primes, neither of which is 2) can never be an even number.</li>
+        <li><strong>D4</strong> &mdash; Evaluate this statement: &ldquo;If a number is odd, it is safe to use as key material.&rdquo; Is it true or false? Use one of your own results from D1 or D2 to justify your answer.</li>
+        <li><strong>D5</strong> &mdash; A real key isn't 143 or 323 &mdash; it's hundreds of digits long. Using the fact that a number with <code>b</code> bits has about <code>b &times; 0.30103</code> decimal digits, find how many decimal digits a real 2048-bit key and a real 3072-bit key each have (see Appendix A).</li>
+        <li><strong>D6</strong> &mdash; Find the square root of Candidate A and the square root of Candidate B, then find how far each one is from Elena's target difficulty (see Appendix C).</li>
+        <li><strong>D7</strong> &mdash; The verdict: using D6's two distances, find the percentage margin between them &mdash; the larger distance minus the smaller distance, divided by the larger distance &mdash; and recommend which candidate Elena should use.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+<details open>
+  <summary>Appendix A &mdash; Why Key Length Matters</summary>
+  <div class="inner">
+    <table><tr><th></th><th>Value</th></tr>
+    <tr><td>RSA-2048 security strength</td><td>112 bits &mdash; acceptable for new use through 2030 [S1]</td></tr>
+    <tr><td>RSA-3072 security strength</td><td>128 bits &mdash; required for new use after 2030 [S1]</td></tr>
+    <tr><td>Approx. decimal digits in a real 2048-bit / 3072-bit modulus</td><td>SEE CHALLENGE D5</td></tr>
+    </table>
+    <p class="side-note">Real public-key cryptography's security depends entirely on how hard the underlying number is to factor &mdash; which is exactly what this exercise's trial-division process demonstrates, at a scale a human can actually do by hand.</p>
+  </div>
+</details>
+
+<details open>
+  <summary>Appendix B &mdash; Why You Only Test Up To the Square Root</summary>
+  <div class="inner">
+    <p>If a number <code>N</code> has no factor at or below its own square root, it cannot have any factor at all (other than 1 and itself) &mdash; because any factor pair <code>p &times; q = N</code> must have at least one of <code>p</code> or <code>q</code> at or below &radic;N. This is why Elena's exercise design uses &radic;N as the real measure of &ldquo;how far a trainee has to search.&rdquo;</p>
+    <figure>
+      <svg viewBox="0 0 460 130" role="img" aria-label="A number line from 2 up to the square root of N, showing the zone a trainee must search before they can stop, with the region beyond the square root marked as never needing to be tested.">
+        <line x1="30" y1="70" x2="430" y2="70" stroke="var(--line)" stroke-width="1.5"/>
+        <line x1="30" y1="60" x2="30" y2="80" stroke="var(--sub)" stroke-width="1.5"/>
+        <text x="30" y="50" text-anchor="middle" class="diagram-label sm">2</text>
+        <line x1="230" y1="60" x2="230" y2="80" stroke="var(--navy)" stroke-width="2"/>
+        <text x="230" y="50" text-anchor="middle" class="diagram-label" font-weight="700">&radic;N</text>
+        <line x1="430" y1="60" x2="430" y2="80" stroke="var(--sub)" stroke-width="1.5"/>
+        <text x="430" y="50" text-anchor="middle" class="diagram-label sm">N</text>
+        <rect x="30" y="64" width="200" height="12" fill="var(--gold)" opacity=".35"/>
+        <text x="130" y="100" text-anchor="middle" class="diagram-label sm">search this zone, one prime at a time</text>
+        <rect x="230" y="64" width="200" height="12" fill="var(--sub)" opacity=".18"/>
+        <text x="330" y="100" text-anchor="middle" class="diagram-label sm">never need to test past here</text>
+      </svg>
+      <figcaption>Every candidate prime a trainee tests lives between 2 and &radic;N &mdash; once you pass &radic;N with no factor found, the search is over and the number is prime.</figcaption>
+    </figure>
+  </div>
+</details>
+
+<details open>
+  <summary>Appendix C &mdash; The Target Difficulty</summary>
+  <div class="inner">
+    <table><tr><th></th><th>Value</th></tr>
+    <tr><td>Elena's target &radic;N for this exercise</td><td>15.2 &mdash; see Appendix D, MA1</td></tr>
+    <tr><td>Candidate A (143)</td><td>&radic;143 &mdash; SEE CHALLENGE D6</td></tr>
+    <tr><td>Candidate B (323)</td><td>&radic;323 &mdash; SEE CHALLENGE D6</td></tr>
+    </table>
+    <p class="side-note">Elena's own target is a fixed number Appendix D explains &mdash; how each candidate's own square root compares to it is exactly what Challenge D6 asks you to work out, not something read off a table.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix D &mdash; Modeling Assumptions</summary>
+  <div class="inner">
+    <p class="side-note">These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author, each with a real basis named below. A Hero may challenge them in discussion &mdash; that is a legitimate move, and Appendix G names the skill a Hero would need to test one.</p>
+    <table><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+    <tr><td>MA1</td><td>Elena's target difficulty (&radic;N) for the exercise</td><td>15.2 (15.05 base + a 0.15 calibration buffer)</td><td>Derived from the session's real time budget for this exercise segment; the 0.15 buffer represents Elena's own uncertainty about how quickly a typical trainee tests each candidate divisor. The Working Notebook's Step 7 sensitivity slider lets you flex this calibration buffer yourself and watch how it moves the margin &mdash; it is not stated as a fixed result here.</td></tr>
+    <tr><td>MA2</td><td>Candidate A (143) and Candidate B (323) themselves</td><td>See Appendix C</td><td>Output by Elena's practice key-generator tool for this specific exercise &mdash; no public database of real training-exercise moduli exists (same convention as every prior case's authored domain data).</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix E &mdash; Sources</summary>
+  <div class="inner">
+    <table><tr><th>id</th><th>Claim</th><th>Value</th><th>Source</th><th>Accessed</th><th>Confidence</th></tr>
+    <tr><td>S1</td><td>RSA-2048's and RSA-3072's real NIST-defined security strength and use-through dates</td><td>RSA-2048 = 112-bit security, acceptable through 2030; RSA-3072 = 128-bit security, required after 2030</td><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-131Ar2.pdf" target="_blank" rel="noopener">NIST, SP 800-131A Revision 2, &ldquo;Transitioning the Use of Cryptographic Algorithms and Key Lengths&rdquo;</a></td><td>2026-08-12</td><td>HIGH</td></tr>
+    </table>
+  </div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-12. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+<div class="stepbox">
+  <h4>Step 1 &middot; Candidate A, Fully Factored (D1)</h4>
+  <div class="goal">Test candidate prime divisors in order &mdash; 2, 3, 5, 7, 11, &hellip; &mdash; stopping the moment one divides evenly (Appendix B explains why you never need to go past &radic;N). List every prime you tested, in order, as a comma-separated list, then enter Candidate A's two prime factors.</div>
+  <div class="fieldrow"><label>Primes tested, in order (e.g. 2,3,5)</label><input type="text" id="d1_tested" placeholder="2,3,5,..."></div>
+  <div class="fieldrow"><label>Factor 1</label><input type="number" id="d1_f1" step="1"></div>
+  <div class="fieldrow"><label>Factor 2</label><input type="number" id="d1_f2" step="1"><span id="fb_d1"></span></div>
+  <button onclick="checkD1()">Check Step 1</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &middot; Candidate B, Fully Factored (D2)</h4>
+  <div class="goal">Do the same for Candidate B. If you've revealed the Twist below and checked its box, this re-checks against the corrected candidate.</div>
+  <div class="fieldrow"><label>Primes tested, in order (e.g. 2,3,5)</label><input type="text" id="d2_tested" placeholder="2,3,5,..."></div>
+  <div class="fieldrow"><label>Factor 1</label><input type="number" id="d2_f1" step="1"></div>
+  <div class="fieldrow"><label>Factor 2</label><input type="number" id="d2_f2" step="1"><span id="fb_d2"></span></div>
+  <button onclick="checkD2()">Check Step 2</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &middot; Why Two Odd Primes Can Never Multiply To An Even Number (D3)</h4>
+  <div class="goal">Both of Candidate A's and Candidate B's prime factors are odd numbers. A number that is the product of two odd numbers is always &hellip;? Then write your own explanation of why &mdash; in your pitch, use one of your D1/D2 factor pairs as an example.</div>
+  <div class="fieldrow"><label>The product of two odd numbers is always</label>
+    <select id="d3_parity"><option value="">choose&hellip;</option><option value="Odd">Odd</option><option value="Even">Even</option></select><span id="fb_d3"></span>
+  </div>
+  <div class="fieldrow" style="align-items:flex-start"><label style="padding-top:6px">Your explanation</label>
+    <textarea id="d3_explain" style="flex:1;min-width:220px;min-height:56px;font-family:var(--sans);font-size:.9rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px" placeholder="Why can a product of two odd primes never be even?"></textarea>
+  </div>
+  <button onclick="checkD3()">Check Step 3</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &middot; Is &ldquo;Odd&rdquo; The Same As &ldquo;Safe&rdquo;? (D4)</h4>
+  <div class="goal">Evaluate this statement: &ldquo;If a number is odd, it is safe to use as key material.&rdquo; Is it true or false? Use one of your own results from D1 or D2 to justify your answer.</div>
+  <div class="fieldrow"><label>The statement is</label>
+    <select id="d4_verdict"><option value="">choose&hellip;</option><option value="True">True</option><option value="False">False</option></select><span id="fb_d4"></span>
+  </div>
+  <div class="fieldrow" style="align-items:flex-start"><label style="padding-top:6px">Your justification</label>
+    <textarea id="d4_explain" style="flex:1;min-width:220px;min-height:56px;font-family:var(--sans);font-size:.9rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px" placeholder="Which D1/D2 result backs up your answer?"></textarea>
+  </div>
+  <button onclick="checkD4()">Check Step 4</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 5 &middot; Real Key Sizes, In Decimal Digits (D5)</h4>
+  <div class="goal">A real key isn't 143 or 323 &mdash; it's hundreds of digits long. Using the fact that a number with <code>b</code> bits has about <code>b &times; 0.30103</code> decimal digits (Appendix A), find how many decimal digits a real 2048-bit key and a real 3072-bit key each have.</div>
+  <div class="fieldrow"><label>2048-bit key &mdash; decimal digits</label><input type="number" id="d5_2048" step="1"></div>
+  <div class="fieldrow"><label>3072-bit key &mdash; decimal digits</label><input type="number" id="d5_3072" step="1"><span id="fb_d5"></span></div>
+  <button onclick="checkD5()">Check Step 5</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 6 &middot; Square Roots And Distance From Target (D6)</h4>
+  <div class="goal">Find the square root of Candidate A and the square root of Candidate B, then find how far each one is from Elena's target difficulty (Appendix C). If you've applied the Twist, this re-checks Candidate B's square root and distance against the corrected reading.</div>
+  <div class="fieldrow"><label>&radic;Candidate A</label><input type="number" id="d6_sqrtA" step="any"></div>
+  <div class="fieldrow"><label>&radic;Candidate B</label><input type="number" id="d6_sqrtB" step="any"></div>
+  <div class="fieldrow"><label>Distance, Candidate A from target</label><input type="number" id="d6_devA" step="any"></div>
+  <div class="fieldrow"><label>Distance, Candidate B from target</label><input type="number" id="d6_devB" step="any"><span id="fb_d6"></span></div>
+  <button onclick="checkD6()">Check Step 6</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 7 &middot; The Verdict (D7)</h4>
+  <div class="goal">Using D6's two distances, find the percentage margin between them &mdash; the larger distance minus the smaller distance, divided by the larger distance &mdash; and recommend which candidate Elena should use. If you've applied the Twist, this checks against the corrected margin instead.</div>
+  <div class="fieldrow"><label>Percentage margin (%)</label><input type="number" id="d7_margin" step="any"></div>
+  <div class="fieldrow"><label>Recommend</label>
+    <select id="d7_verdict"><option value="">choose&hellip;</option><option value="A">Candidate A (Option A)</option><option value="B">Candidate B (Option B)</option></select><span id="fb_d7"></span>
+  </div>
+  <button onclick="checkD7()">Check Step 7</button>
+
+  <div class="side-note" style="margin-top:16px">
+    <strong>Explore MA1's sensitivity.</strong> Appendix D's MA1 says the 0.15 calibration buffer carries real uncertainty about how quickly a typical trainee searches. Drag the slider to flex that buffer &plusmn;50% and watch the effective target and the margin recompute live &mdash; nothing here is fixed, it's calculated fresh every time you move it.
+    <div class="sliderow">
+      <input type="range" id="calib_slider" min="0.075" max="0.225" step="0.001" value="0.15" oninput="onCalibSliderInput()">
+      <span class="val" id="calib_slider_val">0.150 buffer</span>
+    </div>
+    <div id="calib_slider_out" style="font-family:var(--sans);font-size:.84rem;color:var(--sub)"></div>
+  </div>
+</div>
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>&ldquo;It's the middle of the discussion. Elena double-checks the practice key-generator's logs and finds a bug in its random seed &mdash; one of the two candidates wasn't actually generated correctly. She reruns it with the corrected seed.&rdquo;</p>
+      <p>&ldquo;The corrected candidate is a different number. Does it still deserve the same trust it had a minute ago?&rdquo;</p>
+      <p>Toggle the box below to re-run the affected candidate's steps with the corrected number applied, and find out for yourself &mdash; the notebook won't tell you the answer in advance.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the corrected candidate and re-check Steps 2, 6, and 7.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>National Institute of Standards and Technology (NIST) &mdash; SP 800-131A Revision 2, &ldquo;Transitioning the Use of Cryptographic Algorithms and Key Lengths.&rdquo; <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-131Ar2.pdf" target="_blank" rel="noopener">Link</a></li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Key Length &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+/* Given data, copied verbatim from cases/key-length/case.json (sha256 of case.json at build
+   time: 7135fcd8ccdb06d7269ffbbd7f23191dd3284ab2da0ac08a0a94589357e38789 -- confirm this file
+   has not drifted from the source of record). PARAMS/FLEX/evaluate()/evaluate_twist() below are
+   a direct JS port of cases/key-length/sensitivity_model.py -- same names, same arithmetic
+   (distance from target is lower-is-better, so evaluate() applies the same ceiling-collapse
+   transform verified in Plaza Pavers/Company Front/Vent Cap/Apron Order/Survey Corner) -- so the
+   printed page, this live calculator, and case-readiness Tier 2 probe 5 can never quietly
+   diverge. factorize()/realDigits() below are additional live-computation helpers the notebook's
+   own check functions call -- they derive D1/D2's factor pairs and D5's digit counts fresh from
+   PARAMS every time, the same "notebook computes, never prints" rule the sensitivity model
+   itself follows for the distance/margin verdict. */
+const PARAMS = {
+  candidate_a: 143.0,   // Appendix C -- 11 x 13
+  candidate_b: 323.0,   // Appendix C -- 17 x 19 (base case, pre-twist)
+  target_base: 15.05,   // fixed reference, never flexed
+  calib_buffer: 0.15,   // Appendix D MA1 -- FLEX target (15.05+0.15 = 15.2 base target)
+  log10_2: 0.30103,     // Challenge D5 -- decimal digits of a b-bit number is about b*log10_2
+};
+const FLEX = ["calib_buffer"];
+
+function distances(p){
+  const target = p.target_base + p.calib_buffer;
+  const sqrt_a = Math.sqrt(p.candidate_a);
+  const sqrt_b = Math.sqrt(p.candidate_b);
+  return {target, sqrt_a, sqrt_b, dev_a: Math.abs(sqrt_a - target), dev_b: Math.abs(sqrt_b - target)};
+}
+function evaluate(p){
+  // CONTRACT: {"A": metric, "B": metric}, higher wins. Ceiling-collapse transform, same pattern
+  // verified in every prior case: value = 2*worse - dev.
+  const d = distances(p);
+  const ceiling = 2 * Math.max(d.dev_a, d.dev_b);
+  return {A: ceiling - d.dev_a, B: ceiling - d.dev_b};
+}
+function twistedParams(p){
+  // Twist: a bug in the practice key-generator's random seed is found; re-running the affected
+  // candidate's generation with the corrected seed produces a different number -- mirrors
+  // sensitivity_model.py evaluate_twist() exactly, touching only candidate_b.
+  return Object.assign({}, p, {candidate_b: 391.0});
+}
+function evaluate_twist(p){
+  return evaluate(twistedParams(p));
+}
+
+/* Live trial-division factorizer -- the exact process Appendix B describes: test candidate
+   primes in order, stop the instant one divides evenly, never test past sqrt(n). Used by
+   checkD1()/checkD2() below instead of hardcoding either candidate's factor pair as a literal. */
+function isPrimeLL(n){
+  if(n < 2) return false;
+  for(let i = 2; i*i <= n; i++){ if(n % i === 0) return false; }
+  return true;
+}
+function factorize(n){
+  const tested = [];
+  for(let p = 2; p <= Math.sqrt(n) + 1e-9; p++){
+    if(!isPrimeLL(p)) continue;
+    tested.push(p);
+    if(n % p === 0){
+      return {tested, trials: tested.length, factors: [p, n / p]};
+    }
+  }
+  return {tested, trials: tested.length, factors: null};
+}
+/* Challenge D5's own stated formula (Appendix A): digits = floor(bits * log10_2) + 1. */
+function realDigits(bits, log10_2){
+  return Math.floor(bits * log10_2) + 1;
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+function twistApplied(){
+  const el = document.getElementById('applyTwist');
+  return !!(el && el.checked);
+}
+function currentParams(){
+  return twistApplied() ? twistedParams(PARAMS) : PARAMS;
+}
+function parseIntList(s){
+  return (s || '').split(',').map(x => parseInt(x.trim(), 10)).filter(x => !isNaN(x));
+}
+function sameArray(a, b){
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+function sameFactorPair(a, b, x, y){
+  return (a === x && b === y) || (a === y && b === x);
+}
+function checkD1(){
+  const f = factorize(currentParams().candidate_a);
+  const okTested = sameArray(parseIntList(val('d1_tested')), f.tested);
+  const okFactors = f.factors && sameFactorPair(parseInt(val('d1_f1'),10), parseInt(val('d1_f2'),10), f.factors[0], f.factors[1]);
+  fb('fb_d1', okTested && okFactors);
+}
+function checkD2(){
+  const f = factorize(currentParams().candidate_b);
+  const okTested = sameArray(parseIntList(val('d2_tested')), f.tested);
+  const okFactors = f.factors && sameFactorPair(parseInt(val('d2_f1'),10), parseInt(val('d2_f2'),10), f.factors[0], f.factors[1]);
+  fb('fb_d2', okTested && okFactors);
+}
+function checkD3(){
+  fb('fb_d3', val('d3_parity') === 'Odd');
+}
+function checkD4(){
+  fb('fb_d4', val('d4_verdict') === 'False');
+}
+function checkD5(){
+  const p = currentParams();
+  const ok1 = near(parseFloat(val('d5_2048')), realDigits(2048, p.log10_2), 0.4);
+  const ok2 = near(parseFloat(val('d5_3072')), realDigits(3072, p.log10_2), 0.4);
+  fb('fb_d5', ok1 && ok2);
+}
+function checkD6(){
+  const d = distances(currentParams());
+  const okA = near(parseFloat(val('d6_sqrtA')), d.sqrt_a, 0.03);
+  const okB = near(parseFloat(val('d6_sqrtB')), d.sqrt_b, 0.03);
+  const okDevA = near(parseFloat(val('d6_devA')), d.dev_a, 0.03);
+  const okDevB = near(parseFloat(val('d6_devB')), d.dev_b, 0.03);
+  fb('fb_d6', okA && okB && okDevA && okDevB);
+}
+function checkD7(){
+  const ev = evaluate(currentParams());
+  const winner = ev.A > ev.B ? 'A' : 'B';
+  const other = winner === 'A' ? 'B' : 'A';
+  const vals = {A: ev.A, B: ev.B};
+  const margin = (vals[winner] - vals[other]) / vals[other] * 100;
+  const okMargin = near(parseFloat(val('d7_margin')), margin, 0.3);
+  const okVerdict = val('d7_verdict') === winner;
+  fb('fb_d7', okMargin && okVerdict);
+}
+function onCalibSliderInput(){
+  const cb = parseFloat(document.getElementById('calib_slider').value);
+  document.getElementById('calib_slider_val').textContent = round(cb,3) + ' buffer';
+  const p = Object.assign({}, currentParams(), {calib_buffer: cb});
+  const d = distances(p);
+  const ev = evaluate(p);
+  const winner = ev.A > ev.B ? 'Candidate A' : 'Candidate B';
+  const winVal = Math.max(ev.A, ev.B), otherVal = Math.min(ev.A, ev.B);
+  const mgn = (winVal - otherVal) / otherVal * 100;
+  document.getElementById('calib_slider_out').textContent =
+    'At this calibration buffer, the effective target is ' + round(d.target, 3) +
+    ', and ' + winner + ' currently sits closer to it (margin ' + round(mgn,2) + '%). Drag the slider across its whole range to see whether that ever changes.';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "key-length"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ['ch1','Challenge 1 -- posted a "how to..." resource link'],
+  ['ch2','Challenge 2 -- 250+ word pitch, with visual'],
+  ['D1','D1 -- Candidate A, fully factored'],
+  ['D2','D2 -- Candidate B, fully factored'],
+  ['D3','D3 -- why two odd primes can never multiply to an even number'],
+  ['D4','D4 -- true/false evaluation of "odd means safe," justified'],
+  ['D5','D5 -- real 2048-bit and 3072-bit key decimal digit counts'],
+  ['D6','D6 -- each candidate\'s square root and distance from target'],
+  ['D7','D7 -- percentage-margin verdict and recommendation'],
+  ['ch4','Challenge 4 -- appendix of your work/process'],
+  ['ch5','Challenge 5 -- discussion participation (2x, or 500-word makeup)']
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Factor": {def: "Numbers we can multiply together to get another number -- 11 and 13 are factors of 143 because 11 x 13 = 143.",
+    url: "https://www.mathsisfun.com/definitions/factor.html"},
+  "Prime": {def: "A whole number above 1 that can't be made by multiplying two smaller whole numbers -- it has no factors except 1 and itself.",
+    url: "https://www.mathsisfun.com/prime_numbers.html"},
+  "Composite Number": {def: "A whole number that CAN be made by multiplying other whole numbers -- the opposite of prime.",
+    url: "https://www.mathsisfun.com/definitions/composite-number.html"},
+  "Digit": {def: "A single symbol used to write a number -- the numeral 153 has three digits: 1, 5, and 3.",
+    url: "https://www.mathsisfun.com/definitions/digit.html"},
+  "Odd": {def: "Any whole number that can't be divided evenly by 2 -- it always ends in 1, 3, 5, 7, or 9.",
+    url: "https://www.mathsisfun.com/definitions/odd-number.html"},
+  "Square Root": {def: "A value that, multiplied by itself, gives you back the original number -- the inverse of squaring.",
+    url: "https://www.mathsisfun.com/square-root.html"},
+  "Logical Statement": {def: "An \"if ... then ...\" statement with a hypothesis and a conclusion -- true only when the hypothesis being true actually guarantees the conclusion.",
+    url: "https://www.mathsisfun.com/definitions/conditional-statement.html"},
+  "Absolute Value": {def: "How far a number is from zero on the number line -- always zero or positive.",
+    url: "https://www.khanacademy.org/math/algebra-home/alg-absolute-value"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+};
+const HOWTO = [
+  ["How to factor a number", "Factor"],
+  ["How to evaluate an absolute value expression", "Absolute Value"],
+  ["How to find the percent of a number", "Percent"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  checkD2();
+  checkD6();
+  checkD7();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

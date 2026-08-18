@@ -66,11 +66,28 @@ def probe_cold_solve(project, cid, c, md, fac, out):
             v = bal.get(k)
             if v is None:
                 continue
+            # Same fix as tier1_structural.py's T1-18 (2026-08-13): margin_pct is inherently
+            # a percent/points figure. A small round value (1, 5, 10...) collides constantly
+            # with unrelated case vocabulary -- appendix/step numbers, dose counts, "Option 1"
+            # -- that share nothing with the balance verdict except being the same small
+            # integer. Require a nearby %/point unit for margin_pct specifically; other keys
+            # keep the original bare-token match.
+            require_unit = (k == 'margin_pct')
+            found = False
             for form in (f"{v:,}", str(v), str(int(v)) if float(v).is_integer() else str(v)):
-                if re.search(r'(?<![\d.])' + re.escape(form) + r'(?![\d])', md):
-                    leaks.append(f"balance_test.{k} = {v} appears in case.md; the solver is handed "
-                                 f"the answer")
+                pat = r'(?<![\w.])' + re.escape(form) + r'(?![\w-])'
+                for m in re.finditer(pat, md):
+                    if require_unit:
+                        window = md[m.end():m.end() + 15]
+                        if not re.search(r'\s*%|\s*point', window, re.I):
+                            continue
+                    found = True
                     break
+                if found:
+                    break
+            if found:
+                leaks.append(f"balance_test.{k} = {v} appears in the packet; the solver is handed "
+                             f"the answer")
         # The twist must not be pre-disclosed.  Shingle test, not word overlap:
         # a twist about Nyamirama will always say "Nyamirama", and the village is
         # legitimately in Appendix C.  What must NOT appear is the twist's own
@@ -159,9 +176,15 @@ def probe_trap(project, cid, c, fac, out):
                            "wrong path has no discussion in it.")
         else:
             trap_txt = re.sub(r'\s+', ' ', m.group(0))[:400]
-            # a trap must describe a WRONG PATH, not merely a hard bit
-            if not re.search(r'(?i)\b(will|most|learners|students|never notice|quietly|assume|'
-                             r'optimi[sz]e|forget|miss|skip|default)\b', trap_txt):
+            # a trap must describe a WRONG PATH, not merely a hard bit. Verb forms need their
+            # normal inflections (skip/skips/skipped, miss/misses/missed, assume/assumes/
+            # assuming...) -- a bare \bskip\b does NOT match "skips" (no word boundary between
+            # the 'p' and the 's', both word characters), which produced false FAILs on
+            # multiple real, well-written traps in 2026-08 batches. Fixed 2026-08-18.
+            if not re.search(r'(?i)\b(will|most|learners?|students?|never notice|quietly|'
+                             r'assumes?|assumed|assuming|optimi[sz]es?|optimi[sz]ed|optimi[sz]ing|'
+                             r'forgets?|forgot|forgetting|misses?|missed|missing|skips?|skipped|'
+                             r'skipping|defaults?|defaulted|defaulting)\b', trap_txt):
                 machine.append("the named trap does not describe what a learner will actually DO "
                                "wrong; it reads as a difficulty note, not a trap")
     out.append({

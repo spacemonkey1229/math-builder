@@ -30,7 +30,7 @@ One detail Paul and Cindy don't know: the medication used in MT is made by a pha
 
 Exactly how to compute Paul's Ejection Fraction, and how each therapy's costs are modeled year over year, are fixed in **APPENDIX D** — use those conventions, or your numbers won't match anyone else's.
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix E** — that is where Challenge 1 sends you.
+The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix F** — that is where Challenge 1 sends you. Curious about the real medicine behind this case, beyond the math? **SEE APPENDIX E** for further reading.
 
 ---
 
@@ -109,7 +109,18 @@ The original case materials did not include cost data, so the figures below are 
 
 ---
 
-## Appendix E: "How To…" Math Questions To Research
+## Appendix E: Learn More
+
+Beyond the math, this case is grounded in real cardiology. Here's where to go if you want to understand the medicine, not just the numbers:
+
+- [Coronary Artery Bypass Grafting (NHLBI, NIH)](https://www.nhlbi.nih.gov/health/coronary-artery-bypass-grafting) — the National Heart, Lung, and Blood Institute's official explainer on what CABG surgery is, how it's performed, and what recovery looks like.
+- [Ejection Fraction: An Important Heart Measurement (Cleveland Clinic)](https://my.clevelandclinic.org/health/articles/16950-ejection-fraction) — a plain-language explanation of what ejection fraction measures and why it matters for heart failure patients like Paul.
+- [Coronary Artery Disease (MedlinePlus, U.S. National Library of Medicine)](https://medlineplus.gov/coronaryarterydisease.html) — an overview of CAD, its causes, risk factors (including the ones Paul has: pre-diabetes, obesity, family history, tobacco use), and treatment options.
+- [Comparison of Surgical and Medical Treatment for Congestive Heart Failure and Coronary Artery Disease — NCT00023595 (ClinicalTrials.gov)](https://clinicaltrials.gov/study/NCT00023595) — the official registry record for the real STICH trial this case's Appendix A data comes from, including its full design and Duke University/NHLBI sponsorship.
+
+---
+
+## Appendix F: "How To…" Math Questions To Research
 
 **Vocabulary**
 

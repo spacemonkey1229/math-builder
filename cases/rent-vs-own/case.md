@@ -24,9 +24,9 @@ Megan and Taylor Newman have three children and have rented the same single-fami
 
 Their current rental is 1,376 square feet with three bedrooms and two bathrooms. If they rent again, they'd want a comparably sized home in the same area. Earlier this year they completed mortgage pre-qualification through their bank: a minimum down payment of **2.5%** and closing costs of about **3.5%** of the purchase price (SEE APPENDIX B). Conventional guidance recommends spending no more than **28%** of gross monthly income on housing and no more than **36%** on total debt combined; their bank told them they could qualify to borrow up to **37%** of gross income on the mortgage itself.
 
-Because the Newmans have been reliable tenants, their landlords are offering to sell them the current rental for **$360,000** — $15,000 below the price they'd list it for otherwise. Boise home values have been rising sharply, and market forecasts point to continued double-digit growth this year (SEE APPENDIX D). The mortgage rate and cost estimates this case uses are fixed in **APPENDIX C**; use them, or your numbers won't match anyone else's.
+Because the Newmans have been reliable tenants, their landlords are offering to sell them the current rental for **$360,000** — $15,000 below the price they'd list it for otherwise. Boise home values have been rising sharply, and market forecasts point to continued double-digit growth this year (SEE APPENDIX D). The mortgage rate and cost estimates this case uses are fixed in **APPENDIX C**; use them, or your numbers won't match anyone else's. Curious about the mortgage vocabulary or the homebuying process itself beyond what this case requires? SEE APPENDIX E for further reading.
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix E** — that is where Challenge 1 sends you.
+The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix F** — that is where Challenge 1 sends you.
 
 ---
 
@@ -100,7 +100,19 @@ Boise home values have been forecast to appreciate by more than 10% this year. N
 
 ---
 
-## Appendix E: "How To…" Math Questions To Research
+## Appendix E: Learn More
+
+These are real, currently-live resources for students who want to go deeper on renting-vs-buying and the mortgage math beyond what this case requires. They are optional background reading, not required for the Challenges.
+
+- [CFPB — Buying a House](https://www.consumerfinance.gov/owning-a-home/process/) — the Consumer Financial Protection Bureau's step-by-step walkthrough of the home-buying process, from budgeting through closing.
+- [CFPB — What is private mortgage insurance (PMI)?](https://www.consumerfinance.gov/ask-cfpb/what-is-private-mortgage-insurance-en-1953/) — explains why a low down payment (like the Newmans' 2.5%) triggers PMI, and how it can later be removed.
+- [CFPB — What is a debt-to-income ratio?](https://www.consumerfinance.gov/ask-cfpb/what-is-a-debt-to-income-ratio-en-1791/) — the plain-English version of the 28%/36%/37% guidelines this case's D5 asks you to check against.
+- [CFPB — Mortgages](https://www.consumerfinance.gov/consumer-tools/mortgages/) — a hub of mortgage basics, terminology, and homeowner tools from the federal consumer-protection agency.
+- [HUD.gov — Buying a Home](https://www.hud.gov/topics/buying_a_home) — the U.S. Department of Housing and Urban Development's official homebuyer resource page, including access to HUD-approved housing counselors.
+
+---
+
+## Appendix F: "How To…" Math Questions To Research
 
 **Vocabulary**
 

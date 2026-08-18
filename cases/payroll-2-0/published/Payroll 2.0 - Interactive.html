@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Payroll 2.0 — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  HARD LINE (MCS-37): this file must never print case.json's balance_test verdict
+  (margin_pct, which option "wins") as a static literal anywhere outside a <script>
+  tag's own computation. The Working Notebook computes live from the case's own
+  numbers; it never hands over the conclusion.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:260px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  .payroll-bar{display:flex;align-items:flex-end;gap:10px;height:150px;margin:14px 0}
+  .payroll-bar .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;font-family:var(--sans);font-size:.72rem}
+  .payroll-bar .stick{width:100%;background:var(--navy);border-radius:4px 4px 0 0}
+  .payroll-bar .stick.hi{background:var(--gold)}
+  .payroll-bar .lbl{margin-top:6px;color:var(--sub);text-align:center}
+
+  .trendwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){ .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap} }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-people" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M14.5 20c.3-2.6 2.2-4.6 4.6-4.9"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Payroll 2.0</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch</span>
+      <span class="pill">Percent &middot; Ratio &middot; Linear Trend</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">The sun is still low over Nashville when Francesca Molianari turns the corner onto the block that holds her storefront. She's carrying coffee she made at home &mdash; the shop's machine broke in March and she never replaced it &mdash; and her phone is already buzzing in her jacket pocket for the second time this morning.</p>
+  <p>She stops across the street and just looks at the sign for a second. Hand-lettered, gold on navy, hung the week the doors opened. Eight years ago. Inside, in about forty minutes, five people who trust her with their rent and their groceries and their kids' school clothes are going to walk through that door expecting a normal Tuesday.</p>
+  <p>The bookkeeper's email is still open on her phone. Same subject line as yesterday. Same number, unchanged no matter how many times Francesca has re-run it on napkins, on the back of invoices, on this same phone at two in the morning. She already isn't taking her own paycheck. She's already called the landlord, the bank, two suppliers who've known her for years. Nobody has anything left to give her.</p>
+  <p>There's one number left to move, and moving it means walking through that door and looking at five faces she knows better than her own family's.</p>
+  <p>Francesca crosses the street, keys already in her hand.</p>
+
+  <div class="grid2" style="margin-top:18px">
+    <figure class="card" style="margin:0">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Salemtown_Board_Co%2C_Nashville%2C_United_States_%28Unsplash%29.jpg/960px-Salemtown_Board_Co%2C_Nashville%2C_United_States_%28Unsplash%29.jpg" alt="A small storefront business in the Salemtown neighborhood of Nashville, Tennessee" style="width:100%;height:auto;border-radius:6px;display:block">
+      <figcaption class="side-note" style="margin-top:8px">A small Nashville storefront &mdash; the kind of business Grampoline is. Photo: Joshua Ness, Wikimedia Commons, public domain (CC0).</figcaption>
+    </figure>
+    <figure class="card" style="margin:0">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Vekttrening_for_eldre.jpg/960px-Vekttrening_for_eldre.jpg" alt="An older adult doing supervised weight training with exercise equipment" style="width:100%;height:auto;border-radius:6px;display:block">
+      <figcaption class="side-note" style="margin-top:8px">Exercise equipment for older adults &mdash; Grampoline's product line. Photo: Bamble Kommune, Wikimedia Commons, CC BY-SA 2.0.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p><strong>Francesca Molianari</strong> founded Grampoline LLC in 2011, opening a storefront in Nashville, Tennessee for a product she'd designed herself: exercise equipment built for older adults, a market she saw almost nobody else serving. She hired her first employee, Martha, in 2012, and grew the team one role at a time over the years that followed &mdash; sales, product design, and most recently marketing &mdash; to the five people who work alongside her today (see <strong>Appendix A</strong>).</p>
+  <p>For most of Grampoline's history, revenue climbed. Over the past two years that has reversed: new online competitors, selling similar products at lower prices with a bigger reach, have pulled customers away, and Grampoline's own year-by-year numbers show the shift plainly (see <strong>Appendix B</strong>). Francesca has already cut every non-payroll expense she can find, and has gone a full month without paying herself just to make rent. Sales this quarter are up slightly from last quarter, but not by enough. To close out 2019 without carrying a deficit into the following year, Francesca has concluded she must remove <strong>$25,000</strong> from the payroll still owed to her team for the rest of 2019 (see <strong>Appendix C</strong>) &mdash; the last lever she has left to pull.</p>
+  <p>Two paths are open to her. <strong>Full Stop</strong> closes the gap by ending one employee's role entirely: that person's full remaining 2019 pay comes off the books in a single cut, while everyone else keeps every dollar they were counting on. <strong>Even Keel</strong> closes the same gap by cutting every remaining employee's pay by one identical percentage: nobody loses a job, but every remaining paycheck for the rest of the year gets smaller. Each of Grampoline's five employees has their own history, role, and recent performance at the company, all of which Francesca has to weigh (see <strong>Appendix A</strong>).</p>
+  <p class="side-note">Small businesses navigate this exact tradeoff &mdash; job cuts versus shared pay cuts &mdash; all the time; see <strong>Appendix E</strong> for further reading on how real owners and HR experts think about it.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Francesca Molianari. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Full Stop</h4>
+      <p style="margin:0">Let one employee go, closing the $25,000 shortfall in a single cut.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Even Keel</h4>
+      <p style="margin:0">Cut every remaining employee's pay by the same percentage, closing the same $25,000 shortfall.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from the case study launch. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which option you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include (the vocabulary and "how to&hellip;" skills this Challenge draws on are listed in Appendix F): <strong>D1</strong> a bar graph comparing each employee's projected remaining 2019 pay; <strong>D2</strong> if Option A &mdash; who you let go, the exact dollar amount removed, and why that employee and not one of the other four; <strong>D3</strong> if Option B &mdash; the flat percent cut that removes exactly $25,000, employee by employee; <strong>D4</strong> a projected end-of-2019 profit table for your chosen option, scaling H1 revenue/expenses to a full year; <strong>D5</strong> a 2011&ndash;2018 profit trend graph with a drawn linear trend line, extended to project 2020.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+  <details open>
+    <summary>Appendix A &mdash; Grampoline's Team</summary>
+    <div class="inner">
+      <p><strong>Francesca Molianari, 45.</strong> Founder and owner. Grew up working in her family's Italian restaurant in Boston, which she ran herself until financial pressure closed it in 2010. Started Grampoline the next year, running it alone out of her garage for six months before opening the storefront and hiring her first employee. Has not taken a paycheck for the past month.</p>
+      <p><strong>Martha, 56.</strong> Hired in 2012, Grampoline's first employee &mdash; manages accounting, the supply chain, and customer orders. Formerly a school counselor for 22 years before a district furlough. Since December, has become the primary caregiver for her 15-year-old niece, injured in the car accident that killed Martha's sister; Martha now frequently leaves after lunch, and misses full days a few times a month, to care for her.</p>
+      <p><strong>Paul Chio, 48.</strong> Hired in 2013 to run sales, after a 16-year sales career with several other companies; helped nearly double Grampoline's revenue by 2015. His role expanded in 2016 to include customer support and training new hires, and his own sales targets have not been met in over a year since. Supporting his oldest daughter through her first year of college.</p>
+      <p><strong>Christina Redding, 34.</strong> Hired in 2017 as a second sales rep, with no prior sales experience &mdash; trained by Paul, and matched his sales targets within a year. By 2018, her sales accounted for 41% of the company's new sales, compared with Paul's 17%. This is the first full-time job she has ever held.</p>
+      <p><strong>Tiago Richman, 28.</strong> Hired in 2017 to redesign Grampoline's core product line and develop new products for existing customers; his work helped grow 2017 revenue. Competitors outside the region have recently begun taking market share with feature-richer products. Became a father two months ago; his fiancee is still recovering from pregnancy complications.</p>
+      <p><strong>Irene Villalobos, 23.</strong> Hired in March 2019 as Grampoline's first social media manager. Sales rose compared with the same months the year before since she started. First-generation college graduate carrying $54,000 in student loan debt; just signed a year-long apartment lease near the storefront.</p>
+      <p class="side-note">See Appendix B for the company's financial history and Appendix C for what each employee is still owed for the rest of 2019.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix B &mdash; Grampoline Financial History, 2011&ndash;2019</summary>
+    <div class="inner">
+      <p>All figures in whole U.S. dollars. 2019 is a partial year &mdash; actuals through the second quarter, before any payroll cut. Profit = Revenue &minus; Expenses &minus; Payroll.</p>
+      <table id="apxB">
+        <thead><tr><th>Year</th><th>Revenue</th><th>Expenses</th><th>Payroll</th><th>Profit</th></tr></thead>
+        <tbody>
+          <tr><td>2011</td><td>$52,200</td><td>$23,150</td><td>$21,900</td><td>$7,150</td></tr>
+          <tr><td>2012</td><td>$81,700</td><td>$30,160</td><td>$53,900</td><td>&minus;$2,360</td></tr>
+          <tr><td>2013</td><td>$174,000</td><td>$45,000</td><td>$102,300</td><td>$26,700</td></tr>
+          <tr><td>2014</td><td>$258,500</td><td>$83,870</td><td>$124,000</td><td>$50,630</td></tr>
+          <tr><td>2015</td><td>$238,560</td><td>$112,290</td><td>$137,800</td><td>&minus;$11,530</td></tr>
+          <tr><td>2016</td><td>$284,300</td><td>$82,670</td><td>$147,550</td><td>$54,080</td></tr>
+          <tr><td>2017</td><td>$261,000</td><td>$98,630</td><td>$208,800</td><td>&minus;$46,430</td></tr>
+          <tr><td>2018</td><td>$275,000</td><td>$82,000</td><td>$199,500</td><td>&minus;$6,500</td></tr>
+          <tr><td>2019 (H1 actual)</td><td>$127,000</td><td>$32,500</td><td>$104,390</td><td>&minus;$9,890</td></tr>
+        </tbody>
+      </table>
+      <p class="gloss-source">Source: Grampoline Annual Financial Report (original case materials' own workbook). Grampoline LLC is a fictional company invented by the original case materials &mdash; this is its own stated dataset, not a real company's real data.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix C &mdash; Projected Remaining 2019 Payroll, By Employee</summary>
+    <div class="inner">
+      <p>The "H2 2019 (projected, before cut)" column is what each person is still budgeted to receive for the second half of 2019, before any cut. Francesca's own remaining pay ($12,750) is shown for reference only &mdash; see Appendix D, Assumption 2.</p>
+      <table id="apxC">
+        <thead><tr><th>Employee</th><th>2019 H1 actual</th><th>H2 2019 (projected, before cut)</th></tr></thead>
+        <tbody>
+          <tr><td>Francesca</td><td>$17,222.22</td><td>$12,750.00</td></tr>
+          <tr><td>Martha</td><td>$23,888.89</td><td>$23,400.00</td></tr>
+          <tr><td>Paul</td><td>$23,611.11</td><td>$20,500.00</td></tr>
+          <tr><td>Christina</td><td>$22,777.78</td><td>$26,450.00</td></tr>
+          <tr><td>Tiago</td><td>$23,333.33</td><td>$18,500.00</td></tr>
+          <tr><td>Irene</td><td>$7,200.00</td><td>$23,400.00</td></tr>
+          <tr><td><strong>Total, 5 employees (excl. Francesca)</strong></td><td><strong>$100,811.11</strong></td><td><strong>$112,250.00</strong></td></tr>
+        </tbody>
+      </table>
+      <p class="gloss-source">Note on the source data: this table's 2019 H1 actual column, added across all six people, totals $118,033.33 &mdash; it does not exactly match Appendix B's company-wide 2019 H1 payroll figure ($104,390), a real inconsistency present in the original source workbook. Appendix B's total is used for D4/D5's whole-company profit calculations; this table is used for the per-employee decisions in D2/D3.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix D &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p><strong>Assumption 1.</strong> Grampoline LLC's financial history (Appendix B) and per-employee payroll (Appendix C) are the original case materials' own dataset, carried forward from the source workbook &mdash; Grampoline is fictional, not a real business, so these figures are not subject to external, real-world sourcing.</p>
+      <p><strong>Assumption 2.</strong> The $25,000 shortfall target and Even Keel's percent-cut base are both computed over the five hired employees' H2-2019 projected pay, excluding Francesca's own remaining pay. This case treats "employee pay" as the five people she hired, not her own draw.</p>
+      <p><strong>Assumption 3.</strong> Where a full-year 2019 figure is needed but only a first-half actual exists (D4), this case assumes second-half revenue and expenses continue at the same rate as the first half &mdash; no seasonal pattern is given anywhere in the source data.</p>
+      <p><strong>Assumption 4 &mdash; Reserved for in-class disclosure.</strong> Your facilitator may introduce one additional modeling assumption during the case discussion, tied to a specific branch of the Dilemma. If that happens, use the figure exactly as given at that time. It does not change any figure in Appendix B or Appendix C.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix E &mdash; Learn More</summary>
+    <div class="inner">
+      <p>Grampoline is fictional, but the pressures Francesca faces are not. These are real, currently-live resources for anyone who wants to go beyond the case's math and read about how small businesses actually handle payroll cuts, layoffs, and pay-equity tradeoffs.</p>
+      <ul class="src-list">
+        <li><a href="https://www.sba.gov/business-guide/manage-your-business/hire-manage-employees" target="_blank" rel="noopener">SBA: Manage Your Business &mdash; Hire and Manage Employees</a> &mdash; The U.S. Small Business Administration's own guide to payroll, pay, and managing a team, written for owners running a business like Francesca's.</li>
+        <li><a href="https://hbr.org/2025/08/how-to-communicate-layoffs-to-your-staff" target="_blank" rel="noopener">Harvard Business Review: How to Communicate Layoffs to Your Staff</a> &mdash; An HBR article on how leaders can preserve trust with the people who stay after a workforce reduction &mdash; relevant to either path Francesca picks.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Layoff" target="_blank" rel="noopener">Wikipedia: Layoff</a> &mdash; A neutral overview of what a layoff is, why companies use them, and how researchers think about their effects.</li>
+      </ul>
+      <p class="side-note">See Appendix F for the "How To&hellip;" math skills this case draws on.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-17. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Option A: Closing the Gap With One Cut (D2)</h4>
+    <div class="goal">Using Appendix C, pick one employee to let go. Find the exact dollar amount removed from the remaining payroll budget, and how it compares to the $25,000 target.</div>
+    <div class="fieldrow"><label>Employee</label>
+      <select id="empPick"><option value="martha">Martha</option><option value="paul">Paul</option><option value="christina" selected>Christina</option><option value="tiago">Tiago</option><option value="irene">Irene</option></select>
+    </div>
+    <div class="fieldrow"><label>Dollar amount removed</label><input type="number" id="removedGuess" step="1"><button onclick="checkOptionA()">Check</button><span class="fb" id="removedFb"></span></div>
+    <div class="fieldrow"><label>Difference from $25,000 (+ over, &minus; under)</label><input type="number" id="diffGuess" step="1"><span class="fb" id="diffFb"></span></div>
+    <div class="fieldrow"><label>That difference, as a percent of $25,000</label><input type="number" id="diffPctGuess" step="0.01"><span class="fb" id="diffPctFb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Option B: The Flat Percent Cut (D3)</h4>
+    <div class="goal">Using Appendix C's five-employee total ($112,250), find the flat percent cut that removes exactly $25,000.</div>
+    <div class="fieldrow"><label>Percent cut needed</label><input type="number" id="pctCutGuess" step="0.0001"><button onclick="checkPctCut()">Check</button><span class="fb" id="pctCutFb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Option B, Employee by Employee (D3)</h4>
+    <div class="goal">Apply your Step 2 percent to one employee's remaining pay (Appendix C). Find their dollar cut and their new remaining-pay figure.</div>
+    <div class="fieldrow"><label>Employee</label>
+      <select id="empPickB"><option value="martha">Martha</option><option value="paul">Paul</option><option value="christina">Christina</option><option value="tiago">Tiago</option><option value="irene">Irene</option></select>
+    </div>
+    <div class="fieldrow"><label>Dollar cut for this employee</label><input type="number" id="empCutGuess" step="0.01"><button onclick="checkEmpCut()">Check</button><span class="fb" id="empCutFb"></span></div>
+    <div class="fieldrow"><label>New remaining pay after the cut</label><input type="number" id="empNewPayGuess" step="0.01"><span class="fb" id="empNewPayFb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Projected End-of-2019 Profit (D4)</h4>
+    <div class="goal">Scale Appendix B's H1 2019 revenue and expenses to a full year (Assumption 3), add your chosen option's full-year payroll (H1 actual + adjusted H2), and find projected profit. Try both options for comparison.</div>
+    <div class="fieldrow"><label>Which option are you projecting?</label>
+      <select id="profOption"><option value="A">A &mdash; Full Stop (uses Step 1's employee)</option><option value="B">B &mdash; Even Keel</option></select>
+    </div>
+    <div class="fieldrow"><label>Full-year revenue projection</label><input type="number" id="revGuess" step="1"><span class="fb" id="revFb"></span></div>
+    <div class="fieldrow"><label>Full-year expenses projection</label><input type="number" id="expGuess" step="1"><span class="fb" id="expFb"></span></div>
+    <div class="fieldrow"><label>Full-year payroll (this option)</label><input type="number" id="payGuess" step="1"><span class="fb" id="payFb"></span></div>
+    <div class="fieldrow"><label>Projected profit</label><input type="number" id="profitGuess" step="1"><button onclick="checkProfit()">Check</button><span class="fb" id="profitFb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; 2011&ndash;2018 Profit Trend &amp; 2020 Projection (D5)</h4>
+    <div class="goal">Using Appendix B's 2011 and 2018 profit figures as your two points, find the slope (rate of change per year), then use it to project 2020 profit (before any cut).</div>
+    <div class="fieldrow"><label>Slope (profit change per year)</label><input type="number" id="slopeGuess" step="1"><button onclick="checkSlope()">Check</button><span class="fb" id="slopeFb"></span></div>
+    <div class="fieldrow"><label>2020 profit projection (from the trend, pre-cut)</label><input type="number" id="proj2020Guess" step="1"><span class="fb" id="proj2020Fb"></span></div>
+    <div class="trendwrap"><canvas id="trendChart" width="600" height="220" style="max-width:100%"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">D1 &mdash; Remaining Pay by Employee</h3>
+    <div class="payroll-bar" id="payrollBar"></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-people"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>A local trade-show organizer emails Francesca: they'd love to have Grampoline back next year, specifically because of "the sales rep who really understood what our members needed" &mdash; unmistakably Christina, who ran the booth alone this spring.</p>
+      <p>If you were planning to let Christina go under Full Stop specifically &mdash; the employee whose remaining pay alone closes the target &mdash; this means her departure could put a real piece of Grampoline's future revenue at risk, not just her salary.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Recompute Full Stop's net benefit if Christina is the employee let go, weighing at-risk future revenue against the payroll saved</label>
+      </div>
+      <p id="twistResult" style="margin-top:10px;font-weight:700"></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>Grampoline Annual Financial Report.xlsx (original case study source, <code>source/Y3/Session 6/Payroll 2.0/</code>) &mdash; Grampoline LLC is a fictional company invented by the original case materials; every dollar figure in Appendix B/C is carried forward verbatim from that workbook, disclosed as the case's own stated dataset rather than a real, externally-sourced figure (case.json modeling_assumptions).</li>
+      <li>Percent: <a href="https://www.mathsisfun.com/definitions/percent.html" target="_blank" rel="noopener">Math Is Fun &mdash; Percent Definition</a>, verified 2026-08-17.</li>
+      <li>Ratio: <a href="https://www.mathsisfun.com/definitions/ratio.html" target="_blank" rel="noopener">Math Is Fun &mdash; Ratio Definition</a>, verified 2026-08-17.</li>
+      <li>Proportion: <a href="https://www.mathsisfun.com/algebra/proportions.html" target="_blank" rel="noopener">Math Is Fun &mdash; Proportions</a>, verified 2026-08-17.</li>
+      <li>Slope: <a href="https://www.mathsisfun.com/gradient.html" target="_blank" rel="noopener">Math Is Fun &mdash; Gradient (Slope) of a Straight Line</a>, verified 2026-08-17.</li>
+      <li>Linear equations: <a href="https://www.mathsisfun.com/algebra/linear-equations.html" target="_blank" rel="noopener">Math Is Fun &mdash; Linear Equations</a>, verified 2026-08-17.</li>
+      <li>Writing a line's equation from two data points: <a href="https://www.mathsisfun.com/algebra/line-equation-2points.html" target="_blank" rel="noopener">Math Is Fun &mdash; Equation of a Line from 2 Points</a>, verified 2026-08-17.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Payroll 2.0 &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/payroll-2-0/case.json
+   / sensitivity_model.py. case.md SHA256: 34f8f703d26b186deae7107bc87ff45dce9b537ce32c984e04b83dda1626efd9
+   ================================================================ */
+const PARAMS = {
+  martha_h2: 23400.0, paul_h2: 20500.0, christina_h2: 26450.0, tiago_h2: 18500.0, irene_h2: 23400.0,
+  shortfall_target: 25000.0,
+  revenue_2017: 261000.0, revenue_2018: 275000.0,
+  christina_growth_attribution_pct: 0.41
+};
+const FLEX = ["christina_growth_attribution_pct"];
+const EMP_H2 = { martha: PARAMS.martha_h2, paul: PARAMS.paul_h2, christina: PARAMS.christina_h2, tiago: PARAMS.tiago_h2, irene: PARAMS.irene_h2 };
+const EMP_LABEL = { martha: "Martha", paul: "Paul", christina: "Christina", tiago: "Tiago", irene: "Irene" };
+function pool(){ return Object.values(EMP_H2).reduce((a,b)=>a+b,0); }
+// Port of sensitivity_model.py evaluate()/evaluate_twist().
+function evaluate(employee){
+  return { A: round(EMP_H2[employee], 2), B: round(PARAMS.shortfall_target, 2) };
+}
+function evaluate_twist(employee){
+  const base = evaluate(employee);
+  if(employee === 'christina'){
+    const growth = PARAMS.revenue_2018 - PARAMS.revenue_2017;
+    const atRisk = growth * PARAMS.christina_growth_attribution_pct;
+    base.A = round(base.A - atRisk, 2);
+  }
+  return base;
+}
+// Appendix B, for D4/D5.
+const REVENUE_BY_YEAR = {2011:52200,2012:81700,2013:174000,2014:258500,2015:238560,2016:284300,2017:261000,2018:275000};
+const EXPENSES_BY_YEAR = {2011:23150,2012:30160,2013:45000,2014:83870,2015:112290,2016:82670,2017:98630,2018:82000};
+const PAYROLL_BY_YEAR = {2011:21900,2012:53900,2013:102300,2014:124000,2015:137800,2016:147550,2017:208800,2018:199500};
+const H1_2019 = { revenue: 127000, expenses: 32500, payroll_agg: 104390 };
+function profitByYear(y){ return REVENUE_BY_YEAR[y] - EXPENSES_BY_YEAR[y] - PAYROLL_BY_YEAR[y]; }
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* CSV export */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* Toolbar: copy/export/submit */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [ title, 'Heroes Academy Math Builder case study', '', 'Sources:', ...srcLis, '', location.href ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkOptionA(){
+  const emp = document.getElementById('empPick').value;
+  const removed = EMP_H2[emp];
+  const diff = removed - PARAMS.shortfall_target;
+  const diffPct = 100 * diff / PARAMS.shortfall_target;
+  fb('removedFb', near(val('removedGuess'), removed, 1));
+  fb('diffFb', near(val('diffGuess'), diff, 1));
+  fb('diffPctFb', near(val('diffPctGuess'), diffPct, 0.05));
+  renderPayrollBar();
+}
+function checkPctCut(){
+  const pct = 100 * PARAMS.shortfall_target / pool();
+  fb('pctCutFb', near(val('pctCutGuess'), pct, 0.05));
+}
+function checkEmpCut(){
+  const emp = document.getElementById('empPickB').value;
+  const pct = document.getElementById('pctCutGuess').value ? Number(document.getElementById('pctCutGuess').value)/100 : (PARAMS.shortfall_target/pool());
+  const cut = EMP_H2[emp] * pct;
+  const newPay = EMP_H2[emp] - cut;
+  fb('empCutFb', near(val('empCutGuess'), cut, 1));
+  fb('empNewPayFb', near(val('empNewPayGuess'), newPay, 1));
+}
+function fullYearPayroll(option){
+  if(option === 'B'){
+    const cut = PARAMS.shortfall_target; // Even Keel removes exactly the target
+    return H1_2019.payroll_agg + (pool() - cut);
+  }
+  const emp = document.getElementById('empPick').value;
+  const allH2 = Object.values(EMP_H2).reduce((a,b)=>a+b,0) + 12750.0; // + Francesca's own remaining pay
+  return H1_2019.payroll_agg + (allH2 - EMP_H2[emp]);
+}
+function checkProfit(){
+  const option = document.getElementById('profOption').value;
+  const rev = H1_2019.revenue * 2;
+  const exp = H1_2019.expenses * 2;
+  const payroll = fullYearPayroll(option);
+  const profit = rev - exp - payroll;
+  fb('revFb', near(val('revGuess'), rev, 1));
+  fb('expFb', near(val('expGuess'), exp, 1));
+  fb('payFb', near(val('payGuess'), payroll, 1));
+  fb('profitFb', near(val('profitGuess'), profit, 1));
+}
+function checkSlope(){
+  const slope = (profitByYear(2018) - profitByYear(2011)) / (2018 - 2011);
+  const proj2020 = profitByYear(2018) + slope * (2020 - 2018);
+  fb('slopeFb', near(val('slopeGuess'), slope, 5));
+  fb('proj2020Fb', near(val('proj2020Guess'), proj2020, 25));
+  drawTrendChart(slope);
+}
+function drawTrendChart(slope){
+  const c = document.getElementById('trendChart');
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const years = [2011,2012,2013,2014,2015,2016,2017,2018,2019,2020];
+  const profits = years.map(y => y<=2018 ? profitByYear(y) : null);
+  const known = years.filter(y=>y<=2018).map(profitByYear);
+  const minP = Math.min(...known, -20000), maxP = Math.max(...known, 60000);
+  const padL = 46, padB = 26, padT = 10, padR = 10;
+  const w = c.width - padL - padR, h = c.height - padT - padB;
+  const xFor = i => padL + (i/(years.length-1))*w;
+  const yFor = p => padT + h - ((p - minP)/(maxP - minP))*h;
+  ctx.strokeStyle = '#dfe4ea'; ctx.beginPath(); ctx.moveTo(padL, yFor(0)); ctx.lineTo(padL+w, yFor(0)); ctx.stroke();
+  ctx.fillStyle = '#5b6472'; ctx.font = '10px sans-serif'; ctx.fillText('$0', 4, yFor(0)+3);
+  // known points 2011-2018
+  ctx.strokeStyle = '#1a3a5c'; ctx.lineWidth = 2; ctx.beginPath();
+  years.forEach((y,i)=>{ if(y<=2018){ const px=xFor(i), py=yFor(profitByYear(y)); if(y===2011) ctx.moveTo(px,py); else ctx.lineTo(px,py);} });
+  ctx.stroke();
+  ctx.fillStyle = '#1a3a5c';
+  years.forEach((y,i)=>{ if(y<=2018){ const px=xFor(i), py=yFor(profitByYear(y)); ctx.beginPath(); ctx.arc(px,py,3,0,7); ctx.fill(); } });
+  // trend line, drawn from student's slope, anchored at 2011 and extended to 2020
+  if(slope !== undefined && !isNaN(slope)){
+    ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 2; ctx.setLineDash([5,4]);
+    ctx.beginPath();
+    years.forEach((y,i)=>{ const p = profitByYear(2011) + slope*(y-2011); const px=xFor(i), py=yFor(p); if(y===2011) ctx.moveTo(px,py); else ctx.lineTo(px,py); });
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.fillStyle = '#5b6472'; ctx.font = '10px sans-serif';
+  years.forEach((y,i)=>{ ctx.fillText(String(y).slice(2), xFor(i)-8, c.height-8); });
+}
+drawTrendChart();
+function renderPayrollBar(){
+  const el = document.getElementById('payrollBar');
+  if(!el) return;
+  const max = Math.max(...Object.values(EMP_H2));
+  el.innerHTML = Object.keys(EMP_H2).map(k=>{
+    const h = Math.round(140 * EMP_H2[k] / max);
+    const hi = EMP_H2[k] === PARAMS.shortfall_target ? ' hi' : '';
+    return `<div class="col"><div class="stick${hi}" style="height:${h}px"></div><div class="lbl">${EMP_LABEL[k]}<br>$${EMP_H2[k].toLocaleString()}</div></div>`;
+  }).join('');
+}
+renderPayrollBar();
+
+/* Dilemma pick widget */
+const CASE_ID = "payroll-2-0";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* Deliverables checklist */
+const DELIVERABLES = [
+  ["D1", "A bar graph comparing each employee's projected remaining 2019 pay"],
+  ["D2", "Option A: who you let go, the dollar amount removed, and why not another employee"],
+  ["D3", "Option B: the flat percent cut that removes exactly $25,000, employee by employee"],
+  ["D4", "A projected end-of-2019 profit table for your chosen option"],
+  ["D5", "A 2011-2018 profit trend graph with a drawn linear trend line, projecting 2020"]
+];
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* Glossary content (MCS-39: >=8 terms, allowlisted domains) */
+const GLOSSARY = {
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.mathsisfun.com/definitions/percent.html"},
+  "Subtraction": {def: "Taking one number away from another.",
+    url: "https://www.mathsisfun.com/numbers/subtraction.html"},
+  "Difference": {def: "The result of subtracting one number from another -- how much one number differs from another.",
+    url: "https://www.mathsisfun.com/definitions/difference.html"},
+  "Addition": {def: "Bringing two or more numbers together to make a new total.",
+    url: "https://www.mathsisfun.com/numbers/addition.html"},
+  "Ratio": {def: "A way of comparing the relative sizes of two or more values.",
+    url: "https://www.mathsisfun.com/definitions/ratio.html"},
+  "Proportion": {def: "A statement that two ratios (or fractions) are equal in value.",
+    url: "https://www.mathsisfun.com/algebra/proportions.html"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.mathsisfun.com/data/bar-graphs.html"},
+  "Linear": {def: "Following a straight-line pattern -- describable by an equation of the form y = mx + b.",
+    url: "https://www.mathsisfun.com/algebra/linear-equations.html"},
+  "Slope": {def: "How steep a line is -- the rate of vertical change for every unit of horizontal change.",
+    url: "https://www.mathsisfun.com/gradient.html"},
+};
+const HOWTO = [
+  ["How to convert numbers to percents", "Percent"],
+  ["How to find the percent of a number", "Percent"],
+  ["How to find equivalent ratios", "Ratio"],
+  ["How to compare two or more values", "Difference"],
+  ["How to identify the slope of a line given a set of data, or a graph of a line of a set of data, or its linear equation", "Slope"],
+  ["How to write a linear equation given a set of data", "Linear"],
+  ["How to draw a line of a set of data given its linear equation", "Linear"]
+];
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* Twist reveal/apply gating */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const emp = document.getElementById('empPick') ? document.getElementById('empPick').value : 'christina';
+  const result = applied ? evaluate_twist(emp) : evaluate(emp);
+  const resEl = document.getElementById('twistResult');
+  if(!applied){ resEl.textContent = ''; return; }
+  if(emp === 'christina'){
+    resEl.textContent = `With at-risk future revenue applied to ${EMP_LABEL[emp]}, Full Stop's net benefit recomputes to $${result.A.toLocaleString()} (down from the $${EMP_H2[emp].toLocaleString()} payroll saved alone) -- try the numbers yourself in Step 1 above.`;
+  } else {
+    resEl.textContent = `The twist's at-risk-revenue figure is specific to Christina -- it doesn't change the math for ${EMP_LABEL[emp]}. Try switching Step 1's employee to Christina to see it apply.`;
+  }
+}
+
+/* Tab-nav active-section tracking */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

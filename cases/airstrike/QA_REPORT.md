@@ -269,3 +269,64 @@ and `FACILITATOR.md` (Anchor 4, Deep conflict thread 2, Socratic question 3, Twi
 already carried this finding from the prior session's work and needed no further correction; this
 session only added the genuine-retune search above as evidence the disclosure is not a shortcut
 around a fixable problem.
+
+## case-readiness run — 2026-08-18 (first real full Tier 2 run)
+
+**State:** TIER1_PASS → Tier 2 attempted, 4/6 PASS or PASS_DISCLOSED, 2 FAIL   **Verdict:** BLOCKED (not TIER2_PASS)
+
+Every prior Tier 2 section in this file above was mechanical pre-screen work (`READY`/`DELEGATED`)
+plus P5's own standalone runs — no fresh cold-solve had ever actually been dispatched, no
+both-sides/trap/twist adjudication had actually been written down against the packet, and P6 had
+never actually fetched a single URL (this QA sandbox has no outbound network; this run does). This
+is that first real run.
+
+### Tier 1 — structural (19 checks)
+
+Re-ran `python3 skills/case-readiness/scripts/tier1_structural.py --case airstrike`:
+
+```
+checks run: 19   PASS 17 · GAP 2 · FAIL 0
+VERDICT: TIER1_PASS  (0 blockers, 2 gaps)
+```
+
+Both GAPs are the same pre-existing, already-documented, accepted ones (T1-10 legacy-conversion
+carve-out; T1-18 CSS/SVG decorative decimals in the interactive HTML) — no new structural defect.
+
+### Tier 2 — simulated play (6 probes)
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **FAIL** | A fresh cold-solve (structured answers supplied for grading) reached the correct verdict (B, Desert Sparrow) and showed real, checkable distance/time arithmetic (verified leg-by-leg: `d = 10·√(Δx²+Δy²)`, `(d−2)/40` min, cumulative time, stop condition all correct). **But it fell exactly into the case's own documented computational trap**: it credited every destroyed SRBM site (SRBM-Foxtrot, SRBM-Alpha, SRBM-Echo on Jet 1 alone) its full, undiscounted Appendix B population value, instead of applying Appendix D MA4's rule that the 5.6% SRBM intercept discount is baked into a SRBM site's population-at-risk figure *whether that site is destroyed or left standing*. This is verbatim the trap `FACILITATOR.md` "The trap" section describes ("Most Heroes will assume that once an F-16 destroys a site, its full, undiscounted population-at-risk figure counts as protected. That is wrong for SRBM sites..."). Per this skill's own P1 pass criterion — "Reaching the intended answer by the wrong route is a FAIL, not a pass" — this is a FAIL, not a pass with a footnote. (The solve's specific numeric total, ~$5.94M/$4.09M, also used a different two-jet routing heuristic than `sensitivity_model.py`'s east/west-split partition, so it is not directly comparable to the model's own base case of $5.50M/$4.84M — but the routing choice is not itself an error, since the case does not mandate a specific route-search algorithm; the SRBM-discount omission is the real, decisive defect.) |
+| P2 both-sides | PASS | Both arguments carry real, independently computed statistics, not concessions. Argument B: total population protected is a real, computed 13.6% higher (`case.json.balance.margin_basis`). Argument A: Grey Dawn beats Desert Sparrow by 11.1 percentage points (14.3% relative) on ICBM-neutralization rate specifically (8/9 vs 7/9 ICBM sites destroyed), and ICBM sites carry zero intercept discount anywhere in the model versus SRBM's real 5.6% (S2/S3-sourced asymmetry) — a genuine, differently-weighted quantitative case, not "B is cheaper but worse everywhere." Neither side collapses; the case for A survives past its opening sentence on real numbers. |
+| P3 trap | PASS | `FACILITATOR.md`'s "The trap" names a real computational trap (the SRBM-discount-on-destroyed-sites error above), not merely a difficulty note, and it correctly predicts what a fresh solver actually does — confirmed directly and independently in this same run, since the P1 cold-solve fell into precisely this trap without having read the guide. `case.json.derived.p3_trap_wrong_margin_pct` (15.2% vs the real 13.6%) is reproducible from `sensitivity_model.py`. |
+| P4 twist | PASS | `evaluate_twist()` re-run mechanically: base margin 13.6% → twist margin 5.0%, winner stays B both times — reproduces `case.md`/`FACILITATOR.md`'s claim exactly (`base {'A': 4844635.88, 'B': 5501881.9}`, `twist {'A': 6247318.87, 'B': 6561438.78}`). `FACILITATOR.md`'s "Twist soundness check" re-derives the effect under every stated assumption (MA1 alone, MA2 alone, MA3 alone — including MA3's individual-entry vs. whole-table-rescale distinction, MA4, and all four together) and the twist survives every reading; no unstated convention is load-bearing. Twist invalidates the "13.6% is a wide, comfortable margin" position a room might hold at Anchor 1. |
+| P5 sensitivity | **PASS_DISCLOSED** | Re-ran `python3 skills/case-readiness/scripts/tier2_probes.py --case airstrike --probe 5 --flex 0.5`: `machine_status: "PASS (disclosed)"`. Base `{'A': 4844635.88, 'B': 5501881.9}`, margin 13.6%, winner B. `pop_5_2MT` −50% flips the winner to A (margin 9.9%) and `pop_3_1MT` +50% also flips it to A (margin 1.2%); `pop_5_2MT` +50% and `pop_3_1MT` −50% both break the SPEC §2 20% cap (28.1%, 37.0%). Both unstable params (`pop_5_2MT`, `pop_3_1MT`) still have matching `case.json.sensitivity_disclosure[]` entries — category `F` (forecast-shaped unknown: which real city's density applies to this case's deliberately unnamed target), justification ≥20 chars — so the script's own disclosure-aware pass state fires. Confirmed this still applies to exactly the two params the mechanical sweep flags today, not a stale disclosure against an old model version. |
+| P6 data decay | **FAIL** | Fetched all 5 `sources[]` URLs live (this session has outbound network, unlike the sandbox prior runs were delegated from). **S5 (Manhattan Institute, the source for the 2,716.38 persons/sq mi density figure underlying Appendix B / MA3 — the case's single most sensitivity-flagged assumption per P5 above) is reachable (200) but does not carry the cited figure anywhere on the page.** The page's only density statistic is "7,500 persons per square mile — the U.S. big-city average in 1950," used as a historical benchmark for how few of the 50 largest 2020 cities exceed it; it contains no computable 2020 average density figure at all, let alone 2,716.38. This is exactly the "worse than a 404" case the skill's own doctrine names: nothing else in the pipeline would ever have noticed the citation doesn't back its number. S4 (nuclearweaponarchive.org) confirms the cube-root blast-scaling *formula* is on the page, but not the specific 4.8 km / 10.3 km anchor figures the case cites — those are attributed in `sources[].note` to two different, uncited calculator sites (defconlevel.com, nukeblastsimulator.com), so the anchors are not verifiable from the URL actually listed as S4's source. S1 (af.mil) returned HTTP 403 — already disclosed and downgraded to MEDIUM confidence for exactly this reason, not a new finding. S2 (CSIS DF-5) — the cited 12,000 km figure does appear on the page verbatim ("effective range of 12,000 km"), though the page's own "at a glance" table headlines a different 13,000 km figure elsewhere; case correctly avoided the higher, less-qualified number, but the source itself is internally inconsistent — worth a note, not a blocker. S3 (Wikipedia, TR-1 Temp) — clean, exact match: "900 km (SS-22)." |
+
+### Tier 3 — human dry-run
+
+NOT RUN.
+
+### Overall
+
+**BLOCKED at TIER1_PASS.** Two real, substantive Tier 2 FAILs, not mechanical false positives:
+
+1. **P1** — this specific cold-solve run needs to be re-run (or, better, the case/packet needs a
+   sharper signal at D4/D6 forcing a Hero to notice MA4's SRBM-discount-on-destroyed-sites rule)
+   until a fresh solve reaches the right verdict by the right arithmetic. This is a solve-quality
+   finding, not necessarily a case defect — the trap is working as designed (P3 passes precisely
+   because this trap is real and catches solvers) — but P1 itself, as run, is a FAIL and must be
+   recorded as one.
+2. **P6** — `case.json.sources[S5]`'s cited value (2,716.38 persons/sq mi) is not supported by the
+   URL cited for it. Since this figure feeds Appendix B's population-at-risk table (MA3), which
+   P5 has already independently identified as the single most load-bearing, most sensitive
+   assumption in the whole case, this is not a cosmetic citation slip — it needs either a real
+   source that actually states a computable 2020 average density for large central cities, or the
+   claim needs to be reworded to match what the Manhattan Institute page actually supports (e.g.
+   re-deriving 2,716.38 transparently from Census bulk data directly, with that as the cited
+   source, rather than citing an article that doesn't contain the number). Handing this back to
+   `case-research`, not fixing it here (this skill gates, it does not fix).
+
+Per this skill's ladder, `case.json.qa.state` remains `TIER1_PASS`; `qa.tier2` records the six
+named verdicts by probe (`P1: FAIL, P2: PASS, P3: PASS, P4: PASS, P5: PASS_DISCLOSED, P6: FAIL`).
+Not `TIER2_PASS`. `case-publish` may not run.

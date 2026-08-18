@@ -156,7 +156,7 @@ Agua Dulce's density (not Santa Clarita's or San Fernando's) is the proxy used i
 
 S1–S3 are graded MEDIUM rather than HIGH because they were retrieved through Wikipedia's summary of U.S. Census figures rather than fetched directly from census.gov (census.gov's QuickFacts pages returned an access error during research — see RESEARCH_LOG.md). The underlying figures are standard, non-contested Census counts; a direct census.gov citation should replace these before this case is treated as fully verified.
 
-**2026-08-13 data-decay re-check (Tier 2 probe 6):** S2's household size and S5's distance figures had drifted from their cited sources and are corrected above (S2: 3.77 → 3.94, the most recent figure the live page actually states; S5: 23 mi → 19.3 mi, re-verified against live routing). S5's original second value (24 mi, Agua Dulce → San Fernando) had never actually carried its own source URL — it is now its own line, S5b, with a real Google Maps citation and a corrected value of 25.3 mi. S4's citation was also re-pointed (values unchanged) after the re-check found its old URL never actually stated the "10 square chains = 1 acre" half of its claim — it now cites NWCG's Table 2.1, which states both figures verbatim. See RESEARCH_LOG.md and case.json's `qa.tier2_note` for the full re-verification trail. The S5/S5b correction is not cosmetic: it flips which town has the shorter fire-arrival lead time (see the Balance Argument section, facilitator-only, below) and is the subject of a disclosed Tier 2 probe 5 FAIL — see FACILITATOR.md Lessons Learned.
+**2026-08-13 data-decay re-check (Tier 2 probe 6):** S2's household size and S5's distance figures had drifted from their cited sources and are corrected above (S2: 3.77 → 3.94, the most recent figure the live page actually states; S5: 23 mi → 19.3 mi, re-verified against live routing). S5's original second value (24 mi, Agua Dulce → San Fernando) had never actually carried its own source URL — it is now its own line, S5b, with a real Google Maps citation and a corrected value of 25.3 mi. S4's citation was also re-pointed (values unchanged) after the re-check found its old URL never actually stated the "10 square chains = 1 acre" half of its claim — it now cites NWCG's Table 2.1, which states both figures verbatim. See RESEARCH_LOG.md for the full re-verification trail.
 
 ---
 
@@ -164,7 +164,7 @@ S1–S3 are graded MEDIUM rather than HIGH because they were retrieved through W
 
 - National Wildfire Coordinating Group, Firefighter Math course — "8.3 Rate of Spread": https://www.nwcg.gov/course/ffm/fire-behavior/firefighter-math-83-rate-of-spread
 - National Wildfire Coordinating Group, Firefighter Math course — "8.5 Map Spread": https://www.nwcg.gov/course/ffm/fire-behavior/firefighter-math-85-map-spread
-- The original case packet's fire-perimeter reference map (Soledad Canyon Fire, VIIRS thermal hotspots, 5/3/2021) is retained in the source folder for facilitators; it shows the real relative positions of Agua Dulce, Santa Clarita, and San Fernando referenced throughout this case.
+- The original case packet's fire-perimeter reference map (Soledad Canyon Fire, VIIRS thermal hotspots, 5/3/2021) is retained in the source folder; it shows the real relative positions of Agua Dulce, Santa Clarita, and San Fernando referenced throughout this case.
 
 ---
 

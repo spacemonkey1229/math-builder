@@ -28,7 +28,7 @@ Ultron has already reached **Recovery Site C** and secured that container. Two r
 
 Spencer has to choose Ultron's next move. The exact ground rules for how to compute travel time and integrity loss — what counts as rough terrain, whether Ultron pauses to climb — are fixed in **APPENDIX C**; use them, or your numbers won't match anyone else's.
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix D** — that is where Challenge 1 sends you.
+The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix E** — that is where Challenge 1 sends you. For real-world background on humanoid disaster-recovery robots and rail-freight derailments, SEE APPENDIX D.
 
 ---
 
@@ -103,7 +103,21 @@ The entire mapped area is scattered debris and counts as rough terrain for Ultro
 
 ---
 
-## Appendix D: "How To…" Math Questions To Research
+## Appendix D: Learn More
+
+Curious about the real technology and real disasters behind this case? These are real, freely available resources — none of them are required to complete the Challenges.
+
+- [DARPA Robotics Challenge (Wikipedia)](https://en.wikipedia.org/wiki/DARPA_Robotics_Challenge) — overview of the real 2012–2015 competition that pushed humanoid robots like Ultron 2.0 toward disaster-recovery tasks.
+- [Robonaut (Wikipedia)](https://en.wikipedia.org/wiki/Robonaut) — the story of NASA's real dexterous humanoid robot, built to work in environments too hazardous for people.
+- [Atlas (Boston Dynamics)](https://bostondynamics.com/atlas/) — the official page for a real humanoid robot built for material handling in industrial settings, a close cousin of Ultron's fictional role.
+- [National Transportation Safety Board](https://www.ntsb.gov/) — the real U.S. federal agency that investigates train derailments like the one this case is based on.
+- [National Robotics Engineering Center](https://www.nrec.ri.cmu.edu/) — the real Carnegie Mellon lab that built CHIMP, one of the disaster-response robots pictured in this case's interactive version.
+
+Links verified live 2026-08-18.
+
+---
+
+## Appendix E: "How To…" Math Questions To Research
 
 **Vocabulary**
 

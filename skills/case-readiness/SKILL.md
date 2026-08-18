@@ -9,6 +9,21 @@ Stage four. The only skill in the pipeline whose output is a **verdict**. It gat
 else: it does not fix, does not source, does not publish. If it finds problems it names them and
 hands the case back.
 
+**Before running Tier 1, run the preflight linter** (added 2026-08-18, after two authoring batches
+kept re-discovering the same two defect classes case by case instead of catching them at write
+time):
+
+```bash
+python3 skills/case-readiness/scripts/preflight_lint.py --case <id>
+```
+
+Fast, advisory, non-blocking (exit 1 just means "review these," not "stop") — checks for a
+Modeling-Assumptions leak (a stated margin/winner, not just an assumption's basis — the
+skills/case-write/SKILL.md 2026-08-13 rule) and a `sensitivity_model.py` `FLEX[]` entry that
+matches a `sources[]` cited value (cited data sitting in `FLEX[]` by mistake, not a real
+assumption). It does not replace `tier1_structural.py`/`tier2_probes.py` — those remain the actual
+gate. Run this while still writing the case, not after handing it off.
+
 > House doctrine: *The critique pass is not optional. BLOCKER/GAP/POLISH before any build begins.*
 > Here it is before any publish begins. **Every BLOCKER must be resolved. No exceptions.**
 
@@ -200,6 +215,27 @@ and a case with **no** `legacy_conversion_note` — i.e. every freshly-authored 
 the unmodified BLOCKER. This is a permanent, visible rule change to the checker and this doc, not
 a per-case override recorded in `case.json`; do not also write a `waivers[]` entry for T1-10 on a
 legacy case going forward, the carve-out already covers it.
+
+## The reinforcement carve-out on T1-10 (added 2026-08-17)
+
+A second, narrower carve-out for the same BLOCKER, this time for **freshly-authored** cases. Found
+while gating a batch of Pre-Calc/Calculus/Discrete-Math cases: two independently-designed cases
+(Curves Turn and The Optimal Can) both landed on the exact same skill set — real-world optimization
+via the power rule and the first-derivative test — because that is genuinely the most natural
+Calculus technique for their respective stories (minimizing surface area; finding the steepest point
+of a load curve). Once the first case published, the second's `new_coverage[]` was legitimately
+empty: not padding, not a lazy remap, but the honest result of checking every one of the 25 other
+uncovered Calculus skills (limits, chain/product/quotient rule, integrals, series) and finding the
+case's actual math doesn't reach any of them. Forcing a fake remap to satisfy the BLOCKER would be
+exactly the fabrication T1-11's forces-test exists to catch — worse than the honest zero.
+
+`tier1_structural.py`'s T1-10 now downgrades empty `new_coverage[]` to a GAP when
+`case.json.reinforcement_note` is present. That note must record what was actually checked — which
+adjacent uncovered skills were considered and why the case's real deliverables don't force them —
+same evidentiary bar as `legacy_conversion_note`, not a rubber stamp goodbye to SPEC §8. A case
+still cannot claim a skill (in `standards[]` at all) its deliverables don't force, and `n>=2`
+padding is still always a BLOCKER regardless of either carve-out. Use this only after genuinely
+checking for adjacent coverage, the same work the two cases above did before this was written.
 
 ## Two behaviours that are intentional
 

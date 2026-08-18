@@ -100,6 +100,17 @@ CREATE TABLE IF NOT EXISTS discussions (
 );
 CREATE INDEX IF NOT EXISTS discussions_learner_case_idx ON discussions(learner_id, case_id);
 
+CREATE TABLE IF NOT EXISTS ratings (
+  id         text PRIMARY KEY,
+  learner_id text NOT NULL,
+  case_id    text NOT NULL,
+  stars      int  NOT NULL CHECK (stars BETWEEN 1 AND 5),
+  note       text,
+  rated_on   date NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ratings_learner_case_uq ON ratings(learner_id, case_id);
+CREATE INDEX IF NOT EXISTS ratings_case_idx ON ratings(case_id);
+
 CREATE TABLE IF NOT EXISTS scores (
   id             text PRIMARY KEY,
   learner_id     text NOT NULL,

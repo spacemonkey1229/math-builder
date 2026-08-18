@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Six Degrees of Exposure — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md.
+  case.md sha256 (source of record, at build time): 3eb9c08bb9e24eacc07fe2144e07334c1be5e64510f07f6bfdf6d136426327cb
+  HARD LINE (MCS-37): this page never prints case.json's balance/margin_pct verdict as a static
+  literal anywhere outside a <script> tag's live computation. The Working Notebook computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — Six Degrees of Exposure
+     ============================================================ */
+  .netbadge{display:inline-flex;align-items:center;gap:6px;font-family:var(--sans);font-size:.78rem;font-weight:700;
+    background:var(--gold-lt);color:#4a3f1e;padding:4px 10px;border-radius:999px;margin:2px 4px 2px 0}
+  .opcol{font-family:var(--sans)}
+  .opcol .opnum{font-size:1.9rem;font-weight:700;color:var(--navy)}
+  .opcol .oplabel{font-size:.76rem;color:var(--sub);text-transform:uppercase;letter-spacing:.03em}
+  .subgraph-svg{background:#fbfbfb}
+  .subgraph-svg text{font-family:var(--sans)}
+  .subgraph-svg .vlabel{font-size:12px;fill:#fff;font-weight:700}
+  .subgraph-svg .elabel{font-size:11px;fill:var(--navy-dk);font-weight:700}
+  .subgraph-svg circle{fill:var(--navy);stroke:var(--gold);stroke-width:2}
+  .subgraph-svg circle.hi{fill:var(--bad)}
+  .subgraph-svg line{stroke:#8a97a8;stroke-width:1.6}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-graph" viewBox="0 0 24 24"><circle cx="5" cy="6" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M7 7l10 0M6.5 8l4.5 8M17.5 8l-4.5 8"/></symbol>
+  <symbol id="icon-syringe" viewBox="0 0 24 24"><path d="M18 2l4 4-2 2-1-1-8 8 1 1-2 2-1-1-2 2-2-2 2-2-1-1 2-2 1 1 8-8-1-1z"/><path d="M12 8l4 4"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Launchpad</div>
+        <h1>Case Study: Six Degrees of Exposure</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Discrete Mathematics &middot; Weighted Graphs</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">The Trap</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Dr. Yolanda Marsh has the county's outbreak-response line open in one ear and a
+  spreadsheet of contact-tracing interviews open on both monitors. Calloway State's health center
+  called it in nine days ago: mumps, confirmed, then confirmed again, then confirmed a third time
+  in a different residence hall. Her team has spent the week doing what contact tracers do &mdash;
+  sitting across from sick and exposed students, asking who they eat with, who they study with,
+  whose room they crashed in after a party &mdash; and logging every name into the same interaction
+  graph the university's own platform already keeps. The graph is open on her second monitor now, a
+  mess of dots and lines she can no longer read by eye.</p>
+  <p>Her regional director is blunter on the phone than usual. The county's rapid-response
+  vaccination clinic can go live tomorrow morning, but the dose allocation that just cleared the
+  state warehouse is fixed, and so is the outreach staff assigned to administer it &mdash; not a
+  dose or a labor-hour more. Two operational plans sit in her inbox, both built to spend that exact
+  same allocation and neither one a dollar more. One plan sends her contact-tracing team back out
+  to confirm and vaccinate the small number of students its own graph says are the most connected
+  people on campus. The other skips that confirmation work entirely and vaccinates a much larger
+  number of students chosen at random from the same traced population.</p>
+  <p>Her director wants an answer before the clinic opens its doors. Dr. Marsh minimizes the
+  spreadsheet, opens both plans side by side, and starts reading.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Dr. Yolanda Marsh is the lead epidemiologist for the Calloway County Department of Public
+  Health. She is responsible for the county's outbreak-response operations and accountable to the
+  county health director for how the fixed, one-time state dose allocation is spent (see Appendix
+  D). She does not set the size of that allocation and cannot request more once the clinic opens,
+  but she authors the operational plan the clinic runs on.</p>
+  <p>The outbreak is centered on Calloway State University. Over nine days, the county's
+  contact-tracing team built a traced-contact network of <strong>1,899</strong> students and staff,
+  connected by <strong>13,838</strong> confirmed contact pairs (see Appendix A; see Appendix E,
+  MA1). Every pair in the network carries a weight equal to the number of separate contact events
+  logged between those two people during the surveillance window (see Appendix A) &mdash; two
+  people who crossed paths once carry a light edge; roommates or lab partners who were logged
+  together dozens of times carry a heavy one. Like every real contact-tracing graph, this one is
+  badly uneven: most people in it have only a handful of traced contacts, a small number have
+  dozens, and a very small number are traced to far more contacts than a typical person in the
+  graph (see Appendix A).</p>
+  <div class="card">
+    <strong style="font-family:var(--sans);color:var(--navy)">Quick facts (Appendix A)</strong>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+      <span class="netbadge">1,899 traced individuals</span>
+      <span class="netbadge">13,838 confirmed contact pairs</span>
+      <span class="netbadge">59,835 total contact-weight</span>
+      <span class="netbadge">193-day surveillance window</span>
+    </div>
+  </div>
+  <p>Two operational plans are under consideration. Both are sized to draw down the exact same
+  fixed dose-and-outreach budget (see Appendix D) &mdash; neither can run over it, and neither is
+  required to run under it:</p>
+  <div class="grid2">
+    <div class="card">
+      <strong style="font-family:var(--sans);color:var(--navy)">Operation Hub Sweep</strong>
+      <p style="margin-top:8px">Sends the contact-tracing team back out to confirm and vaccinate
+      the 50 individuals the traced network ranks highest by degree &mdash; the number of distinct
+      people each one is confirmed to have been in contact with (see Appendix B). Locating,
+      re-confirming, and physically reaching each of these 50 people costs more per dose, because it
+      requires the same case-investigation fieldwork the tracing team has been doing all week (see
+      Appendix D).</p>
+    </div>
+    <div class="card">
+      <strong style="font-family:var(--sans);color:var(--navy)">Operation Wide Net</strong>
+      <p style="margin-top:8px">Skips that confirmation fieldwork and vaccinates 500 individuals
+      selected uniformly at random from the same traced population, at the lower per-dose cost of a
+      standard outreach-clinic invitation &mdash; a postcard, a text, a scheduled slot, no case
+      investigation required (see Appendix D).</p>
+    </div>
+  </div>
+  <p>The two operations are judged on a single number: the total weight of traced-contact
+  connections eliminated from further spread once vaccination takes effect, per dollar of the
+  shared budget (see Appendices A, B and D). Because both operations spend the identical budget,
+  the comparison reduces to a direct question &mdash; which operation's vaccinated set removes more
+  of the network's total contact-weight? Dr. Marsh's team also needs a fast way to warn
+  newly-exposed contacts down a chain of confirmed contacts once a case is found (see Appendix C).
+  Every sourced figure in this case is listed in Appendix F, and the vocabulary and "how to&hellip;"
+  skills this case will ask of you are listed in Appendix G &mdash; that is where Challenge 1 sends
+  you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Dr. Yolanda Marsh. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Operation Hub Sweep</h4>
+      <p style="margin:0">Vaccinate the 50 highest-degree individuals in the traced network.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Operation Wide Net</h4>
+      <p style="margin:0">Vaccinate 500 individuals chosen at random from the same population.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a labeled, weighted diagram of the sample contact subgraph (Appendix C) &mdash; every vertex and every edge labeled with its weight; <strong>D2</strong> a ranked degree table (Appendix B) of the 50 highest-degree individuals in the full traced network; <strong>D3</strong> a transmission-weight-eliminated comparison for Operation Hub Sweep vs. Operation Wide Net (Appendices A, B), with full arithmetic including the counting argument for Wide Net's expected value, plus a check of the two operations' sourced per-dose costs against Appendix D and a statement of any discrepancy; <strong>D4</strong> a shortest notification-path calculation (Appendix C) comparing at least two candidate paths from Contact 47 to Contact 105 by total notification cost.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details id="apx-a">
+    <summary>Appendix A &mdash; The Traced Contact Network</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Individuals in the network (<span class="gterm-placeholder" data-term="Vertex"></span>)</td><td class="num">1,899</td></tr>
+        <tr><td>Confirmed contact pairs (<span class="gterm-placeholder" data-term="Edge"></span>)</td><td class="num">13,838</td></tr>
+        <tr><td>Total contact-weight across all edges</td><td class="num">59,835</td></tr>
+        <tr><td>Mean degree</td><td class="num">14.57</td></tr>
+        <tr><td>Median degree</td><td class="num">5</td></tr>
+        <tr><td>Maximum degree</td><td class="num">255</td></tr>
+        <tr><td>Minimum degree</td><td class="num">1</td></tr>
+        <tr><td>Surveillance window covered</td><td class="num">193 days</td></tr>
+      </table>
+      <p class="side-note">The network is derived from a real, public, anonymized ID-to-ID
+      interaction dataset (see Appendix E, MA1; Appendix F, S3). Each unordered pair that
+      interacted at least once became one <span class="gterm-placeholder" data-term="Weighted Graph"></span>
+      edge, weighted by the total count of interaction records between that pair &mdash; this
+      case's own derivation from the raw records, disclosed in Appendix F, S3.</p>
+    </div>
+  </details>
+
+  <details id="apx-b">
+    <summary>Appendix B &mdash; Operation Hub Sweep Candidate List</summary>
+    <div class="inner">
+      <p class="side-note">The 50 individuals with the highest degree in the full 1,899-person
+      traced network, ranked by degree. Ties broken by lower traced ID.</p>
+      <table id="tblHub">
+        <tr><th>Rank</th><th>Traced ID</th><th>Degree</th></tr>
+        <!-- rows injected at load from HUB_TOP50 below -->
+      </table>
+      <p class="side-note">Sum of these 50 degrees: 6,241 (double-counts any edge with both
+      endpoints in this list).</p>
+    </div>
+  </details>
+
+  <details open id="apx-c">
+    <summary>Appendix C &mdash; Sample Weighted Contact Subgraph</summary>
+    <div class="inner">
+      <p class="side-note">A small, real excerpt of the traced network, kept to a size a person
+      can trace by hand. Used for D1 and D4.</p>
+      <figure>
+        <svg class="subgraph-svg" id="subgraphSVG" viewBox="0 0 620 360" width="100%"></svg>
+        <figcaption>Vertices: Contact 47, 46, 78, 91, 567, 814, 1142, 1299, 1540, 63, 105. Drag
+        nothing &mdash; this is a static diagram; use the table below for exact weights.</figcaption>
+      </figure>
+      <table id="tblSubgraph">
+        <tr><th>Edge</th><th>Weight (recorded contact events)</th></tr>
+        <!-- rows injected from SUBGRAPH_EDGES below -->
+      </table>
+      <p class="side-note"><strong>Notification-cost rule (for D4).</strong> A pair recorded in
+      contact more times has a faster, more reliable line for passing along an exposure
+      notification. Define the notification cost of an edge as 1 &divide; (that edge's weight).
+      The fastest way to notify one traced individual starting from another is the path &mdash;
+      direct or through intermediate people &mdash; that minimizes the total summed notification
+      cost, not necessarily the path with the fewest steps. D4 asks you to find the fastest
+      notification path from <strong>Contact 47</strong> to <strong>Contact 105</strong>.</p>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; Program Cost</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Cost per dose, Operation Wide Net (standard outreach invitation)</td><td class="num">$38.00</td></tr>
+        <tr><td>Case-investigation labor cost to confirm and locate one Hub Sweep contact</td><td class="num">$175.94</td></tr>
+        <tr><td>Fully-loaded cost per dose, Operation Hub Sweep ($175.94 + $38.00)</td><td class="num">$213.94</td></tr>
+        <tr><td>Doses funded by the shared budget, Operation Hub Sweep</td><td class="num">50</td></tr>
+        <tr><td>Doses funded by the shared budget, Operation Wide Net</td><td class="num">500</td></tr>
+      </table>
+      <p class="side-note"><strong>A discrepancy this case does not hide.</strong> At these
+      sourced national-median rates, 500 Wide Net doses at $38.00 draw down $19,000.00. Check for
+      yourself in the Working Notebook (Step 4) what that same $19,000.00 buys at Hub Sweep's
+      $213.94-per-dose rate &mdash; it is not exactly 50. Calloway County is fictional and its own
+      internal budget and staffing figures are not public record, so this case fixes Hub Sweep and
+      Wide Net's headcounts at the stated 50 and 500 as the county's own announced operational plan
+      (see Appendix E, MA3) rather than deriving them from Appendix D.</p>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario
+      assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that
+      is a legitimate move.</blockquote>
+      <table>
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>The traced contact network's identity</td>
+          <td>Modeled using the real, public CollegeMsg dataset (Panzarasa, Opsahl &amp; Carley,
+          2009; distributed by Stanford SNAP) as a structural stand-in for Calloway County's actual
+          contact-tracing graph</td>
+          <td>The case's entire primary-metric margin depends on this specific network's actual
+          degree distribution &mdash; the honest core of the case, not a flaw to be hidden.</td></tr>
+        <tr><td>MA2</td><td>Edge weight meaning</td>
+          <td>Each edge's weight is treated as its number of recorded contact events, standing in
+          for how often two traced individuals were in contact</td>
+          <td>Does not change which edges exist, only how "heavier" edges are interpreted; does not
+          affect the primary-metric arithmetic.</td></tr>
+        <tr><td>MA3</td><td>Operation headcounts (50 and 500)</td>
+          <td>Fixed at 50 (Hub Sweep) and 500 (Wide Net), as stated in the case brief</td>
+          <td>Does not affect D3's first-half comparison (network data only). It is the reason
+          D3's second half exists &mdash; the discrepancy Appendix D describes.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-f">
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table>
+        <tr><th>id</th><th>Claim</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Median cost per COVID-19 vaccination dose, public-health outreach clinic</td>
+          <td>Yarnoff et al., <em>J Public Health Manag Pract</em> 28(6):624-630 (2022)</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Labor cost to confirm/investigate one contact-tracing contact</td>
+          <td>Beeler Asay et al., <em>Emerging Infectious Diseases</em> 31(7) (2025)</td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Traced contact network raw structure (nodes, edges, weights)</td>
+          <td>Panzarasa, Opsahl &amp; Carley (2009), "CollegeMsg" &mdash; Stanford SNAP</td><td>HIGH</td></tr>
+      </table>
+      <p class="gloss-source">Full citations, URLs, and accessed dates: see case.md Appendix F.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-15. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &middot; Degree of a vertex (D1/D2 warm-up)</h4>
+    <div class="goal">Appendix C's subgraph has an edge between Contact 47 and every one of: Contact
+    46, 78, 91, 567, 814, 1142, 1299, 1540. What is the <span class="gterm-placeholder" data-term="Degree"></span>
+    of Contact 47 in this subgraph &mdash; the count of distinct edges touching it?</div>
+    <div class="fieldrow">
+      <label for="s1deg">Degree of Contact 47</label>
+      <input type="number" id="s1deg" step="1">
+      <button onclick="checkStep1()">Check</button>
+      <span class="fb" id="fb1"></span>
+    </div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &middot; Weighted edges at one vertex (D1 support)</h4>
+    <div class="goal">Using Appendix C's edge-weight table, add up the weight of every edge that
+    touches Contact 814. (Contact 814 appears in three edges — find them and sum their weights.)</div>
+    <div class="fieldrow">
+      <label for="s2wt">Total weight touching Contact 814</label>
+      <input type="number" id="s2wt" step="1">
+      <button onclick="checkStep2()">Check</button>
+      <span class="fb" id="fb2"></span>
+    </div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &middot; The counting argument for a random sample (D3)</h4>
+    <div class="goal">Wide Net's 500 people can't be listed by hand, so its expected weight
+    eliminated comes from a counting argument: for a network of <code>n_total</code> people,
+    P(a given edge survives an <code>n_wide</code>-person random draw untouched) =
+    [(n_total&minus;n_wide)(n_total&minus;n_wide&minus;1)] &divide; [n_total(n_total&minus;1)].
+    Slide <code>n_wide</code> and compute the expected weight eliminated
+    = total_weight &times; (1 &minus; that survival probability). Enter your own answer for the
+    slider's current position, then check it.</div>
+    <div class="sliderow">
+      <label for="s3wide">n_wide</label>
+      <input type="range" id="s3wide" min="10" max="1899" step="10" value="500" oninput="document.getElementById('s3wideVal').textContent=this.value">
+      <span class="val" id="s3wideVal">500</span>
+    </div>
+    <div class="fieldrow">
+      <label for="s3ans">Expected weight eliminated (Wide Net, this n_wide)</label>
+      <input type="number" id="s3ans" step="0.1">
+      <button onclick="checkStep3()">Check</button>
+      <span class="fb" id="fb3"></span>
+    </div>
+    <p class="side-note">This step recomputes the counting argument live for whatever <code>n_wide</code>
+    you choose &mdash; it does not print a single fixed answer.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &middot; Budget-consistency check (D3, Appendix D)</h4>
+    <div class="goal">500 Wide Net doses at $38.00 each draw down $19,000.00 of the shared budget.
+    At Hub Sweep's fully-loaded rate of $213.94 per dose, how many Hub Sweep doses would that same
+    $19,000.00 actually buy? (Divide; you do not need to round to a whole number.)</div>
+    <div class="fieldrow">
+      <label for="s4ans">Hub Sweep doses $19,000.00 would buy</label>
+      <input type="number" id="s4ans" step="0.1">
+      <button onclick="checkStep4()">Check</button>
+      <span class="fb" id="fb4"></span>
+    </div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &middot; Shortest notification path (D4)</h4>
+    <div class="goal">Using Appendix C's edge weights and the notification-cost rule (cost of an
+    edge = 1 &divide; weight), compute the total notification cost of two candidate paths from
+    Contact 47 to Contact 105, then say which is the faster (lower-cost) notification chain.</div>
+    <div class="fieldrow">
+      <label for="s5pathA">Path A: 47 &rarr; 814 &rarr; 105 &mdash; total cost</label>
+      <input type="number" id="s5pathA" step="0.01">
+    </div>
+    <div class="fieldrow">
+      <label for="s5pathB">Path B: 47 &rarr; 814 &rarr; 63 &rarr; 105 &mdash; total cost</label>
+      <input type="number" id="s5pathB" step="0.01">
+      <button onclick="checkStep5()">Check both</button>
+      <span class="fb" id="fb5"></span>
+    </div>
+    <div class="fieldrow">
+      <label>Which path is the faster notification chain?</label>
+      <select id="s5winner"><option value="">choose one</option><option value="A">Path A</option><option value="B">Path B</option></select>
+    </div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>The Trap</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion it lands as a specific beat, not something you read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-syringe"/></svg> Reveal the trap</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>Most Heroes compute one number first: weight eliminated <em>per person vaccinated</em>.
+      On that number, Hub Sweep looks like a landslide.</p>
+      <p>But Dr. Marsh isn't being handed a fixed number of syringes to point at whoever she likes.
+      She's being handed a fixed <em>dollar budget</em> &mdash; and the two operations spend very
+      different amounts per dose. The 50 and the 500 aren't independent choices; they're both just
+      what that one shared budget happens to buy at each operation's own per-dose cost.</p>
+      <p>Recompute the same comparison <em>per dollar of the shared budget</em> instead of per head,
+      using Step 3's expected-value tool above at <code>n_wide&nbsp;=&nbsp;500</code> against
+      Appendix B's real 27,643. The race looks very different once the denominator is the one thing
+      that's actually fixed.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">I've recomputed the comparison per dollar of shared budget, not per head</label>
+      </div>
+      <p id="twistResult" style="display:none;margin-top:10px;font-style:normal;font-family:var(--sans);font-size:.86rem;color:#cdd9e6"></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>Yarnoff BO, et al. "Assessment of the Costs of Implementing COVID-19 Vaccination Clinics in 34 Sites, United States, March 2021." <em>J Public Health Manag Pract</em> 28(6):624-630 (2022). <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9532365/" target="_blank" rel="noopener">PMC9532365</a></li>
+      <li>Beeler Asay GR, et al. "Systematic Review of Contact Investigation Costs for Tuberculosis, United States." <em>Emerging Infectious Diseases</em> 31(7) (2025). <a href="https://wwwnc.cdc.gov/eid/article/31/7/24-1827_article" target="_blank" rel="noopener">cdc.gov</a></li>
+      <li>Panzarasa P, Opsahl T, Carley KM. "Patterns and dynamics of users' behavior and interaction." <em>J Am Soc Inf Sci Technol</em> 60(5):911-932 (2009). Distributed as "CollegeMsg" by Stanford SNAP: <a href="https://snap.stanford.edu/data/CollegeMsg.html" target="_blank" rel="noopener">snap.stanford.edu/data/CollegeMsg.html</a></li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Six Degrees of Exposure &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied from cases/six-degrees-of-exposure/case.json
+   and case.md. case.md sha256 at build time:
+   3eb9c08bb9e24eacc07fe2144e07334c1be5e64510f07f6bfdf6d136426327cb
+   JS port of sensitivity_model.py — same PARAMS/FLEX/evaluate() names,
+   same arithmetic, kept in sync by hand per INTERACTIVE_HTML_CONTRACT.md.
+   ================================================================ */
+const PARAMS = {
+  n_total: 1899,
+  total_weight: 59835.0,
+  hub_weight_50: 27643.0,
+  n_hub: 50,
+  n_wide: 500,
+};
+const FLEX = ["n_wide"];
+
+function wideExpectedWeight(nTotal, totalWeight, nWide){
+  nWide = Math.max(0, Math.min(nTotal, nWide));
+  if(nTotal < 2 || nWide >= nTotal) return totalWeight;
+  const pSurvive = ((nTotal - nWide) * (nTotal - nWide - 1)) / (nTotal * (nTotal - 1));
+  return totalWeight * (1 - pSurvive);
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const a = p.hub_weight_50;
+  const b = wideExpectedWeight(p.n_total, p.total_weight, p.n_wide);
+  return {A: a, B: b};
+}
+
+// Appendix B — full real top-50 ranked-by-degree list (case.md, S3-derived)
+const HUB_TOP50 = [
+  [1,103,255],[2,9,241],[3,105,227],[4,400,227],[5,32,207],[6,41,183],[7,3,178],[8,42,177],
+  [9,249,172],[10,638,169],[11,713,161],[12,194,160],[13,67,156],[14,1283,152],[15,372,146],
+  [16,357,143],[17,12,142],[18,598,123],[19,176,121],[20,321,117],[21,1281,117],[22,704,113],
+  [23,19,110],[24,1713,110],[25,308,106],[26,277,105],[27,323,104],[28,523,101],[29,1189,99],
+  [30,1543,99],[31,840,93],[32,1598,93],[33,144,91],[34,770,91],[35,95,90],[36,36,89],
+  [37,325,89],[38,1624,89],[39,475,88],[40,697,86],[41,128,85],[42,679,85],[43,297,84],
+  [44,212,83],[45,644,83],[46,63,82],[47,204,82],[48,1236,80],[49,254,79],[50,605,78]
+];
+
+// Appendix C — the real sample subgraph (case.md, S3-derived)
+const SUBGRAPH_EDGES = [
+  ["47","46",1],["47","78",1],["47","91",1],["47","567",2],["47","814",5],
+  ["47","1142",1],["47","1299",1],["47","1540",2],["814","63",20],["814","105",1],["63","105",4]
+];
+
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — render Appendix B and Appendix C tables + subgraph SVG
+   ================================================================ */
+function renderHubTable(){
+  const t = document.getElementById('tblHub');
+  let rows = '<tr><th>Rank</th><th>Traced ID</th><th>Degree</th></tr>';
+  HUB_TOP50.forEach(([rank, id, deg]) => {
+    rows += `<tr><td class="num">${rank}</td><td>${id}</td><td class="num">${deg}</td></tr>`;
+  });
+  t.innerHTML = rows;
+}
+function renderSubgraphTable(){
+  const t = document.getElementById('tblSubgraph');
+  let rows = '<tr><th>Edge</th><th>Weight (recorded contact events)</th></tr>';
+  SUBGRAPH_EDGES.forEach(([u,v,w]) => {
+    rows += `<tr><td>Contact ${u} — Contact ${v}</td><td class="num">${w}</td></tr>`;
+  });
+  t.innerHTML = rows;
+}
+function renderSubgraphSVG(){
+  const pos = {
+    "47":[300,60], "46":[80,40], "78":[160,20], "91":[240,20],
+    "567":[420,20], "1142":[500,50], "1299":[560,90], "1540":[520,150],
+    "814":[300,180], "63":[200,300], "105":[420,300]
+  };
+  const svg = document.getElementById('subgraphSVG');
+  let inner = '';
+  SUBGRAPH_EDGES.forEach(([u,v,w]) => {
+    const [x1,y1] = pos[u], [x2,y2] = pos[v];
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    inner += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+    inner += `<text class="elabel" x="${mx}" y="${my}" text-anchor="middle">${w}</text>`;
+  });
+  Object.keys(pos).forEach(id => {
+    const [x,y] = pos[id];
+    const hi = (id === "47" || id === "105");
+    inner += `<circle cx="${x}" cy="${y}" r="20" ${hi ? 'class="hi"' : ''}/>`;
+    inner += `<text class="vlabel" x="${x}" y="${y+4}" text-anchor="middle">${id}</text>`;
+  });
+  svg.innerHTML = inner;
+}
+renderHubTable();
+renderSubgraphTable();
+renderSubgraphSVG();
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions
+   ================================================================ */
+function degreeInSubgraph(id){
+  return SUBGRAPH_EDGES.filter(([u,v]) => u === id || v === id).length;
+}
+function weightAtVertex(id){
+  return SUBGRAPH_EDGES.filter(([u,v]) => u === id || v === id).reduce((s,[,,w]) => s + w, 0);
+}
+function checkStep1(){
+  const correct = degreeInSubgraph("47");
+  fb('fb1', near(Number(val('s1deg')), correct, 0));
+}
+function checkStep2(){
+  const correct = weightAtVertex("814");
+  fb('fb2', near(Number(val('s2wt')), correct, 0));
+}
+function checkStep3(){
+  const nWide = Number(val('s3wide'));
+  const r = evaluate({n_wide: nWide});
+  fb('fb3', near(Number(val('s3ans')), r.B, Math.max(1, r.B*0.01)));
+}
+function checkStep4(){
+  const budget = 500 * 38.00;      // Appendix D, given
+  const rate = 175.94 + 38.00;      // Appendix D, given -- Hub Sweep fully-loaded rate
+  const correct = budget / rate;
+  fb('fb4', near(Number(val('s4ans')), correct, 0.2));
+}
+function pathCost(nodes){
+  let total = 0;
+  for(let i=0; i<nodes.length-1; i++){
+    const edge = SUBGRAPH_EDGES.find(([u,v]) => (u===nodes[i]&&v===nodes[i+1]) || (u===nodes[i+1]&&v===nodes[i]));
+    if(!edge) return null;
+    total += 1 / edge[2];
+  }
+  return total;
+}
+function checkStep5(){
+  const costA = pathCost(["47","814","105"]);
+  const costB = pathCost(["47","814","63","105"]);
+  const okA = near(Number(val('s5pathA')), costA, 0.02);
+  const okB = near(Number(val('s5pathB')), costB, 0.02);
+  const winnerSel = document.getElementById('s5winner').value;
+  const correctWinner = costA < costB ? "A" : "B";
+  const okWinner = winnerSel === correctWinner;
+  fb('fb5', okA && okB && okWinner);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "six-degrees-of-exposure";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Labeled, weighted diagram of the sample contact subgraph"],
+  ["D2", "Ranked degree table of the 50 highest-degree individuals"],
+  ["D3", "Transmission-weight-eliminated comparison + budget-consistency check"],
+  ["D4", "Shortest notification-path calculation"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). Every URL below was fetched and
+   confirmed live in this authoring session (2026-08-15).
+   ================================================================ */
+const GLOSSARY = {
+  "Graph": {def: "A network of points (vertices) connected by lines (edges) -- the mathematical structure this whole case is built on.",
+    url: "https://www.mathsisfun.com/sets/graph-theory.html"},
+  "Vertex": {def: "A point in a graph -- in this case, one traced person. Plural: vertices.",
+    url: "https://www.mathsisfun.com/sets/graph-theory.html"},
+  "Edge": {def: "A line connecting two vertices in a graph -- in this case, a confirmed contact between two traced people.",
+    url: "https://www.mathsisfun.com/sets/graph-theory.html"},
+  "Weighted Graph": {def: "A graph where every edge carries a number (its weight) -- here, the count of recorded contact events between two people.",
+    url: "https://www.mathsisfun.com/sets/graph-theory.html"},
+  "Degree": {def: "The number of edges touching a vertex -- how many distinct people one traced individual is confirmed to have contacted.",
+    url: "https://www.mathsisfun.com/sets/graph-theory.html"},
+  "Path": {def: "A route through a graph from one vertex to another, crossing a sequence of edges without repeating a vertex.",
+    url: "https://www.mathsisfun.com/sets/graph-theory.html"},
+  "Probability": {def: "How likely something is to happen, from 0 (impossible) to 1 (certain) -- the tool behind Wide Net's counting argument.",
+    url: "https://www.mathsisfun.com/data/probability.html"},
+  "Expected Value": {def: "The long-run average outcome of a random process -- found by multiplying each possible value by its probability and adding the results.",
+    url: "https://www.mathsisfun.com/data/random-variables-mean-variance.html"},
+};
+const HOWTO = [
+  ["find the shortest path between two vertices in a weighted graph", "Graph"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+  document.querySelectorAll('.gterm-placeholder[data-term]').forEach(span => {
+    const term = span.dataset.term;
+    span.outerHTML = gtermHTML(term, term);
+  });
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link glossary terms wherever they're used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — trap reveal/apply gating (this case has no separate
+   twist event; see FACILITATOR.md "Twist: N/A"). Reuses the shell's
+   reveal-gate mechanism for the trap instead.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const out = document.getElementById('twistResult');
+  if(!applied){ out.style.display='none'; return; }
+  const perBudget = evaluate({});
+  const perHeadA = PARAMS.hub_weight_50 / PARAMS.n_hub;
+  const perHeadB = perBudget.B / PARAMS.n_wide;
+  out.style.display='block';
+  out.textContent = 'Per person vaccinated: Hub Sweep ' + round(perHeadA,1) + ' vs. Wide Net ' +
+    round(perHeadB,1) + ' (Hub Sweep looks dominant). Per dollar of the shared budget (both spend '
+    + 'the same amount): the live comparison above uses n_wide from Step 3 -- try n_wide = 500, '
+    + 'the county\'s actual plan, and compare Step 3\'s answer to Appendix B\'s 27,643.';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

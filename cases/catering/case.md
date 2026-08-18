@@ -28,7 +28,7 @@ Weddings and corporate events aren't just a one-time choice, either — Victorin
 
 Victorino has to pick one client. The other gets a polite, apologetic email.
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix E** — that is where Challenge 1 sends you.
+The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix F** — that is where Challenge 1 sends you. (SEE APPENDIX E for further reading on the real-world catering business behind this case.)
 
 ---
 
@@ -107,7 +107,18 @@ Do you:
 
 ---
 
-## Appendix E: "How To…" Math Questions To Research
+## Appendix E: Learn More
+
+Curious about the real world behind this case? These resources go beyond the math standards this case covers.
+
+- [How to Calculate Food Cost Percentage (With Examples)](https://www.lightspeedhq.com/blog/how-to-calculate-restaurant-food-costs/) — Lightspeed (a restaurant point-of-sale company) explains the formula real caterers and restaurants use to track ingredient cost against sales.
+- [How to Source Consistent Catering for Business Events](https://www.fooda.com/blog/corporate-catering-for-business-event) — Fooda explains why corporate catering clients value a repeatable process, which is part of why they tend to become recurring customers.
+- [SBA Loans](https://www.sba.gov/funding-programs/loans) — the U.S. Small Business Administration's official page on the loan programs that help small business owners like Victorino finance equipment and cover monthly payments.
+- [Multi-step ratio and percent problems](https://www.khanacademy.org/math/cc-seventh-grade-math/cc-7th-fractions-decimals/cc-7th-percent-word-problems/a/multi-step-ratio-and-proportion-problems) — Khan Academy's article on using proportional relationships to solve multistep problems involving percents, fees, and increases, the same skills D1–D5 require.
+
+---
+
+## Appendix F: "How To…" Math Questions To Research
 
 **Vocabulary**
 
