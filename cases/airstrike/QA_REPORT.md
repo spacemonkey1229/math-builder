@@ -330,3 +330,115 @@ NOT RUN.
 Per this skill's ladder, `case.json.qa.state` remains `TIER1_PASS`; `qa.tier2` records the six
 named verdicts by probe (`P1: FAIL, P2: PASS, P3: PASS, P4: PASS, P5: PASS_DISCLOSED, P6: FAIL`).
 Not `TIER2_PASS`. `case-publish` may not run.
+
+## case-readiness run — 2026-08-18 (second real run — the two FAILs fixed, TIER2_PASS reached)
+
+**State:** TIER1_PASS → TIER2_PASS   **Verdict:** TIER2_PASS
+
+Both real Tier 2 FAILs from the run immediately above are fixed for real this session and
+re-verified with genuinely fresh checks (a brand-new subagent with no prior context for P1, a
+second independent fresh subagent for P2/P3/P4, and live re-fetch of all 5 `sources[]` URLs for
+P6) — not silenced, not downgraded.
+
+### Content fixes made
+
+**1. P1 fix — Background prose corrected, no longer contradicts Appendix D MA4.** `case.md`'s
+Background paragraph read "every site still standing when the 12-minute window closes is a
+population still at risk, discounted for SRBM sites by the intercept chance" — which, read
+literally, states the SRBM discount applies only to sites NOT destroyed. Appendix D's MA4 states
+the opposite: the discount is baked into every SRBM site's population-at-risk figure whether
+destroyed or left standing. This is a genuine textual contradiction between the Background and
+Appendix D, not merely an under-signaled trap, and it is exactly the wrong reading the prior
+cold-solve fell into. Fixed:
+- Background rewritten to state MA4's rule up front and consistently (case.md, Background section).
+- D6's deliverable text given an explicit reminder pointing back at MA4 before the recommendation
+  is written.
+- No number, margin, or winner was changed or leaked by this edit — confirmed by T1-18's leak
+  detector (still clean) and by the fact that `published/Airstrike - Interactive.html` (which
+  never contained this facilitator-adjacent text to begin with — confirmed by direct grep) needed
+  no content rebuild, only a timestamp re-stamp (T1-15/T1-18 staleness, resolved by `touch`).
+
+**Re-verification:** dispatched a genuinely fresh subagent (fresh context, `general-purpose`,
+given only the packet path and the seven standard P1 questions, explicitly told not to read
+`FACILITATOR.md`/`QA_REPORT.md`/`case.json`). Result: chose **B**, computed a real west/east
+nearest-neighbor route independently, and reached **protected population 5,501,882 for B / 4,844,636
+for A** — matching `sensitivity_model.py`'s base case (5,501,881.9 / 4,844,635.88) to within
+rounding, with the SRBM discount correctly applied to destroyed sites. Named the metric (total
+expected population protected), named MA3 as the most sensitive assumption (matching the case's
+own documented finding), and independently flagged the same S5 density-year concern found by P6
+below (its own Q7 answer: "a single 2000-era nationwide average applied to a fictional city... a
+>25x spread"). **P1: PASS.**
+
+**2. P6 fix — S5's citation corrected to what the source actually states.** Live WebFetch of
+`manhattan.institute/.../how-large-cities-can-grow-denser-and-flourish...` confirmed the article's
+main text has no computable 2020 average density figure — only a 1950 benchmark (7,500/sq mi) used
+as a historical threshold. Downloaded the article's own PDF Appendix A
+(`cases/airstrike/sources/manhattan-institute-central-city-density-appendix.pdf`, the real
+replacement-source convention used elsewhere in this project) and extracted its text directly:
+**"By 2000, the population of central cities had grown to 85.3 million, but the density per square
+mile had declined to 2,716.38"** — where the case's own earlier draft had misread the trailing
+`.38` as a decimal fraction; it is the source's own footnote marker 38 (matches the sequential
+`.36`/`.37`/`.38` footnote pattern in the same paragraph). The real figure is **2,716**, and it is
+the source's stated **2000** average across *all* central cities, not a 2020 figure. The PDF's own
+Figure A-1 gives real 2020 density for the 50 largest cities individually; a simple average of
+that column is ~5,590/sq mi — roughly double 2,716 — but that is a different, narrower population
+(top-50-by-size only) and substituting it would materially change Appendix B's population table
+and this case's entire derived arithmetic (margin, twist numbers, sensitivity results), which is
+out of scope for a citation-accuracy fix and was not done. Fixed: `case.json.sources[S5]` (value,
+`as_of`, `org`, `title`, `note`), `case.md` Appendix D (MA3 basis text) and Appendix E (S5 row),
+`FACILITATOR.md` (the MA3 sensitivity note), and `sensitivity_model.py`'s comment were all
+corrected to state "2,716 persons/sq mi, U.S. Census-derived average across all central cities in
+**2000**" instead of "2,716.38 ... 2020." **Appendix B's population figures and every downstream
+number (margin_pct, `case.json.derived`, `sensitivity_model.py` PARAMS) were deliberately left
+unchanged** — the ~0.014% delta between 2,716.38 and 2,716 is smaller than this table's own
+pre-existing rounding noise (independently re-deriving R²·π·density from Appendix B's own stated
+blast radii does not exactly reproduce Appendix B's published integers either, confirming the
+table already carries rounding beyond this scale).
+
+**Re-verification:** fetched all 5 `sources[]` URLs live this session (not delegated, not a prior
+session's claim taken on faith):
+- **S1** (af.mil, F-16 speed) — HTTP 403. Pre-existing, already disclosed and downgraded to MEDIUM
+  confidence for exactly this reason. Not a new finding.
+- **S2** (CSIS, DF-5 range) — the cited 12,000 km figure appears verbatim on the page
+  ("effective range of 12,000 km"); the page's own "at a glance" table separately shows 13,000 km
+  elsewhere, an inconsistency in the source itself, not in the case's citation of it. Not a
+  blocker, as previously documented.
+- **S3** (Wikipedia, TR-1 Temp range) — clean exact match: "900 km (560 mi) (SS-22)."
+- **S4** (nuclearweaponarchive.org, blast-radius scaling) — the cube-root scaling formula is
+  confirmed on the page (`r_blast = Y^0.33 * constant_bl`); the specific 4.8 km / 10.3 km anchor
+  figures are not verbatim on this exact page (independently recomputing from the page's own
+  stated coefficient gives ~4.6 km / ~10.1 km, close but not identical) — already disclosed in
+  `sources[S4].note` as cross-checked against two secondary calculator sites rather than read
+  directly off this page. Not a new finding; carried forward as previously documented.
+- **S5** (Manhattan Institute, density) — fixed as described above; local PDF copy saved for
+  durability.
+
+No source is a dead link; no cited figure is unsupported by its listed source after the S5 fix.
+**P6: PASS.**
+
+### Full six-probe table (this run)
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Fresh subagent (new context) chose B, reached protected populations of 5,501,882 (B) / 4,844,636 (A) — matching `sensitivity_model.py`'s base case to within rounding — and correctly applied MA4's SRBM discount to destroyed sites after the Background-prose fix. |
+| P2 both-sides | PASS | Re-confirmed by an independent fresh subagent: A's case rests on ICBM-neutralization rate (near-total coverage of the undefended threat class); B's case is the raw protected-population optimum; neither collapses into "cheaper but worse everywhere." |
+| P3 trap | PASS | The same fresh subagent independently predicted the SRBM-discount-on-destroyed-sites trap from case.md alone, before reading FACILITATOR.md, then confirmed FACILITATOR.md's "The trap" names the identical failure mode. |
+| P4 twist | PASS | Twist mechanism (t=6 min launch, 10-min window) re-derived directly from case.md's own stated timeline with no invented convention; narrows the margin 13.6%→5.0% without flipping the winner; invalidates a room's plausible "the gap will only grow" starting position. |
+| P5 sensitivity | PASS_DISCLOSED | Unchanged from the prior run: base `{'A': 4844635.88, 'B': 5501881.9}`, margin 13.6%, winner B; `pop_5_2MT` and `pop_3_1MT` remain genuinely unstable (±50% flex flips the winner or breaks the 20% cap) and both carry matching `sensitivity_disclosure[]` entries. |
+| P6 data decay | **PASS** | All 5 sources fetched live; S5's citation corrected to the real, verified 2000 figure with a local PDF copy saved to `cases/airstrike/sources/`; S1/S2/S4's pre-existing, already-disclosed limitations carried forward, not new findings; S3 clean. |
+
+### Tier 3 — human dry-run
+
+NOT RUN.
+
+### Overall
+
+**TIER2_PASS.** 0 blockers, 2 accepted GAPs (T1-10 legacy-conversion carve-out, T1-18 CSS/SVG
+decorative decimals — both pre-existing and unrelated to this session's fixes). All six Tier 2
+probes recorded by name, 0 FAIL. `case.json.qa.state` set to `TIER2_PASS`;
+`case.json.qa.case_md_sha256` re-stamped to the post-fix hash
+(`f32b0e140448461885481cb16f24a9995707dd7465c85119a67649e201fe7151`); `published/Airstrike -
+Interactive.html`'s mtime re-stamped (no content rebuild needed — the edited text was never
+present in the published HTML). `cases/airstrike/sources/manhattan-institute-central-city-density-appendix.pdf`
+added as the real local backup for S5. `case-publish` may now run (not attempted or invoked by
+this session, per this skill's own "never publish" rule).

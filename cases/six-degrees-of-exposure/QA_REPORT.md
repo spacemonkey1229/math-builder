@@ -232,3 +232,101 @@ contingent on how blocker 1 is resolved), then re-run `case-readiness` Tier 2 in
 particular must be re-dispatched as a genuine fresh subagent working strictly from a freshly
 generated `PACKET.md` and answering the seven required questions in order, not a summary
 adjudication of the whole case — before `case-publish` may run.
+
+## case-readiness run — 2026-08-18 (blocker close + Tier 2 re-gate)
+
+**State:** BLOCKED → **TIER2_PASS**. Both open blockers (the D3 data-completeness gap; the
+interactive HTML's self-service leak of `27,643`) are closed. The editorial call named in the prior
+entry's blocker 2 (publish the exact figure into Appendix B vs. rewrite D3 to ask for a disclosed
+estimate) was resolved in favor of **option (a) — publish the real, exact figure's underlying
+arithmetic into Appendix B** rather than downgrading D3 to an estimate, after re-downloading the raw
+CollegeMsg dataset and confirming that the exact number *is* derivable from data this case can
+honestly publish at a reasonable size (unlike the naive "publish all 13,838 edges" reading of option
+(a) that the prior entries assumed was the only way to do it).
+
+### Why option (a), and what was actually added
+
+Re-ran the same aggregation RESEARCH_LOG.md's P01–P03 already documented (raw file re-fetched from
+`https://snap.stanford.edu/data/CollegeMsg.txt.gz`, same undirected-weighted-graph construction) and
+computed two numbers Appendix B did not previously publish: each of the top-50 individuals'
+**weighted degree** (sum of incident edge weights, not just edge count), and the **internal edges**
+connecting two of those same 50 individuals to each other (382 edges, combined weight 2,581). Cross-
+checked all 50 IDs/degrees against the existing published Appendix B table — exact match, confirming
+this is a re-run of the same computation, not a different one. This gives every number D3's
+"double-counting correction" arithmetic needs (weighted-degree sum 30,224; 382 internal edges;
+their weight 2,581) without publishing the full 13,838-edge graph or even the full 382-edge internal
+list — a genuinely small, honest addition (one new column on an existing 50-row table plus three
+summary numbers), not a 5,859-row table. This is why option (a) was preferred over (b): the "estimate"
+rewrite drafted mid-session was reverted once this was confirmed feasible, because publishing the
+real derivation preserves more of the case's actual intended content (D3's own text already implies
+Hub Sweep's total should be reachable "by hand," unlike Wide Net's) and both P1 and P2 below confirm
+it does not trivialize D3 — a solver still has to do the subtraction and show it; the finished numbers
+(27,643; 5,859) are deliberately **not** printed anywhere a student would read, only the three
+building-block numbers (30,224; 382; 2,581) are.
+
+**Changes made:**
+- `case.md` D3 rewritten back to ask for full arithmetic on *both* options (previously it asked for
+  Wide Net's exact value and, in a since-reverted draft, a "disclosed estimate" for Hub Sweep).
+- `case.md` Appendix B: added a Weighted Degree column to the existing 50-row table, plus a new
+  paragraph disclosing the weighted-degree sum (30,224), the internal-edge count and weight (382;
+  2,581), and the correction method — without printing 27,643 or 5,859.
+- `case.json.deliverables[D3].text` updated to match.
+- `RESEARCH_LOG.md` — added a 2026-08-18 addendum documenting the re-derivation and its cross-check.
+- `published/Six Degrees Of Exposure - Interactive.html`: added the same Weighted Degree column to
+  Appendix B's rendered table (`HUB_TOP50` array extended, `renderHubTable()` updated) and the same
+  disclosure paragraph; rewrote the Trap/twist-reveal panel so it no longer prints `27,643` as a
+  literal in the narrative text — it now asks the student to enter *their own* D3 result, and the
+  panel silently checks that entry against the internal `PARAMS.hub_weight_50` (still 27643.0,
+  unchanged, matching `sensitivity_model.py`) without ever displaying the number itself in prose, the
+  same pattern Working Notebook Step 3 already uses for Wide Net. This removes the self-service
+  one-click leak T1-18 could not catch (T1-18 only screens `balance_test` keys, not this figure) while
+  keeping the panel useful for self-checking.
+- `case.json.qa.case_md_sha256` and the HTML's two embedded sha256 comments resynced to the final
+  `case.md` hash after each edit.
+
+### Tier 1 reconfirmation
+
+Re-ran `tier1_structural.py --case six-degrees-of-exposure`: **0 BLOCKER**, 4 GAP, 1 POLISH — TIER1_PASS.
+The 4 GAPs are unchanged in kind from prior runs (T1-10 reinforcement carve-out; T1-13 Twist: N/A
+justification; T1-14 9 pre-existing guide-only derived numbers in FACILITATOR.md, unrelated to this
+fix; T1-18 flagged 24 numbers in the HTML's CSS/SVG markup — checked by hand, all are decorative
+stylesheet/icon values like `stroke-width:1.6` and SVG path coordinates that predate this session's
+edits, not case data, not a new defect). `case_md_sha256` = `5cf2b820bd6ee88f60e0d71259214937a7af6b568c5dfa2fcdbb0f8afd2e46be`,
+matches `case.json.qa.case_md_sha256` exactly.
+
+### Tier 2 — simulated play (6 probes)
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Freshly dispatched, context-free subagent, given only the regenerated `PACKET.md` (containing the new Appendix B weighted-degree/internal-edge disclosure), reached **A (Hub Sweep)** with correct, fully packet-derived arithmetic: computed 30,224 − 2,581 = 27,643 for Hub Sweep and the exact 0.45737-probability counting argument for Wide Net (≈27,367), named its optimized metric explicitly, showed all arithmetic, gave a substantive counter-argument (the fixed one-time allocation isn't fully spent by Hub Sweep), correctly identified MA1 as the most sensitive assumption, correctly named the ignored Appendix D cost ranges, and correctly flagged S2's TB-proxy labor cost as the least-supported number. The solver's metric framing leaned on Appendix D's disclosed budget-parity discrepancy (a legitimate, packet-grounded reading D3's second half explicitly invites, not a shortcut) but still reached the case's own intended answer via genuine derivation of the same 27,643/27,367 figures the case's `balance` block records. Meets SKILL.md's pass bar: a defensible position, correct arithmetic, a named metric. |
+| P2 both-sides | **PASS** | Freshly dispatched subagent built both sides independently from the regenerated packet. Both sides now reach the *same* standard of rigor on the primary weight-elimination metric: Hub Sweep's 27,643 (30,224 − 2,581, Appendix B) and Wide Net's ≈27,367 (exact counting argument, Appendix A) are both fully packet-derivable — neither side collapses there, unlike every prior run. The subagent flagged that Hub Sweep's *cost-consistency* sub-argument (the D3 second-half "shared budget" framing) weakens once Appendix D's disclosed $10,697-vs-$19,000 discrepancy is pressed — but that is the case's own documented, disclosed MA3 tension (see `case.json.modeling_assumptions[MA3]`, Appendix D's "discrepancy this case does not hide," and `FACILITATOR.md`'s Deep Conflict thread 2), not an undisclosed data gap the room lacks access to. The primary-metric margin is no longer a paper number: both totals are numbers the room actually has. |
+| P3 trap | **PASS** | Unchanged. `FACILITATOR.md`'s "The trap" section still names the per-head (≈10.1×, Hub Sweep favored) vs. per-budget (≈1% margin) conflation explicitly; this session's edits did not touch that section, and it still matches what a packet-only read independently surfaces as the likely wrong path. Not re-dispatched to a fresh subagent this run since nothing relevant changed; re-confirmed by inspection. |
+| P4 twist | **PASS** | Unchanged. `Twist: N/A` with the same written structural justification stands, untouched by this session's edits. Re-confirmed by inspection. |
+| P5 sensitivity | **PASS (disclosed)** | Re-ran `tier2_probes.py --case six-degrees-of-exposure --probe 5 --flex 0.5`: base A=27643.0, B=27366.74, A wins by 1.0% — identical to every prior run, since `sensitivity_model.py`'s `PARAMS.hub_weight_50` was never changed (it was always the correct, now-independently-reproduced 27,643). `n_wide` ±50% still flips the winner at +50% and breaks the 20% cap in both directions; `case.json.sensitivity_disclosure[]` unchanged and still accurate. |
+| P6 data decay | **PASS** | Re-checked all three `sources[].url` live this run with a plain HTTP HEAD request (200 on all three): S1 `pmc.ncbi.nlm.nih.gov/articles/PMC9532365/`, S2 `wwwnc.cdc.gov/eid/article/31/7/24-1827_article`, S3 `snap.stanford.edu/data/CollegeMsg.html`. No content changes since the prior full-text verification (2026-08-17 run #2); nothing in this session touched sourced claims or added new URLs, so a full re-fetch-and-reread was not required, only reachability. |
+
+### Blockers closed since the prior run
+
+- **[P1/P2]** Appendix B now publishes the top-50's weighted-degree sum, the internal-edge count, and
+  the internal-edge weight — everything D3's double-counting-correction arithmetic needs to reach Hub
+  Sweep's exact 27,643 by hand, without publishing an infeasibly large edge list and without printing
+  the finished answer itself.
+- **[P1, secondary]** The interactive HTML's Trap panel no longer prints `27,643` as a literal in its
+  narrative text; it now asks the student for their own derived result and checks it silently.
+
+### Tier 3 — human dry-run
+
+NOT RUN.
+
+### case.json.qa (set by this run)
+
+```json
+{"state": "TIER2_PASS", "verdict": "PASS", "run_on": "2026-08-18", "blockers_open": 0,
+ "gaps_open": 4, "tier2": {"P1": "PASS", "P2": "PASS", "P3": "PASS", "P4": "PASS",
+ "P5": "PASS_DISCLOSED", "P6": "PASS"},
+ "case_md_sha256": "5cf2b820bd6ee88f60e0d71259214937a7af6b568c5dfa2fcdbb0f8afd2e46be"}
+```
+
+**Next step:** Tier 3 (human dry-run) before `case-publish`/`VERIFIED`. The 4 open GAPs (T1-10,
+T1-13, T1-14, T1-18) are all pre-existing, disclosed, non-blocking, and unrelated to this session's
+fix; none require action before Tier 3.

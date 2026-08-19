@@ -75,3 +75,40 @@ skills/case-readiness/scripts/tier1_structural.py T1-10 now downgrades empty new
 
 ## P5 FLEX rescoping — 2026-08-13
 FLEX[] in sensitivity_model.py was corrected to exclude cited/given measurements (test with a real or dataset source) and keep only genuine stated modeling assumptions, per the reference doctrine ("sensitivity to stated assumptions, not to cited measurements"). Re-ran `python3 skills/case-readiness/scripts/tier2_probes.py --case family-trip --probe 5 --flex 0.5`: P5 now reports [FAIL] on the corrected scope. See sensitivity_model.py's own inline comment for the specific rationale per removed/kept dial.
+
+## case-readiness Tier 2 run — 2026-08-18
+**State:** TIER1_PASS → TIER2_PASS   **Verdict:** TIER2_PASS
+
+### Tier 1 — structural (re-checked, not the object of this run)
+Case entered this run at `TIER1_PASS` (0 blockers, verified live). Two real Tier-2 defects were
+found and fixed directly in `case.md`/`case.json` (see P6 below), which — as an expected,
+mechanical side effect of editing `case.md` — re-triggers `tier1_structural.py`'s continuity
+checks until the published artifact is regenerated: T1-15/T1-16/T1-18 now correctly fire STALE
+against `published/Family Trip - Interactive.html`, which still contains the pre-fix text
+("one lap child per adult", the old IRS URL). This is not a new content defect — it is the
+expected, honest consequence of fixing case.md mid-pipeline, and it is what `case-publish` exists
+to resolve next (it rebuilds the interactive HTML from the current case.md). `case.json.qa.state`
+below reflects the Tier 2 content verdict per this skill's ladder; the published HTML must be
+rebuilt via `case-publish` before this case is truly current for learners.
+
+### Tier 2 — simulated play (6 probes)
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | PASS | Genuinely fresh subagent (packet only) chose B (drive), optimizing "real out-of-pocket cash cost against the stated $1,300 budget." Arithmetic matched `sensitivity_model.py`'s base case exactly: A=$1,940.80, B gas-only=$602.50, B fully-loaded=$1,754.88. Correctly named MA4 (cost-definition choice) as its most sensitive assumption, correctly ignored Appendix C's non-representative $58 low-demand fare, and correctly flagged MA1's 2-year-old fare projection as the least-supported number. Defensible position, correct arithmetic, named metric — clean pass. |
+| P2 both-sides | PASS | Built directly from case.md. A's strongest line: real cash cost $1,940.80 (blows the $1,300 budget by $640.80) but buys ~3 more days in Gilbert on the same 5 vacation days and cuts family transit from ~29 hours to a few hours with two infants. B's strongest line: real cash cost $602.50 — under half the budget, $697.50 left for gifts — and B still wins even under the Twist's fully-loaded IRS-rate lens (10.6% margin), not just the naive gas-only one. Neither side collapses to concession-only: A's pure-cost defense weakens hardest at D5 (dollars-remaining goes negative), but its rebuttal (extra days, less transit time) is itself quantified from the case's own numbers, not hand-waved. |
+| P3 trap | PASS | Independent fresh subagent (case.md only, before FACILITATOR.md) predicted a different trap than the guide names: it expected a fare-doubling misread of Appendix C's "one-way fare (round-trip purchase)" column header, vs. FACILITATOR's actual trap (defaulting to 6 paid tickets instead of 4, missing the lap-child exemption). On review this is a near-miss, not a guide gap: Appendix H's MA1 already hands students the correct $474/passenger round-trip figure precomputed, and Challenge D1 explicitly directs attention to "how many of the six family members actually need a paid ticket" — both structurally shield against the subagent's predicted misread while directly inviting the guide's actual trap. FACILITATOR's named trap remains the case's single most probable failure mode; the subagent's alternate is a real but lower-probability path, not an unanticipated one. |
+| P4 twist | PASS | Re-derived mechanically via `sensitivity_model.py`'s `evaluate()`/`evaluate_twist()`: pre-Twist gas-only reading is a landslide (B $602.50 vs A $1,940.80, 222% margin); post-Twist fully-loaded reading narrows to B $1,754.88 vs A $1,940.80, 10.6% margin — winner unchanged (B) but the "landslide" position a real room would hold going in is invalidated. Checked against every stated assumption (MA1–MA6) and Appendix G's calendar/vacation-day limits under both a sequential and a simultaneous reading; the arithmetic (1,888 round-trip miles × $0.76/mi + $320 hotel) requires no unstated convention and is unambiguous either way. |
+| P5 sensitivity | PASS (disclosed) | Carried forward unchanged from the prior mechanical run (not re-run, per instructions): base A=$1,940.80/B=$1,754.88, margin 10.6%, B wins. Genuinely unstable under ±50% flex on `fare_per_leg_usd` and `hotel_rate_per_night_usd` (a -50% fare flex flips the winner to A); both dials carry matching `sensitivity_disclosure[]` entries in case.json and Guide Notes — disclosed, not eliminated, per the project's disclosure-aware PASS doctrine. |
+| P6 data decay | PASS (2 defects found and fixed) | Fetched all 10 live URLs (S1–S4, S6, S7, S8, S10–S12; S5/S9 are local docx image references, non-fetchable, noted as such). **S2** (fueleconomy.gov) confirmed exact: 19/27/22 mpg, 21.0 gal. **S4** (allegiantair.com) confirmed: $58 low-demand fare still shown. **S7** (allegiantair.com/baggage-1) confirmed: personal item free, carry-on/checked dynamic. **S11** (gasprices.aaa.com) confirmed: $4.0654/gal, consistent with the cited $4.04. **S1** (trippy.com) and **S6** (tsa.gov) returned HTTP 403 to automated fetch (bot-blocked, not confirmed dead — both are long-stable, low-volatility figures: a fixed interstate route distance and a statutory federal fee unchanged in years). **S3** (skyscanner.com) is a JS-rendered SPA that returned no fetchable content — inconclusive via automated fetch. **S10** (lvcva.com/research/) does not show the specific cited $208.02 Strip figure on that landing page (shows a different, broader $183.52 2025 metro-wide ADR instead); already disclosed as MEDIUM/"via aggregated search," and the $208.02 figure is independently corroborated by web search as a real reported Jan–Jun 2026 Strip ADR — noted, not fixed, since it was already flagged as unfetched. **S8** (intercom.help) 404s — DEAD LINK. Re-sourced to Allegiant's own official page (allegiantair.com/traveling-with-children), which surfaced a real, load-bearing wording defect: Allegiant's actual policy is "one lap child **per row**, due to the number of oxygen masks per row" — not "one lap child per adult" as case.md stated. Fixed in `case.md` Appendix D, the Sources table, and `case.json`'s S8 entry; the blockquote now tells the family they must book two separate rows to get both free lap-child slots. The D1 math (4 of 6 need a paid ticket) is unchanged. **S12** (irs.gov) resolves but backs the WRONG figure: the cited URL only supports the January 2026 rate (72.5¢/mile), not the $0.76/mile the case actually uses — confirmed via independent search that a real mid-year IRS Announcement 2026-11 (Internal Revenue Bulletin 2026-29) did raise the rate to 76¢/mile effective July 1, 2026, so the $0.76 figure itself is correct, only the citation was wrong. Fixed: S12's URL re-pointed to `irs.gov/irb/2026-29_irb`, which verbatim states "The revised standard mileage rates are: (1) Business 76 cents per mile." |
+
+### Tier 3 — human dry-run
+NOT RUN.
+
+### Overall
+**TIER2_PASS.** All six Tier 2 probes recorded by name, 0 real FAIL (P5 is disclosed-unstable, the
+project's standing PASS state for that condition). Two genuine P6 citation defects found and fixed
+this run (S8 dead link + real policy-wording error; S12 URL backing the wrong rate). `case.json.qa`
+updated: `state` → `TIER2_PASS`, `tier2` block recorded, `case_md_sha256` re-stamped to the
+post-fix hash. **`published/Family Trip - Interactive.html` is now stale** (still shows the
+pre-fix lap-child/IRS text) and must be regenerated by `case-publish`, which this skill does not
+run.

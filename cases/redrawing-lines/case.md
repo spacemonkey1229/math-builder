@@ -70,7 +70,12 @@ would choose and why. Your pitch must include:
     therefore impossible for Maine no matter which plan is chosen; (ii) that under any
     whole-county plan at least one district must contain at least half of Maine's counties,
     rounded up; and (iii) that at least one district must contain at least two of Maine's four
-    largest counties, with the population consequence of that fact stated in people.
+    largest counties, with the population consequence of that fact stated in people as the
+    **guaranteed minimum**: Pigeonhole proves that *some* two of the four largest counties share a
+    district, but it does not tell you which two, so the only population figure the principle
+    actually guarantees is the smallest possible sum over any two of those four counties — not the
+    largest, and not whichever pair looks most dramatic on the page. State that minimum pairing's
+    sum and show the arithmetic that makes it the floor, not just a pairing.
     D5. A scorecard for The Kennebec Split against The Hancock Line: county-line crossings for
     each plan with the crossed borders listed by name; each plan's larger district, smaller
     district, and **two** deviation figures — the largest single district's distance from the
@@ -243,7 +248,7 @@ The commission's screening tool reports two numbers about the space of whole-cou
 
 | | Count |
 |---|---|
-| Assignments of Maine's 16 counties to two districts, ignoring every constraint | 65,536 — or **65,534** once you drop the two that leave a district empty |
+| Assignments of Maine's 16 counties to two districts, ignoring every constraint | *the tool's claim — a Hero computes this from APPENDIX A's county list and the Fundamental Counting Principle, then drops the two assignments that leave a district empty* |
 | Of those, the ones where both districts are a single connected piece on the APPENDIX B border list | **1,734** |
 | The same connected plans, once you stop caring which district is called "north" | **867** |
 
@@ -299,7 +304,7 @@ Hero who prefers a perimeter-based score should say what data they would need to
 | MA2 | For the border count, a divided county is assigned to whichever district holds **more** of its people | Kennebec → northern district (70,047 > 53,595) | Without a rule, "which borders does the line run along?" has no answer for a divided county, because the answer depends on which of its towns sit where — town-level geography this case does not model. Majority assignment is the convention an analyst would reach for first. | **Load-bearing: it decides who wins.** Under the opposite convention — count Kennebec in the southern district — the crossing counts change, and they do not change equally for the two plans. Compute the primary metric under **both** conventions before you recommend anything; the two results are close either way, which is the point. The *winner* here is a convention, not a fact, and a pitch that does not name the convention it used has not finished the argument. |
 | MA3 | Staff shortlist rule: keep the five southern counties together, then add either one whole county or part of one county, choosing the option whose two districts come **closest to equal population** | applied to Appendix D to select Option B from the rows there | Continuity of representation — holding down how many Mainers change members of Congress — is a real redistricting criterion, and equal population is the one constraint a congressional plan cannot trade away. Together they are how these two plans and no others reached Margo's wall. It is **staff practice, not statute.** | Directly load-bearing on which plans are on the table at all. Rank Appendix D on crossings rather than on population and a different row becomes Option B. The rule is challengeable, and challenging it changes the case rather than the number: it is the one assumption here that can put a plan on Margo's wall that is not on it now. |
 | MA4 | The scenario | Margo Thibodeau, the staff room, and the choice between exactly these two plans are invented | Maine's commission, its September 27, 2021 report to the Legislature [S7], the enacted plan [S5] and every number above are real. The internal deliberation is not, and no record says The Hancock Line was ever proposed. | None on the arithmetic. It does mean "what the commission actually decided" is not evidence about what it should have decided. |
-| MA5 | A water boundary counts as a border, exactly like a land boundary | all **34** Appendix B borders counted, including Hancock–Knox | The Census adjacency file [S4] makes no distinction, and inventing one would need a rule about how much water is too much — a rule this case has no source for. Taking the published file as published is the choice that can be checked. | The Kennebec Split's line runs along Hancock–Knox; The Hancock Line's does not. Dropping that one border therefore takes a crossing off one plan's score and nothing off the other's. Work out which plan that helps before you decide whether you like the convention: a Hero arguing that a water boundary is not a border is arguing for a *wider* gap between the two plans, not a narrower one — and should say plainly which plan that favours, and whether a gap that wide still sits inside this project's balance cap. |
+| MA5 | A water boundary counts as a border, exactly like a land boundary | all **34** Appendix B borders counted, including Hancock–Knox | The Census adjacency file [S4] makes no distinction, and inventing one would need a rule about how much water is too much — a rule this case has no source for. Taking the published file as published is the choice that can be checked, and it is also the working convention: redistricting analysts and the GIS tools that support them (including the Bureau's own Redistricting Data Program) use the published county adjacency layer as the definition of "neighbor," water crossings included, rather than re-deriving one county by county from travel distance. This case's stated value is that professional default, not a house rule invented to make one plan look better. | The Kennebec Split's line runs along Hancock–Knox; The Hancock Line's does not. Dropping that one border therefore takes a crossing off one plan's score and nothing off the other's. Work out which plan that helps before you decide whether you like the convention: a Hero arguing that a water boundary is not a border is arguing for a *wider* gap between the two plans, not a narrower one — and should say plainly which plan that favours, and whether a gap that wide still sits inside this project's balance cap. |
 
 **"As of" cutoff.** Every population figure in this case is frozen at the 2020 Census. That is a
 decennial snapshot and it does not drift; Maine's population has changed since 2020, but the
@@ -328,46 +333,4 @@ current as of the access date in Appendix G.
 - How to prove a statement using mathematical induction
 - How to convert numbers to percents
 
-<!-- FACILITATOR ONLY -->
-
-## Balance argument
-
-**Primary metric: county-line crossings (lower is better).** The Kennebec Split runs along nine
-county borders — Androscoggin–Cumberland, Androscoggin–Sagadahoc, Cumberland–Oxford,
-Hancock–Knox, Kennebec–Lincoln, Kennebec–Sagadahoc, Knox–Waldo, Lincoln–Waldo, Oxford–York — and
-runs through Kennebec, for a score of **10** under MA1/MA2. The Hancock Line runs along eleven —
-Androscoggin–Cumberland, Androscoggin–Sagadahoc, Cumberland–Oxford, Hancock–Penobscot,
-Hancock–Waldo, Hancock–Washington, Kennebec–Lincoln, Kennebec–Sagadahoc, Knox–Waldo,
-Lincoln–Waldo, Oxford–York — and runs through nothing, for a score of **11**.
-
-**Argument for A (The Kennebec Split).** It wins both numbers on the board. Its two districts
-differ by **one person** — the minimum arithmetically available to Maine, since 1,362,359 is odd
-— against The Hancock Line's **3,765**; as maximum deviation that is 0.000147% against 0.5527%.
-It also wins the case's own primary metric, 10 crossings to 11. Karcher is the authority that
-bites here: "there are no de minimis population variations, which could practicably be avoided,"
-and A is standing proof that B's 3,765 could have been avoided. The price is one divided county,
-and only 53,595 of Kennebec's 123,642 residents sit on the short side of the cut.
-
-**Argument for B (The Hancock Line).** Not one of Maine's sixteen counties is divided, and all
-123,642 Kennebec residents keep a single member of Congress instead of being split 53,595 /
-70,047. Its 0.5527% maximum deviation sits **below both** benchmarks in Appendix E — under the
-0.6984% struck in Karcher and under the 0.79% upheld in Tennant — and Tennant upheld that larger
-figure on precisely the justification B is buying: not splitting political subdivisions is a
-"valid, neutral state districting polic[y]." The one crossing B concedes is not a border at all;
-it is MA1's invented weight for severing Kennebec. Charge that severance 2 instead of 1 and the
-plans tie; charge it more and B wins outright. B's case is that a cut county costs Maine more than
-two clean county lines do, and nothing in Appendix B prices it.
-
-**Margin.** **10.0%** on county-line crossings (11 against 10), computed in
-`sensitivity_model.py`. Three stress tests, all stated in Appendix H rather than hidden:
-
-**MA1, flexed ±50%** (probe 5): 15.8% at weight 0.5, 4.8% at weight 1.5. The ranking does not move.
-
-**MA2, opposite convention**: count Kennebec in the southern district and A scores 12, so **B wins
-instead, by 9.1%**. The winner flips; the case stays inside the 20% cap on both readings. The
-convention is a choice this case makes in the open, not a fact it discovered.
-
-**MA5, water boundary excluded**: A falls to 9 and B stays at 11, widening the margin to **22.2%**
-— past the cap, in A's favour. A guide should not present the headline margin as convention-free;
-the honest sentence is "10.0% under the conventions we chose, and here is what each of the other
-choices does."
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

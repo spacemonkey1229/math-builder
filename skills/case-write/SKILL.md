@@ -263,8 +263,8 @@ Do not proceed to `case.json` with either list non-empty. Fix the case.
 
 ### 11. Balance argument — draft it now
 
-QA needs it and you understand the case best right now. Draft, in `case.json` and as a section at
-the bottom of `case.md` under `<!-- FACILITATOR ONLY -->`:
+QA needs it and you understand the case best right now. Draft, in `case.json` and in
+`FACILITATOR.md` (never in `case.md` — see below):
 
 - The strongest **quantitative** argument for A
 - The strongest **quantitative** argument for B
@@ -285,6 +285,22 @@ Then write `cases/<id>/FACILITATOR.md` with, at minimum:
   has one; naming it is what lets a discussion lead run the room. ("Heroes will compare total
   price and miss that Option A buys two tanks, so the capacity denominators differ.")
 - A **sensitivity note** if SPEC §6 applies.
+
+**Do not write any of this into `case.md`.** `case.md` is the student-facing document — it is the
+literal source of truth for anything that gets handed to a student or read by tooling that treats
+`case.md` as the student view. The balance argument, the margin, and the trap are answer-key
+content and must live only in `FACILITATOR.md` and in `case.json`'s `balance` object. If `case.md`
+needs any marker at all (e.g. to signal to a human editor that facilitator content exists and
+lives elsewhere), it must be a single, self-contained comment line with no content following it,
+for example:
+
+```
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->
+```
+
+Never open a `<!-- FACILITATOR ONLY -->` comment and then write unwrapped Markdown after it — an
+unclosed or label-only HTML comment does not hide the Markdown that follows; it renders in full to
+anyone (or any tool) reading the raw file.
 
 ### 12. Emit `case.json`
 

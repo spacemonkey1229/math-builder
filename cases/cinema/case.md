@@ -185,14 +185,4 @@ Percent · Decimal · Time · Place Value · Rounding · Mean · Addition · Sub
 - How to compare two or more values
 - How to find the mean of a set of data
 
-<!-- FACILITATOR ONLY -->
-
-## Balance Argument (facilitator reference — do not share with students before discussion)
-
-**Argument for A (The Unicorn House):** Lizzie And The Last Unicorn only needs 4 daily showings against The Revengers' 5 — meaning Lizzie never has to run the single worst-attendance slot of the day (the 10:30 AM opening slot, every day of the weekend), while The Revengers, needing 5, is contractually forced to run that weak slot every single day, everywhere it plays. Lizzie is also cheaper to be *wrong* about: at $325 a showing it costs more per showing than Revengers' $220, but it runs one fewer showing a day, every day, all weekend.
-
-**Argument for B (The Revengers House):** The Revengers costs Majesty Cinemas $220 per showing versus Lizzie's $325 — a real gap, on every single showing, all weekend, in whichever theater it's in. The large theater's 150 seats multiply whatever a showing earns; putting the cheaper-to-run film there, at scale, compounds that cost advantage across every day of the weekend instead of just some of it.
-
-**The margin:** the two plans land close enough on projected weekend net profit that this is a genuinely defensible call either way — see FACILITATOR.md for the worked number and the sensitivity check behind it. Neither argument above is a knockout on its own; both are real, quantifiable positions from Appendix A and B alone.
-
-**The trap:** a Hero who only compares each film's *review score* (Appendix A) or Revengers' longer runtime concludes the flashier, longer, higher-rated movie obviously "deserves" the big room — without ever running the actual cost-per-showing and slot-count arithmetic that Appendix B's attendance-capacity data forces. Review score never enters Majesty Cinemas' own attendance data at all (Modeling Assumption D-3) — it's real, printed, and irrelevant to this decision, which is exactly why it's tempting to lean on. D1/D2's showing-count discovery (Revengers structurally can't fit all 5 of its required daily showings inside one theater, of either size) is the second half of the trap: a Hero who doesn't check the turnaround math in Appendix B will build an impossible schedule and not know it.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

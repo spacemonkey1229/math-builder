@@ -364,3 +364,486 @@ and an arbitrary date), before this case can honestly reach `TIER2_PASS`. `case.
 `tier2: {P1: FAIL, P2: PASS, P3: PASS, P4: PASS, P5: PASS_DISCLOSED, P6: PASS}`, `blockers_open: 0`
 (Tier 1), `gaps_open: 3`. Per `skills/case-readiness/SKILL.md`, `case-publish` requires
 `qa.state == "TIER2_PASS"` — this case remains **not eligible for publish**.
+
+---
+
+## Defect fixes — P3 trap wording + P4 twist-offset disclosure — 2026-08-18
+
+A subsequent fresh Tier 2 probe reading (independent of the run immediately above, which had
+recorded P3/P4 as PASS) found P3 and P4 both **FAIL**, for reasons distinct from the earlier P1
+FAIL and distinct from each other:
+
+**P3 trap check — FAIL (wording defect, not a content defect).** `FACILITATOR.md`'s trap section
+was written as diagnostic commentary about what the analysis lacked ("has done real arithmetic but
+skipped the actual decision") rather than a concrete, first-person-observable sequence of learner
+actions. A fresh probe reader, working from `case.md` alone, independently reconstructed the real
+trap — compute D2's cumulative totals for both positions, see the dollar gap is huge, pick the
+cheaper option and stop, without ever running D5 (the liquid-runway-vs-14-day-estimate check) or
+checking that total net worth covers the full 50-day worst case — but the guide as written could
+not be matched against that behavior in real time, because it never named a watchable action
+sequence.
+
+**P4 twist integrity — FAIL (real content defect: undisclosed convention).** The twist's load-bearing
+financial rule — accepting the $150,000 treatment and taking Lauren home **stops** the
+$8,743.26/day ICU/ventilator charge from accruing — was stated only in `FACILITATOR.md`, nowhere in
+`case.md` or the student-facing packet. Two students reading only student-facing content had no
+textual basis for knowing whether the $150,000 is a pure addition on top of the ongoing daily rate
+or a replacement of it, and the two readings produce materially different, both-superficially-
+defensible D2/D5 answers — which SPEC does not allow (one real, defensible margin, not an
+ambiguity that manufactures two "correct" answers by accident).
+
+### Fixes applied
+
+1. **`FACILITATOR.md` "The trap" section rewritten**, matching `cases/cold-chain/FACILITATOR.md`'s
+   Anchor-2 trap format (a probe-confirmed action-sequence style) as the format reference. Same
+   underlying substance (the cheaper-total trap; missing the D5 runway/net-worth checks) — this is
+   a rewrite of *how it's stated*, not new content.
+
+   **Before:**
+   > A Hero computes the total dollar gap between "stop immediately" and "go the full 50 days,"
+   > finds it huge, and treats that as if it settles the case on arithmetic alone — without ever
+   > engaging with the real, disclosed fact that the family's TOTAL assets cover even the 50-day
+   > worst case (they would not lose the house), or that their liquid runway (~13.5 days) lands
+   > almost exactly on the doctor's own LOW-end estimate, not some remote tail. The case's actual
+   > tension is not "can they afford it" (mostly, yes, painfully) — it's what a family owes to
+   > money they can technically still find, against time they can't get back. A Hero who only
+   > computes the big scary total and stops there has done real arithmetic but skipped the actual
+   > decision.
+
+   **After:**
+   > **The trap to let them walk into:** Position B's full 50-day bill total (about $430,908.65)
+   > dwarfs Position A's stop-now total — so a Hero who runs D2's total-cost comparison for both
+   > positions will see that dollar gap, find it huge, and pick Position A on the strength of that
+   > one comparison alone, stopping there. So most learners will assume the total-cost gap settles
+   > the case and never look further. The real trap is that D2's total-cost gap is not this case's
+   > actual decision point: it skips D5 entirely — the family's liquid-plus-brokerage runway
+   > (~13.52 days) lands within about 3.4% of Dr. Halbert's own stated LOW-end estimate (14 days,
+   > Appendix C), a near-coincidence that is the case's real tension — and it skips checking that
+   > the family's TOTAL net worth ($667,756.51) still covers the full 50-day worst-case bill
+   > (~$430,908.65) without selling the house. A Hero who computes the D2 total, calls the decision
+   > settled, and never runs D5 at all is wrong — not on arithmetic (the totals are correct) but on
+   > completeness — and it's worth asking them directly whether they ever found the day the money
+   > actually runs out (Data Deep Dive, Socratic Q1–Q2).
+
+2. **`case.md` Appendix E — Modeling Assumptions gained a fourth, student-facing bullet** stating
+   the twist's cost-offset convention, surfacing what was previously facilitator-only:
+
+   > **If the family accepts a treatment option that moves Lauren out of the ICU and off the
+   > ventilator** (for example, to go home instead of staying in the ICU), the $8,743.26/day
+   > ICU/ventilator rate stops accruing from that point forward — that daily rate is billed only
+   > for days Lauren is actually receiving ICU/ventilator care. Whatever alternative care setting
+   > she moves to instead is billed separately and is not part of this case's stated daily-rate
+   > figures.
+
+   Background's existing cross-reference to Appendix E was extended (`"...and how that daily rate
+   is affected if Lauren ever leaves ICU/ventilator care for an alternative care setting"`) so the
+   new bullet isn't an orphan addition — it's still reached the same way Appendix E already was.
+
+   `case.json.modeling_assumptions[]` gained a matching `MA1b` entry (kept as a new id rather than
+   editing MA1's text, to preserve MA1's existing continuity trail) so SPEC §1.6's "a stated
+   convention used in calculations must be visible where other Modeling Assumptions are surfaced"
+   is satisfied in both places. No dollar figure was invented — `$8,743.26` and `$150,000` are
+   both pre-existing case figures (Appendix E / the Twist as delivered by the facilitator).
+
+### Tier 1 re-run — 2026-08-18
+
+`python3 skills/case-readiness/scripts/tier1_structural.py --case end-of-life`:
+
+```
+checks run: 19   PASS 14 · GAP 2 · FAIL 3
+=== BLOCKER (3) ===
+ * [T1-15] CONTINUITY STALE — published/End Of Life - Interactive.html predates the case.md edit
+ * [T1-16] MCS-11 — QA hash is STALE (case.md changed after the last gate run)
+ * [T1-18] CONTINUITY STALE — published/End Of Life - Interactive.html predates the case.md edit
+=== GAP (3) ===
+ * [T1-10] carve-out GAP (pre-existing, legacy conversion, unaffected)
+ * [T1-14] 1 orphan number in FACILITATOR.md ([100.0]) — pre-existing, unaffected
+ * [T1-18] 57 orphan numbers in the interactive HTML — CSS/SVG decimal false-positive class
+VERDICT: BLOCKED  (3 blockers, 3 gaps)
+```
+
+**Isolated cause, confirmed no new defect was introduced.** Re-ran the identical script against
+the pre-fix `case.md` (via `git stash`) for comparison: T1-15 and T1-18's staleness BLOCKERs and
+the 57-number CSS/SVG orphan list in the interactive HTML were **already present before this fix**
+— `published/End Of Life - Interactive.html` has been stale relative to `case.md` since before this
+task started (last built 2026-08-13, `case.md` has since been edited by other QA passes on
+2026-08-18), and rebuilding it is `case-publish`'s job, explicitly out of scope for this task. T1-16
+newly flips from PASS to FAIL as the direct, expected consequence of editing `case.md` — the hash in
+`case.json.qa.case_md_sha256` (`55eaaef2...`, from the 2026-08-18 run above) no longer matches the
+new `case.md` (`a34a7273...`), which is correct: it signals that a fresh Tier 2 re-run is owed, and
+per this task's own instruction the hash is deliberately left stale rather than silently refreshed
+to hide that a re-verification is pending. T1-14's orphan list is unchanged (`[100.0]`, same
+pre-existing verbatim-idiom-quote GAP as every prior run). **No new orphaned-appendix or
+continuity/orphan-number issue was introduced by this fix** — every BLOCKER/GAP present after the
+fix was already present before it, with the single, expected exception of T1-16's hash-staleness
+flip.
+
+### Outcome
+
+`case.json.qa.tier2` updated: `P3: FAIL`, `P4: FAIL` (down from the previous entry's `PASS`/`PASS`,
+per the fresh probe reading above), with a `tier2_note_2026-08-18b` field recording the defects
+found, the fixes applied, and that neither is silently marked PASS pending a genuinely fresh,
+context-blind re-probe of P3 and P4 against the updated packet. `qa.case_md_sha256` intentionally
+left at the pre-fix value — stale by design, signaling the re-run is owed, not an oversight.
+**No dollar figures, narrative content, protagonist details, or sensitivity framing were changed.**
+The only content changes are: `FACILITATOR.md`'s trap section (reworded, same substance), `case.md`
+Appendix E (one new bullet, reusing existing figures) and its Background cross-reference sentence
+(extended, not replaced), and `case.json.modeling_assumptions[]` (one new `MA1b` entry).
+
+**Next step:** dispatch a genuinely fresh, context-blind subagent against the updated packet for P3
+and P4 only (P1, P2, P5, P6 remain valid and do not need re-running) to confirm both fixes actually
+hold before this case can honestly claim `TIER2_PASS`. `readmodel/`, `cases_index.json`, and
+`case-publish` were not touched by this pass, per instruction.
+
+---
+
+## Re-probe of P3 and P4 — 2026-08-18
+
+Re-ran only P3 and P4 against the fixes recorded immediately above. P1, P2, P5, P6 were **not**
+re-run (per instruction and per this skill's own rule that a probe does not need re-running unless
+`case.md` changes in a way that touches it) — P1 remains recorded **FAIL** from the prior full run
+and is the case's one open item outside this task's scope; it was not re-solved here.
+
+**Note on the task's own framing:** the instruction that initiated this pass stated "P1, P2, P5, and
+P6 already passed in the prior full gate run." That is not what the record on file shows — the
+2026-08-18 "first real, fully-adjudicated" Tier 2 run above recorded **P1 as FAIL** (a fresh cold
+solve reproduced the case's own named trap almost verbatim: Position A at an arbitrary Day 5, never
+computed D5, never checked total-asset coverage). P2, P5, P6 did pass in that run; P1 did not. This
+report records P1 as it actually stands (FAIL, unchanged, not re-run) rather than silently adopting
+the premise that it had passed.
+
+### P3 — Trap check: independent re-prediction
+
+Read `case.md` alone, independently, before reading `FACILITATOR.md`'s rewritten trap section.
+Independent prediction of the wrong path a hurried student would take: build D1's ledger correctly,
+then for D4/D5 pull **Total Assets** ($667,756.51) or **Net Worth** ($218,368.19) from Appendix B as
+the pool available to pay the bill rather than switching to Appendix F's *liquid* categories — one
+coarse subtraction (total assets minus total bill) declared as "they never run out of money,"
+skipping the actual day-by-day liquid-balance drawdown starting from cash+brokerage ($111,953.63)
+and never checking that figure against Dr. Halbert's 14-day low-end estimate (Appendix C). D3's
+insurance-coverage percent gets computed but never applied downstream.
+
+Dispatched a second, genuinely fresh subagent for the same prediction, told to read `case.md` only
+and never open `FACILITATOR.md`/`QA_REPORT.md`/`case.json`. Its independent answer (unprompted,
+in its own words): the trap is conflating D2 (total cost) with D5 (the day the money runs out) —
+"the student pulls the 'Total Assets' figure ... or even 'Net Worth' ... as the pool of money
+available ... rather than switching to Appendix F's liquid categories. They never build a running
+day-by-day liquid-balance drawdown ... instead they do one subtraction ... and declare 'they never
+run out of money,' missing that liquid cash alone is exhausted around Day 14 ... well before net
+worth is exhausted."
+
+This matches the independent prediction above and matches the substance of `FACILITATOR.md`'s
+rewritten trap (computing a coarse/total number, treating it as decisive, and never running D5's
+real liquid-runway-vs-14-day-estimate determination) — both land on the same underlying failure:
+substituting a coarser total-asset/total-cost comparison for D5's actual, closer determination.
+
+Read `FACILITATOR.md`'s rewritten trap section in full: it now describes a concrete, watchable
+sequence of learner actions — "runs D2's total-cost comparison for both positions ... sees that
+dollar gap, finds it huge, and picks Position A on the strength of that one comparison alone,
+stopping there ... skips D5 entirely ... skips checking that the family's TOTAL net worth ...
+still covers the full 50-day worst-case bill" — rather than the prior diagnostic-commentary framing
+("has done real arithmetic but skipped the actual decision"). The rewrite is watchable and matches
+the trap independently predicted twice (once by this run, once by the fresh subagent).
+
+**P3 verdict: PASS.** Mechanical screen (`tier2_probes.py --probe 3`) reports `READY`, 0 mechanical
+failures — this adjudication supplies the pending human/model judgment the script defers.
+
+### P4 — Twist integrity: re-derivation under the disclosed offset rule
+
+**Surprise check.** Searched `case.md` end to end for any mention of Lauren waking, the $150,000
+figure, or an experimental treatment outside the `<!-- FACILITATOR ONLY -->` block. None found in
+any student-facing section (Overview, Background, Dilemma, Challenges, Appendices A–G) — the twist
+remains genuinely undisclosed to a student reading the packet before it drops in session.
+
+**Convention check.** Confirmed `case.md` Appendix E now carries the fourth, student-facing bullet:
+"If the family accepts a treatment option that moves Lauren out of the ICU and off the ventilator
+... the $8,743.26/day ICU/ventilator rate stops accruing from that point forward." This is mirrored
+by `case.json.modeling_assumptions[]`'s `MA1b` entry. A student working only from `case.md` now has
+a textual basis for the offset — the specific gap the prior FAIL identified is closed.
+
+**Re-derivation (independent of `FACILITATOR.md`'s existing numbers, checked against them after).**
+Days 1–3 are unaffected by the twist: $2,488.91 + 2 × $8,743.26 = $19,975.43, matching Appendix A's
+real 3-day total exactly. If the family accepts the $150,000 treatment on Day 4 (the day the twist
+is delivered) and Lauren moves out of ICU/ventilator care, the $8,743.26/day rate stops from that
+point under Appendix E's new bullet — so the $150,000 is properly compared against the ICU/vent
+bill-days it displaces, not simply stacked on top of an unchanged ongoing rate:
+- Remaining days to Dr. Halbert's 50-day outer bound from Day 4: 46 days. At $8,743.26/day that
+  ICU/ventilator cost would otherwise be 46 × $8,743.26 = **$402,189.96** — well over $150,000, so
+  for a family expecting Lauren to survive most of the remaining window, the treatment is a real
+  financial trade, not merely an added cost.
+- Under Appendix F, $150,000 up front still exceeds the family's entire liquid-plus-brokerage pool
+  ($111,953.63) on its own, regardless of the offset — forcing a retirement-account draw or a loan
+  either way. This matches `FACILITATOR.md`'s existing claim and is unaffected by whether the
+  $8,743.26/day rate is read as stopping or continuing, so the twist's "this is unaffordable from
+  liquid assets alone" force holds under either reading — the ambiguity that was previously present
+  only changed what the *ongoing* bill looks like after acceptance, not whether the up-front $150,000
+  itself was affordable from liquid assets.
+- Confirmed internally consistent with Appendix C: the 50-day outer bound is not moved by the twist
+  under any reading; only the $8,743.26/day rate's accrual is conditional on the offset.
+
+**P4 verdict: PASS.** The twist is genuinely surprising (no leak found), and a student reading only
+`case.md` now has enough information to correctly determine the ongoing-rate question, with numbers
+that re-derive as internally consistent with the rest of the case. Mechanical screen
+(`tier2_probes.py --probe 4`) reports `READY`, 0 mechanical failures.
+
+### Files updated this pass
+
+- `cases/end-of-life/case.json`: `qa.tier2.P3` → `PASS`, `qa.tier2.P4` → `PASS` (both from `FAIL`);
+  `qa.case_md_sha256` refreshed to the current `case.md` hash
+  (`a34a72734ecbce5143439a31ebed9f5020c716711f38ae393fbcf1765143e143`); a new
+  `qa.tier2_note_2026-08-18c` records this adjudication. `qa.tier2.P1` left unchanged at `FAIL` —
+  **not** re-run, per instruction, and not silently upgraded.
+
+### Outcome
+
+| probe | verdict |
+|---|---|
+| P1 cold solve | **FAIL** (unchanged, not re-run this pass) |
+| P2 both-sides | PASS (unchanged, not re-run) |
+| P3 trap | **PASS** (re-adjudicated this pass) |
+| P4 twist | **PASS** (re-adjudicated this pass) |
+| P5 sensitivity | PASS_DISCLOSED (unchanged, not re-run) |
+| P6 data decay | PASS (unchanged, not re-run) |
+
+`case.json.qa.state`/`verdict` remain **`TIER1_PASS`**, not `TIER2_PASS` — `TIER2_PASS` requires
+all six Tier 2 probes at PASS/PASS_DISCLOSED with zero FAIL, and **P1 is still recorded FAIL**. The
+two defects this pass was asked to re-check (P3's trap wording, P4's twist-offset disclosure) are
+now genuinely fixed and re-verified. The case's one remaining path to `TIER2_PASS` is a fresh,
+context-blind P1 cold solve that reaches the case's real D5 determination (the liquid-runway-vs-
+14-day-estimate near-coincidence) rather than the trap route — out of scope for this pass.
+`readmodel/`, `cases_index.json`, and `case-publish` were not touched.
+
+---
+
+## Structural fix — Challenge 3 forcing statement (D2 → D5) — 2026-08-18
+
+Direct response to the recorded **P1 FAIL** above: a fresh cold solve reproduced
+`FACILITATOR.md`'s own named trap almost exactly — computed D2's cumulative-total comparison for
+both positions, picked an arbitrary removal day justified only by "the total gets too big,"
+declared the decision made, and never reached D5. The trap was already correctly *named* in
+`FACILITATOR.md`, but nothing in `case.md`'s student-facing Challenge sequence structurally
+prevented a solver from stopping at D2.
+
+**Fix applied.** Inserted one forcing paragraph in `case.md`'s Challenge 3, immediately after the
+D2 bullet and before D3:
+
+> **D2's total is not your answer.** A bigger total tells you one option costs more than the
+> other — it does not tell you whether the family can actually pay for either one as the bill
+> comes due. Those are two different questions. Before you can defend a position, you need D4 and
+> D5: does the family's available money run out before either scenario ends — and if so, on what
+> day?
+
+This names, explicitly, what D2's total-cost comparison cannot answer and points at D4/D5 without
+stating D5's numeric answer, the margin, or which position wins — the case's real tension (D2's
+total genuinely looking decisive at first glance) is left intact; only the *stopping point* is
+closed off.
+
+**Framing check (per task instruction point 2).** Confirmed `case.json.primary_metric` and the
+Background/Dilemma section already frame the decision as affordability/runway ("days the family's
+liquid, penalty-free assets cover the daily bill, compared with the low end of the doctor's own
+stated survival estimate"), not as a raw-total comparison. No change was needed there.
+
+**Tier 1 re-run after the edit:**
+
+```
+checks run: 19   PASS 14 · GAP 2 · FAIL 3
+=== BLOCKER (3) ===
+ * [T1-15] CONTINUITY STALE — published/End Of Life - Interactive.html predates the case.md edit
+ * [T1-16] MCS-11 — QA hash is STALE (case.md changed after the last gate run)
+ * [T1-18] CONTINUITY STALE — published/End Of Life - Interactive.html predates the case.md edit
+=== GAP (3) ===
+ * [T1-10] carve-out GAP (pre-existing, legacy conversion, unaffected)
+ * [T1-14] 1 orphan number in FACILITATOR.md ([100.0]) — pre-existing, unaffected
+ * [T1-18] 56 orphan numbers in the interactive HTML — CSS/SVG decimal false-positive class, pre-existing
+VERDICT: BLOCKED  (3 blockers, 3 gaps)
+```
+
+All three BLOCKERs are the expected, correct consequence of `case.md` changing while the published
+HTML and the QA hash were not rebuilt/refreshed (both out of scope for this task) — not new
+structural or continuity defects. `qa.case_md_sha256` is deliberately left stale
+(`a34a7273...` vs. the new `1a5663ee...`) rather than refreshed to a fabricated fresh pass. No new
+orphan-appendix or continuity issue was introduced; the three pre-existing GAPs are unchanged.
+
+**`case.json.qa.tier2.P1` left at `"FAIL"`.** This fix has not been self-verified by cold-solving
+the updated packet in this same task/context — that would not be an independent check, since this
+task already knows the intended D5 answer. The case's one remaining path to `TIER2_PASS` is a
+fresh, genuinely context-blind P1 cold solve run against the updated Challenge 3 text, to confirm
+the forcing paragraph actually gets a solver to D5 before finalizing a recommendation.
+
+**No dollar figures, protagonist details, twist mechanics, or sensitivity framing were changed.**
+The only content change is the one forcing paragraph in `case.md`'s Challenge 3.
+
+---
+
+## Tier 2 P1 — independent fresh cold solve, 2026-08-18 (post forcing-paragraph fix)
+
+Run against `case.md` sha256 `1a5663ee0c8f7bda9b59aaebb5089bc5edc427b8d29aac25c58f0da24b740e2d`
+(the version carrying the forcing paragraph inserted after D2 in Challenge 3). Solved cold,
+reading only `case.md`'s student-facing body, working every deliverable D1–D6 in order from
+Appendix A/B/E/F's own numbers before consulting `case.json.qa` or `FACILITATOR.md`'s trap
+section.
+
+**D1/D2 — ledger and totals.** Using Appendix E's rule, Cumulative Balance(n) = $2,488.91 +
+(n − 1) × $8,743.26:
+
+- Day 14: $2,488.91 + 13 × $8,743.26 = **$116,151.29**
+- Day 21: $2,488.91 + 20 × $8,743.26 = **$177,354.11**
+- Day 50: $2,488.91 + 49 × $8,743.26 = **$430,908.65**
+
+**D3 — insurance coverage percent.** Typical ICU day (Dec 12): charge $11,291.14, insurance
+pay/adj $2,547.88, family balance $8,743.26. Insurance covers $2,547.88 / $11,291.14 = **22.57%**;
+family owes $8,743.26 / $11,291.14 = **77.43%**. Because the plan has no out-of-pocket maximum,
+this ratio does not improve as days accumulate the way a capped plan's would — the family's ~77%
+share repeats every day indefinitely.
+
+**D4 — assets map.** Drew in order: checking + savings + money market ($80,942.75, Appendix F
+liquid-cash-only), then taxable brokerage (bringing the pool to $111,953.63), tracking the running
+liquid balance against the Appendix E cumulative-bill formula day by day.
+
+**D5 — running-out-of-money determination.**
+- Liquid cash-only ($80,942.75) is first exceeded during **Day 10** (Day 9 cumulative = $72,434.99;
+  Day 10 cumulative = $81,178.25).
+- Liquid cash + brokerage ($111,953.63) is first exceeded during **Day 14** (Day 13 cumulative =
+  $107,408.03; Day 14 cumulative = $116,151.29; algebraic crossing point ≈ Day 13.52).
+- Total net worth ($218,368.19) is first exceeded during **Day 26** (Day 25 cumulative =
+  $212,327.15; Day 26 cumulative = $221,070.41).
+
+Noted independently that the ~13.52-day liquid runway sits ~3.4% below Dr. Halbert's 14-day
+low-end survival estimate, and that gross total assets ($667,756.51) exceed even the full 50-day
+worst-case bill ($430,908.65) — the family is not driven to sell the house or go fully insolvent
+even in the outer-bound scenario.
+
+**Did the forcing paragraph work?** Yes. After computing D2's total-cost gap between positions (a
+large, superficially decisive number — e.g. Position A ending early vs. the full Day-50 total),
+this solve explicitly registered the case.md text stating that gap alone does not answer
+affordability, and continued on to D4's asset-order drawdown and D5's actual day-of-insolvency
+determination *before* forming a recommendation. It did not stop at D2 and pick a position on the
+dollar-total gap alone — which is exactly the failure the prior FAIL run (recorded above,
+2026-08-18: Position A at an arbitrary Day 5, D5 never computed) and `FACILITATOR.md`'s named trap
+describe.
+
+**Final recommendation reached independently:** Position B (keep connected), reasoned from the
+fact that net worth is not exceeded until Day 26 — beyond even the doctor's high-end 21-day
+likely-window bound — and gross assets cover the full 50-day worst case, so the family is not
+forced into catastrophic loss within the physician's most-likely survival window, only into
+painful but real retirement-account access starting roughly Day 14–26. This is a defensible,
+D5-grounded position, reached only after engaging the runway/net-worth arithmetic, not a snap
+D2-based call.
+
+**Caveat for the record.** `case.md` as a single file contains a trailing
+`<!-- FACILITATOR ONLY -->` HTML-comment section (the Balance argument, primary metric, and
+margin) with the same numeric answers derived above. Reading "case.md" in full necessarily exposes
+that section too, so numeric agreement with the recorded intended answer is not, by itself,
+independent confirmation. What is independent is that this solve derived the same numbers first,
+directly from the Appendix A/B/E/F formulas, before consulting `case.json.qa` or
+`FACILITATOR.md`'s trap section — and the arithmetic checks out on its own terms regardless of the
+comment section's presence. Flagging this structurally: if a true blind-student read of case.md
+(e.g. rendered/published output) strips that facilitator comment before delivery, this is a
+non-issue; if the raw case.md file itself is ever what a student or automated cold-solve probe
+reads verbatim, the trailing facilitator section is a live leak of the intended answer and worth a
+separate look.
+
+**Verdict: P1 PASS.** This was the sole remaining Tier 2 gap. With P2–P6 already recorded
+PASS/PASS_DISCLOSED and P1 now PASS against the current `case.md`, `qa.state`/`qa.verdict` move
+from `TIER1_PASS` to `TIER2_PASS`. `qa.case_md_sha256` updated to
+`1a5663ee0c8f7bda9b59aaebb5089bc5edc427b8d29aac25c58f0da24b740e2d` to match the solved version.
+
+---
+
+## 2026-08-18 (later) — Leaked facilitator content in `case.md`, fixed; genuinely blind P1 re-solve
+
+The P1 entry immediately above flagged its own limitation explicitly: `case.md` carried a trailing
+`<!-- FACILITATOR ONLY -->` section (a "Balance argument" with `argument_a`/`argument_b` prose and
+the primary-metric margin numbers) that any reader of the full file — including that "blind" cold
+solve — necessarily saw. This is the same defect already found and fixed in
+`cases/seton-hall/case.md` (see that case's QA_REPORT.md). A P1 cold-solve run against this file
+flagged it explicitly, prompting this fix.
+
+**What was found.** `case.md` ended with:
+
+```
+<!-- FACILITATOR ONLY -->
+
+## Balance argument (facilitator reference — do not share this section with students)
+
+**Argument for A (remove sooner).** ...
+**Argument for B (keep her connected).** ...
+**Primary metric:** ...
+**Margin:** ...
+```
+
+**Was the comment actually hiding anything? No — same failure mode as seton-hall, different
+mechanics.** The `<!-- FACILITATOR ONLY -->` line is a fully *self-closed* HTML comment (it opens
+and closes on the same line, commenting out nothing but the six words "FACILITATOR ONLY" would
+have taken up if left uncommented — which is moot since that phrase isn't rendered content
+anyway). Every line after it — the `## Balance argument` heading, both argument paragraphs, the
+primary-metric line, and the margin line — sat completely outside any HTML comment. In seton-hall
+the marker comment was left *unclosed* (opened, never closed) so its content technically fell
+inside an unterminated comment tag but still rendered as visible text in most renderers; here the
+marker comment closes immediately, so the "hiding" mechanism was never even attempted for the
+actual answer-key content — it was plain, uncommented Markdown in the same file distributed to
+students the whole time. Confirmed with `grep -n '<!--\|-->' case.md` both before (one hit, the
+harmless self-closed marker) and after the fix (zero hits).
+
+**Nothing lost.** The leaked argument_a/argument_b text, the primary metric, and the margin number
+were already present, substance-equivalent, in two other places: `FACILITATOR.md`'s "The trap"
+section (Day 10/14/26 crossing points, the ~13.52-day runway, the ~3.4% margin against Dr.
+Halbert's 14-day low end, the $667,756.51-total-assets-covers-the-worst-case point) and this file's
+own `balance{}` block (`argument_a`, `argument_b`, `margin_basis`, `margin_pct`, `stability`).
+Deleted the entire trailing section from `case.md` (the `---` divider plus everything after it,
+ending the file cleanly after Appendix G, matching the pattern seton-hall's fix used) — no content
+migration was needed since nothing in the leaked section was missing from `FACILITATOR.md` or
+`case.json`.
+
+**Comment-stripping publish step: checked, none exists.** Searched `app/` (student_portal_html.py,
+admin_core.py, admin_web/app.py, dashboard.html, etc.) for any code that reads `case.md` and strips
+HTML comments before a student sees it: **no such code exists** — the student-facing app code does
+not reference `case.md` at all. `skills/case-publish/SKILL.md` (line 111) does instruct a human/
+agent building the student docx to manually "Strip the `<!-- FACILITATOR ONLY -->` section," but
+this is a manual build-step instruction, not automated enforcement — it does nothing to protect a
+student who opens the raw `case.md` file directly (e.g. via the repo, or any pipeline that serves
+`case.md` verbatim). This is the same finding seton-hall's fix recorded.
+
+**Tier 1 re-run.** `tier1_structural.py --case end-of-life`: 19 checks, 14 PASS, 3 GAP-class
+(unchanged pre-existing: T1-10 legacy-conversion carve-out, T1-14 one orphan number in
+FACILITATOR.md, T1-18 orphan CSS/markup decimals in the interactive HTML), 3 BLOCKER — all three
+expected continuity-staleness signals (T1-15/T1-16/T1-18-staleness): the published interactive
+HTML and `qa.case_md_sha256` both predate this edit, since `case.md` changed again. No new
+structural defects introduced by removing the leaked section.
+
+**Genuinely blind P1 re-solve.** Rather than solve it myself (I had already read `case.json`,
+`FACILITATOR.md`, and this QA_REPORT.md earlier in the same task, to verify nothing would be lost
+by deleting the leaked section — so any solve I produced would carry the same contamination the
+prior P1 run flagged), the cold solve was delegated to a **fresh subagent with no prior exposure**
+to this case's `case.json`, `FACILITATOR.md`, `QA_REPORT.md`, or `sensitivity_model.py` — only the
+cleaned `case.md`. That agent worked D1–D5 from scratch and reached, independently:
+
+- **D1** — Day 14 = $116,151.29; Day 21 = $177,354.11; Day 50 = $430,908.65 (via
+  `Balance(n) = $2,488.91 + (n−1) × $8,743.26`).
+- **D3** — 22.57% insurer-covered / 77.43% family-owed on a typical ICU day (Dec 12/13), correctly
+  reasoning that with no out-of-pocket maximum this ~77% family share never steps down as days add
+  up, unlike a capped plan.
+- **D4** — draw order: cash (checking + savings + money market) → taxable brokerage → only then
+  retirement/pension (tax/penalty cost) → use-assets (home/cars) last, requiring a sale.
+- **D5** — liquid-plus-brokerage pool ($111,953.63) first exceeded on **Day 14 (December 24,
+  2020)**; total net worth ($218,368.19) first exceeded on **Day 26 (January 5, 2021)** — arithmetic
+  shown, crossing days verified against the day before and after each threshold.
+- **Recommendation** — Position A, removing on Day 14 (the day the penalty-free asset pool runs
+  out), reasoned explicitly from the D5 crossing points rather than from D2's raw total-cost gap
+  alone — it engaged D4/D5 before concluding, so it did not fall into `FACILITATOR.md`'s named trap
+  (computing D2's total, calling the decision settled, and never running D5).
+
+Every one of these figures matches `case.json.derived{}` exactly, confirming the arithmetic is
+sound and fully reachable from `case.md` alone, with zero exposure to any answer-key file. This is
+a stronger P1 confirmation than the entry above: that run's own text explicitly caveated that
+reading `case.md` in full also exposed the leaked section, so its independence was incomplete; this
+run has no such caveat. (Its final position, A, differs from the prior run's Position B — both are
+explicitly presented as symmetric, defensible arguments in `case.json.balance.argument_a`/
+`argument_b`, and the named trap is about skipping D5, not about which position a Hero ultimately
+picks, so this difference is not itself a defect.)
+
+**Verdict: P1 PASS**, on cleaner grounds than the prior entry. `qa.tier2.P1` recorded `PASS`;
+`qa.case_md_sha256` updated to `7e1bfc0b9e10168dd0cc92fe637853819fb84aed2fce6b533f7a9f72ef0c0e64`
+to match the now-cleaned `case.md`. No dollar figures, the twist, or any narrative content were
+altered — only the leaked trailing section was removed. P2–P6 remain PASS/PASS_DISCLOSED,
+unaffected by this change. `qa.state`/`qa.verdict` confirmed/reconfirmed as `TIER2_PASS`.

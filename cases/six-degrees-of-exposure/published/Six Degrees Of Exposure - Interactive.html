@@ -6,7 +6,7 @@
 <title>Case Study: Six Degrees of Exposure — Interactive</title>
 <!--
   Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md.
-  case.md sha256 (source of record, at build time): 3eb9c08bb9e24eacc07fe2144e07334c1be5e64510f07f6bfdf6d136426327cb
+  case.md sha256 (source of record, at build time): 5cf2b820bd6ee88f60e0d71259214937a7af6b568c5dfa2fcdbb0f8afd2e46be
   HARD LINE (MCS-37): this page never prints case.json's balance/margin_pct verdict as a static
   literal anywhere outside a <script> tag's live computation. The Working Notebook computes it
   live from the case's own numbers; it never hands over the conclusion.
@@ -392,11 +392,19 @@
       <p class="side-note">The 50 individuals with the highest degree in the full 1,899-person
       traced network, ranked by degree. Ties broken by lower traced ID.</p>
       <table id="tblHub">
-        <tr><th>Rank</th><th>Traced ID</th><th>Degree</th></tr>
+        <tr><th>Rank</th><th>Traced ID</th><th>Degree</th><th>Weighted Degree</th></tr>
         <!-- rows injected at load from HUB_TOP50 below -->
       </table>
       <p class="side-note">Sum of these 50 degrees: 6,241 (double-counts any edge with both
-      endpoints in this list).</p>
+      endpoints in this list). Sum of these 50 weighted degrees: 30,224 (double-counts the same
+      way, but in contact-weight instead of edge count).</p>
+      <p class="side-note">Of the 6,241 counted edges, exactly <strong>382</strong> connect two of
+      these same 50 individuals to each other, with a combined weight of <strong>2,581</strong>. Each
+      of those 382 is counted twice above (once at each endpoint) and needs to be subtracted back out
+      exactly once &mdash; not left in at full double-weight, and not removed entirely &mdash; to
+      reach the true, non-double-counted total. D3 asks you to carry out that subtraction yourself
+      and show it; this appendix gives you every number the correction needs (30,224; 382; 2,581)
+      but not the finished result.</p>
     </div>
   </details>
 
@@ -602,9 +610,14 @@
       different amounts per dose. The 50 and the 500 aren't independent choices; they're both just
       what that one shared budget happens to buy at each operation's own per-dose cost.</p>
       <p>Recompute the same comparison <em>per dollar of the shared budget</em> instead of per head,
-      using Step 3's expected-value tool above at <code>n_wide&nbsp;=&nbsp;500</code> against
-      Appendix B's real 27,643. The race looks very different once the denominator is the one thing
-      that's actually fixed.</p>
+      using Step 3's expected-value tool above at <code>n_wide&nbsp;=&nbsp;500</code> against your
+      own D3 result for Hub Sweep's total weight eliminated (Appendix B gives you the weighted-degree
+      sum and the internal-edge double-count correction you need to reach it yourself). The race
+      looks very different once the denominator is the one thing that's actually fixed.</p>
+      <div class="fieldrow" style="margin-top:10px">
+        <label for="twistHubEstimate" style="color:#e8e3d5">Your own D3 result: Hub Sweep total weight eliminated</label>
+        <input type="number" id="twistHubEstimate" step="1">
+      </div>
       <div class="chk" style="background:#2b323b;border-color:#444">
         <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
         <label for="applyTwist" style="color:#e8e3d5">I've recomputed the comparison per dollar of shared budget, not per head</label>
@@ -632,7 +645,7 @@
 /* ================================================================
    CASE-SPECIFIC — given data, copied from cases/six-degrees-of-exposure/case.json
    and case.md. case.md sha256 at build time:
-   3eb9c08bb9e24eacc07fe2144e07334c1be5e64510f07f6bfdf6d136426327cb
+   5cf2b820bd6ee88f60e0d71259214937a7af6b568c5dfa2fcdbb0f8afd2e46be
    JS port of sensitivity_model.py — same PARAMS/FLEX/evaluate() names,
    same arithmetic, kept in sync by hand per INTERACTIVE_HTML_CONTRACT.md.
    ================================================================ */
@@ -659,14 +672,15 @@ function evaluate(params){
 }
 
 // Appendix B — full real top-50 ranked-by-degree list (case.md, S3-derived)
+// [rank, traced ID, degree, weighted degree]
 const HUB_TOP50 = [
-  [1,103,255],[2,9,241],[3,105,227],[4,400,227],[5,32,207],[6,41,183],[7,3,178],[8,42,177],
-  [9,249,172],[10,638,169],[11,713,161],[12,194,160],[13,67,156],[14,1283,152],[15,372,146],
-  [16,357,143],[17,12,142],[18,598,123],[19,176,121],[20,321,117],[21,1281,117],[22,704,113],
-  [23,19,110],[24,1713,110],[25,308,106],[26,277,105],[27,323,104],[28,523,101],[29,1189,99],
-  [30,1543,99],[31,840,93],[32,1598,93],[33,144,91],[34,770,91],[35,95,90],[36,36,89],
-  [37,325,89],[38,1624,89],[39,475,88],[40,697,86],[41,128,85],[42,679,85],[43,297,84],
-  [44,212,83],[45,644,83],[46,63,82],[47,204,82],[48,1236,80],[49,254,79],[50,605,78]
+  [1,103,255,1179],[2,9,241,1289],[3,105,227,1031],[4,400,227,679],[5,32,207,958],[6,41,183,747],[7,3,178,467],[8,42,177,609],
+  [9,249,172,750],[10,638,169,628],[11,713,161,642],[12,194,160,537],[13,67,156,484],[14,1283,152,385],[15,372,146,913],[16,357,143,384],
+  [17,12,142,1210],[18,598,123,528],[19,176,121,611],[20,321,117,370],[21,1281,117,545],[22,704,113,524],[23,19,110,425],[24,1713,110,658],
+  [25,308,106,505],[26,277,105,717],[27,323,104,1546],[28,523,101,212],[29,1189,99,541],[30,1543,99,329],[31,840,93,294],[32,1598,93,185],
+  [33,144,91,376],[34,770,91,355],[35,95,90,516],[36,36,89,326],[37,325,89,488],[38,1624,89,1198],[39,475,88,553],[40,697,86,337],
+  [41,128,85,530],[42,679,85,730],[43,297,84,561],[44,212,83,475],[45,644,83,292],[46,63,82,499],[47,204,82,348],[48,1236,80,392],
+  [49,254,79,564],[50,605,78,802]
 ];
 
 // Appendix C — the real sample subgraph (case.md, S3-derived)
@@ -847,9 +861,9 @@ function exportSubmissionPacket(){
    ================================================================ */
 function renderHubTable(){
   const t = document.getElementById('tblHub');
-  let rows = '<tr><th>Rank</th><th>Traced ID</th><th>Degree</th></tr>';
-  HUB_TOP50.forEach(([rank, id, deg]) => {
-    rows += `<tr><td class="num">${rank}</td><td>${id}</td><td class="num">${deg}</td></tr>`;
+  let rows = '<tr><th>Rank</th><th>Traced ID</th><th>Degree</th><th>Weighted Degree</th></tr>';
+  HUB_TOP50.forEach(([rank, id, deg, wdeg]) => {
+    rows += `<tr><td class="num">${rank}</td><td>${id}</td><td class="num">${deg}</td><td class="num">${wdeg.toLocaleString()}</td></tr>`;
   });
   t.innerHTML = rows;
 }
@@ -1106,14 +1120,25 @@ function onTwistToggle(){
   const applied = document.getElementById('applyTwist').checked;
   const out = document.getElementById('twistResult');
   if(!applied){ out.style.display='none'; return; }
+  const yourHubResult = Number(document.getElementById('twistHubEstimate').value);
   const perBudget = evaluate({});
-  const perHeadA = PARAMS.hub_weight_50 / PARAMS.n_hub;
   const perHeadB = perBudget.B / PARAMS.n_wide;
   out.style.display='block';
-  out.textContent = 'Per person vaccinated: Hub Sweep ' + round(perHeadA,1) + ' vs. Wide Net ' +
-    round(perHeadB,1) + ' (Hub Sweep looks dominant). Per dollar of the shared budget (both spend '
-    + 'the same amount): the live comparison above uses n_wide from Step 3 -- try n_wide = 500, '
-    + 'the county\'s actual plan, and compare Step 3\'s answer to Appendix B\'s 27,643.';
+  if(!yourHubResult){
+    out.textContent = 'Enter your own D3 result for Hub Sweep\'s total weight eliminated above '
+      + 'first -- this panel checks your arithmetic, it does not hand you the number (see Appendix '
+      + 'B for the weighted-degree sum and the internal-edge correction D3 asks you to apply).';
+  } else {
+    const perHeadA = yourHubResult / PARAMS.n_hub;
+    const matches = Math.abs(yourHubResult - PARAMS.hub_weight_50) < 1;
+    out.textContent = (matches ? 'Matches Appendix B\'s derivation. ' : 'Doesn\'t match Appendix B\'s '
+      + 'derivation yet -- recheck the double-counting subtraction (30,224 minus the internal-edge '
+      + 'weight). ') + 'Per person vaccinated, using your own result: Hub Sweep ' + round(perHeadA,1)
+      + ' vs. Wide Net ' + round(perHeadB,1) + ' (Hub Sweep likely looks dominant here). Per dollar '
+      + 'of the shared budget (both spend the same amount): the live comparison above uses n_wide '
+      + 'from Step 3 -- try n_wide = 500, the county\'s actual plan, and compare Step 3\'s answer to '
+      + 'your own D3 result for Hub Sweep.';
+  }
 }
 
 /* ================================================================

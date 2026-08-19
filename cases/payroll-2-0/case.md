@@ -170,14 +170,4 @@ Grampoline is fictional, but the pressures Francesca faces are not. These are re
 - How to write a linear equation given a set of data
 - How to draw a line of a set of data given its linear equation
 
-<!-- FACILITATOR ONLY -->
-
-## Balance Argument (facilitator reference — do not share with students before discussion)
-
-**Argument for A (Full Stop).** Among the five employees, only Christina's projected remaining 2019 pay is large enough on its own to close the $25,000 target in a single cut — every other employee's remaining pay falls short, meaning Full Stop only "cleanly" works with one specific choice. Letting Christina go removes her remaining pay from the books immediately and permanently, with zero ongoing dependency on hitting a percentage exactly right, and leaves Martha, Paul, Tiago, and Irene with every dollar of pay they were counting on for the rest of the year.
-
-**Argument for B (Even Keel).** A flat percent cut, applied to all five employees, closes the identical $25,000 gap without anyone losing their job, their income entirely, or their identity as "the person who does X at Grampoline." It spreads one real hardship across five households instead of concentrating all of it onto Christina and hers — and it avoids losing Grampoline's single largest driver of new sales at the exact moment the company most needs revenue to recover, not less of it.
-
-**The margin.** Full Stop (via Christina, the only clean single-employee fit) removes $26,450 from the shortfall — $1,450 more than the $25,000 target. Even Keel is constructed to remove exactly $25,000. See `case.json.balance` for the full computed figures and margin.
-
-**The trap.** A Hero who reasons from the employee bios alone — Martha stretched thin by caregiving, Paul missing his sales targets for over a year — will look for the "obvious" person to let go and then discover their remaining pay doesn't actually close the $25,000 target on its own (Martha and Irene fall $1,600 short; Paul falls $4,500 short; Tiago falls $6,500 short). Only Christina's number works alone — and she is also, by the case's own data, the company's strongest driver of new sales. The trap is picking an employee to let go based on their personal story before checking whether the number even solves the stated problem.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

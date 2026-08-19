@@ -177,14 +177,4 @@ Percent · Decimal · Currency · Rounding · Unit · Multiplication · Product 
 - How to multiply 2-digit numbers by single-digit numbers
 - How to compare two or more values
 
-<!-- FACILITATOR ONLY -->
-
-## Balance Argument (facilitator reference — do not share with students before discussion)
-
-**Argument for A (Verizon):** Verizon Plus is the household name in the room and the recommendation extended family already made. Its 30 GB of mobile hotspot data is a real, usable amount for a salesperson checking email and pulling up account records between clinic visits, and Verizon also has the larger nationwide 4G LTE network by a real, sourced margin — about 70% of U.S. land area covered versus AT&T's 68% (Appendix E) — an edge concentrated in exactly the kind of rural stretches (Burns, Astoria, Florence) Jake is about to spend four days a week driving through, where a cheaper plan and a bigger hotspot allowance do the family no good if the signal itself isn't there.
-
-**Argument for B (AT&T):** AT&T Extra 2.0 is cheaper at every phone-line count the family will actually hit — 2, 3, and 4 lines — even before tablets and tax are added in, and it still comes out cheaper once they are. It also includes more mobile hotspot data (50 GB vs. 30 GB), which matters directly for Jake's stated need to hotspot a laptop from the road multiple days a week.
-
-**The margin:** genuinely close enough to argue, not a blowout — see `case.json.balance` and `sensitivity_model.py` for the worked figures; the margin is not repeated here by design (see `skills/case-write/SKILL.md`'s 2026-08-13 rule).
-
-**The trap:** A Hero compares Verizon Unlimited Welcome ($65 for 1 line, the cheapest number on either page) straight to AT&T Unlimited Value 2.0 ($50 for 1 line) and picks whichever is cheaper — without checking that *neither* tier includes anywhere near enough mobile hotspot data for what Jake explicitly needs: Welcome has none at all, and Value 2.0's 3 GB (Appendix A) would be gone in a day or two of hotspotting a laptop from the road, nowhere close to Extra 2.0's 50 GB. The real comparison has to happen one tier up, between Verizon Plus and AT&T Extra 2.0, where the margin and the winner are both different from what the Welcome-vs-Value comparison suggested.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

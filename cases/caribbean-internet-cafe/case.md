@@ -215,14 +215,4 @@ These are real, currently-live resources for students who want to go beyond this
 - How to compare two or more values
 - How to add multi-digit numbers
 
-<!-- FACILITATOR ONLY -->
-
-## Balance Argument (facilitator reference — do not share with students before discussion)
-
-**Argument for A (go alone):** Every dollar of profit is David's. There is no dilution, no partner with a vote on menu changes or expansion, and no long-term dependency on JTL for anything beyond the Internet link itself. The 25 percent assumed borrowing rate is expensive, but it is a fixed, known monthly cost — not a permanently reduced share of a business David spent a year designing.
-
-**Argument for B (accept JTL):** Halving the interest rate on a much larger loan saves real money every single month, funds are actually committed and confirmed rather than requiring David to convince a still-unnamed lender to say yes at all, and a large, sophisticated telecom partner behind the business is a real asset if anything about the venture's first year goes sideways — Option B raises real spare cushion above what CIC needs, while Option A raises exactly its shortfall and no more. Argument B does **not** rest on out-earning Option A on David's personal take-home; on that specific comparison Option A wins clearly (David keeps 100 percent of a smaller number instead of 50 percent of a larger one) — B's real case is that guaranteed capital, a lower fixed monthly interest bill, and a cushion for a bad year are worth more to David than maximizing his own steady-state monthly cash.
-
-**The margin:** on CIC's expected monthly pre-tax operating cash flow under Appendix E's realistic scenario — the company-level metric this case's D1–D4 deliverables are built to compute — Option B's much lower financing cost gives it a real, disclosed edge over Option A. See `case.json.balance` and `FACILITATOR.md` for the exact figures, the full sensitivity picture, and the separate (much larger) personal-take-home comparison once each option's ownership share is applied — deliberately not printed here.
-
-**The trap:** a Hero who compares only the two interest rates (10% vs. 25%) concludes Option B is obviously, hugely better, and stops there. The interest gap is real, but it is a small piece of CIC's total monthly cost structure (rent, staff, insurance, marketing, and the internet/food/drink cost of goods sold all matter far more month to month) — and it says nothing about ownership, control, or what either option can survive if the market research firm's *pessimistic* scenario is the one that actually happens. Naming this explicitly is the whole point of D2–D4. A second, subtler trap sits underneath the first: a Hero who *does* work all the way through D1–D4 and still stops at the company-level comparison can walk away thinking Option B is close to as good for David personally as it is for CIC — it is not, once the 50 percent split is actually applied. See `FACILITATOR.md`'s Sensitivity note.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

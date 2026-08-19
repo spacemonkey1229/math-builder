@@ -1,0 +1,1319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Redrawing Lines — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: Redrawing Lines</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">HS</span>
+      <span class="pill">Discrete Math &middot; Proof &amp; Recursion</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+<p class="lede">Margo Thibodeau has the whole state up on the wall of the commission&rsquo;s basement workroom in Augusta, and she has been staring at one county in the middle of it since before the coffee went cold. Outside, a maintenance crew is running a leaf blower down the State House walk, and the sound comes through the window in waves. The commission votes Monday.</p>
+<p>Two plans are printed and taped up side by side, and from across the room they look almost identical &mdash; the same long shape running north, the same crowded south. The difference is a single line, and where it falls. On one sheet that line runs the whole way along county borders, and every county in Maine stays in one piece. On the other it turns inward and cuts through the middle of Kennebec County &mdash; the capital&rsquo;s own county &mdash; dividing towns that share a school district, a hospital, a newspaper.</p>
+<p>Margo has the arithmetic for both. That is not the problem. The problem is that the arithmetic does not settle it: one plan is fairer counted in people, the other counted in communities, and the gap between them is small enough that either number could be called noise by somebody who wanted it to be.</p>
+<p>Her supervisor leans in the doorway with a legal pad and asks which one is going in the report. Margo picks up a marker and looks at the two sheets.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+<p>Margo Thibodeau is a senior staff analyst to Maine&rsquo;s apportionment commission, the body that delivers a redistricting report and plan to the Legislature after each decennial census (see Appendix H, MA4). Staff do not vote. Staff write the report, and the report carries one recommended plan and the arithmetic that defends it. The plan Margo recommends is the plan the commission will argue about, and her name is on the memo.</p>
+<p>Two hard constraints bind every plan, and neither is negotiable. <strong>Contiguity</strong> &mdash; each district must be one connected piece; a county cannot be assigned to a district it cannot reach through other counties of that same district. <strong>Population equality</strong> &mdash; for congressional districts the federal standard is equality &ldquo;as nearly as practicable,&rdquo; and any surviving difference has to be justified in the record (see Appendix E). Maine was apportioned <strong>2</strong> seats in the U.S. House on an apportionment population of <strong>1,363,582</strong> [S1]; the population that district lines are actually drawn against is the resident count of <strong>1,362,359</strong> [S2], which makes an ideal district of <strong>681,179.5</strong> people [S6] (see Appendix A).</p>
+<p>Five counties &mdash; Cumberland, Knox, Lincoln, Sagadahoc and York &mdash; sit wholly inside the southern district today and stay together in both plans on the table. Together they hold <strong>627,584</strong> people [S2], which leaves them <strong>53,595.5</strong> short of a full district (see Appendices A and D, Appendix H MA3). Every plan has to make up that shortfall from somewhere, and there are only two kinds of somewhere.</p>
+<p><strong>The Kennebec Split</strong> &mdash; the southern district takes the twelve Kennebec County municipalities the enacted statute names and leaves Kennebec&rsquo;s other eighteen in the northern district [S5]. Population comes out as close to exactly even as Maine&rsquo;s arithmetic permits, and Kennebec County is divided between two members of Congress (see Appendix C).</p>
+<p><strong>The Hancock Line</strong> &mdash; the southern district takes all of Hancock County instead. No county in Maine is divided, and the district line runs along county borders for its entire length. The two districts do not come out even; one runs over the ideal and one runs under (see Appendices C and D).</p>
+<p>Margo scores plans on <strong>county-line crossings</strong>: the number of Maine county borders the district line runs along, plus a stated weight for each county the line runs <em>through</em> (see Appendix B for the border list, Appendix H MA1, MA2 and MA5 for the weight and the two counting conventions). Staff practice &mdash; not statute &mdash; keeps those five southern counties together in every shortlisted plan, to hold down the number of Mainers who change representatives, and picks the survivor on population rather than on crossings (see Appendix H, MA3). The commission&rsquo;s screening tool claims to have examined every whole-county plan there is; Appendix F is the count that claim rests on, and it is only as good as the proof behind it.</p>
+<p>Every figure in this case is sourced in Appendix G or stated as an explicit assumption in Appendix H. The vocabulary and the &ldquo;how to&hellip;&rdquo; skills this case asks of you are listed in Appendix I &mdash; that is where Challenge 1 sends you.</p>
+<p>This case uses population and geography only. It uses no election results and no party registration data, and neither plan is a partisan position.</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Margo Thibodeau, senior staff analyst to Maine&rsquo;s apportionment commission. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Kennebec Split</h4>
+      <p style="margin:0">Near-exact population equality, bought by dividing one county between two members of Congress.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Hancock Line</h4>
+      <p style="margin:0">Every county in Maine kept whole, bought by leaving the two districts unequal.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from I. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">A pitch that includes:
+      <ol type="a" style="margin-top:8px">
+        <li style="margin-bottom:8px"><strong>D1.</strong> A map-space count: using the Fundamental Counting Principle, the total number of ways Maine&rsquo;s counties could be assigned to two districts if nothing but the assignment itself mattered &mdash; followed by a size-breakdown table giving the number of assignments that put exactly j counties in the southern district, for every j, as a binomial coefficient. Compute at least four of those coefficients by hand, showing the factorial arithmetic, and show that your whole row adds up to the Fundamental Counting Principle total you started with.</li>
+        <li style="margin-bottom:8px"><strong>D2.</strong> A recursion sheet with three parts: (a) a recursive formula for the number of assignments when the state has k counties instead of Maine&rsquo;s actual number, with its base case stated separately; (b) a recursive formula for the entries of the size-breakdown row in D1, written so that each entry is built from two entries of the previous row, with its base cases stated separately; and (c) the conversion of the formula in (a) into an explicit closed formula, checked against your D1 total.</li>
+        <li style="margin-bottom:8px"><strong>D3.</strong> An exhaustiveness certificate: a proof by mathematical induction that the size-breakdown row of D1 adds up to the D2(c) total for every k, not just for Maine&rsquo;s number of counties. Write the base case and the inductive step as separately labeled parts, and name the exact line of the inductive step where the D2(b) recursion is used. This is the document that lets the commission write &ldquo;we examined every whole-county plan&rdquo; in the record.</li>
+        <li style="margin-bottom:8px"><strong>D4.</strong> A pigeonhole brief: three claims proved by the Pigeonhole Principle, with no plan enumerated and no map drawn &mdash; (i) that at least one of Maine&rsquo;s two districts must hold at least as many people as the ideal, and that exact equality between the two districts is therefore impossible for Maine no matter which plan is chosen; (ii) that under any whole-county plan at least one district must contain at least half of Maine&rsquo;s counties, rounded up; and (iii) that at least one district must contain at least two of Maine&rsquo;s four largest counties, with the population consequence of that fact stated in people as the <strong>guaranteed minimum</strong>: Pigeonhole proves that <em>some</em> two of the four largest counties share a district, but it does not tell you which two, so the only population figure the principle actually guarantees is the smallest possible sum over any two of those four counties &mdash; not the largest, and not whichever pair looks most dramatic on the page. State that minimum pairing&rsquo;s sum and show the arithmetic that makes it the floor, not just a pairing.</li>
+        <li style="margin-bottom:8px"><strong>D5.</strong> A scorecard for The Kennebec Split against The Hancock Line: county-line crossings for each plan with the crossed borders listed by name; each plan&rsquo;s larger district, smaller district, and <strong>two</strong> deviation figures &mdash; the largest single district&rsquo;s distance from the ideal, and the maximum deviation, meaning larger district minus smaller district &mdash; each in people and converted to a percent of the ideal; the number of Mainers living in a divided county under each plan; and your recommendation set against the court standard in Appendix E. Appendix E says which of your two figures its percentages are; say in one sentence why the other one is not comparable to them.</li>
+      </ol></li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  <details>
+<summary>Appendix A &mdash; Maine&rsquo;s Counties and the 2020 Census Count</summary>
+<div class="inner">
+
+<p>2020 Census resident population, by county [S2]:</p>
+<table id="apxA">
+<tr><th>County</th><th class="num">Population</th></tr>
+<tr><td>Cumberland</td><td class="num">303,069</td></tr>
+<tr><td>York</td><td class="num">211,972</td></tr>
+<tr><td>Penobscot</td><td class="num">152,199</td></tr>
+<tr><td>Kennebec</td><td class="num">123,642</td></tr>
+<tr><td>Androscoggin</td><td class="num">111,139</td></tr>
+<tr><td>Aroostook</td><td class="num">67,105</td></tr>
+<tr><td>Oxford</td><td class="num">57,777</td></tr>
+<tr><td>Hancock</td><td class="num">55,478</td></tr>
+<tr><td>Somerset</td><td class="num">50,477</td></tr>
+<tr><td>Knox</td><td class="num">40,607</td></tr>
+<tr><td>Waldo</td><td class="num">39,607</td></tr>
+<tr><td>Sagadahoc</td><td class="num">36,699</td></tr>
+<tr><td>Lincoln</td><td class="num">35,237</td></tr>
+<tr><td>Washington</td><td class="num">31,095</td></tr>
+<tr><td>Franklin</td><td class="num">29,456</td></tr>
+<tr><td>Piscataquis</td><td class="num">16,800</td></tr>
+<tr class="hi"><td><strong>Maine total, all 16 counties</strong></td><td class="num"><strong>1,362,359</strong></td></tr>
+</table>
+<p class="side-note">The sixteen rows above add to that total exactly; if your column does not, you have dropped a county, and every district total you build on it will be wrong by whatever you dropped.</p>
+<p><strong>Two population figures, and they are not the same number.</strong> Maine&rsquo;s <em>apportionment</em> population &mdash; the count used to hand out the 435 House seats &mdash; is <strong>1,363,582</strong>, and it won Maine <strong>2</strong> seats [S1]. Maine&rsquo;s <em>resident</em> population, the count district lines are drawn against, is <strong>1,362,359</strong> [S2]. The difference is U.S. military and federal civilian employees living overseas, and their dependents living with them, allocated back to their home state: the Census Bureau&rsquo;s own footnote says those counts &ldquo;are used for apportionment purposes only&rdquo; [S1], so they belong to no county and cannot be drawn into a district. Ideal district population: <strong>681,179.5</strong> [S6].</p>
+
+</div>
+</details>
+<details>
+<summary>Appendix B &mdash; The County Adjacency Table</summary>
+<div class="inner">
+
+<p>Two counties share a border if the U.S. Census Bureau&rsquo;s county adjacency file lists them as neighbors [S4]. The district line <strong>runs along</strong> a border whenever the two counties on either side of it end up in different districts.</p>
+<table id="apxB">
+<tr><th>County</th><th>Neighboring counties</th></tr>
+<tr><td>Androscoggin</td><td>Cumberland, Franklin, Kennebec, Oxford, Sagadahoc</td></tr>
+<tr><td>Aroostook</td><td>Penobscot, Piscataquis, Somerset, Washington</td></tr>
+<tr><td>Cumberland</td><td>Androscoggin, Oxford, Sagadahoc, York</td></tr>
+<tr><td>Franklin</td><td>Androscoggin, Kennebec, Oxford, Somerset</td></tr>
+<tr><td>Hancock</td><td>Knox, Penobscot, Waldo, Washington</td></tr>
+<tr><td>Kennebec</td><td>Androscoggin, Franklin, Lincoln, Sagadahoc, Somerset, Waldo</td></tr>
+<tr><td>Knox</td><td>Hancock, Lincoln, Waldo</td></tr>
+<tr><td>Lincoln</td><td>Kennebec, Knox, Sagadahoc, Waldo</td></tr>
+<tr><td>Oxford</td><td>Androscoggin, Cumberland, Franklin, York</td></tr>
+<tr><td>Penobscot</td><td>Aroostook, Hancock, Piscataquis, Somerset, Waldo, Washington</td></tr>
+<tr><td>Piscataquis</td><td>Aroostook, Penobscot, Somerset</td></tr>
+<tr><td>Sagadahoc</td><td>Androscoggin, Cumberland, Kennebec, Lincoln</td></tr>
+<tr><td>Somerset</td><td>Aroostook, Franklin, Kennebec, Penobscot, Piscataquis, Waldo</td></tr>
+<tr><td>Waldo</td><td>Hancock, Kennebec, Knox, Lincoln, Penobscot, Somerset</td></tr>
+<tr><td>Washington</td><td>Aroostook, Hancock, Penobscot</td></tr>
+<tr><td>York</td><td>Cumberland, Oxford</td></tr>
+</table>
+<p>Distinct county-to-county borders in Maine: <strong>34</strong> [S4].</p>
+<p><strong>A caveat worth arguing about.</strong> The Census file counts two counties as neighbors when their legal boundaries touch, and in Maine some of those boundaries run through water &mdash; Hancock and Knox are listed as neighbors, and the drive between them is not short. That is the federal file&rsquo;s definition, not this case&rsquo;s, and a Hero who thinks a water boundary should not count the same as a road-crossable one has a real objection. This case takes the file as published and counts all 34; the alternative is stated as Appendix H MA5, together with what it does to the scoreboard, because it does not do nothing. Say which convention you are using in the pitch and show what changes under the other one.</p>
+
+</div>
+</details>
+<details>
+<summary>Appendix C &mdash; The Two Plans on the Table</summary>
+<div class="inner">
+
+<p><strong>The Kennebec Split</strong> &mdash; Maine&rsquo;s enacted congressional plan [S5]. Southern district: Cumberland, Knox, Lincoln, Sagadahoc and York counties whole, plus these twelve Kennebec County municipalities, with their 2020 Census populations [S3]:</p>
+<table id="apxC1">
+<tr><th>Municipality</th><th class="num">Pop.</th></tr>
+<tr><td>Waterville</td><td class="num">15,828</td></tr>
+<tr><td>Winslow</td><td class="num">7,948</td></tr>
+<tr><td>Vassalboro</td><td class="num">4,520</td></tr>
+<tr><td>China</td><td class="num">4,408</td></tr>
+<tr><td>West Gardiner</td><td class="num">3,671</td></tr>
+<tr><td>Litchfield</td><td class="num">3,586</td></tr>
+<tr><td>Clinton</td><td class="num">3,370</td></tr>
+<tr><td>Pittston</td><td class="num">2,875</td></tr>
+<tr><td>Benton</td><td class="num">2,715</td></tr>
+<tr><td>Windsor</td><td class="num">2,632</td></tr>
+<tr><td>Albion</td><td class="num">2,006</td></tr>
+<tr><td>Unity Township</td><td class="num">36</td></tr>
+</table>
+<p>Northern district: the other ten counties whole, plus Kennebec&rsquo;s remaining eighteen municipalities [S5].</p>
+<table id="apxC2">
+<tr><th></th><th>Southern district</th><th>Northern district</th></tr>
+<tr><td>Population</td><td>681,179 [S6]</td><td>681,180 [S6]</td></tr>
+<tr><td>Kennebec County residents in this district</td><td>53,595</td><td>70,047</td></tr>
+<tr><td>Counties divided</td><td>Kennebec</td><td>Kennebec</td></tr>
+<tr><td>County-line crossings</td><td colspan="2"><em>a Hero computes this from Appendix B and Appendix H, or checks it with the Working Notebook</em></td></tr>
+</table>
+<p><strong>The Hancock Line.</strong> Southern district: Cumberland, Hancock, Knox, Lincoln, Sagadahoc and York counties, whole. Northern district: the remaining ten counties, whole.</p>
+<table id="apxC3">
+<tr><th></th><th>Southern district</th><th>Northern district</th></tr>
+<tr><td>Population</td><td>683,062</td><td>679,297</td></tr>
+<tr><td>Kennebec County residents in this district</td><td>0</td><td>123,642</td></tr>
+<tr><td>Counties divided</td><td>none</td><td>none</td></tr>
+<tr><td>County-line crossings</td><td colspan="2"><em>a Hero computes this from Appendix B, or checks it with the Working Notebook</em></td></tr>
+</table>
+<p class="side-note">The Hancock Line&rsquo;s two district populations are the sums of the Appendix A county counts and nothing else; check them, both columns, and check that the two add back to 1,362,359. The Hancock Line is <strong>not</strong> a plan anybody filed. It is built here from the same public data as the enacted plan, and this case makes no claim that it was ever formally proposed to the commission.</p>
+
+</div>
+</details>
+<details>
+<summary>Appendix D &mdash; The Staff Shortlist: One-County Add-Ons</summary>
+<div class="inner">
+
+<p>Every county that shares a border with the five-county southern core, and what the southern district would hold if that one whole county were added to it. All populations from Appendix A; all borders from Appendix B.</p>
+<table id="apxD">
+<tr><th>County added</th><th class="num">Southern district</th><th class="num">Northern district</th></tr>
+<tr><td>Androscoggin</td><td class="num">738,723</td><td class="num">623,636</td></tr>
+<tr><td>Hancock</td><td class="num">683,062</td><td class="num">679,297</td></tr>
+<tr><td>Kennebec (whole)</td><td class="num">751,226</td><td class="num">611,133</td></tr>
+<tr><td>Oxford</td><td class="num">685,361</td><td class="num">676,998</td></tr>
+<tr><td>Waldo</td><td class="num">667,191</td><td class="num">695,168</td></tr>
+</table>
+<p class="side-note">Deviations and crossings are not printed here. Both are yours to compute, and the shortlist rule in Appendix H MA3 says which column decided it. One of these five rows is on the table as Option B and four are not; work out which, and whether you would have chosen the same one.</p>
+
+</div>
+</details>
+<details>
+<summary>Appendix E &mdash; What the Courts Have Said About Population Equality</summary>
+<div class="inner">
+
+<p>The standard for congressional districts is not a fixed percentage, and reasonable lawyers disagree about where the line sits. Two Supreme Court decisions are usually cited against each other, and this case does not pretend they point the same way:</p>
+<p><strong>How both percentages below are computed, so that yours can be compared to them.</strong> Each is a <strong>maximum deviation</strong>: the largest district minus the smallest district, divided by the average (ideal) district. It is not the distance from one district to the ideal, which for a two-district state is exactly half as large. Karcher&rsquo;s 3,674 is 527,472 &minus; 523,798, and dividing that by the average New Jersey district is the 0.6984% below. Score your plans the same way or the comparison means nothing &mdash; and say which of the two figures you are quoting every time you quote one.</p>
+<table id="apxE">
+<tr><th>Case</th><th>Deviation</th><th class="num">Percent</th><th>Holding</th></tr>
+<tr><td><em>Karcher v. Daggett</em> (1983) [S8]</td><td>3,674 people (527,472 vs. 523,798)</td><td class="num">0.6984%</td><td>Struck down &mdash; &ldquo;there are no de minimis population variations, which could practicably be avoided, but which nonetheless meet the standard&hellip; without justification.&rdquo;</td></tr>
+<tr><td><em>Tennant v. Jefferson County Commission</em> (2012) [S9]</td><td>4,871 people</td><td class="num">0.79%</td><td>Upheld &mdash; &ldquo;avoiding contests between incumbents and not splitting political subdivisions are valid, neutral state districting policies.&rdquo; West Virginia had never divided a county between congressional districts.</td></tr>
+</table>
+<p>Karcher says a small deviation still has to be justified. Tennant says keeping counties whole is the kind of thing that can justify one. Which case governs a given plan is exactly the argument Margo&rsquo;s memo has to win &mdash; and how far past 0.79% a court would still go is not settled by either opinion.</p>
+
+</div>
+</details>
+<details>
+<summary>Appendix F &mdash; The Screening Count</summary>
+<div class="inner">
+
+<p>The commission&rsquo;s screening tool reports two numbers about the space of whole-county plans:</p>
+<table id="apxF">
+<tr><th></th><th class="num">Count</th></tr>
+<tr><td>Assignments of Maine&rsquo;s 16 counties to two districts, ignoring every constraint</td><td class="num"><em>the tool&rsquo;s claim &mdash; a Hero computes this from Appendix A&rsquo;s county list and the Fundamental Counting Principle, then drops the two assignments that leave a district empty</em></td></tr>
+<tr><td>Of those, the ones where both districts are a single connected piece on the Appendix B border list</td><td class="num">1,734</td></tr>
+<tr><td>The same connected plans, once you stop caring which district is called &ldquo;north&rdquo;</td><td class="num">867</td></tr>
+</table>
+<p>The last two rows are the same fact counted two ways, and the factor of two is worth explaining in your pitch: an assignment records <em>which</em> district each county went to, while a plan on a wall does not care what the two districts are named. The same doubling is visible in the D1 size-breakdown row, which reads the same forwards and backwards.</p>
+<p>None of these are measurements; all three are computations. The first follows from the Fundamental Counting Principle applied to the Appendix A county list, and the others from checking every one of those assignments against the Appendix B borders. The tool&rsquo;s claim to have looked at <em>every</em> whole-county plan is only as good as the first row, and D1 through D3 are what make that row checkable rather than merely asserted.</p>
+
+</div>
+</details>
+<details>
+<summary>Appendix G &mdash; Sources</summary>
+<div class="inner">
+
+<table id="apxG">
+<tr><th>id</th><th>Claim</th><th>Value</th><th>Source</th></tr>
+<tr><td>S1</td><td>Maine 2020 apportionment population and U.S. House seats</td><td>1,363,582 &middot; 2 seats</td><td><a href="https://www2.census.gov/programs-surveys/decennial/2020/data/apportionment/apportionment-2020-table01.pdf" target="_blank" rel="noopener">U.S. Census Bureau, Table 1, 2020 Apportionment</a></td></tr>
+<tr><td>S2</td><td>2020 Census resident population of each Maine county and the state total</td><td>see Appendix A &middot; total 1,362,359</td><td><a href="https://www2.census.gov/programs-surveys/decennial/2020/data/01-Redistricting_File--PL_94-171/Maine/me2020.pl.zip" target="_blank" rel="noopener">U.S. Census Bureau, 2020 P.L. 94-171 Redistricting File &mdash; Maine</a></td></tr>
+<tr><td>S3</td><td>2020 Census population of each Kennebec County municipality</td><td>see Appendix C &middot; Kennebec total 123,642</td><td><a href="https://www2.census.gov/programs-surveys/decennial/2020/data/01-Redistricting_File--PL_94-171/Maine/me2020.pl.zip" target="_blank" rel="noopener">Same file, summary level 060</a></td></tr>
+<tr><td>S4</td><td>Which Maine counties share a border, and the number of distinct borders</td><td>see Appendix B &middot; 34 borders</td><td><a href="https://www2.census.gov/geo/docs/reference/county_adjacency/county_adjacency2025.txt" target="_blank" rel="noopener">U.S. Census Bureau, County Adjacency File 2025</a></td></tr>
+<tr><td>S5</td><td>Maine&rsquo;s enacted congressional districts</td><td>12 Kennebec municipalities in CD-1, 18 in CD-2</td><td><a href="https://legislature.maine.gov/statutes/21-a/title21-Asec1205-A.html" target="_blank" rel="noopener">21-A M.R.S. &sect;1205-A</a></td></tr>
+<tr><td>S6</td><td>Ideal district population and the enacted district populations</td><td>681,179.5 ideal &middot; CD-1 681,179 &middot; CD-2 681,180</td><td><a href="https://www.maine.gov/sos/elections-voting/2020-census-apportionment-overview" target="_blank" rel="noopener">Maine Secretary of State, 2020 Census Apportionment Overview</a></td></tr>
+<tr><td>S7</td><td>Date the apportionment commission delivered its report and plan</td><td>September 27, 2021</td><td><a href="https://www.maine.gov/sos/elections-voting/2020-census-apportionment-details" target="_blank" rel="noopener">Maine Secretary of State, 2020 Census Apportionment Details</a></td></tr>
+<tr><td>S8</td><td><em>Karcher v. Daggett</em> deviation and holding</td><td>3,674 people &middot; 0.6984% &middot; struck down</td><td><a href="https://www.law.cornell.edu/supremecourt/text/462/725" target="_blank" rel="noopener">Cornell LII, 462 U.S. 725 (1983)</a></td></tr>
+<tr><td>S9</td><td><em>Tennant v. Jefferson County Commission</em> variance and holding</td><td>4,871 people &middot; 0.79% &middot; upheld</td><td><a href="https://www.law.cornell.edu/supremecourt/text/11-1184" target="_blank" rel="noopener">Cornell LII, 567 U.S. 758 (2012)</a></td></tr>
+</table>
+<p class="side-note"><strong>Derived, not sourced.</strong> The five-county core total, its shortfall, the Kennebec split shares, The Hancock Line&rsquo;s district totals, every Appendix D row, every crossings count, every deviation percent, and both Appendix F counts are all computed in this case from the sources above &mdash; the arithmetic is yours to redo.</p>
+<p class="side-note"><strong>A figure this case deliberately does not use.</strong> &ldquo;Compactness&rdquo; scores (Polsby&ndash;Popper, Reock) need district perimeters and areas that no public file publishes for a plan nobody drew. This case counts county-line crossings instead, which it can compute from Appendix B for any plan.</p>
+
+</div>
+</details>
+<details>
+<summary>Appendix H &mdash; Modeling Assumptions</summary>
+<div class="inner">
+
+<p><em>These are not sourced. They are stated choices made by this case, each with its basis named below. A Hero may challenge any of them in discussion &mdash; that is a legitimate move, and MA1 and MA2 in particular are where this case is most attackable.</em></p>
+<table id="apxH">
+<tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+<tr><td>MA1</td><td>Weight of a county the district line runs <em>through</em>, in county-line crossings</td><td><strong>1</strong></td><td>No published rubric assigns a number to &ldquo;you cut a county in half.&rdquo; The case fixes one so a severed-county plan and a whole-county plan can be compared in a single figure. Flex it &plusmn;50% and check whether the ranking moves.</td></tr>
+<tr><td>MA2</td><td>For the border count, a divided county is assigned to whichever district holds <strong>more</strong> of its people</td><td>Kennebec &rarr; northern district (70,047 &gt; 53,595)</td><td>Without a rule, &ldquo;which borders does the line run along?&rdquo; has no answer for a divided county. <strong>Load-bearing: it decides who wins.</strong> Compute the primary metric under both conventions before you recommend anything.</td></tr>
+<tr><td>MA3</td><td>Staff shortlist rule: keep the five southern counties together, then add whichever option's two districts come <strong>closest to equal population</strong></td><td>applied to Appendix D to select Option B</td><td>Continuity of representation plus equal population are real redistricting criteria. It is <strong>staff practice, not statute</strong> &mdash; challenging it can put a different plan on the table entirely.</td></tr>
+<tr><td>MA4</td><td>The scenario</td><td>Margo Thibodeau, the staff room, and the choice between exactly these two plans are invented</td><td>Maine&rsquo;s commission, its report to the Legislature [S7], the enacted plan [S5], and every number above are real. No record says The Hancock Line was ever proposed.</td></tr>
+<tr><td>MA5</td><td>A water boundary counts as a border, exactly like a land boundary</td><td>all <strong>34</strong> Appendix B borders counted, including Hancock&ndash;Knox</td><td>The Census adjacency file [S4] makes no distinction; that is also the working convention redistricting analysts and their GIS tools use. Dropping this one border changes one plan&rsquo;s score and not the other&rsquo;s &mdash; work out which plan that helps.</td></tr>
+</table>
+<p class="side-note"><strong>&ldquo;As of&rdquo; cutoff.</strong> Every population figure in this case is frozen at the 2020 Census; it does not drift. The case law in Appendix E is current as of the access date in Appendix G.</p>
+
+</div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>I &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+<div class="stepbox">
+  <h4>Step 1 &mdash; D1: The map-space count</h4>
+  <div class="goal">Use the Fundamental Counting Principle on Maine's 16 counties (each county goes to one of two districts) to find the raw assignment total, then drop the two assignments that leave a district empty. Then compute one binomial coefficient from the size-breakdown row by hand: C(16, 2).</div>
+  <div class="fieldrow"><label for="d1fcp">Raw FCP total (2 choices &times; 16 counties)</label><input type="number" step="1" id="d1fcp" placeholder="e.g. 65536"><span id="fb1a" class="fb"></span></div>
+  <div class="fieldrow"><label for="d1ne">Non-empty assignments (drop the 2 that empty a district)</label><input type="number" step="1" id="d1ne" placeholder="e.g. 65534"><span id="fb1b" class="fb"></span></div>
+  <div class="fieldrow"><label for="d1c">C(16, 2) &mdash; show your factorial arithmetic on paper</label><input type="number" step="1" id="d1c" placeholder="e.g. 120"><span id="fb1c" class="fb"></span></div>
+  <button onclick="checkD1()">Check</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; D2: Recursion sheet</h4>
+  <div class="goal">Part (a): if f(k) is the number of ways to assign k counties to two districts, f(k) = 2&middot;f(k&minus;1) with base case f(0) = 1. Use that recursion to compute f(3). Part (b): Pascal's rule says C(n, j) = C(n&minus;1, j&minus;1) + C(n&minus;1, j). Use it to build C(5, 2) from two entries of row 4.</div>
+  <div class="fieldrow"><label for="d2f3">f(3), built from the recursion (not 2^3 directly)</label><input type="number" step="1" id="d2f3" placeholder="e.g. 8"><span id="fb2a" class="fb"></span></div>
+  <div class="fieldrow"><label for="d2pascal">C(5,2), built from C(4,1) + C(4,2)</label><input type="number" step="1" id="d2pascal" placeholder="e.g. 10"><span id="fb2b" class="fb"></span></div>
+  <button onclick="checkD2()">Check</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; D3: Exhaustiveness certificate (spot-check)</h4>
+  <div class="goal">This calculator can't grade a written induction proof &mdash; that's your deliverable, with a labeled base case and inductive step. What it CAN check: the small-case pattern your induction is built on. For a state with just k = 4 counties, compute the full size-breakdown row's sum, and compare it to 2^4.</div>
+  <div class="fieldrow"><label for="d3sum">Sum of row 4 (C(4,0)+C(4,1)+C(4,2)+C(4,3)+C(4,4))</label><input type="number" step="1" id="d3sum" placeholder="e.g. 16"><span id="fb3a" class="fb"></span></div>
+  <div class="fieldrow"><label for="d3pow">2^4</label><input type="number" step="1" id="d3pow" placeholder="e.g. 16"><span id="fb3b" class="fb"></span></div>
+  <button onclick="checkD3()">Check</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; D4: Pigeonhole brief</h4>
+  <div class="goal">Three guaranteed-minimum claims, no plan enumerated. (i) Since Maine's resident population is odd, some district must hold at least how many people? (ii) Splitting 16 counties into 2 districts forces at least how many counties into one of them? (iii) Among Maine's four largest counties, some two must share a district &mdash; find the population of the SMALLEST possible such pair (the only sum Pigeonhole actually guarantees) from Appendix A.</div>
+  <div class="fieldrow"><label for="d4a">(i) Minimum population some district must hold</label><input type="number" step="1" id="d4a" placeholder="e.g. 681180"><span id="fb4a" class="fb"></span></div>
+  <div class="fieldrow"><label for="d4b">(ii) Minimum counties in one district</label><input type="number" step="1" id="d4b" placeholder="e.g. 8"><span id="fb4b" class="fb"></span></div>
+  <div class="fieldrow"><label for="d4c">(iii) Guaranteed-minimum pair population (smallest pair of the top 4)</label><input type="number" step="1" id="d4c" placeholder="sum of two counties, in people"><span id="fb4c" class="fb"></span></div>
+  <button onclick="checkD4()">Check</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 5 &mdash; D5: The scorecard</h4>
+  <div class="goal">County-line crossings for each plan (Appendix B borders-along + Appendix H MA1's severance weight for a divided county), each plan's maximum deviation in people and as a percent of the ideal, and how many Mainers sit in a divided county. If you've revealed and applied the Twist below, this checks against the Twist's substitute plan instead.</div>
+  <div class="fieldrow"><label for="d5ca">Plan A (Kennebec Split) crossings</label><input type="number" step="1" id="d5ca"><span id="fb5a" class="fb"></span></div>
+  <div class="fieldrow"><label for="d5cb">Plan B crossings</label><input type="number" step="1" id="d5cb"><span id="fb5b" class="fb"></span></div>
+  <div class="fieldrow"><label for="d5da">Plan A maximum deviation (people)</label><input type="number" step="1" id="d5da"><span id="fb5c" class="fb"></span></div>
+  <div class="fieldrow"><label for="d5dap">Plan A maximum deviation (percent of ideal)</label><input type="number" step="0.0001" id="d5dap"><span id="fb5d" class="fb"></span></div>
+  <div class="fieldrow"><label for="d5db">Plan B maximum deviation (people)</label><input type="number" step="1" id="d5db"><span id="fb5e" class="fb"></span></div>
+  <div class="fieldrow"><label for="d5dbp">Plan B maximum deviation (percent of ideal)</label><input type="number" step="0.0001" id="d5dbp"><span id="fb5f" class="fb"></span></div>
+  <div class="fieldrow"><label for="d5ken">Population of Maine's divided county (Appendix A)</label><input type="number" step="1" id="d5ken" placeholder="e.g. 123642"><span id="fb5g" class="fb"></span></div>
+  <button onclick="checkD5()">Check</button>
+  <p class="side-note">This checker confirms your arithmetic. It does not choose a recommendation &mdash; that, and the one-sentence comparability note Appendix E asks for, is still yours to write.</p>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+<p>A commissioner moves from the floor to strike the staff shortlist rule (Appendix H MA3) and substitute Oxford County for Hancock as the whole-county add-on. Appendix D already has the population split for this substitute plan &mdash; you don't need a new source for it, just a recomputation.</p>
+<p>Recompute what you just argued, using the Working Notebook above: how many county-line crossings does the Oxford substitute run along, using the same Appendix B borders and Appendix H MA1 rule you already used for The Hancock Line? How does its maximum deviation, in people and as a percent of the ideal, compare to Appendix E's two benchmarks?</p>
+<p>You have sixty seconds. Does that change your recommendation, or only your reason for it?</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the Twist: recompute Step 5 (D5) against the Oxford substitute plan instead of The Hancock Line.</label>
+      </div>
+      <div id="twistRosterNote" class="side-note" style="display:none;color:#cdd9e6;border-top-color:#444"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+<li>[S1] U.S. Census Bureau &mdash; Table 1, Apportionment Population and Number of Representatives by State, 2020 Census</li>
+<li>[S2-S3] U.S. Census Bureau &mdash; 2020 Census P.L. 94-171 Redistricting Data Summary File, Maine (county and municipal levels)</li>
+<li>[S4] U.S. Census Bureau &mdash; County Adjacency File 2025, Maine rows</li>
+<li>[S5] 21-A M.R.S. &sect;1205-A &mdash; Maine's enacted congressional districts</li>
+<li>[S6-S7] Maine Secretary of State &mdash; 2020 Census Apportionment Overview and Details</li>
+<li>[S8] Cornell LII &mdash; Karcher v. Daggett, 462 U.S. 725 (1983)</li>
+<li>[S9] Cornell LII &mdash; Tennant v. Jefferson County Commission, 567 U.S. 758 (2012)</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Redrawing Lines &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/redrawing-lines/sensitivity_model.py (case_md_sha256:
+// df7a285e9883f3c1041fe0e1acb5dba5c0efd37f3833d8c393e1ebfd408c0f14). Raw given data only (county populations, adjacency list,
+// modeling-assumption dials) -- never a pre-computed verdict. The primary
+// metric (county-line crossings) is LOWER-is-better; evaluate()/evaluate_twist()
+// follow the module's own (total - own_score) transform so both outputs stay
+// positive and "higher wins" holds, exactly like sensitivity_model.py does.
+
+const COUNTY_POP = {
+  Androscoggin: 111139, Aroostook: 67105, Cumberland: 303069, Franklin: 29456,
+  Hancock: 55478, Kennebec: 123642, Knox: 40607, Lincoln: 35237,
+  Oxford: 57777, Penobscot: 152199, Piscataquis: 16800, Sagadahoc: 36699,
+  Somerset: 50477, Waldo: 39607, Washington: 31095, York: 211972,
+};
+
+const ADJACENCY = {
+  Androscoggin: ["Cumberland", "Franklin", "Kennebec", "Oxford", "Sagadahoc"],
+  Aroostook:    ["Penobscot", "Piscataquis", "Somerset", "Washington"],
+  Cumberland:   ["Androscoggin", "Oxford", "Sagadahoc", "York"],
+  Franklin:     ["Androscoggin", "Kennebec", "Oxford", "Somerset"],
+  Hancock:      ["Knox", "Penobscot", "Waldo", "Washington"],
+  Kennebec:     ["Androscoggin", "Franklin", "Lincoln", "Sagadahoc", "Somerset", "Waldo"],
+  Knox:         ["Hancock", "Lincoln", "Waldo"],
+  Lincoln:      ["Kennebec", "Knox", "Sagadahoc", "Waldo"],
+  Oxford:       ["Androscoggin", "Cumberland", "Franklin", "York"],
+  Penobscot:    ["Aroostook", "Hancock", "Piscataquis", "Somerset", "Waldo", "Washington"],
+  Piscataquis:  ["Aroostook", "Penobscot", "Somerset"],
+  Sagadahoc:    ["Androscoggin", "Cumberland", "Kennebec", "Lincoln"],
+  Somerset:     ["Aroostook", "Franklin", "Kennebec", "Penobscot", "Piscataquis", "Waldo"],
+  Waldo:        ["Hancock", "Kennebec", "Knox", "Lincoln", "Penobscot", "Somerset"],
+  Washington:   ["Aroostook", "Hancock", "Penobscot"],
+  York:         ["Cumberland", "Oxford"],
+};
+function computeBorders(){
+  const set = new Set();
+  Object.keys(ADJACENCY).forEach(a => {
+    ADJACENCY[a].forEach(b => {
+      const pair = [a, b].sort();
+      set.add(pair.join("|"));
+    });
+  });
+  return Array.from(set).map(s => s.split("|"));
+}
+const BORDERS = computeBorders(); // 34, matches Appendix B / [S4]
+const WATER_BORDERS = new Set(["Hancock|Knox"]); // Appendix H MA5
+
+const CORE = ["Cumberland", "Knox", "Lincoln", "Sagadahoc", "York"];
+
+const PARAMS = {
+  severance_weight: 1.0,                 // MA1
+  split_county_assignment: "majority",   // MA2
+  water_boundaries: "counted",           // MA5
+  whole_county_addon: "Hancock",         // MA3's output
+  twist_addon: "Oxford",                 // the Twist's substitute
+  state_resident_pop: 1362359,           // S2
+  seats: 2,                              // S1
+  kennebec_south_share: 53595,           // S3 + S5
+  enacted_south_pop: 681179,             // S6
+  enacted_north_pop: 681180,             // S6
+};
+const FLEX = ["severance_weight", "split_county_assignment", "water_boundaries"];
+
+function crossings(southCounties, p, severed){
+  const south = new Set(southCounties);
+  let borderList = BORDERS;
+  if(p.water_boundaries === "excluded"){
+    borderList = BORDERS.filter(([a, b]) => !WATER_BORDERS.has([a, b].sort().join("|")));
+  }
+  const along = borderList.filter(([a, b]) => south.has(a) !== south.has(b));
+  const score = along.length + (severed ? p.severance_weight : 0.0);
+  return {score, borders_along: along, n_borders_along: along.length, severed: severed || null};
+}
+
+function planKennebecSplit(p){
+  const southShare = p.kennebec_south_share;
+  const northShare = COUNTY_POP.Kennebec - southShare;
+  const kenSide = (p.split_county_assignment === "majority")
+    ? (southShare > northShare ? "south" : "north")
+    : (southShare > northShare ? "north" : "south");
+  const south = new Set(CORE);
+  if(kenSide === "south") south.add("Kennebec");
+  const c = crossings(south, p, "Kennebec");
+  c.south_pop = p.enacted_south_pop; c.north_pop = p.enacted_north_pop;
+  c.kennebec_south = southShare; c.kennebec_north = northShare;
+  c.kennebec_counted_in = kenSide; c.counties_divided = 1;
+  return c;
+}
+
+function planWholeCounty(p, addOn){
+  const south = new Set(CORE); south.add(addOn);
+  let sp = 0; south.forEach(cty => sp += COUNTY_POP[cty]);
+  const c = crossings(south, p, null);
+  c.south_pop = sp; c.north_pop = p.state_resident_pop - sp;
+  c.kennebec_south = 0; c.kennebec_north = COUNTY_POP.Kennebec;
+  c.counties_divided = 0; c.add_on = addOn;
+  return c;
+}
+
+function idealDistrict(p){ return p.state_resident_pop / p.seats; }
+
+function deviation(plan, p){
+  const ideal = idealDistrict(p);
+  const per = Math.abs(plan.south_pop - ideal);
+  const rng = Math.abs(plan.south_pop - plan.north_pop);
+  return {per_district: per, per_district_pct: 100 * per / ideal,
+           total_range: rng, total_range_pct: 100 * rng / ideal};
+}
+
+function scoreboard(p){
+  return {A: planKennebecSplit(p), B: planWholeCounty(p, p.whole_county_addon)};
+}
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const s = scoreboard(p);
+  const tot = s.A.score + s.B.score;
+  return {A: tot - s.A.score, B: tot - s.B.score};
+}
+
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const a = planKennebecSplit(p);
+  const b = planWholeCounty(p, p.twist_addon);
+  const tot = a.score + b.score;
+  return {A: tot - a.score, B: tot - b.score};
+}
+
+// Notebook helper -- picks the base scoreboard or the Twist's substitute
+// scoreboard, using exactly the same plan functions evaluate()/evaluate_twist()
+// call, so the Working Notebook and sensitivity_model.py can never drift apart.
+function scoreboardFor(useTwist){
+  const p = Object.assign({}, PARAMS);
+  const a = planKennebecSplit(p);
+  const b = useTwist ? planWholeCounty(p, p.twist_addon) : planWholeCounty(p, p.whole_county_addon);
+  return {A: a, B: b};
+}
+
+function binom(n, k){
+  if(k < 0 || k > n) return 0;
+  let r = 1;
+  for(let i = 0; i < k; i++) r = r * (n - i) / (i + 1);
+  return Math.round(r);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+let twistApplied = false;
+
+function checkD1(){
+  const fcp = Math.pow(2, 16);
+  const nonEmpty = fcp - 2;
+  const c162 = binom(16, 2);
+  fb('fb1a', parseInt(val('d1fcp')) === fcp, fcp);
+  fb('fb1b', parseInt(val('d1ne')) === nonEmpty, nonEmpty);
+  fb('fb1c', parseInt(val('d1c')) === c162, c162);
+}
+function checkD2(){
+  function f(k){ return k === 0 ? 1 : 2 * f(k - 1); }
+  const f3 = f(3);
+  const pascal = binom(4, 1) + binom(4, 2);
+  fb('fb2a', parseInt(val('d2f3')) === f3, f3);
+  fb('fb2b', parseInt(val('d2pascal')) === pascal, pascal);
+}
+function checkD3(){
+  let sum4 = 0;
+  for(let j = 0; j <= 4; j++) sum4 += binom(4, j);
+  const pow4 = Math.pow(2, 4);
+  fb('fb3a', parseInt(val('d3sum')) === sum4, sum4);
+  fb('fb3b', parseInt(val('d3pow')) === pow4, pow4);
+}
+function checkD4(){
+  const total = PARAMS.state_resident_pop;
+  const minLarger = Math.ceil(total / 2);
+  const n = Object.keys(COUNTY_POP).length;
+  const minCounties = Math.ceil(n / 2);
+  const top4 = Object.entries(COUNTY_POP).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  let minPair = Infinity;
+  for(let i = 0; i < top4.length; i++){
+    for(let j = i + 1; j < top4.length; j++){
+      minPair = Math.min(minPair, top4[i][1] + top4[j][1]);
+    }
+  }
+  fb('fb4a', parseInt(val('d4a')) === minLarger, minLarger);
+  fb('fb4b', parseInt(val('d4b')) === minCounties, minCounties);
+  fb('fb4c', parseInt(val('d4c')) === minPair, minPair);
+}
+function checkD5(){
+  const s = scoreboardFor(twistApplied);
+  const devA = deviation(s.A, PARAMS);
+  const devB = deviation(s.B, PARAMS);
+  fb('fb5a', near(parseFloat(val('d5ca')), s.A.score, 0.01));
+  fb('fb5b', near(parseFloat(val('d5cb')), s.B.score, 0.01));
+  fb('fb5c', near(parseFloat(val('d5da')), round(devA.total_range, 0), 1));
+  fb('fb5d', near(parseFloat(val('d5dap')), round(devA.total_range_pct, 4), 0.001));
+  fb('fb5e', near(parseFloat(val('d5db')), round(devB.total_range, 0), 1));
+  fb('fb5f', near(parseFloat(val('d5dbp')), round(devB.total_range_pct, 4), 0.001));
+  fb('fb5g', parseInt(val('d5ken')) === COUNTY_POP.Kennebec, COUNTY_POP.Kennebec);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "redrawing-lines"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Map-space count: FCP total and a binomial-coefficient size-breakdown row"],
+  ["D2", "Recursion sheet: recursive formulas, base cases, and the explicit conversion"],
+  ["D3", "Exhaustiveness certificate: induction proof with labeled base case and inductive step"],
+  ["D4", "Pigeonhole brief: three guaranteed-minimum claims"],
+  ["D5", "Scorecard: crossings, deviations, and a recommendation against Appendix E"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Fundamental Counting Principle": {def: "If one event can happen in m ways and a second, independent event can happen in n ways, the two together can happen in m times n ways.",
+    url: "https://www.khanacademy.org/math/statistics-probability/counting-probability/fundamental-counting-principle/a/fundamental-counting-principle"},
+  "Binomial Coefficient": {def: "The number of ways to choose k items from a set of n, written C(n, k) -- read \"n choose k.\"",
+    url: "https://www.mathsisfun.com/combinatorics/combinations-permutations.html"},
+  "Recursive Formula": {def: "A formula that defines each term of a sequence using one or more previous terms, plus a starting value.",
+    url: "https://www.ck12.org/flexi/precalculus/recursive-formulas/what-is-a-recursive-formula/"},
+  "Base Case": {def: "The starting value in a recursive definition or induction proof -- the case that isn't built from anything earlier.",
+    url: "https://www.ck12.org/flexi/precalculus/mathematical-induction/what-is-mathematical-induction/"},
+  "Mathematical Induction": {def: "A proof technique: show a statement holds for a base case, then show that whenever it holds for one case it holds for the next -- together those two steps prove it for every case.",
+    url: "https://www.ck12.org/flexi/precalculus/mathematical-induction/what-is-mathematical-induction/"},
+  "Inductive Step": {def: "The part of an induction proof that shows: IF the statement holds for some case k, THEN it also holds for the next case, k+1.",
+    url: "https://www.ck12.org/flexi/precalculus/mathematical-induction/what-is-mathematical-induction/"},
+  "Pigeonhole Principle": {def: "If you put more items into containers than there are containers, at least one container must hold more than one item.",
+    url: "https://www.ck12.org/c/probability/combination-problems/plix/Pigeonhole-Principle-Friends-at-a-Party-5627cebf9616aa13eeaa5ac3/"},
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"}
+};
+const HOWTO = [
+  ["How to apply the Fundamental Counting Principle to count outcomes", "Fundamental Counting Principle"],
+  ["How to compute a binomial coefficient", "Binomial Coefficient"],
+  ["How to write a recursive formula for a sequence", "Recursive Formula"],
+  ["How to convert a recursive formula to an explicit formula", "Recursive Formula"],
+  ["How to prove a statement using mathematical induction", "Mathematical Induction"],
+  ["How to convert numbers to percents", "Percent"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  twistApplied = document.getElementById('applyTwist').checked;
+  const note = document.getElementById('twistRosterNote');
+  note.style.display = 'block';
+  note.textContent = twistApplied
+    ? "Twist applied: Step 5's Check button now compares your work against the Oxford substitute plan instead of The Hancock Line. Recompute D5 with the new numbers."
+    : "Twist off: Step 5 checks against the original two plans on the table.";
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

@@ -205,8 +205,10 @@ all together:
   figures are no longer a bare, unsourced convention — they are computed from two real, cited
   sources: a validated cube-root blast-radius scaling law (Glasstone & Dolan; well within the
   tested yield range for 50 kt-5.2 Mt, not an extrapolation past known data — this is the kind of
-  formula-based calculation that SHOULD be sourced and accurate) and the real 2020 Census average
-  population density for large U.S. cities. What's genuinely, irreducibly uncertain is not the
+  formula-based calculation that SHOULD be sourced and accurate) and the real, Census-derived U.S.
+  average population density across all central cities in 2000 (corrected 2026-08-18 from an
+  earlier "2020" mislabel — see QA_REPORT.md's P6 finding; the underlying 2,716/sq mi figure and
+  every downstream number are unchanged). What's genuinely, irreducibly uncertain is not the
   formula — it's which real density applies to this case's deliberately unnamed "major urban
   center." That's a forecast-shaped unknown (like a future price or a medical estimate), not a
   research gap: no amount of further research produces the one true density of a fictional city.

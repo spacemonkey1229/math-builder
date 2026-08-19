@@ -150,14 +150,18 @@ add a new decision on top of the one you'd already made?"
 
 ## The trap
 
-A Hero computes the total dollar gap between "stop immediately" and "go the full 50 days," finds
-it huge, and treats that as if it settles the case on arithmetic alone — without ever engaging with
-the real, disclosed fact that the family's TOTAL assets cover even the 50-day worst case (they
-would not lose the house), or that their liquid runway (~13.5 days) lands almost exactly on the
-doctor's own LOW-end estimate, not some remote tail. The case's actual tension is not "can they
-afford it" (mostly, yes, painfully) — it's what a family owes to money they can technically still
-find, against time they can't get back. A Hero who only computes the big scary total and stops
-there has done real arithmetic but skipped the actual decision.
+**The trap to let them walk into:** Position B's full 50-day bill total (about $430,908.65) dwarfs
+Position A's stop-now total — so a Hero who runs D2's total-cost comparison for both positions will
+see that dollar gap, find it huge, and pick Position A on the strength of that one comparison alone,
+stopping there. So most learners will assume the total-cost gap settles the case and never look
+further. The real trap is that D2's total-cost gap is not this case's actual decision point: it
+skips D5 entirely — the family's liquid-plus-brokerage runway (~13.52 days) lands within about 3.4%
+of Dr. Halbert's own stated LOW-end estimate (14 days, Appendix C), a near-coincidence that is the
+case's real tension — and it skips checking that the family's TOTAL net worth ($667,756.51) still
+covers the full 50-day worst-case bill (~$430,908.65) without selling the house. A Hero who computes
+the D2 total, calls the decision settled, and never runs D5 at all is wrong — not on arithmetic (the
+totals are correct) but on completeness — and it's worth asking them directly whether they ever
+found the day the money actually runs out (Data Deep Dive, Socratic Q1–Q2).
 
 ## Socratic questions
 

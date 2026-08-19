@@ -71,10 +71,13 @@ uses either in a formula has taken the bait on irrelevant data, which is itself 
 
 ## Twist — drop this at ~15 minutes into the discussion
 
-Read from `case.md`'s facilitator-only "The Twist" section, do not hand out or paraphrase in
-advance: a supplier fire in China. Boeing offers $114/part plus a $200,000 bonus for more than
-5,000 units delivered within 10 days, running the machine up to 20 hours a day for the whole
-sprint. Ask: "Can you actually hit 5,000? Do you take the deal?"
+Do not hand out or paraphrase in advance — deliver verbally, slowly: a parts-manufacturing
+facility in China that Boeing sourced this component from has just burned to the ground. A Boeing
+representative calls: can Stout Aviation start production immediately on the component Drew's
+pitch chose? Boeing will pay **$114.00 per part**, plus a **$200,000 bonus** if Stout Aviation
+delivers **more than 5,000 units within 10 days**. The machine can run up to 20 hours a day during
+the sprint (not limited to 5 days a week, given the urgency) — but every load time and cut time
+from Challenge 3 still applies. Ask: "Can you actually hit 5,000? Do you take the deal?"
 
 The real, computed answer (see `sensitivity_model.py`) is that **neither option clears 5,000 units
 in 10 days** — O-rings reach only 1,302 (26% of target), and turbine disks reach 4,760 (95% of
@@ -93,24 +96,27 @@ these four assumptions *at their stated values* moves either option's 10-day uni
 5,000 threshold. Verified directly in `sensitivity_model.py`'s `evaluate_twist()`.
 
 `sensitivity_model.py`'s own `FLEX` sweep (Tier 2 probe 5, +-50% stress test, a different and
-harder check than the soundness check above) finds **three** dials, not one, where an arbitrary
-+-50% perturbation crosses the 5,000-unit threshold (corrected 2026-08-13 -- an earlier draft of
-this note disclosed only the first):
+harder check than the soundness check above) finds **two** dials, out of the three currently in
+scope (`disk_hole_d_in`, `wage_per_hr_per_employee`, `twist_sprint_days`), where an arbitrary
++-50% perturbation crosses the 5,000-unit threshold (corrected 2026-08-18 -- `disk_overall_h_in`
+was removed from probe 5's scope on 2026-08-18, since it is Appendix C's own cited sketch
+dimension, not a stated modeling assumption; an earlier draft of this note listed it as a third
+flip dial before that rescoping):
 
-1. `disk_overall_h_in` at -50% (36in -> 18in): a much smaller, denser disk than Appendix C
-   actually describes shrinks the disk's bounding box enough to raise parts-per-sheet, pushing
-   turbine disks to 8,250 units (bonus met).
-2. `disk_hole_d_in` at -50% (10in -> 5in): a smaller hole barely pushes turbine disks to 5,005
-   units -- just over the 5,000 threshold.
-3. `twist_sprint_days` at +50% (10 days -> 15 days): a longer sprint window alone pushes turbine
-   disks to 7,140 units (bonus met); this one isn't a Modeling Assumption at all, it's a flex of
+1. `disk_hole_d_in` at -50% (9in -> 4.5in, current base): a smaller hole raises turbine-disk
+   throughput to 5,040 units -- just over the 5,000 threshold (bonus met).
+2. `twist_sprint_days` at +50% (10 days -> 15 days): a longer sprint window alone pushes turbine
+   disks to 7,210 units (bonus met); this one isn't a Modeling Assumption at all, it's a flex of
    the Twist's own stated sprint length.
+3. `wage_per_hr_per_employee` at either +-50% does not move either option's unit count at all --
+   wage affects cost/profit, not physical throughput.
 
-All three are legitimate, expected Tier 2 findings about the *model's* sensitivity to these
-stated dials, not a contradiction of the soundness check above — the case's actual stated values
-(28in / 36in / 10in hole / 10-day sprint) are the ones that matter for running this case with
-students, and none of MA1-MA4 at their *stated* values (not flexed) moves either option's 10-day
-unit count across the 5,000 threshold, which is what the soundness check verifies.
+Both real findings are legitimate, expected Tier 2 findings about the *model's* sensitivity to
+these stated dials, not a contradiction of the soundness check above — the case's actual stated
+values (28in square / 36in overall height / 9in hole / 10-day sprint) are the ones that matter
+for running this case with students, and none of MA1-MA4 at their *stated* values (not flexed)
+moves either option's 10-day unit count across the 5,000 threshold, which is what the soundness
+check verifies.
 
 ## Immediate recommit
 
@@ -214,19 +220,29 @@ dimension, a cited measurement rather than an assumption, so it is no longer fle
 tests stated assumptions, not cited data — see `sensitivity_model.py`'s inline note). MA2's
 `disk_hole_d_in` was never labeled in the source and real turbine-disk bore sizing depends on
 proprietary engineering analysis with no public standard to cite — it has been re-estimated from
-10in to **9in**, the closest defensible public analogue (general hole-in-plate stress-concentration
-guidance recommends a hole-to-width ratio under ~0.3; 9/28 = 0.32, versus the original 10/28 =
-0.36), disclosed in MA2 as a **PROPRIETARY — ESTIMATED, one-time exception**, not presented as
-equivalent to this case's actually-cited figures. The re-estimate raises the base D8 margin from
-15.4% to 19.4% — still inside SPEC's 20% cap, still genuinely close. **It is still not stable**:
-a +50% flex of the 9in hole (13.5in) still **flips the D8 winner to the O-ring** (margin -1.2%);
--50% (4.5in) stays stable but widens to 36.4%. Verified this is not fixable by picking a different
-base hole diameter: sweeping the base value from 3in to 14in, every value either flips the winner
-or breaches the 20% cap on the opposite side — there is no honest choice that survives the full
-±50% band. This is disclosed, not eliminated, and it is disclosed as a **Category X** instability
-(a real, proprietary quantity that cannot be publicly sourced, best-effort estimated from the
-closest public analogue) rather than Category F (an unknowable-in-principle forecast) — the
-distinction matters for how a facilitator frames it: a Hero should be pushed to defend *why* 9in is
-a reasonable engineering estimate (citing the general stress-concentration guideline, S6), not
-just told "the real number is unknown." Facilitators running this case should know the 19.4% D8
-margin, while real, sits closer to a flip point than "reasonably close" alone would suggest.
+10in to **9in**, the closest defensible public analogue (a general hole-in-plate stress-concentration
+formula whose stated validity range tops out at a hole-to-width ratio of 0.3; 9/28 = 0.32, versus
+the original 10/28 = 0.36), disclosed in MA2 as a **PROPRIETARY — ESTIMATED, one-time exception**,
+not presented as equivalent to this case's actually-cited figures. The re-estimate raises the base
+D8 margin from 15.4% to 19.4% — still inside SPEC's 20% cap, still genuinely close.
+
+**Correction, 2026-08-18 (fresh P5 re-run against the current 9in base).** The prior note above
+(and MA1/MA2's `case.json` sensitivity fields) claimed a +50% flex of the 9in hole still flips the
+D8 winner to the O-ring. Re-running `sensitivity_model.py`'s FLEX sweep directly against the
+current `PARAMS` (base D8: A=0.4094, B=0.3429, margin 19.4%) shows this is **no longer true** at
+the current 9in base — that flip finding was carried forward from when the base was still 10in and
+never re-verified after the re-estimate to 9in:
+- `disk_hole_d_in` **+50%** (13.5in) → A=0.35, B=0.34, margin **1.2%**, disk still wins (no flip).
+- `disk_hole_d_in` **-50%** (4.5in) → A=0.47, B=0.34, margin **36.4%**, disk still wins, but the
+  margin now exceeds SPEC's 20% cap — a wide-margin finding, not a flip, but still disclosure-worthy.
+
+So the honest, current P5 finding for MA2 is: **no winner flip in either direction** at the current
+9in base, but the -50% direction breaches the balance cap. This is disclosed as a **Category X**
+instability (a real, proprietary quantity that cannot be publicly sourced, best-effort estimated
+from the closest public analogue) in `sensitivity_disclosure[]`, not silently dropped — a Hero
+should be pushed to defend *why* 9in is a reasonable engineering estimate (citing the general
+stress-concentration formula's boundary, S6), not just told "the real number is unknown."
+Facilitators running this case should know the 19.4% D8 margin, while real and currently stable
+under a +50% flex, does narrow to 1.2% at the top of that band — close enough that a sharp Hero
+pressing on MA2 can make the disk's win feel much less comfortable, even though it never actually
+flips.

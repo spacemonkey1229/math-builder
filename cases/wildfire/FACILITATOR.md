@@ -136,9 +136,9 @@ recommendation, or did it just change what argument you'd use to defend it?"
 ## The trap
 
 A Hero computes "35 > 27, so San Fernando's flank is faster, therefore San Fernando is more
-urgent," recommends Option A, and never converts chains/hour into an actual mph, never checks it
-against a real town distance, and never notices that at that rate the fire is over two days from
-either town. The raw ROS comparison alone (35 vs. 27 chains/hour) is real data, but by itself it
+urgent," recommends Option A, and skips the chains-per-hour-to-mph conversion, misses the real
+town-distance check, and never notices that at that rate the fire is over two days from either
+town. The raw ROS comparison alone (35 vs. 27 chains/hour) is real data, but by itself it
 answers a different question than "which town do we send help to today" — the case's real tension
 is that the more urgent-*feeling* number (35) doesn't automatically win once you do the actual
 rate-time-distance math and put a real population figure next to it.
@@ -219,15 +219,31 @@ assumption, applied one after another, still support the twist holding?) and **s
   Deep Conflict thread 2 — the twist is presented as true *under the case's own stated model*, not
   as an unconditional claim about the real fire, and the discussion is designed to surface exactly
   this limitation rather than hide it.
+- **2026-08-18 correction, found by a fresh Tier 2 probe-4 subagent re-deriving the twist under
+  every defensible reading, not just re-asserting the prior text.** The case's own "tonight" cutoff
+  is the elapsed window D1 already uses — 05:00 to 23:59, i.e. **18.98 hours**, not a round 24
+  hours. The prior version of this section said a ±50% distance/wind-accel swing "leaves both towns
+  well past 24 hours," which is true but was the wrong bar and understated the twist's real margin
+  of safety. Checked directly against the correct 18.98h bar with `sensitivity_model.py`'s corrected
+  FLEX sweep (see the script's own inline comment on the 2026-08-13 FLEX being vacuous — it swept
+  `sector_deg`/`twist_wind_accel_factor` through `evaluate()`, which reads neither, so it silently
+  tested nothing every prior run): `twist_wind_accel_factor` at +50% (2.4×, the twist's own most
+  aggressive disclosed flex) gives Santa Clarita ≈23.83h — comfortably still past the real 18.98h
+  cutoff. Solving directly for where the twist actually breaks: **twist_wind_accel_factor ≈3.01×**,
+  nearly double the disclosed 1.6× base and well beyond even a ±50% flex on it (max 2.4×). The twist
+  has real headroom, not a paper-thin one.
 - Holding all five simultaneously (the case's actual as-published state): both D3 and D4 land
   solidly past 48 hours (57.8h and 57.2h), so the **Twist itself** ("not tonight, for either town")
-  holds robustly — a 50% swing on either distance still leaves both towns well past 24 hours (see
-  the FLEX sweep in sensitivity_model.py). **This is a different question from whether A beats B**,
-  and the two must not be conflated: the twist (neither town is reached tonight) is robust; the
+  holds robustly — checked against the case's own true 18.98h cutoff, not just a round 24h, a ±50%
+  flex on either the distance figures (P6-covered, not FLEX-swept) or the twist's own wind-accel
+  dial leaves both towns well past "tonight." **This is a different question from whether A beats
+  B**, and the two must not be conflated: the twist (neither town is reached tonight) is robust; the
   balance-test winner (which town has the shorter lead time, A or B) is NOT robust — it is a real,
   disclosed Tier 2 probe 5 FAIL, because the honest margin between the two options is only ~1.1%
-  and flips order under the same ±50% distance flex that leaves the twist untouched. See the Balance
-  Argument section's sensitivity disclosure and Lessons Learned below.
+  and rests entirely on given field data and cited route distances, neither of which is a stated
+  modeling assumption (per `sensitivity_model.py`'s FLEX, now correctly empty for the base metric —
+  P6 already re-verified the distances live). See the Balance Argument discussion in case.json's
+  `balance` object and Lessons Learned below.
 
 ## Sensitivity note
 

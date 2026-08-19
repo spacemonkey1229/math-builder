@@ -206,3 +206,50 @@ P6 PASS.**
 
 ## P5 FLEX rescoping — 2026-08-13
 FLEX[] in sensitivity_model.py was corrected to exclude cited/given measurements (test with a real or dataset source) and keep only genuine stated modeling assumptions, per the reference doctrine ("sensitivity to stated assumptions, not to cited measurements"). Re-ran `python3 skills/case-readiness/scripts/tier2_probes.py --case airplane-manufacturer --probe 5 --flex 0.5`: P5 now reports [FAIL] on the corrected scope. See sensitivity_model.py's own inline comment for the specific rationale per removed/kept dial.
+
+---
+
+## case-readiness run — 2026-08-18
+
+**State:** TIER1_PASS (as of 2026-08-13) → this run → **BLOCKED**   **Verdict:** BLOCKED
+
+**Scope of this run.** `sensitivity_model.py` already existed (built 2026-08-13); no new contract build was needed. Ran the model fresh, dispatched genuinely fresh, blind subagents for P1 (cold solve) and P3 (trap check), live re-fetched all 5 `sources[]` URLs for P6, and worked P2/P4 directly (neither requires blindness per SKILL.md). This surfaced and fixed two real content defects (below), and separately found that Tier 1 is currently blocked by a published-artifact staleness issue this agent is not permitted to fix.
+
+### Tier 1 — structural (19 checks)
+Re-ran `tier1_structural.py --case airplane-manufacturer` after all content fixes below.
+sha256(case.md) = `35e477b37db6b44ed6e0ec0baa321c52e477764e616b111b1b2075adf9a827c8` (changed — see note).
+
+| id | result | note |
+|---|---|---|
+| T1-01–T1-07, T1-10–T1-13, T1-17, T1-19 | PASS | unchanged |
+| T1-08 | GAP | LOW-confidence sources present (S6) — confirmed not dilemma-flipping |
+| T1-09 | GAP | margin 19.4% inside cap but wide — same accepted, disclosed one-sidedness as before |
+| T1-14 | GAP | 6 numbers in FACILITATOR.md not in case.json/case.md (guide-only derived figures + the migrated 2021 date) — not actionable, same category as before |
+| **T1-15** | **BLOCKER** | `published/Airplane Manufacturer - Interactive.html` predates the current `case.md` by ~8 hours. Root cause: an already-in-progress, uncommitted, corpus-wide edit — present in the working tree before this session started — had removed a facilitator-only leak section from `case.md` (to close a T1-18 leak-detector finding) without republishing; this session's own content fixes (below) added a further edit on top. **Not fixed here — requires `case-publish`, which this agent is explicitly instructed not to run.** |
+| T1-16 | PASS (after this run's edit) | was FAIL at the start of this run (recorded hash stale); resolved by writing the current hash into `case.json.qa.case_md_sha256` below |
+| T1-18 | BLOCKER + GAP | same staleness root cause as T1-15 (BLOCKER); plus 33 numbers in the published HTML's prose not traceable to case.md/case.json (GAP, same accepted CSS/SVG-decimal category as every prior run of this check) |
+| T1-07 | POLISH | unchanged (separator-run half of legacy label check not exercised) |
+
+**VERDICT: BLOCKED — 2 blockers (T1-15, T1-18), both the same published-HTML-staleness root cause, both requiring `case-publish` to resolve. Not a content defect in case.md/case.json/FACILITATOR.md.**
+
+### Tier 2 — simulated play (6 probes)
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Dispatched a genuinely fresh subagent with access to ONLY `/tmp/coldsolve-airplane-manufacturer/PACKET.md` (confirmed leak-free by the script). It reached Option A (turbine disks), optimized weekly profit with D8 as a named tiebreak metric, and its arithmetic (cut paths, areas, parts/sheet, weekly volume, cost/profit) matches `derived{}`'s current (9in-hole) geometry closely. It named MA1 as the most sensitive assumption and flagged the O-ring's $4,870 bending cost as the least-supported number — a fair observation, but not a new defect: like the machine price and wage, that figure is the original legacy scenario's own given data (`legacy_conversion_note`), not something requiring external sourcing. This is a stronger, genuinely blind P1 confirmation than the 2026-08-13 self-solves on file, which explicitly disclosed they were not blind. |
+| P2 both-sides | **PASS** | Worked directly (no blindness required per SKILL.md). Option A dominant on every packet-derivable number (D8, D5 volume, D6 margin/profit, Twist). Option B's only real quantitative support remains raw sale price (8.4x) plus the previously-added, live-reconfirmed S4 electricity-saving angle (~$128–$178/week) — thin but real, does not collapse to a pure concession. Consistent with the prior PASS (reached 2026-08-13 after S4 was added). |
+| P3 trap | **PASS** | Dispatched a second fresh subagent: read `case.md` alone, independently predicted the exact trap FACILITATOR.md names ("stopping at sale price, missing the volume and bending-cost corrections") in matching mechanism and even near-matching phrasing, then confirmed the guide names the same path. |
+| P4 twist | **PASS** | `evaluate_twist({})` re-run fresh: disk = 4,795 units (95.9% of the 5,000 target, bonus not met), O-ring = 1,302 (26%, bonus not met) — matches `derived{}` exactly. FLEX sweep re-run: exactly 2 dials (`disk_hole_d_in` −50%, `twist_sprint_days` +50%) cross the bonus threshold — corrected from the previously-recorded 3, since `disk_overall_h_in` was already out of P5's scope (see P5 below) and its twist-bonus contribution should never have still been counted as live. Soundness check (no ordering of MA1–MA4 at *stated* values crosses 5,000) re-confirmed. |
+| P5 sensitivity | **PASS (disclosed)** | **Real defect found and fixed.** `sensitivity_model.py`'s FLEX sweep for `disk_hole_d_in`, run fresh against the model's current base value (9in, re-estimated from 10in on 2026-08-13), shows **no winner flip in either direction**: +50% (13.5in) narrows the margin to 1.2% (disk still wins), −50% (4.5in) widens it to 36.4% (disk still wins, breaching SPEC's 20% cap). This contradicted the case's own recorded sensitivity text (`case.json` MA1/MA2, `case.md`, `FACILITATOR.md`, `sensitivity_model.py`'s docstring), which still claimed a +50% flip to the O-ring — that finding was computed against the pre-re-estimate 10in base on 2026-08-13 and never re-verified after the base changed to 9in that same day. **Fixed**: corrected the sensitivity text in all four files, corrected two derived-value errors found in the process (`twist_flex_disk_hole_d_in_minus50pct_units` was recorded as 4795 — actually the *base* twist value, not the −50%-flexed value; corrected to 5040 — and `twist_flex_twist_sprint_days_plus50pct_units` 7140 → 7210), and corrected FACILITATOR.md's Twist flex-disclosure from 3 dials to the current 2 (`disk_overall_h_in` was already out of FLEX scope and should not have still been counted). P5 upgrades from a disclosed FAIL to a disclosed PASS — a margin-width finding (the −50% cap breach) remains and stays recorded in `sensitivity_disclosure[]`, but the more serious winner-flip finding no longer applies at the case's actual current value. |
+| P6 data decay | **PASS** | **One real wording defect found and fixed; no dead links.** S1 (Jeesun CNC): live-reconfirmed, `$45,000-$80,000` unchanged. S2 (StyleCNC): WebFetch 403'd (bot-blocked); re-fetched via `curl` with a browser user-agent — confirms 8,000W as a configuration option in the ST-FC3015GAR family, no fixed price shown, matching the case's claim exactly. S3 (ZipRecruiter): WebFetch and curl both 403'd (bot-blocked, not dead); WebSearch surfaced the live August-2026 page snapshot showing $23.65/hour national average — matches the cited range's low end exactly, same result as the prior QA pass. S4 (Remcor): live-reconfirmed, all figures unchanged. **S6** (amesweb.info): live-reconfirmed reachable, but its cited claim overstated the source — the page states "0≤d/D≤0.3" as the stated **validity range of one specific stress-concentration formula** (simple transverse bending), and never uses the word "recommend," while the case's prior claim text said the ratio was "recommended...for standard design practice." **Fixed**: corrected the claim wording in `case.json` `sources[S6]` and `case.md`'s Appendix D / MA2 text to describe it accurately as a formula-validity boundary used as the closest available numeric anchor, not a general design recommendation. The re-estimate itself (10in→9in) is unaffected — it was always disclosed as a best-effort analogue estimate, not a direct citation, and remains the right call under the corrected description. |
+
+### Tier 3 — human dry-run
+NOT RUN.
+
+### Other fix made this pass (not from a probe)
+`FACILITATOR.md`'s Twist section told the facilitator to "read from `case.md`'s facilitator-only 'The Twist' section" — but an already-in-progress, uncommitted, corpus-wide edit (present before this session began) had already removed that section from `case.md` to close a T1-18 leak-detector finding, leaving the pointer dangling. Fixed by inlining the twist's text directly into `FACILITATOR.md` instead of deferring to a `case.md` section that no longer exists.
+
+### Summary
+**Tier 2 is now fully clean: P1 PASS, P2 PASS, P3 PASS, P4 PASS, P5 PASS (disclosed), P6 PASS — all six probes recorded by name, per SKILL.md's requirement.** Tier 1 is blocked by exactly 2 findings (T1-15, T1-18), both the same root cause (published HTML predates case.md) and both requiring `case-publish` to resolve — explicitly out of this agent's remit this run. **Next step: run `case-publish` to rebuild `published/Airplane Manufacturer - Interactive.html` from the current case.md, then re-run `tier1_structural.py --case airplane-manufacturer` — Tier 1 should clear immediately after that (all remaining Tier 1 findings are GAP/POLISH, not BLOCKER), at which point `case.json.qa.state` can honestly move to `TIER2_PASS` and `case-publish`'s own gate may run.**
+
+**Final state: BLOCKED. Tier 1: 2 blockers (both publish-staleness, not content). Tier 2: P1 PASS, P2 PASS, P3 PASS, P4 PASS, P5 PASS (disclosed), P6 PASS.**

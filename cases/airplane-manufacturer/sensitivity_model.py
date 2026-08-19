@@ -38,12 +38,20 @@ Verified against cases/airplane-manufacturer/case.json `derived{}`:
     twist  A (disk) 10-day units = 4,760 (< 5,000, bonus NOT met)
            B (O-ring) 10-day units = 1,302 (< 5,000, bonus NOT met)
 
-Independently verified finding (2026-08-13 QA pass): under the FLEX sweep
-below, both disk_overall_h_in and disk_hole_d_in at +-50% flip the D8 winner
-(B ends up "more efficient" than A) -- this is a real Tier 2 finding, and
-MA1/MA2's sensitivity notes plus FACILITATOR.md have been corrected to
-disclose it rather than claim (as an earlier draft wrongly did) that
-sensitivity on these dials "does not change which option wins."
+CORRECTED 2026-08-18 (fresh P5 re-run, superseding an earlier note in this
+docstring that is now stale): disk_overall_h_in is no longer in FLEX -- it is
+Appendix C's own cited sketch dimension, not a stated assumption -- and at
+the CURRENT disk_hole_d_in base (9in, re-estimated 2026-08-13 from 10in),
+neither +50% (13.5in, margin narrows to 1.2%) nor -50% (4.5in, margin widens
+to 36.4%) flips the D8 winner; the disk wins at every point in the +-50%
+band. -50% does still breach SPEC's 20% margin cap, so this remains a
+disclosed (not eliminated) Category-X finding in case.json's
+sensitivity_disclosure[] -- but it is a margin-width finding now, not a
+winner-flip finding. An earlier version of this note (and of MA1/MA2's
+case.json sensitivity fields) claimed a +50% flip; that finding was computed
+against the pre-re-estimate 10in base and was never re-verified after the
+base changed to 9in -- see QA_REPORT.md's 2026-08-18 entry for the full
+correction.
 """
 import math
 

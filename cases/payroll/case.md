@@ -150,24 +150,4 @@ The "H2 2019 (projected)" column is what each employee is still owed for the sec
 
 ---
 
-<!-- FACILITATOR ONLY -->
-
-## Facilitator-Only: Balance Argument (do not share with students before discussion)
-
-**Argument for A (Operation Clean Break).** Letting go of either Tiago or Irene removes exactly $20,000 from the remaining payroll budget in a single, clean cut — the target is closed exactly, on the first try, with zero risk of a second round of cuts from a rounding error. The other four employees keep 100% of the pay they were counting on for the rest of the year. Martha, in particular, is already stretched thin caring for her niece; a pay cut on top of that would be a second hardship layered onto a family already in crisis.
-
-**Argument for B (Operation Shared Weight).** A 17.94% pay cut, applied to all five employees, closes the same $20,000 gap without anyone losing their job or their health insurance, their identity as "the person who does X at Grampoline," or their income entirely. It spreads a real hardship five ways instead of concentrating 100% of it onto one person and their household. No single employee — including Tiago, two months into fatherhood, or Irene, who just signed a year-long lease she can't easily break — is asked to absorb the whole shock alone.
-
-**The margin.** Both options are constructed to close the identical $20,000 target (Operation Clean Break via Tiago or Irene's exact remaining pay; Operation Shared Weight via 17.94% applied to the $111,500 payroll pool). `margin_pct = 0.0` — the two options are, by design, financially identical on the graded primary metric. The real tension this case forces is not "which option saves more money" (they don't differ), but who bears a $20,000 hit and how concentrated that hit is: one household absorbing all of it, or five households absorbing a slice each. See `case.json.balance` for the full computed figures.
-
-## The Twist (facilitator delivers at ~15 minutes)
-
-Francesca's phone rings. It's Grampoline's largest customer — a regional chain of senior-living communities — calling to say how thrilled they are with Irene's latest social media posts, which drove a wave of new signups at their newest location. "I had no idea Irene was this good," the customer says. "Honestly, she's a big part of why we keep coming back to Grampoline instead of the bigger guys."
-
-**Facilitator-only, disclosed scenario assumption (not a real, sourced figure — see `case.json.modeling_assumptions`):** assume this customer's account represents 15% of Grampoline's 2019 H1 revenue ($127,000 × 15% = **$19,050**), and that losing Irene puts that account at real risk of leaving within the following year.
-
-If a Hero has picked Operation Clean Break *and specifically chosen to let Irene go*, ask them to recompute: the $20,000 payroll saved this year is nearly wiped out by $19,050 of revenue put at risk next year — a net benefit of only $950, not $20,000. This does not make Operation Clean Break wrong (Tiago is untouched by this twist, and still closes the gap cleanly), and it does not make Operation Shared Weight automatically right (it still cuts five real paychecks). It invalidates exactly one popular reasoning path — "let go of the newest, least-tenured employee" — without resolving the case.
-
-**Twist recompute, if Irene is the Clean Break choice.** Payroll saved is $20,000; revenue put at risk (Modeling Assumption MA3) is $19,050; net first-year benefit is $20,000 − $19,050 = **$950**, meaning 95.25% of the "savings" disappears once the customer-relationship risk is priced in.
-
-Ask: "Does this change your position — or does it just mean if you pick Operation Clean Break, you pick Tiago instead of Irene?"
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

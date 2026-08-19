@@ -480,36 +480,4 @@ A–F.
 
 - How to determine whether a graph has an Euler path or circuit
 
-<!-- FACILITATOR ONLY -->
-
-## Balance argument (facilitator only — never shipped to students)
-
-**Argument for A (The As-Is Loop).** No capital request, no construction risk, and the numbers are
-fully known today: a deadhead ratio of 1.2285, a fixed and predictable extra 0.9046 miles of
-repeat driving every sweep. On the only lens that has a real dollar figure attached — fuel cost —
-The Persimmon Connector is not close: at these sourced rates, its payback period is on the order of
-millions of years, not the 20–40-year horizon any real capital budget uses.
-
-**Argument for B (The Persimmon Connector).** The connector is a genuine, measurable improvement on
-the case's own stated primary metric: deadhead ratio drops from 1.2285 to 1.2050, a real 1.9%
-improvement, in the same family as this project's own gold-standard close-margin case (SPEC §2, the
-0.09%-margin Robotics Engineering exemplar). It also permanently removes two odd-degree vertices
-from the network — a structural fix, not a one-time workaround — meaning every future sweep,
-indefinitely, benefits from it, not just this year's.
-
-**Margin.** `margin_pct` = **1.9** (computed on the stated primary metric, deadhead ratio: (1.2285 −
-1.2050) ÷ 1.2285 ≈ 1.9%). `margin_basis`: compare The As-Is Loop's official deadhead ratio (Appendix
-C, Part 2) against the deadhead ratio after The Persimmon Connector is built (Appendix D), both
-computed the same way over the same full 58-vertex network.
-
-**The trap.** The case's stated primary metric (deadhead ratio) says B wins, by a margin squarely
-in this project's own "close and defensible" range. A Hero who computes only that number will
-confidently recommend The Persimmon Connector. But Appendix D's dollar figures, computed from the
-same underlying data, show the connector's real payback period is not merely long — it is longer
-than recorded human history, several times over. The two lenses do not just disagree in degree;
-they point in opposite directions almost totally. The real discussion question is not "which
-calculation is correct" — both are, on their own terms — it is "which quantity should decide a
-real capital request: the metric the case is titled around, or the dollar reality underneath it."
-
-**Sensitivity note (SPEC §6).** None required — this case involves no illness, death, money stress,
-or family-hardship subject matter beyond an ordinary municipal budget memo.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

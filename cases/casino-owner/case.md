@@ -251,14 +251,4 @@ Percent · Decimal · Multiplication · Division · Probability · Mean · Bar G
 - How to find the mean of a set of data
 - How to compare two or more values
 
-<!-- FACILITATOR ONLY -->
-
-## Balance Argument (facilitator reference — do not share with students before discussion)
-
-**Argument for A (Indigo):** Under the peak-hours-only build (MA1), the four Indigo tables' high-dollar pots produce a substantially larger weighted-average rake per game than any single video machine can produce per play, even after accounting for Indigo's slower game pace and its per-table dealer wage. The room is small (4 tables vs. up to 25 machines), but the dollars moving through each Indigo game dwarf a $0.50–$2.50 machine bet.
-
-**Argument for B (Video Machines):** Video machines need no specialized staff to open — no dealer to hire, certify, or schedule — and their revenue scales with sheer volume: over 200 plays per hour per active machine, across up to 25 machines simultaneously, versus at most a few dozen hands per hour across 4 Indigo tables combined. Machines also carry a much lower fixed labor cost (2 security staff for the whole room, regardless of machine count, vs. one paid dealer *per table*).
-
-**The margin:** Under MA1–MA3, Indigo's projected weekly profit is close enough to Video's that the choice is genuinely debatable — see `case.json.balance.margin_pct` and `sensitivity_model.py` for the exact figures, computed from D4. Neither argument above states that number; work it from Appendix A–C and D4's own steps.
-
-**The trap:** A Hero who skips straight to "4 tables can't possibly out-earn 25 machines" is reasoning from *unit count* instead of *dollars per unit* — Indigo's per-table dollar rate is high enough to close most of that 25-to-4 gap. The opposite trap also exists: a Hero who assumes card tables obviously win because "the pots are huge" without ever computing a video-machine blended profit-per-play (D3) is skipping the actual math the same way. D1–D4 exist specifically to force both sides to be computed, not assumed.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

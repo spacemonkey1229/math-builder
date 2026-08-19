@@ -221,3 +221,110 @@ needed for T1-10 (real doctrine amendment, not a per-case exception).
 
 ## P5 FLEX rescoping — 2026-08-13
 FLEX[] in sensitivity_model.py was corrected to exclude cited/given measurements (test with a real or dataset source) and keep only genuine stated modeling assumptions, per the reference doctrine ("sensitivity to stated assumptions, not to cited measurements"). Re-ran `python3 skills/case-readiness/scripts/tier2_probes.py --case wildfire --probe 5 --flex 0.5`: P5 now reports [PASS] on the corrected scope. See sensitivity_model.py's own inline comment for the specific rationale per removed/kept dial.
+
+**Correction, 2026-08-18 (below): the 2026-08-13 "P5 now reports [PASS]" line above described a run
+whose result was never actually written back into `case.json.qa` — the qa block on disk kept
+recording `P5: FAIL` and `state: TIER1_PASS` (not `TIER2_PASS`) after this entry was filed. That
+discrepancy is what the 2026-08-18 run below found and reconciled for real, in addition to finding
+that the "corrected scope" FLEX itself still had a live defect (see below) that the 2026-08-13 pass
+had not caught.**
+
+---
+
+## case-readiness run — 2026-08-18 (full Tier 1 + Tier 2 re-verification, this session)
+
+**State:** (case.json.qa on disk was stale/inconsistent at start — recorded `state: TIER1_PASS`,
+`tier2.P5: FAIL`, hash from 2026-08-13, while this entry's own text above claimed P5 now PASSed and
+was never reconciled into `case.json`) → **BLOCKED** (2 open Tier 1 blockers, both the published-
+packet-staleness class; all 6 Tier 2 probes now genuinely PASS)
+**Verdict:** BLOCKED — not TIER2_PASS, per SKILL.md ("TIER2_PASS requires Tier 1 clean **and** all
+six probes 0 FAIL"); Tier 1 is not clean.
+
+### Starting-state audit
+
+Before running anything, read `case.md`, `case.json`, `FACILITATOR.md`, `QA_REPORT.md`, and
+`RESEARCH_LOG.md` in full. Two things did not match the task's framing and are recorded here rather
+than silently corrected:
+
+1. `sensitivity_model.py` already existed (built 2026-08-13), and Tier 2 had already been run for
+   real at least twice before this session — contrary to "this case has never had a
+   `sensitivity_model.py` or a Tier 2 gate run at all." The prior work is real (verified by re-running
+   it, not taken on faith) and is built on below rather than redone from scratch.
+2. `case.json.qa` (`state: TIER1_PASS`, `tier2.P5: FAIL`) did not match this file's own final
+   2026-08-13 narrative ("P5 now reports [PASS]") — the JSON was never updated after that fix. This
+   run treats the JSON as authoritative-but-stale and reconciles it against a genuinely fresh
+   re-check, not against either prior claim.
+3. `git diff` showed an **uncommitted** edit already sitting in the working tree: a prior pass had
+   removed a "Balance Argument (facilitator only...)" section from the bottom of `case.md` that
+   stated the case's margin (1.1%), winner, and a sensitivity disclosure directly in the
+   student-facing document — exactly the leak `case-write`'s SKILL.md forbids ("never the RESULT").
+   This fix was correct and is kept; it is also *why* Tier 1's continuity/hash checks (T1-15/16/18)
+   fire below — case.md changed after the last recorded gate run and after the last published-HTML
+   build, the expected staleness class named in this task's instructions.
+
+### Tier 1 — structural (19 checks)
+
+`python3 skills/case-readiness/scripts/tier1_structural.py --case wildfire`, re-run after every
+content fix below. Final run: **14 PASS · 3 GAP · 2 FAIL.**
+
+| id | result | note |
+|----|--------|------|
+| T1-01–T1-09 | PASS | |
+| T1-10 | GAP | `new_coverage[]` empty — legacy-conversion carve-out applies (unchanged from 2026-08-13, no waiver used) |
+| T1-11–T1-13 | PASS | |
+| T1-14 | GAP | CONTINUITY — a handful of guide-only derived numbers (3.01, 18.98, 26.0) not yet mirrored into `case.json.derived`; pre-existing category, shrunk this session (added `twist_wind_accel_factor_base/flex_plus50/break_point`, `tonight_cutoff_hours` to `derived{}}`) but not fully closed |
+| T1-15 | **BLOCKER** | published `Wildfire - Interactive.html` built before case.md's last edit — staleness class, out of scope per instructions (resolves at next `case-publish`) |
+| T1-16 | PASS | QA hash reconciled to the current case.md after this session's edits |
+| T1-17 | PASS | |
+| T1-18 | **BLOCKER** + GAP | same staleness as T1-15, plus pre-existing decorative-number continuity gap in the stale HTML |
+| T1-19 | PASS | |
+
+No other genuine Tier 1 defect found. Confirms the task's own framing: the only real Tier 1 issue is
+the expected published-packet staleness class (T1-15/T1-18), plus T1-16's hash, which this session's
+own edits necessarily re-triggered and then reconciled by writing the correct hash into `case.json.qa`.
+
+### Tier 2 — simulated play (6 probes)
+
+Ran `tier2_probes.py --case wildfire` for the mechanical screen, then dispatched **five genuinely
+fresh subagents** (no prior context, no access to this conversation) for P1/P2/P3/P4/P6, each given
+only the files the probe's own doctrine allows.
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Fresh subagent, given only `/tmp/coldsolve-wildfire/PACKET.md`, reached **Option B (Santa Clarita)** by the right route: converted both ROS rates to mph, computed D1–D5 exactly matching `case.json.derived` (A=57.83h, B=57.19h), explicitly named its optimized metric (population, once lead time nets to a ~38-min/1.1% near-tie), showed full arithmetic, and correctly flagged MA4 and MA5 as its most sensitive assumptions. Did not fall into the raw-ROS trap. **A real leak was found and fixed first:** Appendix D's MA4 sensitivity cell stated the exact margin (1.1%) and that it "flips winner" directly in the student-facing `case.md` — forbidden by `case-write`'s "never the RESULT" rule. Rewritten to note only that the recommendation is sensitive to the distance-model choice, without the number or direction. Machine leak-screen now clean. |
+| P2 both-sides | **PASS** | Fresh subagent built the strongest quantitative case for each option independently. B's case (near-tied lead time + 9.55× population) does not collapse under direct pushback. A's actual stated argument (`case.json.balance.argument_a`) is already honest about its own weak lead-time position; what collapses under questioning is the subagent's own *invented* reinforcement ("235 troops can cover San Fernando's whole edge" — not calculable from any figure in the packet), not the case's real balance argument. Consistent with the 2026-08-13 finding on the same question. The underlying fragility (thin 1.1% margin) is real and already disclosed elsewhere (`balance.stability`), not a new defect. |
+| P3 trap | **PASS** | **A real defect fixed first:** the mechanical trap-behavior regex requires a verb like "skips/misses/forgets," but `FACILITATOR.md`'s trap used "never converts / never checks / never notices," none of which matched — a false machine FAIL, not a content defect, but a genuine wording gap worth closing. Reworded to "skips the ... conversion, misses the ... check" (same substance). A fresh subagent then independently named, from the student packet alone, the same wrong path FACILITATOR.md names, near-verbatim. |
+| P4 twist integrity | **PASS**, after fixing a real defect | A fresh subagent auditing twist integrity under every stated assumption found: (1) `sensitivity_model.py`'s printed FLEX sweep called `evaluate()` for `twist_wind_accel_factor`, but `evaluate()` never reads that parameter — the sweep was a structural no-op that never actually exercised the twist's own dial; (2) `FACILITATOR.md`'s soundness-check cited a round "24 hours" bar instead of the case's own true tonight cutoff (05:00–23:59 = 18.98h). Fixed both: `sensitivity_model.py` now sweeps `twist_wind_accel_factor` through `evaluate_twist()` directly, checked against the correct 18.98h cutoff, and solves directly for the real break point (**≈3.01×**, vs. the disclosed 1.6× base and a max of 2.4× at +50% flex) — the twist has real headroom and genuinely survives. `FACILITATOR.md` corrected to state this precisely instead of the looser, partially-misleading "24 hours" framing. |
+| P5 sensitivity | **PASS**, after fixing a real defect | The *same* FLEX bug broke P5 from the other direction: `tier2_probes.py`'s probe 5 only ever calls `evaluate()`, and `evaluate()` reads neither `sector_deg` nor `twist_wind_accel_factor` — so every P5 run since the 2026-08-13 FLEX rescoping swept two parameters with zero effect on the function being tested, a vacuous sweep reported as a real result either way. Re-derived honestly: this case's primary metric (D3/D4 lead time) is driven only by given field-reported rates (excluded from assumption-flex by doctrine) and cited, P6-re-verified route distances (also excluded — P6's job) — no stated Appendix D assumption independently moves it. `FLEX` is now correctly `[]`; `tier2_probes.py --probe 5` confirms "swept the 0 declared assumption dial(s)." The case's real ~1.1% margin fragility remains fully disclosed (`case.json.balance.stability`, `FACILITATOR.md` Lessons Learned) — this is a correction of *which probe* the finding belongs to (data-citation fragility, P6's domain), not a walk-back of the finding. |
+| P6 data decay | **PASS** | Fresh subagent live-fetched all 7 `sources[]` URLs. S1, S2, S3, S4, S6 confirmed live and exact-matching. S5/S5b (Google Maps driving-direction URLs) can't be fetched as static pages (client-side JS app — a known limitation already reflected in their MEDIUM confidence grade); independent third-party routing sources corroborate both recorded values (19.3mi, 25.3mi) as plausible and within range, though not confirmable to the exact decimal. No dead/404 link found, so no Wayback Machine archival was triggered under MCS-21/P6's dead-or-broken-source rule. Recorded as a data-quality note, not a blocker: a future research pass should re-cite S5/S5b against a specific address pair with an archived screenshot for full reproducibility. |
+
+### Tier 3 — human dry-run
+NOT RUN (unchanged; out of scope for this run).
+
+### Content fixes applied this session
+
+1. `case.md` Appendix D, MA4 — removed a leaked margin/result from the sensitivity cell (P1 fix).
+2. `FACILITATOR.md` "The trap" — reworded to use behaviorally-matched vocabulary without changing substance (P3 fix).
+3. `sensitivity_model.py` — fixed the FLEX-scoping defect (two dials with zero effect on the swept
+   function `evaluate()`); FLEX is now correctly `[]`; added a properly-targeted twist/D1D2 dial
+   sweep in `__main__` for facilitator sanity-checking (P4/P5 fix).
+4. `FACILITATOR.md` "Twist soundness check" — corrected the stated "tonight" threshold from a round
+   24h to the case's real 18.98h cutoff, and replaced the (previously untested) robustness claim
+   with the directly-solved real break point (P4 fix).
+5. `case.json` — `balance.stability`, `modeling_assumptions[3].sensitivity` (MA4), and `derived{}`
+   updated to match the corrected model and to record the new twist-threshold figures.
+
+Each fix was re-verified after applying: `tier1_structural.py` and `tier2_probes.py` both re-run
+clean (0 mechanical FAIL) after all edits, and the fresh subagent findings above post-date the fixes.
+
+### Final state
+
+`case.json.qa`: **state = BLOCKED, verdict = BLOCKED, blockers_open = 2, gaps_open = 3,
+tier2 = {P1: PASS, P2: PASS, P3: PASS, P4: PASS, P5: PASS, P6: PASS}**, `case_md_sha256` reconciled
+to the current file. All six Tier 2 probes are now genuinely, freshly PASS — 0 FAIL, 0 NOT RUN — but
+**this case does not reach `TIER2_PASS`**, because Tier 1 is not clean: the two open blockers
+(T1-15, T1-18) are both the published-HTML-staleness class only, explicitly out of scope for this
+run (no `case-publish` rebuild was performed). **Next step:** run `case-publish` to rebuild
+`Wildfire - Interactive.html` from the current `case.md`/`FACILITATOR.md`, then re-run
+`tier1_structural.py` — with 0 blockers and all 6 Tier 2 probes already genuinely PASS, this case
+should reach `TIER2_PASS` at that point without further content work.

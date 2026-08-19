@@ -6,7 +6,7 @@ MS | Math | Case Study | 2026-27 | Heroes Academy
 
 ## Overview
 
-The room is a hotel conference floor in midtown Manhattan, phones confiscated at the door, blinds drawn. Bernadette McGlade has been in this chair for four years now, and she still isn't used to it — eleven people deciding, in private, which college basketball programs get to keep playing and which go home. On the wall, a name: **Seton Hall**. Win-loss record. Offensive rating. Defensive rating. The strength of every team they've played.
+The room is a hotel conference floor in midtown Manhattan, phones confiscated at the door, blinds drawn. Bernadette McGlade has been in this chair for four years now, and she still isn't used to it — ten people deciding, in private, which college basketball programs get to keep playing and which go home. On the wall, a name: **Seton Hall**. Win-loss record. Offensive rating. Defensive rating. The strength of every team they've played.
 
 "We've been on this one for twenty-five minutes," says the committee chair. "Time to vote. Is Seton Hall one of the best teams in the country? Yeas."
 
@@ -24,13 +24,13 @@ Every head in the room turns to Bernadette. She hasn't voted yet. Down the hall,
 
 ## Background
 
-Bernadette McGlade is the Commissioner of the Atlantic-10 Conference and, in the 2019-20 season, a sitting member of the NCAA Division I Men's Basketball Committee — an 11-person body of conference and university administrators who serve staggered terms selecting, seeding, and bracketing the 68-team field for the NCAA Tournament, "March Madness" [S1].
+Bernadette McGlade is the Commissioner of the Atlantic-10 Conference and, in the 2019-20 season, a sitting member of the NCAA Division I Men's Basketball Committee — a 10-person body of conference and university administrators who serve staggered terms selecting, seeding, and bracketing the 68-team field for the NCAA Tournament, "March Madness" [S1].
 
 The committee's job runs all season. There are 353 Division I teams, and because each plays only about 31-35 games, no two teams' schedules overlap enough to compare records directly (SEE APPENDIX A). To correct for that, the committee leans on opponent-adjusted statistics: not just how many points a team scores and allows, but how good the *teams it played* were on offense and defense. Those four numbers — **Team Offensive Rating**, **Team Defensive Rating**, **Opponents' Offensive Rating**, and **Opponents' Defensive Rating** — are defined in full in **APPENDIX B**, which also carries the real, opponent-adjusted numbers for the 25 teams that sat closest to the top-16 cutoff line that season.
 
 On March 11-12, 2020, before the committee could finish its work, the COVID-19 pandemic shut down the rest of the college basketball season. The NCAA Tournament was canceled outright — the first cancellation in its history — and no official bracket, seed list, or committee vote was ever finalized or released [S2]. **This case is a reconstruction**, not a transcript: it uses the real, dated season statistics that existed in the field on the day the season stopped (SEE APPENDICES A, B and C) to ask the question the committee never got to finish answering. The specific 5-5 tie described above is a dramatized frame for the dilemma, not a leaked vote count — the committee's actual internal deliberations and any tallies are never made public, by rule.
 
-Two real, independent rankings existed on that frozen day: the final Associated Press media poll, released March 16, 2020, had Seton Hall at **No. 15** [S3][S4] — the last complete national ranking of the season. The NCAA's own NET system, the tool the real committee uses, had Seton Hall at **No. 12** in the final week it was tracked that season [S5]. Both of those numbers, and the full opponent-adjusted rating data behind them, are in **APPENDIX A**.
+Two real, independent rankings existed on that frozen day: the final Associated Press media poll, released March 16, 2020, had Seton Hall at **No. 15** [S3][S4] — the last complete national ranking of the season. The NCAA's own NET system, the tool the real committee uses, had Seton Hall at **No. 15** in the final week it was tracked that season [S5]. Both of those numbers, and the full opponent-adjusted rating data behind them, are in **APPENDIX A**.
 
 **Seton Hall finished the regular season 21-9 (13-5 Big East), a share of the Big East regular-season title** [S3]. Whether that record and that rating profile is genuinely a top-16 résumé, or genuinely just short of one, is what you have to decide. The conventions this case uses to make that judgment possible — how the comparison field was chosen, what "top 16" means, and how many teams are in the full field — are stated explicitly in **APPENDIX D**, and every figure in this case is cited in **APPENDIX E**.
 
@@ -77,7 +77,7 @@ Do you:
 | Ranking | Seton Hall's rank | What it measures | Source |
 |---|---|---|---|
 | Final AP Media Poll (released March 16, 2020) | **No. 15** of 25 ranked teams | A weekly vote of ~65 national sportswriters and broadcasters — a human, résumé-and-eye-test judgment, not a statistical formula | [S3][S4] |
-| NCAA NET Ranking (final tracked week, 2019-20 season) | **No. 12** of 353 teams | The NCAA's own opponent-adjusted rating system, introduced in 2018 specifically to help the real committee do this job | [S5] |
+| NCAA NET Ranking (final tracked week, 2019-20 season) | **No. 15** of 353 teams | The NCAA's own opponent-adjusted rating system, introduced in 2018 specifically to help the real committee do this job | [S5] |
 
 Seton Hall's full season: **21-9 overall, 13-5 Big East (regular-season co-champion)** [S3]. The Big East Tournament — where Seton Hall was the No. 3 seed and would have played Marquette in the quarterfinal — never happened; it was canceled the same week as the NCAA Tournament [S3][S2]. Seton Hall never got the chance to add a marquee win or take a bad loss in March. Its résumé is frozen exactly where it was on March 11, 2020.
 
@@ -154,13 +154,13 @@ The bubble field in Appendix B is drawn from a full 353-team dataset covering ev
 
 | # | Claim | Value | Source | Date | Confidence |
 |---|---|---|---|---|---|
-| S1 | Structure of the NCAA committee and tournament: 11 members, 68-team field, 4 regions of 16, seeded 1-16, matchups by seed | Structural, not a changing number | NCAA.com, official tournament format explainer | Evergreen | HIGH |
+| S1 | Structure of the NCAA committee and tournament: 10 members, 68-team field, 4 regions of 16, seeded 1-16, matchups by seed | Structural, not a changing number | NCAA.com, official tournament format explainer | Evergreen | HIGH |
 | S2 | The 2020 NCAA Division I men's basketball tournament was canceled outright due to COVID-19, the first cancellation in tournament history, with no bracket ever finalized | Canceled March 12, 2020 | Wikipedia — "2020 NCAA Division I men's basketball tournament" | Accessed 2026-08-13 | MEDIUM |
 | S3 | Seton Hall's 2019-20 final record, Big East finish, and final AP poll rank | 21-9 overall, 13-5 Big East (co-champion), final AP rank No. 15 | Wikipedia — "2019-20 Seton Hall Pirates men's basketball team" | Accessed 2026-08-13 | MEDIUM |
 | S4 | Seton Hall finished the 2019-20 season at No. 15 in the last Associated Press Top 25 poll of the year | No. 15 | Seton Hall University Athletics (shupirates.com) — "Seton Hall Finishes No. 15 in Season's Last Associated Press Poll" | Accessed 2026-08-13 | HIGH |
-| S5 | Seton Hall's NCAA NET ranking during the 2019-20 season, including the final tracked week | No. 12 | WarrenNolan.com — 2020 Seton Hall Men's Basketball Rankings by Week | Accessed 2026-08-13 | MEDIUM |
+| S5 | Seton Hall's NCAA NET ranking during the 2019-20 season, including the final tracked week | No. 15 | NCAA.com — official NCAA Division I Men's Basketball NET Rankings (through games of March 12, 2020, the last date games were played) | Accessed 2026-08-18 | HIGH |
 | S6 | Real, dated 2019-20 season Team/Opponent Offensive and Defensive Ratings for 353 Division I teams | Full dataset — see Appendices B, C | Original committee-style team statistics sheet supplied with this case's legacy source materials (`source/Y1/Session 6/Seton Hall/NCAA Basketball Team Statistics.xlsx`) — an opponent-adjusted efficiency dataset consistent in structure and values with the major public college-basketball ratings systems of that season | Season data as of March 2020 | MEDIUM |
-| S7 | 353 Division I teams competed during the 2019-20 season | 353 | Wikipedia — "2019 NCAA Division I men's basketball tournament qualifying teams" (team count consistent across the 2018-2021 seasons) | Accessed 2026-08-13 | MEDIUM |
+| S7 | 353 Division I teams competed during the 2019-20 season | 353 | Wikipedia — "2019 NCAA Division I men's basketball tournament" (team count consistent across the 2018-2021 seasons) | Accessed 2026-08-18 | MEDIUM |
 
 **On S6's confidence grade:** the original spreadsheet supplied with the legacy case materials has no publisher letterhead, byline, or named methodology — only the definitions in Appendix B's Key, which describe a standard opponent-adjusted efficiency system. Every spot-checked figure (Seton Hall's 21-9 record, Kansas's 28-3 record and No. 1 overall composite position, Virginia's historically elite defensive rating for that era) matches independently verifiable real facts about the 2019-20 season. It is graded MEDIUM rather than HIGH only because the sheet's own original compiler and exact methodology are not named in the file itself — not because any individual figure looks wrong.
 
@@ -204,16 +204,3 @@ The bubble field in Appendix B is drawn from a full 353-team dataset covering ev
 - How to convert numbers to percents
 - How to write a linear equation given a set of data
 
----
-
-<!-- FACILITATOR ONLY -->
-
-## Balance (facilitator reference — do not distribute to Heroes)
-
-**Argument for A (yea):** Both real, independent rankings that existed on the day the season stopped placed Seton Hall inside the top 16: the final AP media poll had them at No. 15, and the NCAA's own NET system — the real committee's own primary tool — had them at No. 12. The case's own opponent-adjusted bubble-field composite (Appendix D, MA1) puts Seton Hall 9th of the 25-team field, ahead of teams like West Virginia, Penn St., Oklahoma, and Butler that fall below the cutoff under the same method. A 21-9 record with a share of the Big East regular-season title, against a real, disclosed strength-of-schedule figure (Opponents' Rating Difference 11.48, 12th nationally), is a genuine top-16 résumé by essentially every credible measure available that day.
-
-**Argument for B (nay):** The AP poll margin is one spot — No. 15 of a 16-cutoff — the thinnest possible edge, and a media poll is a popularity-and-résumé vote, not the opponent-adjusted formula the committee itself is supposed to use. Strip out opponent-adjustment (a mistake a first-pass student algorithm is likely to make) and rank the bubble field on raw Team Offensive + Defensive Rating alone: Seton Hall's Offensive Rating rank is only 29th nationally and its Defensive Rating rank is only 25th — mediocre in isolation, and a virtual tie for 14th-15th within the 25-team bubble field, right on the line. Judged on win-loss record alone, ignoring schedule strength entirely, Seton Hall's 21-9 (.700) ranks only 50th of the 270 teams in this case's data with a usable win-loss record — nearly every team above it in Appendix B has fewer losses. And unlike every team that got to finish its conference tournament, Seton Hall never had the chance to add a signature win in March; its résumé is frozen exactly where a good-but-not-great regular season left it.
-
-**Margin:** primary metric is Seton Hall's rank in the final AP media poll relative to the No. 16 cutoff: 15 vs. 16, a 6.25% margin ((16-15)/16). See `case.json` `derived{}` for the full worked comparison against NET and the bubble-field composite.
-
-**The trap:** Heroes who build their Power Score (D2) using only Team Offensive Rating and Team Defensive Rating — the two numbers that feel most obviously relevant, since they are a team's "own" stats — will land Seton Hall right on the cutoff line or just below it, and vote nay confidently. The numbers that actually separate Seton Hall from the pack are the *opponent*-adjusted ones (Opponents' Offensive/Defensive Rating), which measure schedule strength — exactly the number the real committee added the NET system specifically to capture, and exactly the number a first-pass algorithm is likely to under-weight or skip. Watch for Heroes who never touch the Opp Off/Def columns in their D2 formula at all.

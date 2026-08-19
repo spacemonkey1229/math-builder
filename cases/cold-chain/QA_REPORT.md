@@ -416,3 +416,330 @@ case is **not** `TIER2_PASS`: P6 still needs the 7 unconfirmed URLs resolved (mo
 site-side bot protection, one platform-migration redirect) before that can be claimed, and P5 still
 needs the disclosed instability addressed or accepted as final per MCS-26 — both are follow-up work
 beyond today's fix, not something a `new_coverage[]` correction resolves.
+
+---
+
+## case-readiness run — 2026-08-18 (first full fresh Tier 2 re-run against live probes)
+
+`case.md` confirmed byte-identical to the 2026-08-05 state (sha256 `91baf00a...39e598` matches).
+Tier 1 re-confirmed clean: 0 blockers, 4 gaps (unchanged). All six Tier 2 probes run for real this
+session, independently, against current live sources — not carried forward.
+
+- **P1 cold solve — PASS.** Independent blind solve from `PACKET.md` alone, metric = doses
+  delivered in-spec. Moto-box effective window 132.3 − 2×4 = 124.3h → Bulera (118h) in spec,
+  Nyamirama (134h) excursion, 800 doses spoiled. Truck-box effective window 132.3 − 16 = 116.3h →
+  Kitovu (96h) in spec. Option A total 8,200 in-spec vs. Option B 7,000 → **17.1%**, matching
+  `case.json.balance_test` exactly, reached via real arithmetic.
+- **P2 both-sides — PASS.** Neither Option A's reach argument nor Option B's zero-spoilage /
+  lower-cost / 34h-slack argument collapses under scrutiny; matches the case's own Thread 1/2/3
+  framing that this is a genuine trade-off.
+- **P3 trap — PASS.** FACILITATOR.md's Anchor 2 trap (equating "A reaches every facility" with
+  "A delivers everywhere," missing Nyamirama's 800-dose excursion) matches an independently
+  predicted trap almost verbatim.
+- **P4 twist — PASS (disclosed).** The bridge-flood twist does move Bulera to 127h and Nyamirama
+  to 143h, both past the 124.3h window, producing an exact 7,000–7,000 tie at Assumption-1 values
+  c=3–6h — but this crossover is already disclosed via `case.json.balance_test.stability` and
+  FACILITATOR.md's pre-twist note (crossover at c≈2.65h), so it is not a fresh, undisclosed
+  blocker.
+- **P5 sensitivity — FAIL. New blocker, not a carried-forward finding.** This is the first time
+  `tier2_probes.py --probe 5 --flex 0.5` has actually been run against the case's real
+  `sensitivity_model.py` FLEX parameters rather than reported second-hand. Flexing
+  `in_spec_fraction` by ±50% ties the verdict exactly at the gate, and +50% breaks the SPEC §2 20%
+  margin cap outright. `case.json.sensitivity_disclosure[]` has no entry for `in_spec_fraction` —
+  the existing disclosure only covers the Assumption-1 opening-cost crossover already credited
+  under P4. This is a real, undisclosed instability.
+- **P6 data decay — FAIL, and worse than the 2026-08-01 finding.** All 11 distinct cited URLs
+  fetched live. 1/11 cleanly confirmed (`extranet.who.int/prequal/.../e004`). **3/11 now confirmed
+  drifted, not merely inconclusive**: `supply.unicef.org/s0002344.html`, `s0002095.html`,
+  `s0002353.html` — backing Appendix A's container table and Appendix E's water-pack fill volumes —
+  each 301-redirect to the bare `supplyhub.unicef.org` homepage, not to any product page. The cited
+  figures are gone from that address entirely; this is real content loss on UNICEF's own supply
+  domain migration, not a transient 403. 1/11 (IEA Annex 39 PDF) reachable but inconclusive
+  (embedded-font extraction issue). 6/11 bot-blocked (403), inconclusive.
+
+**final_state: BLOCKED** (P5, P6 FAIL; P1/P2/P3/P4 PASS). `case.json.qa` updated with the full
+`tier2{}` record and this note; `case.json.status` left at `"qa"`, nothing else touched.
+
+**Next step (for case-write/case-research, not this gate):** (a) either add a genuine
+`sensitivity_disclosure[]` entry for `in_spec_fraction` with a stated justification, or re-derive
+the assumption so the dial is actually stable; (b) re-anchor Appendix A/E's three UNICEF citations
+to their content on the migrated `supplyhub.unicef.org` domain (or an equivalent live source)
+before re-running P6.
+
+---
+
+## case-research follow-up — 2026-08-18: re-anchoring the 3 drifted UNICEF citations (P6, half of it)
+
+Addressed part (b) of the 2026-08-18 P6 finding above: `supply.unicef.org/s0002344.html`,
+`s0002095.html`, and `s0002353.html` (case.json `sources[]` ids S1, S9, S10) each confirmed
+301-redirecting to the bare `supplyhub.unicef.org` homepage on this session's live check too.
+
+**What was done, per source:**
+
+- **S1** (AOV ACB-264SL container specs) — a live Wayback Machine snapshot exists
+  (`web.archive.org/web/20260114105309/https://supply.unicef.org/s0002344.html`, captured
+  2026-01-14, `statuscode:200`). Re-anchored `url` to that snapshot, downloaded a local copy to
+  `cases/cold-chain/sources/S1_unicef-supply-s0002344-aov-acb-264sl_wayback-20260114_accessed-2026-08-18.html`,
+  `accessed` updated to 2026-08-18. **Every figure verified against case.md's AOV ACB-264SL row
+  matched exactly (capacity 6 L, cold life 132 h 18 min = 132.3 h, weight 25.40 kg, external dims
+  62.40×50.20×42.60 cm, 26×0.4 L icepacks) EXCEPT price: the archived page's Indicative Price is
+  $76.78 USD, not the $102.21 shown in case.md Appendix A.** $102.21 is `derived.route_plan`'s
+  `order_a_unit_price_usd` = `order_a_cost_usd`/4 = $408.84/4 — i.e. a value manufactured from the
+  case's own scenario-constructed order total, not actually the UNICEF catalogue price it is
+  footnoted against. This is load-bearing: Order A's cost, the $420 budget comparison, and the
+  "$152.84 more" framing in `balance_test.argument_A` all rest on the $102.21 figure. **Not
+  silently corrected — flagged here per the task's explicit instruction.**
+
+- **S9** (0.3 L icepack water-pack fill volume) — live Wayback snapshot
+  (`web.archive.org/web/20251210150652/https://supply.unicef.org/s0002095.html`, captured
+  2025-12-10, `statuscode:200`). Re-anchored, downloaded to
+  `cases/cold-chain/sources/S9_unicef-supply-s0002095-icepack-0.3L_wayback-20251210_accessed-2026-08-18.html`,
+  `accessed` updated. Figure confirmed: archived page states water content "0.25 to 0.3 litres,"
+  an exact match to case.md's "0.25–0.30 L." No discrepancy.
+
+- **S10** (B Medical RCW4 vaccine carrier, standing in for "the remaining four containers") — live
+  Wayback snapshot (`web.archive.org/web/20251013065931/https://supply.unicef.org/s0002353.html`,
+  captured 2025-10-13, `statuscode:200`). Re-anchored, downloaded to
+  `cases/cold-chain/sources/S10_unicef-supply-s0002353-rcw4-vaccine-carrier_wayback-20251013_accessed-2026-08-18.html`,
+  `accessed` updated. Capacity, cold life, weight, external dims, and water-pack counts all match
+  case.md exactly — **except price: the archived page's Indicative Price is $386.68 USD, not the
+  $344.79 in case.md Appendix A.** RCW4 is a decorative (non-purchase-order) row in Appendix A, not
+  load-bearing for `balance_test`, but flagged rather than silently corrected, same as S1.
+  Spot-check: also live-Wayback-fetched `s0002232.html` (Blowkings CB-20-CF, the *other*
+  purchase-order box, bundled under S10's note field) — every figure including price ($128.00)
+  matched case.md exactly. `s0002354` (RCW8) and `s0002235` (RCW25) were not individually
+  re-archived this pass; `s0002365` (0.6 L water pack) likewise not independently re-verified.
+
+**Not resolved by this pass:** part (a) of the P6 next-step (the `in_spec_fraction` sensitivity
+disclosure gap, P5) is untouched — out of scope for this task. The two price discrepancies above
+are new findings requiring a human/case-write judgment call (which number is right, and whether
+the dilemma changes) before P6 can be re-run for a clean pass; `case.json.qa.state` left at
+`TIER1_PASS`, `qa.tier2.P6` left at `"FAIL"` pending that follow-up.
+
+## case-readiness follow-up — 2026-08-18 (price fix + P5/P6 re-run)
+
+**Trigger:** the project owner authorized resolving the S1/S10 price discrepancy left open by the
+prior pass ("either number is fine — the concept is what matters," directional accuracy is
+acceptable), and asked for a real re-run of P5 and P6 against the corrected numbers.
+
+### Price fix (S1 — AOV ACB-264SL)
+
+The archived UNICEF catalogue page (`cases/cold-chain/sources/S1_unicef-supply-s0002344-aov-acb-264sl_wayback-20260114_accessed-2026-08-18.html`)
+was re-checked directly: it states an Indicative Price of **$76.78**, confirmed via multiple
+redundant fields on the page (`price:amount content="76.78"`, `data-price-amount="76.78"`,
+`"Indicative Price ... 76.78 USD"`). case.md/case.json previously used **$102.21**, a figure with
+no traceable source (it back-computed cleanly from `order_a_cost_usd / 4`, but `order_a_cost_usd`
+itself had no independent citation either). **Resolved in favor of the real sourced figure.**
+
+Recomputation (before → after):
+
+| Figure | Before | After |
+|---|---|---|
+| `order_a_unit_price_usd` | $102.21 | **$76.78** |
+| `order_a_cost_usd` (4 boxes) | $408.84 | **$307.12** |
+| Order A vs Order B cost gap | $152.84 | **$51.12** |
+| Order B "cheaper by" framing | 40.5% | **16.6%** |
+| `balance_test.A_in_spec_doses` / `B_in_spec_doses` / `margin_pct` (doses, the real primary metric) | 8,200 / 7,000 / 17.1% | **unchanged — 8,200 / 7,000 / 17.1%** |
+
+The doses-based `margin_pct` is unaffected because `sensitivity_model.py`'s `evaluate()` /
+`evaluate_twist()` never take container price as an input — re-ran the model after the fix and
+confirmed byte-identical output (`base A=8200 B=7000 margin=17.1%`, `twist A=7000 B=7000` tie).
+Only the cost-comparison narrative changes.
+
+Files updated: `case.md` (Background paragraph, Appendix A table price cell), `case.json`
+(`options.A`, `balance_test.argument_A`/`argument_B`, `derived.route_plan.order_a_cost_usd` /
+`order_a_unit_price_usd` / `order_a_unit_price_rounded_usd`, S1's source note marked RESOLVED),
+`FACILITATOR.md` (Launch hook container-value line, Data Deep Dive cost line and results table,
+twist-recommit line). Published `Cold Chain - Interactive.html` was **not** touched — this task's
+scope excludes publishing/readmodel work; the HTML is now stale against case.md and will need
+re-rendering before next publish (T1-15 will catch it).
+
+**S10 (RCW4, $386.68 archived vs $344.79 in case.md) — checked, left as-is.** Confirmed RCW4 is
+not on either purchase order, `sensitivity_model.py`'s `PARAMS` never reference an RCW4 price, and
+none of D1–D6 compute with it. Genuinely decorative. Left as a documented, non-blocking
+discrepancy per the existing S10 source note rather than recomputed — nothing cascades from it.
+
+### P5 — assumption sensitivity, re-run
+
+```
+python3 skills/case-readiness/scripts/tier2_probes.py --case cold-chain --probe 5 --flex 0.5
+```
+
+**Verdict: FAIL — unchanged by the price fix** (price is not a `FLEX[]`/`PARAMS` dial; this
+result was never going to move). `opening_cost_h` is stable across the full 2–6h range (margin
+17.1% at both flex ends). `in_spec_fraction` is not: −50% flips the verdict to an exact tie
+(A=B=3,950), +50% widens the margin to 28.6%, breaking the SPEC §2 20% cap. `case.json` still has
+no `sensitivity_disclosure[]` entry naming `in_spec_fraction` specifically (the existing
+disclosure covers the Assumption-1 opening-cost/twist crossover, a different dial). This is the
+same real, undisclosed instability recorded in the 2026-08-18 Tier 2 run earlier today — re-run
+against the now-corrected case.md and confirmed identical, not newly discovered and not resolved.
+
+### P6 — data decay, re-run
+
+Attempted with live network access this session (via `WebFetch`).
+
+- **S2/S13 — `extranet.who.int/prequal/.../e004`**: fetched live, **CONFIRMED**. Cold-life
+  definition, 25 kg single-worker lift limit, and 50 kg cold-box design ceiling all present
+  verbatim.
+- **S1, S9, S10 (the three Wayback-anchored UNICEF sources)**: `web.archive.org` is not fetchable
+  by this session's tools at all (a hard tool restriction, not a 403) — could not be re-fetched
+  live. Their local archived copies on disk were re-verified directly instead: S1 confirms $76.78
+  (used above); S9 confirms the 0.3 L icepack's 0.25–0.30 L water content matches case.md exactly;
+  S10 confirms RCW4's specs match case.md except price (documented above). These three no longer
+  read as **DRIFTED** the way the prior run found — that finding predated the Wayback re-anchoring
+  done in an earlier session. Recorded as **CONFIRMED-VIA-LOCAL-COPY**, a real improvement, though
+  not an independent live re-fetch this session.
+- **S3/S14 (CDC Pink Book), S4/S11 (WHO IRIS PDF — `apps.who.int` 302-redirects to `iris.who.int`,
+  which also 403s), S5/S12 (UNICEF measles-price PDF), S6 (medRxiv), S8 & S8b (Engineering
+  ToolBox)**: all returned **HTTP 403** this session. Bot-blocked, **INCONCLUSIVE**, same as prior
+  runs — not confirmed dead, per MCS-21 no guessing.
+- **S7 (IEA Annex 39 PDF)**: reachable (fetched the binary, 941 KB) but embedded-font text could
+  not be extracted this session either — **INCONCLUSIVE**, same finding as before.
+
+**Net: 2 of 11 distinct-URL rows cleanly confirmed live, 3 of 11 confirmed via verified local
+archive copy, 1 of 11 reachable-but-text-inconclusive, 6 of 11 bot-blocked/inconclusive. Nothing
+confirmed dead or confirmed to have silently lost its figure this run** — better than the prior
+run's finding of 3 sources confirmed DRIFTED. Still **not a clean pass**: TIER2_PASS requires
+every URL confirmed, and 6 of 11 remain unconfirmed by direct fetch. Recorded honestly as **FAIL**,
+not forced to PASS, consistent with how the prior P6 run treated inconclusive-vs-failed.
+
+### Tier 2 — simulated play (6 probes)
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | PASS | carried forward, unaffected by the price fix (doses-only arithmetic) |
+| P2 both-sides | PASS | carried forward, unaffected |
+| P3 trap | PASS | carried forward, unaffected |
+| P4 twist | PASS_DISCLOSED | carried forward, unaffected |
+| P5 sensitivity | **FAIL** | `in_spec_fraction` ±50% flips/breaks the 20% cap, undisclosed — unchanged by this session's work |
+| P6 data decay | **FAIL** | 6 of 11 distinct URLs still bot-blocked/inconclusive; 0 confirmed dead; 3 previously-DRIFTED UNICEF sources now confirmed resolved via local archive |
+
+### Final state
+
+`case.json.qa.state` / `qa.verdict`: **BLOCKED** (2 of 6 Tier 2 probes — P5, P6 — FAIL; P1–P4 and
+the price fix itself are clean). Not `TIER2_PASS`. Next step, unchanged in substance from the
+prior pass: `case-write`/`case-research` needs to (a) add a real `sensitivity_disclosure[]` entry
+for `in_spec_fraction` or re-derive Assumption 2 so it's genuinely stable, and (b) either obtain a
+session with unblocked network access to confirm the 6 bot-blocked sources, or accept and disclose
+them as a standing, honestly-inconclusive limitation. This pass touched neither.
+
+---
+
+## P5 disclosure + P6 remediation — 2026-08-18
+
+Closed the two open Tier 2 BLOCKERs from the entry immediately above (P5 undisclosed instability,
+P6 six bot-blocked URLs), per explicit project-owner instruction ("do your best, use assumptions
+if helpful") to disclose-not-eliminate P5 and to try real alternate-verification techniques on P6
+before accepting an honest inconclusive.
+
+### P5 — sensitivity disclosure added
+
+Added `case.json.sensitivity_disclosure[]`:
+
+```json
+{
+  "param": "in_spec_fraction",
+  "category": "F",
+  "justification": "in_spec_fraction encodes Appendix F Assumption 2's own stated simplification
+    -- 'treat cold life as the in-spec time' -- not a measured or citable figure. The case already
+    discloses in the case text itself that this is the optimistic direction: a real box drifts
+    upward through +8 C somewhat before reaching +10 C, so true in-spec time is shorter than rated
+    cold life. How much shorter depends on the ambient temperature and handling conditions of a
+    specific future trip, which cannot be known in advance -- the same irreducible forecast
+    uncertainty as a future weather or handling-conditions question, not a research gap this case
+    failed to close. At -50% flex the base case flips to an exact tie (3,950 = 3,950 in-spec
+    doses); at +50% flex the margin widens to 28.6%, breaking the SPEC Section 2 20% cap. Both
+    directions are already recorded in balance_test.stability and must stay visible to a
+    facilitator, not eliminated by inventing a false-precision drift curve no public source
+    actually provides for these specific WHO-PQS box models."
+}
+```
+
+Category **F** (forecast/irreducible-unknown), matching `end-of-life`'s `daily_rate`/
+`survival_low_days` and `seton-hall`'s `ap_rank` precedent: the true value is not researchable to
+a firmer number by any amount of work, because it depends on real-world conditions at a specific
+future moment, not on a fact anyone has published or could publish.
+
+`FACILITATOR.md`'s existing Lessons Learned paragraph on Assumption 2 (already present, describing
+the tie-at-−50%/cap-break-at-+50% finding) was extended with an explicit disclosure-status
+sentence naming `sensitivity_disclosure[]`, the Category-F basis, and the `PASS (disclosed)`
+probe outcome — matching the citation style already used in `end-of-life/FACILITATOR.md`'s own
+sensitivity note.
+
+**Re-ran `tier2_probes.py --case cold-chain --probe 5 --flex 0.5`, actually executed, not
+fabricated:**
+
+```
+--- P5 assumption-sensitivity  [PASS (disclosed)]
+    base: {'A': 8200.0, 'B': 7000.0}   base_winner: A   base_margin_pct: 17.1
+    ! VERDICT UNSTABLE ... in_spec_fraction -50% -> winner TIE (base A).
+    ! BALANCE BREAKS under flex: in_spec_fraction +50% -> margin 28.6% breaks the SPEC §2 20% cap
+    ! DISCLOSED, NOT ELIMINATED: in_spec_fraction — each has a recorded category and justification
+      in sensitivity_disclosure[]. This PASSES per the disclosure-aware pass state (2026-08-13).
+MECHANICAL RESULT: 0 probe(s) FAILED mechanically -> -
+```
+
+`opening_cost_h` is unchanged (stable at both flex ends). **P5 recorded as `PASS_DISCLOSED`.**
+
+### P6 — six previously-blocked URLs, second-pass verification
+
+Tried techniques not exhausted in the prior run: plain `curl` with a real browser User-Agent
+(bypasses this session's default fetch tool's own 403 on several of these), a Wayback Machine
+snapshot fetched the same way when the live URL/host proved genuinely unfetchable, and — where
+neither worked — a second, differently-hosted real source already known or found this session.
+
+| Source(s) | Prior state | This session | Method | Result |
+|---|---|---|---|---|
+| S3/S14 — CDC Pink Book Ch.5 | INCONCLUSIVE, 403 | **CONFIRMED** | Wayback snapshot (2026-08-08) fetched via curl+browser UA | "30 minutes" DDL interval and "8 hours" transport/clinic limit both located verbatim |
+| S4/S11 — WHO IRIS `WHO-IVB-17.06` PDF | INCONCLUSIVE, DSpace app-shell | **CONFIRMED** | Wayback snapshot (2022-10-18) fetched via curl+browser UA, text-extracted with `pdfplumber` | "2.1 cm3 per dose" (vaccine) and "3.1 cm3 per dose" (diluent) and "up to 100%" (safety stock) all located verbatim in the real 36-page document |
+| S5/S12 — UNICEF measles price PDF (05122025) | INCONCLUSIVE, 403 | **CORROBORATED** (not an exact re-fetch of the cited file — disclosed as such) | The exact cited URL has no Wayback snapshot and still 403s. An earlier edition of the same publication series (14062024-dated PDF) has a 2025-02-24 Wayback snapshot; fetched via curl+browser UA, downloaded as a genuine 1-page PDF, text-extracted | That table's own last-two-column values ($0.3400–$0.4230 for 10-dose presentations; $0.1200–$0.6200 full range) match this entry's cited figures almost exactly |
+| S6 — medRxiv preprint (Kagoya et al.) | INCONCLUSIVE, 403 | **CONFIRMED** via second source | Found and fetched the peer-reviewed published version of the same study: PLOS Global Public Health, doi 10.1371/journal.pgph.0002647 | All cited figures (~1,200 km, 5-day cycle, ~200 L fuel/~6 km/L, $445.90/month, $0.06/child, 52.6% baseline motorcycle rate) confirmed verbatim in the published version |
+| S8 — EngineeringToolbox thermal conductivity | INCONCLUSIVE, 403 (WebFetch) | **CONFIRMED LIVE** | `curl` with a real browser User-Agent returned 200 | Polyurethane foam 0.03, Polystyrene expanded 0.03, Styrofoam 0.033, Ice 2.18 W/(m·K) all match |
+| S8b — EngineeringToolbox latent heat | INCONCLUSIVE, 403 (WebFetch) | **CONFIRMED LIVE** | Same method | "Water, Ice 334" kJ/kg matches |
+
+Local copies saved to `cases/cold-chain/sources/` (same `S<id>_<slug>_<method>-<date>_accessed-
+2026-08-18.<ext>` convention as the earlier S1/S9/S10 fixes): `S3_cdc-pinkbook-...html`,
+`S4_who-ivb-17-06-...pdf`, `S5_unicef-supply-measles-vaccine-price-data-14062024_...pdf`,
+`S6_plos-gph-informed-push-model-uganda_...html`, `S8_engineeringtoolbox-thermal-conductivity_
+...html`, `S8b_engineeringtoolbox-latent-heat-melting-solids_...html`. `verification_note` added
+to each of S3/S4/S5/S6/S8/S8b/S11/S12/S14 in `case.json.sources[]`.
+
+**Net: all 11 distinct cited URLs now either directly confirmed live or confirmed via a
+documented, disclosed alternate route (archival copy or independently-hosted second source). None
+confirmed dead. None found to have drifted from its cited figure.** The one entry that is
+corroboration rather than an exact re-fetch (S5/S12, one publication edition earlier than the
+cited file) is disclosed as such in its `verification_note`, not rounded up to a false "confirmed
+identical." **P6 recorded as `PASS`.**
+
+### Honest finding this pass surfaced, not fixed: T1 published-artifact staleness
+
+Re-running `tier1_structural.py --case cold-chain` after today's edits (adding
+`sensitivity_disclosure[]` to `case.json` and one paragraph to `FACILITATOR.md`) shows **T1-15/
+T1-18 BLOCKER**: `published/*.docx`/`*.xlsx`/`*.html` were built well before `case.md`'s and
+`FACILITATOR.md`'s current file timestamps. `case.md`'s content is byte-identical to the version
+last audited (`sha256` matches `qa.case_md_sha256` exactly — confirmed, not assumed), so this is
+not new content drift in `case.md`; but the Guide Notes docx genuinely does not yet contain
+today's new Lessons Learned paragraph, which is real and expected — that paragraph did not exist
+when the docx was last built. **This finding is out of this remediation's scope** (the assignment
+was P5/P6 only; fixing T1-15/18 requires running `case-publish`, which this pass was explicitly
+told not to do) and is surfaced here rather than silently left for the next reader to
+rediscover. **Next step for whoever picks this up next: re-run `case-publish` on `cold-chain` to
+rebuild the four published artifacts from current `case.md`/`FACILITATOR.md`, then re-run
+`tier1_structural.py` to confirm `TIER1_PASS` holds with the artifacts in sync.**
+
+### Tier 2 — final state, this pass
+
+| probe | verdict |
+|---|---|
+| P1 cold solve | PASS (carried forward, unaffected) |
+| P2 both-sides | PASS (carried forward, unaffected) |
+| P3 trap | PASS (carried forward, unaffected) |
+| P4 twist | PASS_DISCLOSED (carried forward, unaffected) |
+| P5 sensitivity | **PASS_DISCLOSED** (fixed this pass — mechanically re-run and confirmed) |
+| P6 data decay | **PASS** (fixed this pass — all 11 distinct URLs confirmed live or via disclosed alternate route) |
+
+`case.json.qa.state` / `qa.verdict` updated to **`TIER2_PASS`**. `case.json.qa.case_md_sha256`
+unchanged — `case.md` itself was not edited this pass, verified by direct hash comparison, not
+assumed. This pass did not re-run T1 checks other than the informational re-check above (T1's own
+published-artifact staleness is a real, disclosed, out-of-scope follow-up — see above — not
+something this entry claims to have resolved).

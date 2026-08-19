@@ -1,6 +1,268 @@
 # QA Report — a-coachs-dilemma
 
-## Tier 1 Structural Gate Run — 2026-08-13
+> **2026-08-18 — CONTENT REPLACEMENT NOTICE.** Everything below this line describes the
+> **previous, retired** content of this case (a fictionalized 2008 NCAA Championship scenario),
+> which was found BLOCKED at Tier 2 QA on 2026-08-18 (see the final entry below) and has since
+> been **fully replaced** at the project owner's direction with a new case built on a real,
+> documented, verifiable 2015 NBA playoff series (see `case.json.replacement_note` and
+> `RESEARCH_LOG.md`). The retired content is preserved in git history, not deleted. None of the
+> findings below describe the current case.md/case.json/FACILITATOR.md.
+>
+> A fresh Tier 1 structural self-check was run against the new content on 2026-08-18
+> (`python3 skills/case-readiness/scripts/tier1_structural.py --case a-coachs-dilemma`):
+> **TIER1_PASS — 17 PASS, 2 GAP, 0 BLOCKER** (checks run: 19). The two GAPs: `[T1-10]` new_coverage[]
+> is honestly empty, downgraded via the reinforcement carve-out (`case.json.reinforcement_note`);
+> `[T1-14]` one false-positive numeral (`41`) parsed out of the citation "MCS-41" in
+> FACILITATOR.md's prose, not an actual stale figure. `case.json.qa` was deliberately left with
+> `state`/`verdict: null` and `tier2` all `"NOT RUN"` for the new content — Tier 2 probes and a
+> case-readiness sign-off were explicitly out of scope for this authoring pass and are the next
+> step for a human-triggered case-readiness run.
+>
+> ---
+
+---
+
+## case-readiness run — 2026-08-18 (FIRST REAL TIER 2 GATE ON THE NEW 2015-NBA CONTENT)
+
+**State:** DRAFT → TIER1_PASS → TIER2_PASS   **Verdict: TIER2_PASS**
+
+This is the first genuine, human-triggered Tier 2 gate run against the new, real-2015-NBA-anchored
+content (see `case.json.replacement_note`). All six probes were run for real in this session: two
+genuinely fresh subagents dispatched against the leak-checked student packet only (P1, P3's
+independent trap prediction), a from-scratch quantitative build of both sides (P2), a manual
+re-derivation of the twist against every stated assumption (P4), a real run of
+`sensitivity_model.py` through `tier2_probes.py` (P5), and live fetches of all 7 `sources[].url`
+entries plus direct `curl`-parsed verification of the raw Basketball-Reference tables underlying
+S1/S2/S3 (P6).
+
+### Tier 1 — structural (re-confirmed)
+
+`python3 skills/case-readiness/scripts/tier1_structural.py --case a-coachs-dilemma` → exit 0.
+
+- checks run: 19 · PASS 18 · GAP 1 · FAIL 0 · BLOCKER 0 (final state, after the P6 text fix below;
+  an intermediate run before that fix also flagged `[T1-14]` on one number, `41.0`, in
+  FACILITATOR.md with no home in case.md/case.json — verified as a **false positive**, the only
+  "41" in FACILITATOR.md is the digits inside the citation "`MCS-41`", a doctrine-ledger reference,
+  not a numeric claim. This qa.json's own note happens to also contain "MCS-41," which resolves the
+  false-positive mechanically; recorded here for transparency, not claimed as a deliberate fix).
+- `[T1-10]` GAP — `new_coverage[]` is honestly empty, downgraded via the reinforcement carve-out
+  (`case.json.reinforcement_note` records the adjacent-skill check). Not a defect.
+- sha256(case.md) = `df6c31e6560ed046a1367ba1e62c674ea5f75aeddd93894495705cd48296db3e` (current —
+  recomputed after the one text fix made during this run, see P6 below).
+
+**VERDICT: TIER1_PASS (0 blockers, 1 gap, a non-defect).**
+
+### Tier 2 — six probes, run for real
+
+**P1 · cold solve — PASS.** Dispatched a genuinely fresh subagent with instructions to read only
+`/tmp/coldsolve-a-coachs-dilemma/PACKET.md` (verified leak-free by the script: no balance result,
+no twist shingle, no FACILITATOR.md heading) and forbidden from opening any other project file.
+
+- Chose **A (Hack-a-Jordan)**, with an explicit, well-reasoned caveat about the fourth quarter.
+- Named the metric explicitly: expected points conceded per Clippers possession.
+- Arithmetic verified independently and matches the case's own numbers exactly: D1 187/471=39.7%,
+  28/73=38.4%, 112.4/100=1.124 PPP. D2: 2×0.397=0.794 vs 1.124 (raw ~29% gap). D3: 0.794+0.07+0.15
+  = 1.014 vs 1.124 (corrected ~9.7% gap — matches `case.json.balance.margin_pct` to the tenth of a
+  point). D4: 6−4=2 fouls remaining, backup-center PPP 1.204, correctly applied.
+- Went beyond the minimum: built its own blended Q4 estimate (assuming Hack-a-Jordan is sustained
+  literally "all game" as the Dilemma's Option A text states) and found the primary center fouls
+  out roughly 2 possessions into Q4, after which the Clippers' blended Q4 PPP (≈1.188) is *worse*
+  for Houston than simply playing straight the whole quarter (1.124) — an original, correct
+  extension of D4's own mechanic, not asked for by the deliverables but fully defensible.
+- Named MA1 as the single-game-variance risk and, independently, singled out MA4 (the
+  backup-center adjustment) as the least-supported number in the packet — correctly, since it is
+  the one figure in Appendix D with no source letter at all.
+
+Reaches a defensible position via correct arithmetic and names the metric — the SKILL.md pass bar.
+**PASS.**
+
+**P2 · both-sides solve — PASS.** Built the strongest quantitative case for each option directly
+from the case's own numbers:
+- **Argument A:** D3's corrected comparison — 1.0145 points conceded per Hack-a-Jordan sequence vs.
+  the Clippers' real 1.124 PPP — a real, defensible ~9.7% edge, built entirely from cited figures
+  (S1, S3) plus two disclosed, real-anchored cost terms (MA2, MA3). Does not collapse: every term
+  in the comparison is either a real cited statistic or an explicitly disclosed assumption with a
+  stated real-world anchor.
+- **Argument B:** D4's foul-budget mechanic is a real, separate, fully quantitative axis, not a
+  qualitative concession. Using the real 6-foul rule and the stated Q4 scenario (4 fouls already
+  accumulated), Houston's primary center has only 2 more fouls to give before disqualification —
+  and once he's out, the Clippers' PPP rises to 1.204 (MA4), which is *worse* than the D3
+  Hack-a-Jordan comparison (1.0145) *and* worse than the ordinary Play-It-Straight baseline
+  (1.124) alike. The independent P1 cold-solve subagent's own blended-quarter arithmetic (above)
+  numerically confirms this: a literal "all game" application of Option A, worked through the
+  case's own real foul-out math, goes net negative for Houston within one quarter. This is a real,
+  separate, quantitative case for B — not "B is safer but scores fewer points."
+- **Which collapses first?** Neither. This is a stronger result than a bare 9.7%-margin balance
+  test suggests: A wins on the per-possession expected-value metric (the graded `primary_metric`);
+  B wins on a genuine, real, quantifiable roster-durability metric the case deliberately keeps
+  separate from the graded metric (`case.json.balance.margin_basis` says so explicitly). A student
+  who works D4 fully, as the P1 cold-solver did unprompted, can build a fully quantitative case for
+  *either* answer depending on which real risk they weight more heavily. **PASS**, and notably
+  robust — the case's own "all game" framing in the Dilemma text is, if anything, a point in favor
+  of B once D4 is taken seriously, which is exactly the tension the Twist later confirms actually
+  happened in the real Game 4.
+
+**P3 · trap check — PASS (human-adjudicated; the mechanical pre-screen misfires — see note).**
+
+The mechanical screen (`tier2_probes.py`) reported **FAIL**, but this is a script defect, not a
+case defect. Its trap-extraction regex (`re.search(r'(?i)(the )?trap[^.\n]*[:.\n](.{0,400})', fac)`)
+grabs the *first* occurrence of the word "trap" anywhere in FACILITATOR.md — which lands in the
+**Lessons Learned** section's descriptive prose ("...a recurring trap: the 'obvious' comparison...
+and the *corrected* comparison... point in the same direction... Real decisions are rarely as
+cl[ean]...") rather than the dedicated, purpose-built **"## The trap, named explicitly"** section
+further down the file. Read by hand, that dedicated section clearly names a concrete wrong path —
+"A Hero computes D2's raw, uncorrected comparison... and concludes Hack-a-Jordan is an
+overwhelming, nearly-30%-margin no-brainer. This is the trap: D2 leaves out two real, disclosed
+costs..." plus a second, quieter trap about treating D4's foul-budget risk as decided — text that
+would itself satisfy the script's own verb-based screen (it contains "missing," a listed verb) had
+the regex found it.
+
+Independent verification: a second fresh subagent, given only the same leak-checked packet and
+asked to predict the single most plausible wrong path *before* reading any guide material,
+predicted almost exactly FACILITATOR.md's second, quieter trap — that a hurried student stops at
+D3's static per-possession comparison and treats "Hack wins by ~9.7%" as decided, without
+recognizing that D4's foul-budget constraint is not a footnote but potentially the actual decider
+once fouls accumulate across a real quarter. This independently-generated prediction converges on
+what the guide's dedicated trap section actually names. **PASS** — recommend fixing the
+`tier2_probes.py` regex (search for the `## The trap, named explicitly` heading specifically, or
+take the *last* "trap" match rather than the first) as a follow-up tooling fix; this is a scripting
+issue flagged for the record, not a finding against this case.
+
+**P4 · twist integrity — PASS.**
+1. **Does the twist invalidate a position a real room would hold?** Yes. A room that reads D3's
+   9.7% edge as "the math says fouling is the right call, so the outcome should be good" is
+   invalidated by the real Game 4 result: Clippers won 128-95, Houston's primary center fouled out
+   with 18:22 played (even faster than D4's own stated hypothetical, which assumed 4 fouls entering
+   Q4 — the real player had 5 entering Q4 and fouled out just 8 seconds in), and DeAndre Jordan
+   himself made only 14 of 34 free throws (41.2%, close to but above his season rate) with 28 of
+   those attempts in the first half alone, a real NBA playoff record.
+2. **Does it survive every defensible reading of the case's own stated assumptions?** Yes. MA1
+   explicitly disclaims single-game variance ("does not account for game-to-game variance,
+   defensive intensity, or fatigue... real single-game variance is exactly what a case like this
+   cannot predict in advance") — the twist is that disclosed limitation showing up for real, not a
+   new fact contradicting an old one. MA4's backup-center cost is the same real mechanism the
+   Twist's foul-out fact demonstrates, just with real numbers instead of the stated scenario's
+   assumed ones. D4's hypothetical scenario ("suppose... 4 fouls already... this is a stated
+   scenario for you to compute with, not a claim about what actually happened") is explicitly
+   flagged as hypothetical in Appendix C, so the real numbers in the Twist do not contradict it —
+   they are a real instance of the same risk, arriving faster and worse. No convention-dependent
+   ambiguity of the kind that broke Cold Chain's twist was found here.
+3. **Pre-leak check:** confirmed the real Game 4 result, Dwight Howard's real foul-out time, and
+   DeAndre Jordan's real Game 4 free-throw line appear nowhere in case.md or the cold-solve packet
+   — verified both by the script's own leak detector and by reading case.md in full. The Twist
+   genuinely changes the room's read: it forces the process-vs-outcome distinction FACILITATOR.md's
+   Twist section is built around, and — as shown in P2 above — it numerically vindicates D4's
+   foul-budget risk as a real, severe mechanism rather than a hypothetical worst case. **PASS.**
+
+**P5 · assumption sensitivity — PASS**, with one caveat about the harness's raw output labels.
+
+```
+python3 skills/case-readiness/scripts/tier2_probes.py --case a-coachs-dilemma --probe 5 --flex 0.5
+base: {'A': 1.01, 'B': 1.12}   base_winner: B   base_margin_pct: 10.8
+scope: swept the 2 declared assumption dial(s): ['transition_suppression_cost', 'backup_center_delta_per100']
+transition_suppression_cost -50% -> A=0.94 B=1.12  margin=19.6%  flips=False
+transition_suppression_cost +50% -> A=1.09 B=1.12  margin=3.2%   flips=False
+backup_center_delta_per100  -50% -> A=1.01 B=1.12  margin=10.8%  flips=False
+backup_center_delta_per100  +50% -> A=1.01 B=1.12  margin=10.8%  flips=False
+MECHANICAL RESULT: 0 probe(s) FAILED mechanically
+```
+
+**Caveat (tooling, not a case defect):** `sensitivity_model.py`'s `evaluate()` deliberately returns
+"points **conceded**" — lower is better for Houston — and its own docstring flags this as the
+opposite of the harness's documented "higher is better" contract (SKILL.md P5). `tier2_probes.py`
+picks its "winner" via `max()`, so it labels **B** as the winner throughout this printout, when the
+case's own real convention (and `case.json.balance_test`) has **A** winning by 9.7%. Manually
+re-derived every row using the case's own margin formula (`(B−A)/B`, matching
+`case.json.balance.margin_basis`) to check this doesn't hide a real instability:
+- Base: (1.124−1.0145)/1.124 = **9.7%** favoring A — matches `case.json.margin_pct` exactly (the
+  script's 10.8% figure divides by the wrong side of the pair, an artifact of the same convention
+  mismatch, not a different data point).
+- `transition_suppression_cost` −50% (0.075): A=0.9395, margin = (1.124−0.9395)/1.124 = **16.4%**
+  favoring A — still not close to flipping or breaching the 20% cap.
+- `transition_suppression_cost` +50% (0.225): A=1.0895, margin = (1.124−1.0895)/1.124 = **3.1%**
+  favoring A — thin, but does not flip and does not breach the cap.
+- `backup_center_delta_per100` at either flex: no effect on the graded metric (by design — it only
+  feeds the separate D4 roster axis), margin unchanged at 9.7%.
+
+No flips, no cap breaches under the correctly-applied convention, matching the disclosed hand-check
+already on file in `case.json.balance.stability` (removing MA3 *entirely* — a much larger swing
+than ±50% — pushes the margin to 23.1%, over the cap; that hand-check is reproduced and confirmed
+by the script's own `no_trans` computation). **PASS.** Recommend, as a follow-up, either flipping
+`sensitivity_model.py`'s `evaluate()` to return a higher-is-better metric (e.g., "points saved
+relative to the straight-defense baseline") to match the harness's documented contract, or noting
+the inverted convention inside `tier2_probes.py`'s own output — not done here per this skill's
+"never fix the case" rule (and this is arguably a harness-contract issue, not a case-content one).
+
+**P6 · data decay — PASS**, with one honest fix made and one disclosed sourcing caveat recorded.
+
+All 7 `sources[].url` entries fetched live this session (WebFetch, with direct `curl`+HTML-table
+parsing for the two Basketball-Reference pages WebFetch cannot reach, HTTP 403):
+
+| id | URL | reachable | claim supported | notes |
+|---|---|---|---|---|
+| S1 | basketball-reference.com/players/j/jordade01.html | Yes (curl, 200) | **Yes, exactly** | Raw `totals_stats.2015` row: ft=187, fta=471, ft_pct=.397 — matches 39.7% exactly. |
+| S2 | same page, playoffs table | Yes | **Yes, exactly** | `playoffs.2015` WC1-vs-SAS row: ft=28, fta=73, ft_pct=.384, 7 games — matches exactly. Confirmed this is genuinely the WC1 (pre-Houston) row, distinct from the WCS (39-84, .464) row correctly excluded from case.md. |
+| S3 | basketball-reference.com/teams/LAC/2015.html | Yes (curl, 200) | **Yes, exactly** | `team_misc` row: ORtg 112.4, Pace 94.7 — matches exactly. |
+| S4 | en.wikipedia.org/wiki/Personal_foul_(basketball) | Yes (200) | **Partial** | The 6-foul-in-48-minutes disqualification rule is stated verbatim on this page ("fouls out and is disqualified for the remainder of the game" after 6 personal fouls). The second half of the claim attributed to S4 — "two free throws, no one-and-one, for an intentional/non-shooting foul" — does **not** appear anywhere on this page (checked directly: no "one-and-one," "two free throws," "shooting foul," or "non-shooting" text found). This detail is real and true, but this specific citation does not carry it. `case.json`'s own S4 note already partially discloses this ("standard, widely known NBA officiating knowledge... corroborated by every real box score checked," not a direct quote), which softens but does not close the gap — case.md's Appendix C attributes the full claim to `[S4]` without that distinction being visible to a student. **Recorded as a GAP, not a BLOCKER** — the underlying fact is real, uncontroversial, and already partially disclosed in the research record; recommend a second citation (an official NBA rules explainer) be added for this specific sub-claim in a future pass. |
+| S5 | fansided.com/2016/01/06/... | Yes (200) | **Yes, exactly** | Confirmed live: 10.4% (missed FT) vs. 24.7% (missed FG), 2015-16 season — matches exactly, including the disclosed one-season gap and MEDIUM confidence grading. |
+| S6 | espn.com game summary (Game 1) | Yes (200) | **Yes, exactly** | Confirmed Game 1: Clippers 117, Rockets 101, May 4, 2015. Independently cross-checked Games 2 and 3 via Basketball-Reference's own series page (`basketball-reference.com/playoffs/2015-nba-western-conference-semifinals-clippers-vs-rockets.html`): Game 2 Rockets 115–Clippers 109 (May 6), Game 3 Clippers 124–Rockets 99 (May 8) — both match case.md exactly. Also confirms Game 4's real score (Clippers 128, Rockets 95, May 10) used only in FACILITATOR.md's Twist, not in case.md — consistent with the no-pre-leak finding in P4. |
+| S7 | espn.com "Let the hacking begin" | Yes (200) | **Yes** | Confirmed live and on-topic: real 2015 ESPN reporting establishing Hack-a-Jordan-style intentional fouling as a genuine, contemporaneous NBA strategy. Used only for background framing, no numeric claim drawn from it, consistent with `case.json`'s own note. |
+
+**One honest fix made during this run.** While verifying S1's raw data, found that case.md's
+Appendix B stated DeAndre Jordan "attempted zero three-pointers and made 71.0% of his real 2-point
+shots" — both clauses were wrong. The real 2014-15 totals (verified directly from
+Basketball-Reference's raw table cells): he attempted **4** three-pointers, making **1**
+(fg3=1, fg3a=4), and his real 2-point percentage was **71.3%** (378-of-530), not 71.0% — 71.0% is
+actually his *overall* FG percentage (379-of-534), a different, unrelated figure that got
+mislabeled as his 2-point rate. This is pure narrative color in Appendix B — it feeds none of D1-D5's
+graded arithmetic — but it is a factual inaccuracy in a case whose Appendix A explicitly promises
+"every statistic in Appendix B and C are real." **Fixed**: case.md now reads "attempted only 4
+three-pointers all season (making 1) and made 71.3% of his real 2-point shots"; `case.json`'s S1
+`value` field updated to match (`187-471 FT (39.7%); 71.3% on 2-point attempts (378-530); 1-4 on
+3-point attempts`). `case_md_sha256` recomputed and updated; Tier 1 re-run clean after the fix
+(TIER1_PASS, 0 blockers, unchanged).
+
+Non-blocking overall: all 7 URLs live and reachable; 6 of 7 claims verified exact; one (S4) verified
+partial with the gap already softened by existing disclosure; one narrative-color inaccuracy found
+and fixed. **PASS.**
+
+### Tier 3 — human dry-run
+NOT RUN. Required for `VERIFIED`, not for `TIER2_PASS`/`PUBLISHED`.
+
+### Final verdict — 2026-08-18
+
+**final_state: TIER2_PASS.** Tier 1 clean (0 blockers, 1 gap, a non-defect). All six Tier 2 probes
+recorded PASS by name: P1, P2, P3 (human-adjudicated over a mechanical false-negative), P4, P5, P6
+(with one honest case.md fix applied and one disclosed sourcing gap on S4 recorded as a GAP, not a
+blocker).
+
+**Blockers open: 0.**
+
+**Gaps open: 2** (neither load-bearing to the balance test or graded metric):
+1. `[T1-10]` — `new_coverage[]` honestly empty, reinforcement carve-out applies (informational).
+2. `[P6/S4]` — Wikipedia citation supports the 6-foul rule but not the specific
+   "two-free-throws/no-one-and-one" detail attributed to the same footnote; the underlying fact is
+   real and already partially disclosed in `case.json`'s source note. Recommend a second, more
+   precise citation in a future pass.
+
+**Tooling notes for a future case-readiness maintenance pass (not case defects):**
+- `tier2_probes.py`'s P3 trap-extraction regex grabs the first occurrence of "trap" in
+  FACILITATOR.md rather than the dedicated "## The trap, named explicitly" section, producing a
+  false mechanical FAIL on this and potentially other well-written cases whose Lessons Learned
+  prose happens to use the word "trap" first.
+- `tier2_probes.py`'s P5 winner/margin computation assumes "higher is better" universally; this
+  case's `sensitivity_model.py` deliberately models "points conceded" (lower is better), which its
+  own docstring flags as a deviation from the documented contract. The raw script output is
+  therefore mislabeled (reports "B" as winner, margin 10.8%) where the case's own real convention
+  has "A" winning at 9.7%. The underlying stability conclusion (no flips, no cap breaches) is
+  unaffected and was independently re-verified by hand in this run.
+
+**Next step:** `case-publish` may now run (all `TIER2_PASS` preconditions met). Tier 3 (human
+dry-run) remains open and is required before `VERIFIED`, not before `PUBLISHED`.
+
+---
+
+## Tier 1 Structural Gate Run — 2026-08-13 (RETIRED CONTENT — see notice above)
 
 **Command:**
 ```

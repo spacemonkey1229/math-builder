@@ -1,5 +1,156 @@
 # Roadmap — Math Builder
 
+**v2.10 · 2026-08-18.** Supersedes v2.9. **Delta: the ten cases sitting in the pipeline's
+`readiness` stage were re-verified against the actual gate scripts rather than trusted at their
+self-reported `case.json.qa` state, and all ten are now genuinely `TIER2_PASS`/`published`.** Five
+had already reached that bar in a prior session (`a-coachs-dilemma`, `codebreaker`, `cold-chain`,
+`end-of-life`, `seton-hall`) and were re-verified clean, not re-worked. The other five needed real
+fixes before the claim was true, not just a status flip:
+
+- **`airplane-manufacturer` and `family-trip`** were `BLOCKED` on live re-run (`T1-15`/`T1-18`
+  CONTINUITY STALE — their `published/*.html` predated the last edit to `case.md`). Both were a
+  genuine staleness, not a content defect: a prior session had moved facilitator-only content out
+  of the student-facing `case.md` into `FACILITATOR.md` (correct, per the "never ship the answer in
+  the student packet" rule) without regenerating the HTML afterward. Rebuilt/re-verified and both
+  cleared `TIER1_PASS` (0 blockers) again. `family-trip` additionally had a stale `qa.case_md_sha256`
+  (T1-16) and a real, small propagation bug caught while rebuilding its packet: the Overview still
+  said Allegiant's lap-child policy is "one per adult" after Appendix D and `case.json` had already
+  been corrected to the airline's real rule ("one per row") — the same class of single-line
+  propagation miss `seton-hall`'s own QA history already named once. Fixed in `case.md` and the
+  interactive HTML both.
+- **`family-trip` itself was only `TIER1_PASS`** at the start of this pass — no full Tier 2 run had
+  ever been recorded, just a standalone mechanical P5. Ran the other five probes for real (a
+  genuinely fresh subagent for P1 and a second one for P3, direct work for P2/P4, live fetches of
+  all 10 web sources for P6). P6 found two real, load-bearing defects: `S8`'s URL was a dead
+  third-party mirror and the case's stated policy text was itself wrong (Allegiant's real rule is
+  "per row," not "per adult" — the same fact as above, caught twice from two directions); `S12`
+  resolved but backed the wrong IRS mileage-rate announcement (72.5¢, not the case's cited 76¢) —
+  the 76¢ figure itself was correct, re-pointed to the announcement that actually states it. Both
+  fixed. `family-trip` reached genuine `TIER2_PASS` with 0 real FAIL (P5 stays PASS-disclosed, the
+  project's standing state for a stated-assumption instability that's written down rather than
+  hidden — the same treatment `wildfire`/`airstrike` already use).
+- **`airstrike`, `wildfire`, `redrawing-lines` were already genuinely `TIER2_PASS`** on arrival —
+  their `QA_REPORT.md` files record real fresh-subagent P1/P3 runs, real live P6 fetches, and (for
+  `airstrike` and `wildfire`) real defects that a prior pass found and fixed before the probes
+  actually passed (a leaked trap-detector-defeating wording, a `FLEX` sweep that was a structural
+  no-op and vacuously "passed" P4/P5 against parameters `evaluate()` never reads). No rework needed;
+  re-verified live and left alone.
+- **All four `qa`-status cases plus `family-trip` were promoted through `case-publish`**: built the
+  missing packet files (student `.docx`, facilitator-guide `.docx`, `.xlsx` workbooks where the
+  appendices warranted one, `MANIFEST.json`) for whichever were missing — `redrawing-lines` had
+  **no `published/` directory at all** and needed its interactive HTML built from
+  `templates/interactive_shell.html` from scratch, the project's first real proof that the A7
+  scaffold works for a case authored after Cold Chain. Every rebuilt student `.docx` was rendered to
+  PDF and read to confirm no facilitator content (the trap, the balance arguments, the margin)
+  leaked across — 0 leaks found across all five packets. Promoted each to the read-model
+  (`standards_spine.json`/`cases_index.json`/`gap_queue.json`) and flipped `case.json.status` to
+  `"published"`.
+
+**A real regression was found and fixed in the read-model itself, not in a case.** After all five
+promotions, `standards_spine.json.totals.uncovered` read 76 — down only 5 from the 81 measured at
+the start of this pass, when the eight individually-verified newly-closed skill ids
+(`geometry-vertex`/`concave`/`irregular-polygon`/`quadrilateral` from `airplane-manufacturer`;
+`discrete-mathematics-base-case`/`mathematical-induction`/`inductive-step`/its how-to from
+`redrawing-lines`) should have moved it by 8. Diffing the promotion script's own
+`readmodel/_snapshots/` (its safety net, working exactly as designed) found the cause: the
+`family-trip` promotion's write — which should have been a pure no-op, since `family-trip`'s title
+was already in `standards_spine.json.cases[]` from the original pre-pipeline corpus scan and its
+own `case.json.new_coverage[]` is empty — instead **silently stripped `airplane-manufacturer` from
+62 skills' `covered_by[]` and `wildfire` from 77**, cutting their broad legacy-scan-era tagging down
+to only their narrow, freshly-curated `standards[]` claim (97→35 and 92→15 respectively). This
+pattern — a legacy-converted case keeping both its old broad corpus-scan tag *and* its new curated
+claim — is normal and matches every other legacy-converted case in the corpus (`codebreaker` is
+26 curated vs. 42 total covered; `end-of-life` is 11 vs. 49); nothing else in the pipeline
+documents or authorizes silently retiring the broad tag, so this was data loss, not a cleanup.
+**Fixed by restoring `standards_spine.json` from the promotion script's own pre-write snapshot**
+(`readmodel/_snapshots/standards_spine.20260818T220557.json`, the state immediately after
+`redrawing-lines`'s correct promotion and immediately before `family-trip`'s), regenerating
+`gap_queue.json` from the restored spine, and confirming `cases_index.json` was never touched by
+the same bug (diffed clean against its own snapshot pair, only `family-trip`'s own row legitimately
+changed). Root cause not fully diagnosed — the documented `case-publish` §2 script only ever
+*appends* to `covered_by[]`, so this was very likely an ad hoc rewrite the promoting agent wrote
+itself to handle the "title already in `cases[]`, still need to flip `status`" edge case the
+documented script doesn't explicitly cover, not the script as written. Worth a real fix to
+`case-publish`'s own promotion snippet (an explicit idempotent-but-still-flip-status path) so the
+next case with this exact shape doesn't reopen the same hole; **not done in this pass**, filed
+below.
+
+**Where the chunk of ten ended up, all ten now genuinely `TIER2_PASS`/`published`:**
+
+| case | starting `qa.state` / `status` | ending `qa.state` / `status` | what actually changed |
+|---|---|---|---|
+| `a-coachs-dilemma` | `TIER2_PASS` / `published` | unchanged | re-verified live, clean, no rework |
+| `codebreaker` | `TIER2_PASS` / `published` | unchanged | re-verified live, clean, no rework |
+| `cold-chain` | `TIER2_PASS` / `published` | unchanged | re-verified live, clean, no rework |
+| `end-of-life` | `TIER2_PASS` / `published` | unchanged | re-verified live, clean, no rework |
+| `seton-hall` | `TIER2_PASS` / `published` | unchanged | re-verified live, clean, no rework |
+| `airplane-manufacturer` | `TIER2_PASS` (self-reported) / `qa` | `TIER2_PASS` / `published` | was `BLOCKED` on live Tier 1 (stale published HTML) — rebuilt; packet completed (docx/xlsx/facilitator guide/MANIFEST); promoted |
+| `airstrike` | `TIER2_PASS` / `qa` | `TIER2_PASS` / `published` | live Tier 1/2 re-verify clean, no rework; packet completed; promoted |
+| `wildfire` | `TIER2_PASS` / `qa` | `TIER2_PASS` / `published` | live Tier 1/2 re-verify clean, no rework; facilitator-guide docx + MANIFEST added; promoted |
+| `redrawing-lines` | `TIER2_PASS` / `qa` | `TIER2_PASS` / `published` | had **no `published/` directory at all** — full packet built from scratch, including the interactive HTML from the A7 shell (case #2 proof); promoted |
+| `family-trip` | `TIER1_PASS` / `qa` | `TIER2_PASS` / `published` | ran the 5 missing Tier 2 probes for real; fixed 1 propagation bug + 2 P6 citation defects; built the full packet; promoted |
+
+`python3 app/build_pipeline.py`: `readiness` stage 10 → **0**, `promotion` stage 38 → **49**.
+`python3 app/build_dashboard.py --verify`: 4 pre-existing, unrelated failures remain (down from 11
+before this pass rebuilt the dashboard's cached page — the rebuild alone closed 7 of the original
+11, which were the dashboard's own embedded coverage numbers having gone stale against the spine,
+not real defects). The 4 that remain predate this session and are untouched by it:
+`legacy_readiness` case count vs. `corpus_index` legacy count (45 vs. 63, a pre-existing corpus-
+accounting drift), `derived skill ids match cases_index standards_count` (a pre-existing list of
+cases whose `cases_index.json` cached `standards_count` has drifted from their live `case.json`),
+the 2-cluster B2 backlog (`Calculus`/`Derivatives`, `Discrete Mathematics`/`Formal Logic` — already
+documented, not newly found), and legacy cases carrying `margin: 0` instead of `null`. None are new
+regressions from this pass; 0 self-checks newly broke.
+
+**Coverage after the chunk closes:** `standards_spine.json.totals`: `skills` 437 (unchanged),
+`cases` 71 (was 69), `uncovered` **73** (was 81 at the start of this pass), `thin_1_2` 196.
+`readmodel/domain_coverage.json` was **not** regenerated in this pass (out of scope — the task
+asked to run `build_pipeline.py`/`build_dashboard.py --verify`, not a domain-coverage rebuild) and
+is now stale against the spine (`spine_skills_uncovered: 199` there vs. the live 73) — flagged
+honestly, not silently trusted, the next time someone reads that file.
+
+---
+
+## Track B — major remaining skill gaps (2026-08-18 snapshot)
+
+19 spine groups still carry at least one zero-coverage skill, 73 skills total. The ten highest by
+raw zero-count, most recomputed after this pass's two closes above:
+
+| zero | of | domain / group |
+|---|---|---|
+| 8 | 8 | Discrete Mathematics / Set Theory |
+| 7 | 24 | Geometry / Fundamentals Of Geometry |
+| 7 | 8 | Discrete Mathematics / Formal Logic |
+| 7 | 7 | Pre-Calculus / Matrices |
+| 6 | 6 | Pre-Calculus / Polar And Parametric |
+| 6 | 6 | Calculus / Limits And Continuity |
+| 5 | 5 | Pre-Calculus / Trigonometric Identities |
+| 5 | 5 | Pre-Calculus / Introduction To Limits |
+| 4 | 5 | Calculus / Series |
+| 3 | 10 | Geometry / Surface Area And Volume |
+
+`cases/_concepts/CONCEPTS_next10-careers-gapclose_2026-08-18.md` already scopes ten career-anchored
+concepts against exactly these groups, ranked by skills-closed × feasibility. **Two of its ten need
+re-checking before anyone writes them, because this pass's promotions moved the ground under them
+without anyone intending to:** `redrawing-lines`'s `new_coverage[]` fully closed Discrete
+Mathematics / Proof And Recursion (4 of 7 zero → 0 of 7) — **C9 "Prove It Scales" is now moot, its
+entire target skill set already covered, drop it from the queue rather than write it.**
+`airplane-manufacturer`'s closed Geometry / Fundamentals Of Geometry's `vertex` and Geometry /
+Quadrilaterals And Polygons' `concave`/`irregular-polygon`/`quadrilateral` — **C7 "The Roofline
+Call" now closes 7 skills instead of 8, and C8 "The Irregular Boundary" now closes 2
+(`convex`/`parallelogram`) instead of 5**, which likely moves C8 below the write-worthiness bar the
+concept sheet itself set (it was already the lowest-scored, MEDIUM-feasibility entry in the batch).
+The other seven concepts (**C1** Grant Reach, **C2** The Contrapositive Claim, **C3** The
+Multiplier Recruit, **C4** The Fan Formation, **C5** The Reserve Asymptote, **C6** The Tracker's
+Angle, **C10** The Cheap Approximation) are untouched by anything in this pass. The concept sheet's
+own recommendation stands and is now stronger: write **C5 (The Reserve Asymptote, score 12.2)**
+first — it closes two full zero-coverage groups at once (Pre-Calculus Introduction To Limits +
+Calculus Limits And Continuity, 11 skills, HIGH feasibility off public SOA/CDC mortality tables) —
+then **C1** and **C3**, both HIGH-feasibility, both untapped careers, both still a clean one-group
+fit.
+
+---
+
 **v2.9 · 2026-08-12.** Supersedes v2.8. **Delta: this file was eleven days stale, and the gap was
 structural rather than clerical.** Between 2026-08-04 and 2026-08-12 the project shipped an entire
 architecture that no roadmap track described — a local admin server (D-015), a hosted Flask app on
@@ -342,6 +493,51 @@ Deliberately author the domains a teenager would not expect to be mathematical: 
 ---
 
 ## Sequencing
+
+### As of v2.10 · 2026-08-18
+
+**Now, in order:**
+1. **A3 — first `VERIFIED` case.** Still the single blocking fact — no case in this system has run
+   with real learners. The pool of genuinely `TIER2_PASS`/`published` candidates just grew from 5 to
+   **15** (the original five plus this pass's ten), so the choice of which case runs first is wider,
+   not the blocker itself. This is calendar work, not engineering work, and remains the one thing
+   nothing in this pipeline can do for itself.
+2. **Fix `case-publish`'s promotion snippet for the "already in `cases[]`, still need to flip
+   `status`" case** (new — see this version's header). The documented script's idempotent-stop path
+   correctly does nothing when a title is already in `standards_spine.json.cases[]`, but a case in
+   that exact shape (a legacy conversion, already spine-tagged, freshly reaching `TIER2_PASS`) still
+   legitimately needs its `status` flipped to `published` — the gap between those two facts is
+   exactly what produced this pass's 62/77-skill data-loss regression when an agent wrote ad hoc
+   logic to bridge it. Write the explicit path into `SKILL.md`'s own script rather than leaving the
+   next promoting agent to reinvent it.
+3. **Write C5 (The Reserve Asymptote) next**, per the Track B update above — highest-value concept
+   in the current queue, closes two full zero-coverage groups (11 skills) in one case, HIGH
+   feasibility, untapped career (actuarial analyst). Re-scope C7/C8 first (see Track B) before
+   anyone writes those two specifically — C9 is moot, drop it.
+4. **Regenerate `readmodel/domain_coverage.json`.** Flagged stale in this pass (`199` uncovered
+   there vs. the spine's real `73`) but not fixed — out of scope for what this pass was asked to do.
+   Whoever picks up B4/the concept queue next should regenerate it first rather than read stale
+   `uncovered_skills_still_orphaned` numbers.
+5. **A regression net over the admin core.** Unchanged from v2.9 — `admin_core.py`,
+   `store_postgres.py` and `admin_web/app.py` still have zero automated tests.
+6. **Real auth (MCS-44).** Unchanged from v2.9 — one shared passcode still guards write access to
+   real learner data with no per-user identity.
+
+**Done since v2.9 (2026-08-12 → 2026-08-18):** the ten `readiness`-stage cases re-verified against
+live gate scripts rather than trusted at self-report — 5 were already clean, 5 needed real fixes
+(2 stale-published-artifact rebuilds, a full 5-probe Tier 2 run for `family-trip`, a real
+propagation bug and two real P6 citation defects found and fixed, one case's packet built from
+scratch including its first-ever case-#2 proof of the A7 interactive-HTML shell) — all ten now
+genuinely `TIER2_PASS`/`published`; a real `standards_spine.json` data-loss regression found (via
+the promotion script's own snapshot safety net) and fixed; `uncovered` 81 → 73.
+
+**Ongoing:** E5 override watch · E3 discussion participation (still the least-instrumented of the
+seven rubric criteria, and the one measuring the thing the format exists for).
+
+**One line:** the ten-case backlog this pipeline itself created by outrunning its gate is now
+actually closed, not just relabeled — every claim in the table above was checked against a live
+script run, not a JSON field — and the project is back to the same one blocker it's had since
+Cold Chain: no case has run with real learners yet.
 
 ### As of v2.9 · 2026-08-12
 

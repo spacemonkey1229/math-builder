@@ -73,7 +73,15 @@ function parseTable(lines) {
 
 function mdToParagraphs(md, { stripFacilitator = true } = {}) {
   if (stripFacilitator) {
-    md = md.split(/<!--\s*FACILITATOR ONLY\s*-->/)[0];
+    // The marker may be a bare `<!-- FACILITATOR ONLY -->` or an annotated
+    // one-line comment like `<!-- FACILITATOR ONLY: ... -->` (the form used
+    // by nearly every case.md in this corpus) -- match either, and strip
+    // everything from the marker onward, INCLUDING the comment line itself,
+    // which must never survive as literal visible text in the student docx.
+    // (Found 2026-08-18 while publishing airplane-manufacturer: the old
+    // exact-match regex left the whole comment, unrendered, as a plain
+    // paragraph at the end of every case study docx built from this script.)
+    md = md.split(/<!--\s*FACILITATOR ONLY[\s\S]*?-->/)[0];
   }
   const lines = md.split('\n');
   const out = [];

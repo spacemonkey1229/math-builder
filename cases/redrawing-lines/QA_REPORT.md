@@ -1,5 +1,157 @@
 # QA_REPORT — redrawing-lines ("Redrawing Lines")
 
+## case-readiness run — 2026-08-18 — three open author decisions resolved
+
+**State:** TIER2_PASS → **TIER2_PASS** (unchanged; all three previously-open author decisions from
+the 2026-08-12 run are now closed, not just disclosed) · **Verdict:** TIER2_PASS
+**case.md sha256:** `df7a285e9883f3c1041fe0e1acb5dba5c0efd37f3833d8c393e1ebfd408c0f14`
+**Model:** `cases/redrawing-lines/sensitivity_model.py` (unchanged; still self-tests clean)
+
+This run was explicitly instructed to make real, documented calls on the three items the
+2026-08-12 report handed to a human, not to describe options again. All three are resolved below.
+
+### Issue 1 — MA5, the water-boundary convention
+
+**The two readings, arithmetic shown.** `crossings()` in `sensitivity_model.py`: the Kennebec
+Split's district line runs along the Hancock–Knox border (Hancock lands in the northern district,
+Knox in the southern); The Hancock Line's does not (both counties sit in the southern district).
+
+| Reading | A (Kennebec Split) | B (Hancock Line) | Margin |
+|---|---|---|---|
+| **Counted** — all 34 Appendix B borders, water included | 9 borders + 1 severance = **10** | 11 borders, no severance = **11** | (11−10)/10 = **10.0%**, A wins |
+| **Excluded** — Hancock–Knox dropped | 8 borders + 1 severance = **9** | 11 borders, no severance = **11** | (11−9)/9 = **22.2%**, A wins, past the SPEC §2 cap |
+
+**Decision: COUNTED is the correct reading, decided on its own merits.** The question the task
+poses is which convention "a legislative apportionment analyst would actually use," not which
+number is smaller, and worked through honestly the two readings are not equally credentialed:
+
+- The Census County Adjacency File [S4] — the exact document real redistricting analysts and their
+  GIS tooling use to determine county adjacency (it is the Census Bureau's own product for its
+  Redistricting Data Program, and it is what commercial and public redistricting software builds
+  its contiguity graphs from) — draws no distinction between a land border and a water border. It
+  lists Hancock and Knox as neighbors because their legal county boundaries touch, full stop.
+- Excluding water boundaries is not "the professional default with a footnote" — it is a rule this
+  case has no source for. It would require answering "how much water is too much?" (a strait? a
+  bay? a river mouth?) with no citable threshold, which is precisely the kind of invented number
+  SPEC §5 and this project's whole placeholder discipline exist to prevent.
+- "Contiguity by water" is itself an accepted, unremarkable concept in real redistricting law and
+  practice (islands reachable only by boat are routinely treated as contiguous to their district).
+  There is no professional convention that discounts a water-only county boundary as not being a
+  real border.
+
+So the reading that would need defending is EXCLUDED, not COUNTED — and it is also the reading that
+breaches the cap. That is not a coincidence to be resolved by picking COUNTED to dodge 22.2%; it is
+COUNTED being correct on independent grounds that happen to also keep the case in balance. Per the
+task's own instruction, if the more defensible reading had been the one that breached the cap, the
+fix would have been to retune a different constraint (e.g., MA1's severance weight, which the
+sensitivity sweep already shows brings A up to a tie at weight 2 and to a 15.8% margin at weight
+1.5) rather than switch MA5 to dodge it. That mechanism was not needed here because the honest
+answer to "which reading is defensible" and "which reading keeps margin_pct at 10.0%, inside SPEC
+§2's cap" are the same reading. `case.json.modeling_assumptions[MA5].basis` and case.md's Appendix H
+MA5 row are both updated to state the real-world grounding and mark this RESOLVED, not merely
+disclosed. The 22.2% alternate reading remains fully disclosed — in Appendix B's caveat, Appendix H
+MA5's sensitivity column, `balance.stability_note`, and FACILITATOR.md — as a legitimate classroom
+challenge a Hero can raise, exactly as SPEC §2 and this project's sensitivity doctrine require. It
+is not suppressed; it is correctly labeled as the *non*-committed reading.
+
+### Issue 2 — Appendix F prints the case's own answer, defeating the trap
+
+**Fix applied, matching the `six-degrees-of-exposure` pattern** (disclose enough surrounding data
+for real derivation, don't print the graded number). `case.md` Appendix F's first row previously
+read `65,536 — or 65,534 once you drop the two that leave a district empty`. It now reads:
+
+> *the tool's claim — a Hero computes this from APPENDIX A's county list and the Fundamental
+> Counting Principle, then drops the two assignments that leave a district empty*
+
+Appendix A's full 16-county list was already public (it has to be, for Appendix A's own purpose),
+so this is real, checkable derivation (2¹⁶ = 65,536, minus the 2 degenerate assignments = 65,534),
+not guesswork — exactly the same shape as the `six-degrees-of-exposure` repair, which disclosed the
+raw weighted-degree column so the graded 27,643 figure was derivable rather than printed. D1 already
+required the Hero to compute this total via the Fundamental Counting Principle and show that the
+binomial size-breakdown row sums to it; the appendix simply no longer hands them the checksum before
+they do the work. FACILITATOR.md's primary trap description is updated to note this makes the trap
+*stronger*: a Hero who does the honest work of deriving 65,534 is, if anything, more likely to
+mistake their own derivation for an audit than a Hero who was just handed the number — the
+misconception D3's induction proof exists to correct is unchanged either way. Confirmed by the fresh
+P1 cold solve below, which derived 65,536/65,534 correctly and unprompted from Appendix A alone.
+
+### Issue 3 — D4(iii)'s method was unspecified
+
+**Fix applied.** `case.md`'s D4(iii) now reads (added text in bold):
+
+> at least one district must contain at least two of Maine's four largest counties, with the
+> population consequence of that fact stated in people as the **guaranteed minimum**: Pigeonhole
+> proves that *some* two of the four largest counties share a district, but it does not tell you
+> which two, so the only population figure the principle actually guarantees is the smallest
+> possible sum over any two of those four counties — not the largest, and not whichever pair looks
+> most dramatic on the page. State that minimum pairing's sum and show the arithmetic that makes it
+> the floor, not just a pairing.
+
+**Why this reading and not the other.** Pigeonhole is an existence proof: 4 counties into 2
+districts forces some pair together, but the principle itself is silent on *which* pair. The only
+claim licensed by "at least two of the four largest share a district" that is true under *every*
+possible plan is the smallest population any such pair could sum to — i.e. the two smallest of the
+four largest counties, Penobscot and Kennebec. Reporting the largest, most dramatic pairing
+(Cumberland + York) instead states a number that is true of *a* plan, not a number Pigeonhole
+guarantees of *every* plan — the exact over-read FACILITATOR.md already flagged as "the same error
+[as the audit trap] with a bigger number." This was already the guide's intended reading before this
+fix; it is now explicit in the student-facing text instead of being left for the guide to catch
+after the fact only if a Hero happened to get it wrong.
+
+### Fresh cold solve — P1, re-run 2026-08-18
+
+A genuinely fresh, unbriefed subagent was dispatched with only
+`/tmp/coldsolve-redrawing-lines/PACKET.md` (regenerated after all three fixes above; grepped clean
+of `65,53x`, `FACILITATOR`, and any margin/percent leak beyond the sanctioned closing comment) and
+no other file or web access.
+
+**Result: PASS.** The solver chose **A**, named its optimized metric (maximum population deviation
+as a percent of the ideal — deliberately *not* the crossings proxy, reasoning explicitly that
+crossings flips under the opposite MA2 convention, exactly the sensitivity the case discloses),
+showed fully correct arithmetic for both plans (681,179/681,180 vs. 683,062/679,297; deviations
+0.000147% and 0.5527%(sic 0.5528% rounding) against the Karcher/Tennant benchmarks), answered all 7
+required questions including the strongest counter-argument (Tennant rewards never splitting a
+county), the most sensitive assumption (MA2), an ignored appendix item (the four dominated Appendix
+D rows), and the least-supported number (MA1's severance weight). It additionally, unprompted:
+(a) derived Appendix F's now-redacted total correctly, 2¹⁶ = 65,536 / 65,534 non-empty, from
+Appendix A's county list, and correctly explained that the gap between 65,534 and the 1,734
+contiguous plans is why D1–D3 matter; (b) applied D4(iii)'s now-explicit method correctly, computing
+Penobscot + Kennebec = 275,841 as the guaranteed floor and explicitly rejecting Cumberland + York =
+515,041 as "not guaranteed." Both redactions/clarifications hold up under a genuine blind solve: the
+case remains fully solvable end to end from the packet alone, and the two previously-ambiguous
+methods are now followed correctly rather than merely likely to be followed correctly.
+
+### Tier 1 — structural (19 checks), re-run after all edits
+
+`python3 skills/case-readiness/scripts/tier1_structural.py --case redrawing-lines` →
+**checks run: 19 · PASS 19 · GAP 0 · FAIL 0 · VERDICT: TIER1_PASS**. 0 BLOCKER, 0 GAP. Same 4 POLISH
+items as every prior run (T1-07 separator-run note; T1-15/18/19 — no `published/` directory yet, so
+nothing to check there).
+
+### Tier 2 — the other five probes
+
+Not re-dispatched to fresh subagents this run (none of the three fixes touch P2–P6's underlying
+numbers, the twist, the sensitivity sweep, or the sources) — re-verified mechanically instead:
+`sensitivity_model.py` still self-tests clean (`python3 cases/redrawing-lines/sensitivity_model.py`
+reproduces every figure in `case.json.derived` including the unchanged 10.0% margin, the MA2
+counter-check at 9.1%, and the MA5 counter-check at 22.2%) and `case.json` is still valid JSON with
+`standards[]` resolving in the spine. P2/P3/P4/P5/P6 verdicts carried forward from the 2026-08-12
+run as **PASS**, unchanged, since none of the facts they graded moved.
+
+### case.json.qa, as written by this run
+
+`state: TIER2_PASS · verdict: PASS · run_on: 2026-08-18 · blockers_open: 0 · gaps_open: 0 ·
+case_md_sha256: df7a285e9883f3c1041fe0e1acb5dba5c0efd37f3833d8c393e1ebfd408c0f14`. `gaps_open`
+drops from 1 to 0 — the D4(iii) ambiguity that was the sole open gap is now resolved, not just
+adjudicated around.
+
+### Next step
+
+`Run case-publish on redrawing-lines`. Tier 3 (human dry-run) is still `NOT RUN` — schedule it
+before any ✅ in `DOCTRINE_LEDGER.md`; `PUBLISHED` is not `VERIFIED`.
+
+---
+
 ## case-readiness run — 2026-08-12
 
 **State:** DRAFT → TIER1_PASS → **TIER2_PASS**  ·  **Verdict:** TIER2_PASS

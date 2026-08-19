@@ -28,12 +28,14 @@ James Charmichael — Agent 008, British Secret Service — has spent four years
 
 Charmichael is fluent in dozens of hand ciphers and can decode most of them in his head. Klaus is not. Klaus has never been trained in espionage, has no cryptography background, and every message he sends will sometimes be time-sensitive — a schedule, a name, a location that stops mattering in a matter of hours. Charmichael has to pick a cipher Klaus can actually execute correctly, by hand, under pressure, without ever having practiced it — while assuming the cell may eventually recognize *that* a cipher is in use, even if they don't have the key (**SEE APPENDIX D**, Kerckhoffs's Principle).
 
+London has been explicit about what this particular decision is judged on. In the cable authorizing Charmichael to lean harder on Klaus, his handler put it in writing: the failure mode that ends this operation is a message that arrives *wrong*, not a message that is *eventually guessed*. Klaus has no way to know he has miscopied a character, and no way to ask for a resend without risking another face-to-face contact — precisely the kind of contact they are trying to eliminate by moving to handwritten codes at all. A cipher's resistance to a single blind guess only matters against an adversary who is actually guessing; in six months of drops, none has. What London has asked Charmichael to optimize, in writing, is the probability that Klaus's handwritten cipher text reaches him with zero errors — not how many keys a cipher theoretically has.
+
 Two ciphers are on the table:
 
 - **The Alphanumeric Cipher** — every letter is assigned a fixed number 1–26, that number is multiplied by a secret multiplier, and the results are written as digit strings separated by zeros (**SEE APPENDIX A**).
 - **The Circle Shift Cipher** — the plaintext is rewritten starting from its first vowel, reading every third letter and wrapping around the message until every letter has been used once (**SEE APPENDIX B**).
 
-Both ciphers must be able to encode the same two messages Charmichael needs to send Klaus this month (**SEE APPENDIX C**). The rules for counting each cipher's keyspace, and for counting how much Klaus actually has to write — and how likely he is to write it correctly — are fixed conventions (**SEE APPENDIX D**) — use them, or your numbers won't match anyone else's. Optional further reading is in **Appendix E**.
+Both ciphers must be able to encode the same two messages Charmichael needs to send Klaus this month (**SEE APPENDIX C**). The rules for counting how much Klaus actually has to write — and how likely he is to write it correctly — and for counting each cipher's keyspace, are fixed conventions (**SEE APPENDIX D**) — use them, or your numbers won't match anyone else's. Optional further reading is in **Appendix E**.
 
 The vocabulary and "how to…" skills this case will ask of you are listed in **Appendix F** — that is where Challenge 1 sends you.
 
@@ -59,16 +61,16 @@ Do you:
     a.) Use of the "how to…" resource you researched in Challenge 1.
     b.) At least one original visual display of the data.
 
-3.) Include the following:
+3.) Include the following. **Work the deliverables in this order** — D4's character counts feed directly into D7, so compute them first. D1–D3 and D7 answer two different questions: D1–D3 ask how hard each cipher is to guess in a single blind try; D7 asks how likely Klaus is to actually execute the cipher correctly, by hand, under pressure, the first time. Both are real numbers a Hero has to compute. D8 asks you to decide, explicitly, which one should govern this specific decision — don't let whichever number you compute first, or whichever one looks bigger, make that call for you by default.
 
-- **D1 — The Alphanumeric Cipher's keyspace.** If the terror cell recognized the cipher type but not the letter-to-number key, how many possible keys are there with no multiplier? How many with an unknown single-digit multiplier? Show your factorial and write both answers in scientific notation.
-- **D2 — The Circle Shift Cipher's keyspace.** If the terror cell recognized the cipher type but not the number of letters skipped, how many possible keys are there for each of the two messages in Appendix C?
-- **D3 — Blind-guess probability.** What is the probability a single random guess lands on the exact correct key, for each cipher, expressed in scientific notation where useful?
 - **D4 — Both required messages, encoded in your chosen cipher** (Appendix C), plus a bar graph comparing the total number of characters Klaus must correctly handwrite for each cipher, across both messages.
 - **D5 — A pie chart** showing, for the Alphanumeric Cipher, what share of every character Klaus writes is a "0" separator versus a digit of an actual letter value.
 - **D6 — A histogram** of how often each digit 0–9 appears across your two Alphanumeric-encoded messages. Using the Pigeonhole Principle and your total digit count, state the minimum number of times *some* digit must repeat — and confirm your histogram is consistent with it.
 - **D7 — The probability Klaus correctly transcribes an entire cipher text with zero character errors**, for each cipher, using Appendix D's stated per-character error rate.
-- **D8 — A recommendation** weighing each cipher's keyspace, error-free transcription probability, and how much Klaus has to correctly handwrite by hand, under time pressure, with no training.
+- **D1 — The Alphanumeric Cipher's keyspace.** If the terror cell recognized the cipher type but not the letter-to-number key, how many possible keys are there with no multiplier? How many with an unknown single-digit multiplier? Show your factorial and write both answers in scientific notation.
+- **D2 — The Circle Shift Cipher's keyspace.** If the terror cell recognized the cipher type but not the number of letters skipped, how many possible keys are there for each of the two messages in Appendix C?
+- **D3 — Blind-guess probability.** What is the probability a single random guess lands on the exact correct key, for each cipher, expressed in scientific notation where useful?
+- **D8 — A recommendation** weighing each cipher's keyspace, error-free transcription probability, and how much Klaus has to correctly handwrite by hand, under time pressure, with no training. London's stated standard for this decision (Background) is the probability that Klaus's cipher text reaches Charmichael with zero errors — not how many keys a cipher has. **Given that stated standard, state explicitly which single number — D3's blind-guess probability or D7's zero-error transcription probability — actually answers the question London asked, and why the other one, while real, doesn't govern this specific decision.**
 
 4.) An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.
 
@@ -120,6 +122,16 @@ Charmichael needs Klaus able to receive both of these messages, in whichever cip
 
 ## Appendix D: Modeling Assumptions and Conventions
 
+These four conventions split into two groups that answer two different questions. Convention 1
+tells you how to count each cipher's *keyspace* — how many keys an adversary would have to
+search to break a single message by brute force (feeds D1–D3). Conventions 2 and 4 tell you how
+to count what Klaus has to *write* and how often he might get a character wrong — feeding D4–D7's
+picture of whether he can execute the cipher correctly the first time, under pressure, with no
+training. Convention 3 is a shared modeling detail both tracks need for their worked examples.
+Neither group's numbers is automatically bigger, more real, or more decisive than the other's —
+D8 asks you to weigh them against each other yourself; this appendix doesn't do that weighing for
+you.
+
 **Convention 1 — Keyspace counting.** "How many possible keys" is counted from the terror cell's point of view under **Kerckhoffs's Principle**: they know *which* cipher type is in use (Alphanumeric vs. Circle Shift) but not the specific key (the letter-to-number assignment and multiplier, or the number of letters skipped). This is the standard cryptographic assumption that a cipher's security should not depend on the *algorithm* staying secret — only the key. (Wikipedia, "Kerckhoffs's principle" — Appendix E, Source 5.)
 
 - Alphanumeric key = a unique assignment of the numbers 1–26 to the 26 letters (a permutation of 26 items), times an unknown single-digit multiplier (1–9).
@@ -165,15 +177,3 @@ Standard Notation · Scientific Notation · Factorial · Permutation · Event ·
 - How to multiply 2-digit numbers by single-digit numbers
 - How to add 2-digit numbers
 - How to compare two or more values
-
-<!-- FACILITATOR ONLY -->
-
-## Facilitator-only: the balance argument (do not distribute to students)
-
-**Argument for A (Alphanumeric).** The keyspace is astronomical — 26! possible letter-to-number assignments (≈4.03×10²⁶), times 9 possible single-digit multipliers, ≈3.63×10²⁷ total keys. A single blind guess has essentially zero chance of success. This is the number that wins the room's first vote, every time.
-
-**Argument for B (Circle Shift).** Klaus has to actually execute this correctly, alone, at 3 AM, with no training, possibly under time pressure with intelligence that goes stale in hours. The Alphanumeric Cipher requires Klaus to (1) recall or look up each letter's assigned number, (2) multiply it by the secret multiplier, (3) write the digits, (4) write a separator — for the two required messages this produces roughly 2.4× as many handwritten characters as Circle Shift (120 vs. 50 across both messages). Every extra character is a chance for Klaus to make a transcription error Charmichael can't correct after the fact. Using Appendix D Convention 4's stated 0.15%-per-character error rate, Circle Shift has a real, computed **92.8% chance** of transcribing both messages with zero errors, against Alphanumeric's **83.5%** — an **11.1% margin**, close enough that a Hero has to actually weigh it against Option A's overwhelming keyspace advantage, not just declare a landslide.
-
-**The trap.** Students who only compute D1's keyspace conclude Option A is a landslide — "3.63×10²⁷ vs. barely twenty possibilities, it isn't close." That is true as a **one-time brute-force** calculation and false as a **real-world security assessment**. Charmichael and Klaus don't send one message; Klaus has already been sending intel under the *same* key for six months and will keep doing so. A cipher that reuses its key across many messages is vulnerable to **frequency analysis** (Wikipedia, Appendix E) regardless of how big its one-time keyspace is — the huge number in D1 measures how hard it is to guess the key in one blind try, not how long the key survives real, sustained use. Meanwhile Circle Shift's tiny keyspace (≤ message length) means it can be brute-forced by hand the moment it's suspected — but it is also far easier for Klaus to get right the first time, which matters when the message has a use-by date measured in hours, not months. Neither option is a landslide once both axes are on the table — that is the actual decision Charmichael has to defend.
-
-**On the primary metric.** This case's `case.json.primary_metric` is Convention 4's zero-error transcription probability (D7), not the raw keyspace. A single-axis keyspace comparison cannot honestly be forced within SPEC §2's ~20% balance guideline — 3.63×10²⁷ against roughly 20 is not a close call by any framing, and inventing a discount factor to manufacture closeness would be exactly the kind of fabricated number MCS-21 exists to prevent. The transcription-probability metric is real and computed directly from Appendix C/D's own numbers, using one disclosed Modeling Assumption (the 0.15% per-character error rate, which is not sourced — no external figure exists for this exact scenario, and this case does not claim one) — and it is where the two options land close enough (11.1%) to be a genuine, defensible call, while the keyspace comparison remains real, disclosed, dramatically-lopsided *context* that drives D1–D3. See `case.json.balance` for the full accounting.

@@ -38,15 +38,25 @@ If the room lands on its own on "secure against a single guess" vs. "secure agai
 use" being two different questions, that is the case working as designed. (Original Guide Notes'
 Anchor 2: "What question do we need to ask in order to make a decision? Do we agree?")
 
+Once that confusion has run its course, point the room back at Background: London's cable is
+explicit that this decision is judged on the probability Klaus's message arrives with zero
+errors, not on how many keys a cipher has. That line is now in the packet every Hero reads —
+use it to settle Anchor 2's question, not to skip it. The room still has to work out *why* that
+stated standard maps onto D7 and not D3, and a Hero is still free to argue London's standard is
+wrong; case.md states what the decision is graded on, it does not hand out the arithmetic.
+
 ## Anchor 3 — What is the process?
 
 **"If we go through this process and find the data, how will we decide?"**
 
 Once "secure" has a working definition, ask the room to name the actual steps before touching
-Appendix A/B: count each cipher's keyspace (D1/D2), turn that into a blind-guess probability
-(D3), then separately count what Klaus actually has to write by hand for two real messages
-(D4) and turn that into a zero-error transcription probability (D7). Re-ask: "Is our question
-still the right one, now that we can see there are two separate probabilities here, not one?"
+Appendix A/B: count what Klaus actually has to write by hand for two real messages (D4) and turn
+that into a zero-error transcription probability (D7); separately, count each cipher's keyspace
+(D1/D2) and turn that into a blind-guess probability (D3). Naming D4/D7 first here is deliberate —
+case.md's own Challenge 3 now walks the deliverables in that order, precisely so the room's first
+concrete number is the transcription-probability track, not the keyspace one. Re-ask: "Is our
+question still the right one, now that we can see there are two separate probabilities here, not
+one — and neither of them gets to just win by being computed first or looking bigger?"
 (Original: "How did you get these numbers? Do you agree on that algorithm? What is a
 combination? What is a permutation?")
 
@@ -54,21 +64,27 @@ combination? What is a permutation?")
 
 **"Do we need to make assumptions? Which ones are critical?"**
 
-Surface Appendix D's three conventions honestly: the multiplier range (1-9) the terror cell is
-assumed to search, the skip-value range for Circle Shift, and the representative multiplier (2)
-used in the worked examples. Ask which one, if it changed, would actually flip anyone's
-recommendation — most Heroes will say none of them meaningfully change D1's astronomical keyspace
-number, which is itself worth noticing out loud.
+Surface Appendix D's four conventions honestly: the multiplier range (1-9) the terror cell is
+assumed to search, the skip-value range for Circle Shift, the representative multiplier (2) used
+in the worked examples, and Convention 4's per-character transcription error rate. Ask which one,
+if it changed, would actually flip anyone's recommendation — most Heroes will say none of them
+meaningfully change D1's astronomical keyspace number (worth noticing out loud), but Convention
+4's error rate is the one that actually moves D7's margin (Probe 5's own sensitivity sweep found
+it does, right up toward the SPEC balance cap) — flag that asymmetry now, before Data Deep Dive,
+so the room already knows the two tracks aren't equally sensitive to their own assumptions.
 
 ## Data Deep Dive
 
-Now the numbers. Walk D1-D3 first (keyspace, then probability) — let the room react to the
-astronomical keyspace and the blind-guess probability D3 derives from it (see `case.json.derived`
-for the exact figures). Someone will call the vote for Option A right here. Let them. Then walk
-D4-D7 — the real character counts (120 vs. 50 across the
-two required messages), and D7's zero-error transcription probability built from them
-(Alphanumeric 83.5% vs. Circle Shift 92.8%, a real, computed 11.1% margin) — a genuinely close
-call, unlike D1-D3's landslide.
+Now the numbers, in the same order case.md's Challenge 3 now presents them. Walk D4-D7 first —
+the real character counts (120 vs. 50 across the two required messages), and D7's zero-error
+transcription probability built from them (Alphanumeric 83.5% vs. Circle Shift 92.8%, a real,
+computed 11.1% margin). Let the room sit with this number as a genuinely close call before they've
+seen anything else. Only then walk D1-D3 — the keyspace count and the blind-guess probability D3
+derives from it (see `case.json.derived` for the exact figures). The astronomical keyspace number
+will still land hard when it arrives; that's fine and expected. What it must not do is arrive
+*first* and pre-empt the room's read of D7 before D7 has even been computed — if a Hero tries to
+call the vote for Option A the moment D1 lands, redirect: "hold that thought until we've walked
+D7 too — which of these numbers is actually what Charmichael's decision turns on?"
 
 ## Twist
 
@@ -120,6 +136,13 @@ actually being graded on for THIS delivery, and D1-D3's keyspace only matters on
 six-months-of-reuse scenario is in play. A Hero who has all eight numbers right on paper and
 still picks Option A has a confident, wrong-shaped *recommendation*, not a math error — that is
 the harder trap to catch, because there's nothing to mark wrong in their work up through D7.
+As of the 2026-08-18 fix, Background now states London's own stated standard for this decision
+in writing (zero-error transcription probability, not keyspace) and D8 asks the Hero to check
+their D8 answer against that stated standard by name — the trap now has to survive a Hero who
+has read that sentence and still chooses to override it. Watch for a Hero who names D7 as the
+"graded" number and picks Option A anyway on a values judgment (key compromise being
+irreversible while a resend is merely annoying) — press them: "London didn't ask you which risk
+sounds worse. London asked you a specific question. Did you answer it, or a different one?"
 
 ## Five Socratic Questions
 

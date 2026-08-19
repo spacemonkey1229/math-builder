@@ -71,13 +71,42 @@ PARAMS = {
 # not a stated assumption. Per P5 doctrine ("sensitivity to stated assumptions,
 # not to cited measurements... cited data is stress-tested by P6 instead"),
 # these do not belong in FLEX; P6 already re-verified them against their live
-# sources. sector_deg (MA1) and twist_wind_accel_factor (MA5) remain -- both
-# are genuine, undisclosed-elsewhere modeling conventions the case had to
-# choose, not sourced facts.
-FLEX = [
-    "sector_deg",                # Appendix D, MA1
-    "twist_wind_accel_factor",   # Appendix D, MA5 -- the twist's own dial
-]
+# sources.
+#
+# FLEX corrected again 2026-08-18 (real defect found by a fresh Tier 2 probe-4
+# subagent, not a per-case workaround): tier2_probes.py's probe_sensitivity
+# ALWAYS calls model.evaluate(p) -- never evaluate_twist(p) -- because P5 tests
+# the BASE case's primary-metric winner (D3/D4, San Fernando vs Santa Clarita
+# lead time), not the twist scenario. `evaluate()` never reads `sector_deg`
+# (that dial only feeds `evaluate_d1_d2()`, i.e. MA1 governs D1/D2, not the
+# graded primary metric) and never reads `twist_wind_accel_factor` (that dial
+# only feeds `evaluate_twist()`, i.e. MA5's relaxation is the Twist's own
+# question -- Tier 2 probe 4's job, not probe 5's). Leaving both in FLEX meant
+# every previous P5 run swept two parameters `evaluate()` structurally cannot
+# see -- a vacuous sweep that could never find a flip, reported as a real PASS
+# when nothing was actually being tested. Genuinely re-checked: the base
+# metric's only two inputs are `ros_head_ch_per_hr`/`ros_flank_ch_per_hr` (the
+# fire's own given 05:00 field reports -- not re-measured, per FLEX doctrine
+# above) and `dist_to_san_fernando_mi`/`dist_to_santa_clarita_mi` (Appendix C's
+# cited, P6-re-verified route distances). Both are excluded from FLEX by the
+# same doctrine already applied to the distances. No stated Appendix D
+# assumption (MA1-MA5) independently moves the base primary-metric winner:
+# MA1/MA2 govern D1/D2 only; MA3/MA4 are already baked into the given Appendix
+# C distances; MA5's relaxation is the Twist itself, evaluated separately by
+# `evaluate_twist()` below and tested by Tier 2 probe 4, not probe 5. FLEX is
+# therefore honestly empty -- this case's primary balance metric has no
+# leftover assumption dial to flex, only given/cited data, which P5 doctrine
+# excludes and P6 already covers.
+FLEX = []
+
+# sector_deg (MA1) and twist_wind_accel_factor (MA5) are real dials, but they
+# govern evaluate_d1_d2() and evaluate_twist() respectively, not evaluate() --
+# see the FLEX comment above. They are swept directly against the correct
+# function in the __main__ block below (not via FLEX/probe 5), so a facilitator
+# can still sanity-check MA1's and MA5's own sensitivity honestly instead of
+# through a sweep that silently tests nothing.
+D1D2_FLEX = ["sector_deg"]
+TWIST_FLEX = ["twist_wind_accel_factor"]
 
 
 def _mph(chains_per_hr):
@@ -126,6 +155,11 @@ def evaluate_twist(params=None):
 
 
 if __name__ == '__main__':
+    TONIGHT_H = PARAMS["elapsed_hours"]   # the case's own "by 23:59" cutoff, ~18.98h -- NOT a
+                                            # round 24h; that looser number is what earlier
+                                            # FACILITATOR.md wording used and it undersells how
+                                            # much margin the twist actually has.
+
     base = evaluate()
     d1d2 = evaluate_d1_d2()
     tw = evaluate_twist()
@@ -135,10 +169,14 @@ if __name__ == '__main__':
           % (base["A"], base["B"], winner, margin))
     print("D1/D2 acres=%.1f  units=%.1f  people=%.1f"
           % (d1d2["acres"], d1d2["units"], d1d2["people"]))
-    print("twist A=%.3fh  B=%.3fh  (both still > 24h: %s)"
-          % (tw["A"], tw["B"], (tw["A"] > 24 and tw["B"] > 24)))
+    print("twist A=%.3fh  B=%.3fh  (both still > %.2fh 'tonight' cutoff: %s)"
+          % (tw["A"], tw["B"], TONIGHT_H, (tw["A"] > TONIGHT_H and tw["B"] > TONIGHT_H)))
 
-    print("\nFLEX sweep (+/-50%):")
+    print("\nProbe 5 FLEX sweep (+/-50%) on the BASE primary metric:")
+    if not FLEX:
+        print("  FLEX is empty -- see the FLEX comment above. No stated Appendix D assumption "
+              "moves evaluate()'s A/B winner; both inputs (given field rates, cited route "
+              "distances) are excluded from assumption-flex by design.")
     for key in FLEX:
         for pct, label in ((0.5, "-50%"), (1.5, "+50%")):
             trial = dict(PARAMS)
@@ -147,3 +185,29 @@ if __name__ == '__main__':
             flips = (r["A"] > r["B"]) != (base["A"] > base["B"])
             print("  %-28s %-5s A=%.2fh B=%.2fh  %s"
                   % (key, label, r["A"], r["B"], "FLIPS ORDER" if flips else ""))
+
+    print("\nD1/D2 dial sweep (MA1, sector_deg, +/-50%) -- via evaluate_d1_d2(), not probe 5:")
+    for key in D1D2_FLEX:
+        for pct, label in ((0.5, "-50%"), (1.5, "+50%")):
+            trial = dict(PARAMS)
+            trial[key] = PARAMS[key] * pct
+            r = evaluate_d1_d2(trial)
+            print("  %-28s %-5s acres=%.1f units=%.1f people=%.1f"
+                  % (key, label, r["acres"], r["units"], r["people"]))
+
+    print("\nTwist dial sweep (MA5, twist_wind_accel_factor, +/-50%%) -- via evaluate_twist(), "
+          "checked against the real %.2fh 'tonight' cutoff, not a round 24h:" % TONIGHT_H)
+    for pct, label in ((0.5, "-50%"), (1.5, "+50%")):
+        trial = dict(PARAMS)
+        trial["twist_wind_accel_factor"] = PARAMS["twist_wind_accel_factor"] * pct
+        r = evaluate_twist(trial)
+        survives = r["A"] > TONIGHT_H and r["B"] > TONIGHT_H
+        print("  twist_wind_accel_factor   %-5s A=%.2fh B=%.2fh  twist %s"
+              % (label, r["A"], r["B"], "still holds (past tonight)" if survives
+                 else "BREAKS -- a town is reached tonight"))
+    # the factor at which the twist's own claim ("neither town reached by 23:59 tonight")
+    # actually breaks, solved directly rather than guessed:
+    break_factor = PARAMS["dist_to_santa_clarita_mi"] / (
+        TONIGHT_H * _mph(PARAMS["ros_flank_ch_per_hr"]))
+    print("  twist breaks at twist_wind_accel_factor = %.3fx (vs. the disclosed 1.6x base and "
+          "2.4x at +50%% flex -- the twist has real headroom before it fails)" % break_factor)

@@ -59,8 +59,10 @@ PARAMS = {
     "srbm_intercept_rate": 0.056,
     # --- Appendix B, MA3: population-at-risk per warhead class -----------------
     # 2026-08-13: derived, not assumed. pop = pi*R^2*density, R = 4.8km*(Y/100kt)^(1/3)
-    # (Glasstone & Dolan cube-root blast scaling, S4), density = 2716.38/sq mi
-    # (2020 Census average central-city density, S5). See Appendix D MA3.
+    # (Glasstone & Dolan cube-root blast scaling, S4), density = 2716/sq mi (real
+    # Census-derived U.S. average across all central cities in 2000, S5 -- corrected
+    # 2026-08-18: earlier draft mislabeled this "2020" and "2716.38" [the ".38" was
+    # the source's footnote marker, not a decimal]. See Appendix D MA3, QA_REPORT.md.
     "pop_5_2MT": 1_057_614.0,
     "pop_3_1MT": 749_145.0,
     "pop_1MT": 352_364.0,

@@ -209,14 +209,4 @@ Distance · Mean · Place Value · Rounding · Weight · Proportion · Unit
 - How to compare two or more values
 - How to find a missing amount in a proportion
 
-<!-- FACILITATOR ONLY -->
-
-## Balance Argument (facilitator reference — do not share with students before discussion)
-
-**Argument for A (return to OGG):** The return leg is shorter (1,200 mi vs. 1,214 mi to SFO), so it burns less fuel at the D1 steady-state leak rate, leaving more fuel in the tank at touchdown. It also avoids any additional risk of the leak worsening further over a longer flight.
-
-**Argument for B (divert to SFO):** The route to SFO is entirely clear weather the whole way (Appendix D), while returning to OGG means flying back into the same typhoon whose hail caused the engine failure and the fuel leak in the first place — flying a damaged aircraft, on one engine, back into the weather that damaged it. SFO's fuel margin at touchdown is smaller than OGG's, but it is still positive under this case's own numbers — the aircraft is not modeled as running out of fuel either way.
-
-**The margin:** see `case.json.balance.margin_pct` and `sensitivity_note`. Close enough on the fuel-remaining metric alone to be genuinely arguable — the real tension for the discussion is fuel margin (favors A) vs. weather risk (favors B), a two-axis decision that does not collapse to a single "bigger number wins" comparison. See FACILITATOR.md for the full argument and the Twist.
-
-**The trap:** A Hero computes only the *distance* difference (1,200 vs. 1,214 — a 14-mile, ~1% difference) and concludes the two options are nearly identical, missing that the same leak rate applied over *any* distance difference compounds into a real, if modest, fuel-margin gap once D1's rate is multiplied through D2/D3. A second, related trap: treating the shorter, higher-fuel-margin option as automatically the "safer" choice, without weighing the non-fuel risk of flying a damaged aircraft back into the storm that damaged it.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

@@ -26,7 +26,7 @@ Lily finally looks up. "Dad. What are we doing?"
 
 As next of kin, Tyler holds medical decision authority, but the family is treating this as a shared decision. Two choices are in front of them, and only two: end mechanical ventilation on a date the family chooses, or leave the ventilator running and let Lauren's death happen on its own timeline, however long that turns out to be within Dr. Halbert's stated window.
 
-Every day Lauren remains hospitalized generates a new bill (SEE APPENDIX A). The family has employer health insurance through Tyler's job, but their plan has **no maximum out-of-pocket limit** — nothing caps what they could ultimately owe. Tyler and Lauren's combined assets and liabilities, as of this week, are documented in a personal net-worth worksheet the family filled out with a financial planner last year (SEE APPENDIX B); which of those assets are actually liquid enough to spend on a hospital bill without a tax penalty or a slow sale is mapped separately (SEE APPENDIX F). The hospital's own billing statement also lists the current federal poverty guideline, which determines whether a patient qualifies for free or discounted care under state and hospital charity-care rules (SEE APPENDIX D). Appendix E lays out, as a stated modeling convention, how the daily rate observed in Appendix A is projected forward for however many additional days the family's choice requires. The vocabulary and "how to…" skills this case draws on are listed in Appendix G — that is where Challenge 1 sends you.
+Every day Lauren remains hospitalized generates a new bill (SEE APPENDIX A). The family has employer health insurance through Tyler's job, but their plan has **no maximum out-of-pocket limit** — nothing caps what they could ultimately owe. Tyler and Lauren's combined assets and liabilities, as of this week, are documented in a personal net-worth worksheet the family filled out with a financial planner last year (SEE APPENDIX B); which of those assets are actually liquid enough to spend on a hospital bill without a tax penalty or a slow sale is mapped separately (SEE APPENDIX F). The hospital's own billing statement also lists the current federal poverty guideline, which determines whether a patient qualifies for free or discounted care under state and hospital charity-care rules (SEE APPENDIX D). Appendix E lays out, as a stated modeling convention, how the daily rate observed in Appendix A is projected forward for however many additional days the family's choice requires, and how that daily rate is affected if Lauren ever leaves ICU/ventilator care for an alternative care setting. The vocabulary and "how to…" skills this case draws on are listed in Appendix G — that is where Challenge 1 sends you.
 
 ---
 
@@ -54,6 +54,9 @@ Do you:
 
 - **D1 — A day-by-day hospital bill ledger.** Start from Appendix A's real Dec 11–13 bills, then extend the ledger — using Appendix E's daily rate — through the exact date your position ends: a specific calendar date if you choose Position A, and through Day 14, Day 21, and Day 50 if you choose Position B.
 - **D2 — A total out-of-pocket cost calculation** for the position you took, with the addition and multiplication that produced it shown.
+
+  **D2's total is not your answer.** A bigger total tells you one option costs more than the other — it does not tell you whether the family can actually pay for either one as the bill comes due. Those are two different questions. Before you can defend a position, you need D4 and D5: does the family's available money run out before either scenario ends — and if so, on what day?
+
 - **D3 — An insurance-coverage percent.** For a typical day in Appendix A, what percent of the hospital's charge did insurance cover, and what percent was left as the family's balance? Explain what the Escovedos' plan having no out-of-pocket maximum (Background) means for that percent as the days add up.
 - **D4 — An assets map.** Using Appendices B and F, decide which specific line items the family draws on, and in what order, to cover your D2 total — and show the family's running liquid balance after each day's bill.
 - **D5 — A "running out of money" determination.** The exact day number, and calendar date, the cumulative bill first exceeds (a) the family's liquid, penalty-free assets and (b) the family's total net worth. Show the arithmetic, and round the day count to a whole day.
@@ -175,6 +178,7 @@ Appendix A gives three real, billed days. This appendix states, as a disclosed m
 - **Day 1** (the Emergency Room admission day) is a one-time charge and is not repeated.
 - **Every day from Day 2 onward**, the daily *family balance* (what the family actually owes after insurance, not the gross charge) is held constant at the **Dec 12/Dec 13 rate: $8,743.26 per day** — the real rate the two identical ICU/Ventilator/Pharmacy days in Appendix A already show.
 - No inflation, rate changes, or new categories of charge (e.g., additional procedures) are modeled for any day beyond Dec 13. This is a simplification — a real hospital stay would likely include some day-to-day variation — stated here so every Hero's arithmetic starts from the same convention.
+- **If the family accepts a treatment option that moves Lauren out of the ICU and off the ventilator** (for example, to go home instead of staying in the ICU), the $8,743.26/day ICU/ventilator rate stops accruing from that point forward — that daily rate is billed only for days Lauren is actually receiving ICU/ventilator care. Whatever alternative care setting she moves to instead is billed separately and is not part of this case's stated daily-rate figures.
 
 Under this convention, the cumulative family balance through Day *n* (n ≥ 1) is:
 
@@ -215,18 +219,4 @@ This grouping is a stated convention for this case, not a claim about what the E
 - How to compare two or more values
 - How to round a number to a specified place value
 - How to create a pie chart given a set of data
-
----
-
-<!-- FACILITATOR ONLY -->
-
-## Balance argument (facilitator reference — do not share this section with students)
-
-**Argument for A (remove sooner).** The family's own numbers, not a hypothetical, show the math turning hard against them fast: their entire liquid cash on hand ($80,942.75) is gone by Day 10; adding the taxable brokerage account only extends that to Day 14 — which is the *low end* of Dr. Halbert's own stated most-likely survival window (14–21 days), not a distant tail case. By Day 26, the cumulative bill exceeds the family's *entire net worth* ($218,368.19), a day well inside the doctor's stated 50-day outer bound. Removing life support sooner does not change Lauren's certain, terminal prognosis or her <5% chance of waking — it stops a real, mounting, uncapped bill (no out-of-pocket maximum) from consuming savings Lily, still 14 and at home, may need.
-
-**Argument for B (keep her connected).** The same numbers cut the other way: the family is not actually facing guaranteed ruin in the *typical* case. Their liquid-asset runway (about 13.5 days) is within about 3.4% of the doctor's own low-end estimate (14 days) — close enough that, in the median case, they are not forced deep into retirement accounts at all. Even in the full 50-day worst case, the family's *total assets* ($667,756.51) exceed the worst-case bill (about $430,908.65) — they would not have to sell the house, and they would still have real (if painful, tax- and penalty-bearing) capacity in the 401(k)/IRA/pension before the bill outruns everything they own. Keeping Lauren connected preserves the real, if small, chance she wakes again — which, per the Twist, she briefly does — and gives Grace, still in transit, and the rest of the family time they would not otherwise get.
-
-**Primary metric:** the number of days the family's liquid, penalty-free assets (cash + taxable brokerage, Appendix F) cover the daily bill, compared with the low end of Dr. Halbert's own stated most-likely survival estimate (14 days).
-
-**Margin:** liquid-asset runway ≈ 13.52 days vs. the doctor's stated 14-day low end — a gap of about 0.48 days, or **≈3.4%** of the 14-day estimate. See `case.json.balance` and `derived{}` for the full computation, and `legacy_conversion_note` for why this — not the much larger, real, and fully disclosed total-dollar gap between "stop now" and "go the full 50 days" — is the metric held to SPEC's balance test.
 

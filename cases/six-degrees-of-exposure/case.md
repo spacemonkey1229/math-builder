@@ -92,12 +92,16 @@ would choose and why. Your pitch must include:
     (contacts) touching it — used to build Operation Hub Sweep's vaccination list.
     D3. A transmission-weight-eliminated comparison table (SEE APPENDICES A and B): for Operation
     Hub Sweep and for Operation Wide Net, the total weight of every edge with at least one endpoint
-    in that operation's vaccinated set — with the full arithmetic shown, including the counting
-    argument used to find Operation Wide Net's expected value (a random selection cannot be listed
-    out by hand the way Hub Sweep's fixed 50 can). Then, using Appendix D, check whether the two
-    operations' sourced per-dose costs are actually consistent with a single shared budget buying
-    exactly 50 Hub Sweep doses and 500 Wide Net doses — and if they are not, compute what split that
-    shared budget would actually imply at the sourced rates, and state the discrepancy.
+    in that operation's vaccinated set — with the full arithmetic shown. For Operation Wide Net, that
+    means the counting argument used to find its expected value (a random selection cannot be listed
+    out by hand the way Hub Sweep's fixed 50 can). For Operation Hub Sweep, that means summing the 50
+    individuals' weighted degrees (SEE APPENDIX B) and then correcting for double-counting: every
+    edge that connects two of those same 50 individuals gets summed twice (once at each endpoint),
+    so its weight must be subtracted once to reach the true total. Appendix B gives you every number
+    that correction needs. Then, using Appendix D, check whether the two operations' sourced per-dose
+    costs are actually consistent with a single shared budget buying exactly 50 Hub Sweep doses and
+    500 Wide Net doses — and if they are not, compute what split that shared budget would actually
+    imply at the sourced rates, and state the discrepancy.
     D4. A shortest notification-path calculation (SEE APPENDIX C): using the sample subgraph's edge
     weights, at least two candidate paths between the two named individuals identified there,
     compared by total path cost, with the lower-cost path identified as the fastest realistic
@@ -137,35 +141,49 @@ records, not a number printed on the source's own page (the source's own summary
 The 50 individuals with the highest degree in the full 1,899-person traced network [S3, derived],
 ranked by degree. Ties broken by lower traced ID.
 
-| Rank | Traced ID | Degree | | Rank | Traced ID | Degree |
-|---|---|---|---|---|---|---|
-| 1 | 103 | 255 | | 26 | 277 | 105 |
-| 2 | 9 | 241 | | 27 | 323 | 104 |
-| 3 | 105 | 227 | | 28 | 523 | 101 |
-| 4 | 400 | 227 | | 29 | 1189 | 99 |
-| 5 | 32 | 207 | | 30 | 1543 | 99 |
-| 6 | 41 | 183 | | 31 | 840 | 93 |
-| 7 | 3 | 178 | | 32 | 1598 | 93 |
-| 8 | 42 | 177 | | 33 | 144 | 91 |
-| 9 | 249 | 172 | | 34 | 770 | 91 |
-| 10 | 638 | 169 | | 35 | 95 | 90 |
-| 11 | 713 | 161 | | 36 | 36 | 89 |
-| 12 | 194 | 160 | | 37 | 325 | 89 |
-| 13 | 67 | 156 | | 38 | 1624 | 89 |
-| 14 | 1283 | 152 | | 39 | 475 | 88 |
-| 15 | 372 | 146 | | 40 | 697 | 86 |
-| 16 | 357 | 143 | | 41 | 128 | 85 |
-| 17 | 12 | 142 | | 42 | 679 | 85 |
-| 18 | 598 | 123 | | 43 | 297 | 84 |
-| 19 | 176 | 121 | | 44 | 212 | 83 |
-| 20 | 321 | 117 | | 45 | 644 | 83 |
-| 21 | 1281 | 117 | | 46 | 63 | 82 |
-| 22 | 704 | 113 | | 47 | 204 | 82 |
-| 23 | 19 | 110 | | 48 | 1236 | 80 |
-| 24 | 1713 | 110 | | 49 | 254 | 79 |
-| 25 | 308 | 106 | | 50 | 605 | 78 |
+| Rank | Traced ID | Degree | Weighted Degree | | Rank | Traced ID | Degree | Weighted Degree |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 103 | 255 | 1,179 | | 26 | 277 | 105 | 717 |
+| 2 | 9 | 241 | 1,289 | | 27 | 323 | 104 | 1,546 |
+| 3 | 105 | 227 | 1,031 | | 28 | 523 | 101 | 212 |
+| 4 | 400 | 227 | 679 | | 29 | 1189 | 99 | 541 |
+| 5 | 32 | 207 | 958 | | 30 | 1543 | 99 | 329 |
+| 6 | 41 | 183 | 747 | | 31 | 840 | 93 | 294 |
+| 7 | 3 | 178 | 467 | | 32 | 1598 | 93 | 185 |
+| 8 | 42 | 177 | 609 | | 33 | 144 | 91 | 376 |
+| 9 | 249 | 172 | 750 | | 34 | 770 | 91 | 355 |
+| 10 | 638 | 169 | 628 | | 35 | 95 | 90 | 516 |
+| 11 | 713 | 161 | 642 | | 36 | 36 | 89 | 326 |
+| 12 | 194 | 160 | 537 | | 37 | 325 | 89 | 488 |
+| 13 | 67 | 156 | 484 | | 38 | 1624 | 89 | 1,198 |
+| 14 | 1283 | 152 | 385 | | 39 | 475 | 88 | 553 |
+| 15 | 372 | 146 | 913 | | 40 | 697 | 86 | 337 |
+| 16 | 357 | 143 | 384 | | 41 | 128 | 85 | 530 |
+| 17 | 12 | 142 | 1,210 | | 42 | 679 | 85 | 730 |
+| 18 | 598 | 123 | 528 | | 43 | 297 | 84 | 561 |
+| 19 | 176 | 121 | 611 | | 44 | 212 | 83 | 475 |
+| 20 | 321 | 117 | 370 | | 45 | 644 | 83 | 292 |
+| 21 | 1281 | 117 | 545 | | 46 | 63 | 82 | 499 |
+| 22 | 704 | 113 | 524 | | 47 | 204 | 82 | 348 |
+| 23 | 19 | 110 | 425 | | 48 | 1236 | 80 | 392 |
+| 24 | 1713 | 110 | 658 | | 49 | 254 | 79 | 564 |
+| 25 | 308 | 106 | 505 | | 50 | 605 | 78 | 802 |
 
 **Sum of these 50 degrees:** 6,241 (double-counts any edge with both endpoints in this list) [S3, derived]
+
+**Sum of these 50 weighted degrees:** 30,224 [S3, derived]. This double-counts too — for the same
+reason as the plain degree sum above, but now in contact-weight instead of edge count: an edge
+connecting two individuals who are *both* on this list gets added into the weighted-degree total
+twice, once at each endpoint.
+
+**The double-counted edges themselves.** Of this list's 6,241 counted edges, exactly **382** connect
+two of these same 50 individuals to each other rather than to someone outside the list; those 382
+internal edges carry a combined weight of **2,581** [S3, derived]. Each of those 382 is counted
+*twice* in the 30,224 weighted-degree sum above (once at each of its two top-50 endpoints) and
+*twice* in the 6,241 degree sum, so each needs to be subtracted back out exactly once — not left in
+at full double-weight, and not removed entirely — to reach the true, non-double-counted total. D3
+asks you to carry out that subtraction yourself and show it; this appendix gives you every number
+the correction needs (30,224; 382; 2,581) but not the finished result.
 
 ## Appendix C — Sample Weighted Contact Subgraph
 
@@ -253,10 +271,4 @@ and state this discrepancy yourself.
 
 - How to find the shortest path between two vertices in a weighted graph
 
-<!-- FACILITATOR ONLY -->
-
-## Balance argument (facilitator only — never shipped to students)
-
-This case's balance argument, margin, named trap, and required sensitivity note are facilitator-
-only material and are **not** reproduced here. See `case.json.balance`, `case.json.sensitivity_note`,
-and FACILITATOR.md for the full arithmetic, margin, and trap writeup.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

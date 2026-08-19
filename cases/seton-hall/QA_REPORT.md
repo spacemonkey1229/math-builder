@@ -337,3 +337,179 @@ downgrade/re-source those three claims, followed by a re-run of `tier2_probes.py
 **Iterations used this session:** 1 full pass (all six probes run once, P1-P5 adjudicated cold
 against the case, P6 checked live over the network via `WebFetch` + `Claude_Browser`; no fixes
 attempted, per this skill's own no-fix scope).
+
+## P6 remediation + facilitator-leak fix — 2026-08-18
+
+Two independent fixes applied this session, per project-owner instruction.
+
+**1. Source remediation (`cases/seton-hall/sources/` created).** All 3 sources P6 found dead were
+independently re-investigated live, not trusted from the prior report:
+
+- **S1 (NCAA.com bracket explainer) — FIXED.** Wayback Machine capture of an NCAA.com bracketiq
+  article published 2020-02-27 (`http://web.archive.org/web/20200409001427/https://www.ncaa.com/news/basketball-men/bracketiq/2020-02-27/what-march-madness-ncaa-tournament-explained`)
+  — inside the case's real 2019-20 season, unlike the old 2022-dated dead URL. Fetched and
+  confirmed it states the same 68-team, 4-regions-of-16, seeded-1-16 structure the case cites.
+  Local copy: `sources/S1_ncaa-bracket-explainer_accessed-2026-08-18.html`. Side finding (not
+  fixed, flagged only): this same article states the Selection Committee is "10-member," not the
+  "11 members" `case.md`'s Background prose states — that prose figure was never part of S1's
+  cited `value` field, so it is outside this remediation's scope; reported for a human call.
+- **S7 (Wikipedia 353-team count) — FIXED.** The cited title, "2019 NCAA Division I men's
+  basketball tournament qualifying teams," never existed (confirmed both by direct 404 and by
+  Wikipedia's own search API returning no such article). The real article carrying this exact
+  figure is `2019 NCAA Division I men's basketball tournament` (no "qualifying teams" suffix):
+  `https://en.wikipedia.org/wiki/2019_NCAA_Division_I_men%27s_basketball_tournament`, whose
+  "Qualification and selection" section states verbatim "Four teams, out of 353 in Division I,
+  were ineligible to participate in the 2019 tournament." Local copy:
+  `sources/S7_wikipedia-353-teams_accessed-2026-08-18.html`.
+- **S5 (warrennolan.com NET rank) — NOT FIXED, genuine discrepancy found and left for human
+  review.** The live URL is confirmed dead (200, empty body — JS-rendered, as suspected). But
+  three independent real, dated, fetchable replacements were found, and **all three disagree with
+  the case's cited "No. 12"**:
+  1. A rendered Wayback capture of the *same* warrennolan.com by-week page (2020-08-05 crawl).
+     Its "AP Poll" row, decoded from the underlying div-grid table, correctly ends at the real,
+     cited Final AP value of 15 at column position 20 (with the literal "Final" column left
+     blank by the site) — this fixes the column alignment. Applying that same alignment to the
+     "NET" row gives a most-recent tracked value of **15**, not 12; "12" appears only earlier in
+     the season (weeks 12-13).
+  2. NCAA.com's own official NET Rankings page (the primary source, not an aggregator),
+     Wayback-captured 2020-03-06 ("Through Games Mar. 04 2020"): Seton Hall Rank **14**,
+     Previous **12**.
+  3. The same NCAA.com page, Wayback-captured 2020-03-17 ("Through Games Mar. 12 2020" — the
+     actual last date games were played before the season stopped, the truest "final" NET
+     snapshot that exists): Seton Hall Rank **15**, Previous **15**.
+
+  All three agree: 12 was a real NET rank Seton Hall held earlier in the season, but the true
+  final/most-recent NET rank on record as of the season's stoppage was **15**, not 12. This is
+  load-bearing — `case.json derived.net_rank`, `balance.argument_a`, `case.md` Appendix A, and
+  `FACILITATOR.md`'s twist all currently use "No. 12" as a wider corroborating margin alongside
+  AP No. 15. Per `case-research` SKILL.md's rule against silently altering a case figure a
+  replacement source contradicts, **this was not fixed** — `case.json` `sources[].S5.value` is
+  left at "No. 12," the dead URL is left in place, and a `verification_2026_08_18` field on that
+  source entry records the full finding. Evidence downloaded to `sources/`:
+  `S5_warrennolan-by-week_DISCREPANCY_accessed-2026-08-18.html`,
+  `S5_ncaa-net-rankings-through-mar4-2020_DISCREPANCY_accessed-2026-08-18.html`,
+  `S5_ncaa-net-rankings-through-mar12-2020_DISCREPANCY_accessed-2026-08-18.html`. **A human
+  decision is needed** on whether to correct the case's NET figure from 12 to 15 (and what that
+  does to the twist and the balance argument) before P6 can be considered resolved for S5.
+
+**2. Facilitator-answer-key leak in `case.md` — FIXED.** `case.md` ended with an **unclosed**
+`<!-- FACILITATOR ONLY -->` HTML comment (opened at the old line 209, never closed) wrapping a
+full "Balance (facilitator reference)" section — arguments for A and B, the margin, and the trap
+— in the same file distributed to students. Because the comment was never closed, this was not
+even defense-in-depth: any Markdown or plain-text rendering of `case.md` would show this content
+as ordinary body text. Confirmed via direct read of the raw file. Checked whether this project has
+any automated step that strips HTML comments before a student sees `case.md`: **no code does**
+— `app/` never reads `case.md` at all (student-facing data comes from `case.json`'s structured
+fields), and `scripts/` has no reference to `case.md`, `FACILITATOR`, or `<!--`. The only
+safeguard is a manual instruction inside `skills/case-publish/SKILL.md`'s `.docx`-build step
+("Strip the `<!-- FACILITATOR ONLY -->` section... shipping the answer key inside the case is the
+single worst failure this skill can produce"), enforced by human/agent discipline plus a
+post-build PDF check, not by code. **This was a live leak, not redundant defense-in-depth.**
+Checked the content against `FACILITATOR.md` and `case.json.balance{}` before deleting: both
+already carry the same argument-for-A/B text, margin, and trap (verbatim in `balance{}`,
+substance-equivalent in `FACILITATOR.md`'s `## The trap`), so nothing was lost — the leaked block
+was deleted outright from `case.md`. Re-checked the rest of `case.md` for any other stray HTML
+comments: none found (`grep -n '<!--' case.md` returns nothing).
+
+**Tier 1 re-run after both fixes:**
+`python3 skills/case-readiness/scripts/tier1_structural.py --case seton-hall` →
+19 checks: 15 PASS, 2 GAP, **3 FAIL** — VERDICT: BLOCKED.
+- `T1-10` GAP (unchanged, legacy-conversion carve-out, expected).
+- `T1-16` FAIL (`case_md_sha256` in `case.json.qa` is stale) — **expected and correct**, per this
+  task's own instruction: both `case.md` and `case.json.sources[]` changed this session, so the
+  recorded hash from the 2026-08-13 gate run is now stale by design, signaling a fresh Tier 2 run
+  is needed. Not treated as a new defect; `qa.verdict` was left at `TIER1_PASS` and not advanced.
+- `T1-15` / `T1-18` FAIL (`published/Seton Hall - Interactive.html` built before the latest
+  `case.md` edit) — expected consequence of editing `case.md` without republishing, which this
+  task explicitly scoped out ("do not attempt to publish"). `T1-18` also carries its pre-existing
+  GAP-level numeric-continuity note (23 numbers in the interactive packet not found in
+  `case.md`/`case.json` — unrelated to this session's edits, present before and after).
+- `T1-07` unchanged: still parses all 30 labels cleanly (POLISH note only) — the `case.md` edit
+  did not disturb section/label parsing.
+
+No fabricated P6 PASS was recorded. `case.json.qa.tier2_probes.P6_data_decay` is left at `"FAIL"`
+with a new `remediation_2026_08_18` note describing exactly what changed and what still needs a
+real `tier2_probes.py --probe 6` re-run (and, for S5, a human figure decision) before P6 can pass.
+
+## Discrepancy resolution + full P6 re-run — 2026-08-18 (session 2)
+
+Project owner reviewed both discrepancies flagged in the prior session and approved corrections:
+directional accuracy is acceptable ("the concept is what matters").
+
+**1. NET rank corrected: No. 12 -> No. 15.** The prior session's live re-check found No. 12 was a
+real, genuine mid-season NET value, not the final one. Two independent, dated NCAA.com primary-source
+Wayback captures (2020-03-06, "Through Games Mar. 04 2020": Seton Hall Rank 14, Previous 12; and
+2020-03-17, "Through Games Mar. 12 2020" — the actual last date games were played before the
+season stopped, the truest "final" NET snapshot that exists: Seton Hall Rank 15, Previous 15) agree
+the real final/most-recent NET rank on record was 15, matching the final AP poll rank almost
+exactly. Corrected everywhere it appeared:
+- `case.json`: `sources[].S5` (value, url — switched from the dead warrennolan.com aggregator to
+  the NCAA.com Wayback capture through games Mar. 12 2020, org, title, confidence MEDIUM -> HIGH,
+  local_copy, and a new `verification_2026_08_18` note recording the fix), `derived.net_rank`,
+  `balance.argument_a`, `balance.stability` (its "switching to NET would give a wider 25% margin"
+  argument no longer holds now that NET matches AP at 15 — rewritten), and `legacy_conversion_note`.
+- `case.md`: Background prose ("No. 12" -> "No. 15"), Appendix A table row, Appendix E sources
+  table (S5 row).
+- `FACILITATOR.md`: opening critical-fact paragraph, the twist-reveal paragraph and its two
+  bullet points (substantively rewritten — the original twist logic relied on NET offering a
+  *wider, more comfortable* margin than AP for Heroes who under-shot with raw stats; with NET now
+  also at 15, both real rankings confirm the same razor-thin margin rather than one being a wider
+  safety net), the 45-minute plan table, and Socratic question 1.
+
+`margin_pct` (6.25%) was **not recomputed**. The graded `primary_metric` is Seton Hall's AP media
+poll rank against the No. 16 cutoff (`case.json.primary_metric`, `balance.margin_basis`), which
+never touched NET rank — NET is corroborating twist evidence in `balance.argument_a` and the
+FACILITATOR twist, not a graded input. `derived.ap_margin_pct` is unchanged at 6.25.
+
+**2. Committee size corrected: 11 -> 10 members.** S1's own archived NCAA.com source text
+(re-read this session) states "10-member NCAA Men's Division I Basketball Committee" verbatim —
+confirmed live and via the local copy. Corrected in `case.md` (Background prose, Appendix E S1
+row), `case.json` (`sources[].S1.claim`, `.value`), and `FACILITATOR.md` ("Eleven people, one tie
+vote..." -> "Ten people, one tie vote...").
+
+**3. Full P6 re-run, live, this session.** All 7 `sources[]` entries re-verified:
+
+| Source | URL | HTTP | Claim supported? |
+|---|---|---|---|
+| S1 | Wayback capture, NCAA.com bracket explainer (2020-02-27 crawl) | 200 | Yes — "68 teams... four regions of 16", "ranked 1 through 16... seed", "10-member NCAA Men's Division I Basketball Committee" all present verbatim |
+| S2 | Wikipedia — 2020 NCAA tournament | 200 | Yes — "canceled"/"cancelled" present |
+| S3 | Wikipedia — 2019-20 Seton Hall Pirates | 200 | Yes — "21–9", "13–5" present |
+| S4 | shupirates.com | 200 | Yes — "No. 15" present verbatim |
+| S5 | Wayback capture, NCAA.com official NET Rankings (through games Mar. 12, 2020) | 200 | Yes — Seton Hall row shows Rank 15, Previous 15 |
+| S6 | local legacy workbook path (not a live URL) | n/a | Unchanged, not a web source |
+| S7 | Wikipedia — 2019 NCAA Division I men's basketball tournament | 200 | Yes — "353 in Division I" present verbatim |
+
+All three previously-broken/discrepant sources (S1, S5, S7) now pass. `P6_data_decay`:
+FAIL -> **PASS**.
+
+**Result: all six Tier 2 probes now PASS or PASS_DISCLOSED** (P1 PASS, P2 PASS, P3 PASS, P4 PASS,
+P5 PASS_DISCLOSED — the AP-margin fragility is real and disclosed, not eliminated, matching the
+project's Cold Chain precedent — P6 PASS). `case.json.qa.state`/`verdict` advanced
+**TIER1_PASS -> TIER2_PASS**. `case_md_sha256` recomputed against the corrected `case.md`
+(`4180f3dfbd9d3c1c911002325ad4d78305fed597cae91ed736dc600d70d18ac4`).
+
+Not done this session, out of scope per task instructions: `readmodel/`, `cases_index.json`, and
+publishing (`published/Seton Hall - Interactive.html` still reflects the pre-correction figures
+and remains stale against the current `case.md`/`case.json`; a `case-publish` pass is needed before
+this case can be republished).
+
+## case-publish packet build — 2026-08-18 (propagation fix + hash reconciliation)
+
+While building the student docx/xlsx/facilitator-guide/interactive-HTML packet, found one line in
+`case.md`'s Overview ("eleven people deciding...") that the 2026-08-18 committee-size correction
+(11 -> 10 members, sourced from S1's own archived text: "10-member NCAA Men's Division I Basketball
+Committee") had fixed in `FACILITATOR.md` and Background but missed in the Overview line. This is
+the same already-verified, already-sourced fact (S1), not a new claim — corrected `case.md`'s
+Overview line to match ("a 10-person body...") and propagated into the rebuilt
+`published/Seton Hall - Interactive.html` (which also still had "eleven people," "11-person," and
+the stale "No. 12" NET figure in 6 places, plus the dead WarrenNolan.com S5 citation — all now
+corrected to match the current `case.json.sources[]`).
+
+`case.md`'s sha256 changed as a result:
+`4180f3dfbd9d3c1c911002325ad4d78305fed597cae91ed736dc600d70d18ac4` (recorded in
+`qa.case_md_sha256` from the 2026-08-18 Tier 2 session) ->
+`eb554a4b1a842ca9639cdf20b2cde38ac258caa054d40d6cdf4b6df223fa086c` (current). No re-probe of P1-P6
+is warranted: the only change is a single-fact wording propagation of a fact P6 already verified
+live this same pipeline run (S1's 10-member committee text), and no other content moved. Recording
+the updated hash below so `qa.case_md_sha256` matches current `case.md`, per case-publish
+SKILL.md's freshness gate, rather than leaving a false staleness signal for the next reader.

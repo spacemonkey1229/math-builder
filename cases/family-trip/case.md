@@ -30,7 +30,7 @@ Tom and Patricia Jackson live in Boise, Idaho, with their four children: Ronaldo
 
 This year, for the first time, an Allegiant Air sale on the nonstop route between Boise (BOI) and Phoenix-Mesa Gateway (AZA) — the closest commercial airport to Gilbert — has put flying on the table (SEE APPENDIX C). Allegiant doesn't fly this route every day, so whichever dates the family picks have to land on one of the airline's actual scheduled days.
 
-Tom and Patricia have set a **total holiday budget of $1,300** — one number that has to cover both getting the family to Arizona and back, in either direction, and their Christmas gifts for each other and all four kids. Two of the four kids, Ethan and Suzanna, are young enough to fly as free lap children (one per adult) under Allegiant's own policy — a detail that changes the flying math more than it first appears to (SEE APPENDIX D). Tom and Patricia would also need somewhere to sleep in Las Vegas if they drive (SEE APPENDIX E). Every dollar figure in this case that isn't a direct citation is a disclosed, stated Modeling Assumption (SEE APPENDIX H) — none is invented quietly.
+Tom and Patricia have set a **total holiday budget of $1,300** — one number that has to cover both getting the family to Arizona and back, in either direction, and their Christmas gifts for each other and all four kids. Two of the four kids, Ethan and Suzanna, are young enough to fly as free lap children (one per row, not one per adult) under Allegiant's own policy — a detail that changes the flying math more than it first appears to (SEE APPENDIX D). Tom and Patricia would also need somewhere to sleep in Las Vegas if they drive (SEE APPENDIX E). Every dollar figure in this case that isn't a direct citation is a disclosed, stated Modeling Assumption (SEE APPENDIX H) — none is invented quietly.
 
 Tom's employer gives him **five business days (Monday–Friday) of paid vacation** to use however he likes, on top of Christmas Eve, Christmas Day, and New Year's Day, which he already has off regardless of vacation days (SEE APPENDIX G). The Jacksons want to spend as much of that time as possible actually in Gilbert with the Youngs — especially Christmas Day itself — rather than in transit.
 
@@ -132,9 +132,9 @@ Source: Allegiant Air booking calendar, screen-captured by the original case aut
 
 **Baggage.** Every passenger gets one free personal item (max 8" × 14" × 18"). A carry-on and any checked bags cost extra, and the price depends on the route, the date, and how far ahead you buy — Allegiant does not publish one fixed number. Source: Allegiant Air baggage policy page, accessed 2026-08-13 [S7].
 
-**Traveling with an infant.** A child between 14 days and 2 years old flies free as a "lap child" if held by a fare-paying passenger age 12 or older — but only **one lap child per adult**. A safety seat and a stroller are also exempt from baggage fees when traveling with an infant. Source: Allegiant Air infant travel policy, accessed 2026-08-13 [S8].
+**Traveling with an infant.** A child under 24 months old flies free as a "lap child" on the lap of a fare-paying adult on the same reservation — but Allegiant caps this at **one lap child per row, "due to the number of oxygen masks per row"** (not simply one per adult). A safety seat and a stroller are also exempt from baggage fees when traveling with an infant. Source: Allegiant Air, "Traveling with Children," accessed 2026-08-18 [S8].
 
-> The Jacksons are traveling with two children under 2 (Ethan, 20 months, and Suzanna, 2 months) and two adults. That's exactly enough lap-child slots (one per adult) to cover both of them for free — **only 4 of the 6 family members need a paid ticket** if they fly.
+> The Jacksons are traveling with two children under 2 (Ethan, 20 months, and Suzanna, 2 months) and two adults. Two lap-child slots exist here, but only if Tom and Patricia book **two separate rows** — one adult, one lap child, per row — since Allegiant's real rule is per-row, not per-adult. Done that way, it's exactly enough to cover both for free — **only 4 of the 6 family members need a paid ticket** if they fly.
 
 ### Appendix E — Las Vegas Overnight
 
@@ -156,7 +156,7 @@ A family of six exceeds standard hotel room occupancy (most rooms cap at 4–5 g
 | Figure | Value | Source |
 |---|---|---|
 | AAA national average, regular unleaded gasoline | $4.04/gal | AAA Gas Prices, accessed 2026-08-13 [S11] |
-| IRS standard mileage rate (business use), effective July 1, 2026 | $0.76/mile | IRS.gov, accessed 2026-08-13 [S12] |
+| IRS standard mileage rate (business use), effective July 1, 2026 (mid-year increase from $0.725/mile) | $0.76/mile | IRS.gov, accessed 2026-08-18 [S12] |
 
 These are two different, both-real ways to price a mile of driving. The gas price alone only covers what leaves your wallet at the pump. The IRS's own standard mileage rate is the figure the federal government itself uses to represent the *full* cost of operating a personal vehicle — it bundles in fuel, maintenance, tires, and depreciation, not just what's in the tank. Both appear in D1 and D3 for a reason (SEE APPENDIX H, MA4).
 
@@ -204,31 +204,11 @@ Tom has exactly **5** vacation days to spend. Using them on Dec 21–23 and Dec 
 | S5 | Historical BOI↔AZA fare calendar, Nov 2024 – Jan 2025 | $55–$247 one-way (round-trip priced), peak $237 on Dec 20/21/27 2024 | Allegiant Air booking calendar, screen-captured by original case authors (source docx) | 2024-11 to 2025-01 (historical) | HIGH (as historical evidence; basis for MA1's 2026 projection) |
 | S6 | Federal September 11th Security Fee | $5.60 one-way / $11.20 round trip per passenger | Transportation Security Administration (tsa.gov) | 2026-08-13 | HIGH |
 | S7 | Allegiant baggage policy — personal item, carry-on, and checked bag size/weight limits; fees are route/date-dynamic | Personal item free; carry-on and checked bags priced dynamically | allegiantair.com/baggage-1 | 2026-08-13 | HIGH |
-| S8 | Allegiant infant/lap-child policy — one free lap child per adult, under age 2 | 1 lap child per adult, free | Allegiant Air infant travel policy | 2026-08-13 | MEDIUM |
+| S8 | Allegiant infant/lap-child policy — one free lap child per row (oxygen-mask rule), under age 2 | 1 lap child per row, free | Allegiant Air, "Traveling with Children" (allegiantair.com/traveling-with-children) | 2026-08-18 | HIGH |
 | S9 | Las Vegas off-Strip hotel nightly rates, late 2024 | $84–$123/night | Hotel booking site, screen-captured by original case authors (source docx) | 2024 (historical) | HIGH (as historical evidence; basis for MA2) |
 | S10 | Las Vegas Strip average daily hotel rate, Jan-Jun 2026 | $208.02/night (Strip average) | Las Vegas Convention and Visitors Authority, 2026 report (via aggregated search) | 2026 | MEDIUM |
 | S11 | AAA national average regular unleaded gas price | $4.04/gal | AAA Gas Prices (gasprices.aaa.com) | 2026-08-13 | HIGH |
-| S12 | IRS standard business mileage rate, effective July 1, 2026 | $0.76/mile | IRS.gov newsroom | 2026-08-13 | HIGH |
-
----
-
-<!-- FACILITATOR ONLY -->
-
-## Balance Argument (facilitator-only — do not distribute to students)
-
-**Primary metric:** total fully-loaded transportation cost per option, where Option B's driving cost is priced using the IRS's own current standard mileage rate ($0.76/mi) rather than gas price alone.
-
-Option A (Fly), fully-loaded total: fares (4 paying passengers, round trip, Appendix C/MA1) plus the federal security fee (4 passengers, Appendix D) plus bags (MA3).
-
-Option B (Drive), fully-loaded total: IRS mileage cost (round-trip miles at the IRS rate, Appendix F) plus the Las Vegas hotel (2 rooms, 2 nights, Appendix E/MA2).
-
-See `case.json.balance` and `case.json.derived` for the exact computed dollar figures and the margin — this file states the method, not the number, so the written case can't be skimmed for the graded verdict.
-
-**Argument for A (Fly):** Flying costs only slightly more than driving once you count the true, government-recognized cost of putting extra miles on a family minivan — and it buys back real extra days in Gilbert with the Youngs (Appendix G) on the exact same vacation days, plus far less time in a car for two kids under 2.
-
-**Argument for B (Drive):** In real cash terms — what actually leaves the Jacksons' bank account — driving is dramatically cheaper than flying: flying alone would blow past the entire $1,300 budget, leaving nothing for Christmas gifts, while driving leaves real room in the budget for gifts. The IRS mileage rate is real, but it's not a check anyone actually writes — the family already owns the Odyssey.
-
-**margin_basis:** See `case.json.balance.margin_basis` for the full computed breakdown, kept in sync with `sensitivity_model.py`.
+| S12 | IRS standard business mileage rate, effective July 1, 2026 (mid-year Announcement 2026-11 raised it from $0.725/mile) | $0.76/mile | IRS.gov, Internal Revenue Bulletin 2026-29 (irs.gov/irb/2026-29_irb) | 2026-08-18 | HIGH |
 
 ---
 
@@ -265,3 +245,7 @@ See `case.json.balance` and `case.json.derived` for the exact computed dollar fi
 - How to convert between units of time
 - How to round a number to a specified place value
 - How to compare two or more values
+
+---
+
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

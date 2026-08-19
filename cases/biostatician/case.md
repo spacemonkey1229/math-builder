@@ -290,14 +290,4 @@ These are optional, real, currently-live resources for students who want to go b
 - How to convert numbers to percents
 - How to compare two or more values
 
-<!-- FACILITATOR ONLY -->
-
-## Balance Argument (facilitator reference — do not share with students before discussion)
-
-**Argument for A (recommend the training):** Across the real dataset (Appendix B), average-weight patients' physicians expected to spend a mean of 31.4 minutes with them, versus 23.0 minutes for overweight-and-obese patients combined — a real, disclosed 26.6% gap. That gap is bigger, in percentage terms, than the training program's own total cost measured against a typical year's profit (13.4% of the 6-year average profit, Appendix C) — the size of the problem the data shows outweighs the size of the ask. The training is also cheap per physician ($265) relative to the hospital group's cost of a single serious discrimination complaint reaching a human-rights tribunal (Appendix E).
-
-**Argument for B (do not recommend the training):** A half-million-dollar program ($490,780 at the case's own default reading of "its physicians" = all 1,852) is a real, meaningful expense for an operator averaging a 1.4% profit margin — not a rounding error, whichever profit-averaging window (Appendix D, MA2) is used to judge it. The underlying evidence is also one single-scenario experiment (a migraine visit) from one research study, with 13 of 122 physicians' responses missing and no confirmation the missingness is random (Appendix D, MA3) — spending real money on a hospital-wide mandate based on one incomplete dataset, before replicating the finding across other visit types, is a defensible position too.
-
-**The margin:** The gap this case is built to keep genuinely close is between the size of the measured disparity (as a percentage) and the size of the training cost (as a percentage of a typical year's profit) — close enough that a careful Hero has to do real arithmetic, not eyeball it, to see which is bigger. See `case.json.balance` for the full computed figures; do not print them here in the student-facing document.
-
-**The trap:** A Hero sees the 15-of-435 and 82-of-1,458 quarterly complaint numbers in Background and treats the *rising complaint rate* itself as the proof of bias, without ever touching the actual time-spent dataset in Appendix B — the complaint counts are context for why Lamont asked the question, not evidence of anything on their own (they are not adjusted for total patient volume by weight status, are not broken out by physician, and have no comparison baseline). A confident recommendation built only on the complaint counts, without doing D1–D5's actual work on Appendix B, is exactly the trap FACILITATOR.md's Socratic questions are built to expose.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

@@ -216,14 +216,4 @@ Curious about the real-world process behind this case? These are real, external 
 
 ---
 
-<!-- FACILITATOR ONLY -->
-
-## Balance argument (facilitator-only — do not distribute above this line)
-
-**Argument for A (Tisha Ackerman):** Tisha's unweighted GPA (3.73) beats Harrison's (3.69), and her stated class-rank percentile (3rd) is numerically better than his (7th). She is also a first-generation college student from a lower-income background who is not requesting financial aid — a profile Stanford's own published data (97.8% of admits in the top tenth of their class; a meaningful share first-generation) says the committee actively values. Her AP average (4.5 across 4 exams) is strong, and Physics C Mechanics (5) plus English Lang (5) are top scores in rigorous subjects.
-
-**Argument for B (Harrison Carter):** Harrison's SAT Composite (1520) and ACT Composite (34) both beat Tisha's (1480 / 32) and sit closer to — in the ACT's case, inside — Stanford's published middle-50% range for admitted students (Appendix A). He also took more AP exams (6 vs. 4) with a higher average score (4.83 vs. 4.5), including a perfect 5 in Statistics, Computer Science A, and Chemistry. He is requesting financial aid, and his Intel apprenticeship is a concrete, résumé-verifiable technical credential in his stated intended major.
-
-**Margin basis:** The primary metric is the point gap between Tisha's and Harrison's SAT Composite scores, expressed as a percentage of the lower score — directly one of the case's own required deliverables (D4). See `case.json.balance` and `sensitivity_model.py` for the worked figures; per SKILL.md's Modeling Assumptions rule, the actual margin and winner are never stated here in `case.md`.
-
-**The trap:** A reader who only compares the two stated class-rank percentiles (3rd vs. 7th) will conclude Tisha's rank is unambiguously stronger, because a smaller percentile number reads as "closer to the top." That comparison silently assumes the two high schools are the same size. Once each percentile is converted into a raw count of classmates ranked above the applicant (D5) — using Tisha's own stated school size, and a real national-average school size for Harrison's unstated one — the comparison can look very different. See `FACILITATOR.md` for the full worked reveal and its sensitivity to the school-size assumption.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

@@ -6,46 +6,42 @@ MS | Math | Case Study | 2026-27 | Heroes Academy
 
 ## Overview
 
-"Timeout!" Coach John Cavenaugh's whistle cuts through 25,000 screaming voices as his players jog toward the bench, chests heaving. Four seconds. That's all that's left on the scoreboard clock. His Memphis Tigers cling to a two-point lead, and Kansas has the ball, already jogging it in from the sideline judge's hands.
+Priya Shah has run this exact printout through the copier twice, like a third pass might change the numbers. Two hours before tip-off, the visiting locker room at STAPLES Center smells like fresh tape and cold Icy Hot. Down the hall, Coach Kevin McHale is running through matchups on a whiteboard with the assistants. Priya's the analytics coordinator. Nobody in that room needs to like her memo. They just need her math to survive being asked about.
 
-Cavenaugh crouches at the center of the huddle. Nine faces stare back at him, sweat-soaked, waiting. Assistant coach Marcus taps the whiteboard, already half-drawn with an inbounds set that doesn't matter yet — not until Cavenaugh says the word.
+Her Rockets are down two games to one in the second round, and the number that matters most today isn't on the whiteboard — it's a free-throw percentage belonging to a Clippers center who can protect a rim better than he can make a foul shot. Hack him deliberately, all series, and you trade clean defense for two guaranteed free throws you like the odds on. Play him straight, and you let the best offense in the building run its actual offense.
 
-Two words, really. *Foul them* sends Kansas to the free-throw line on purpose — a one-and-one, a shooter alone at the stripe with no one else touching the ball. *Play defense* means trusting five tired legs to contest whatever look Kansas manufactures in the final seconds, a three to win it outright or a two to force overtime.
+Priya taps her pen against the page. Both memos are already written — she drafted both on the flight, because she didn't trust herself to only build the case for the answer she wanted first. One says *hack him*. One says *don't*. In four minutes, an assistant coach is going to knock on this door and ask which folder she's handing over.
 
-Marcus leans in. "Coach. Clock's not stopped for us."
-
-Cavenaugh's eyes go to the scorer's table, then back to the nine players in front of him — the players who have to execute whatever he says next, in the next three seconds, with the National Championship hanging on it.
-
-He opens his mouth.
+She squares the two folders on the table, one on top of the other, and waits for the knock.
 
 ---
 
 ## Background
 
-The **Memphis Tigers**, led by head coach **John Cavenaugh** (**SEE APPENDIX A**), face the **Kansas Jayhawks** in the final of the men's college basketball championship tournament. It is a back-and-forth game all night — Kansas pulls ahead, Memphis answers, and with under a minute left Kansas claws back within two points of Memphis's lead. Now, with the clock reading under four seconds and Memphis ahead 62-60, Kansas has the ball, trailing by exactly the margin a single three-pointer erases (**SEE APPENDIX B**).
+Priya Shah is the **Houston Rockets'** in-house analytics coordinator during their real 2015 Western Conference Semifinals series against the **Los Angeles Clippers** (**SEE APPENDIX A**). Head coach **Kevin McHale** makes the final in-game call, but Priya's memo is what he reads walking onto the floor — her job is to hand him one clear recommendation, not a shrug.
 
-Coach Cavenaugh has to choose, in the next few seconds, between two ways to defend a two-point lead with almost no time on the clock:
+The Clippers' center, **DeAndre Jordan**, is one of the most efficient scorers in the league near the rim and one of the least reliable from the free-throw line — a real, well-documented gap that opposing coaches around the NBA were exploiting that season by intentionally fouling him away from the ball, a tactic sportswriters nicknamed **"Hack-a-Jordan"** (**SEE APPENDIX A**). Under real NBA rules, an intentional non-shooting foul sends the fouled player to the line for two free throws, win or lose the following possession outright (**SEE APPENDIX C**) — unlike some other levels of basketball, there is no "one-and-one" here: Jordan always gets both attempts.
 
-- **The Foul** — instruct his players to intentionally foul a Kansas ball-handler the instant the inbounds pass is caught. Under the current NCAA men's rule, a team that has committed its seventh foul of the half sends the other team to the free-throw line for a **one-and-one**: the fouled player shoots a single free throw, and only if that first attempt is made does the player earn a second attempt (**SEE APPENDIX D**). Memphis is already in the bonus, so this option is live.
-- **The Stand** — instruct his players to switch onto the ball, deny the catch where possible, and contest whatever shot Kansas manages to get off before the clock reads zero.
+Priya's recommendation comes down to two named options for how Houston defends the Clippers' half-court offense for the meaningful stretches of Game 4:
 
-Both choices carry real risk. A foul concedes free points with certainty and depends entirely on which Kansas player ends up at the line and how well that player shoots free throws (**SEE APPENDIX C**). Playing defense concedes nothing for free, but a contested three-pointer that goes in loses the game outright — there is no overtime to fall back on the way there is if Kansas only ties it from the free-throw line.
+- **Hack-a-Jordan** — instruct Houston's centers to intentionally foul Jordan the moment he touches the ball away from the basket, sending him to the line for two free throws instead of letting the Clippers run a possession.
+- **Play It Straight** — defend every Clippers possession honestly, contest every shot, and never intentionally foul.
 
-Every Kansas player who logged minutes in the championship game (**SEE APPENDIX B**) has a full season of free-throw, two-point, and three-point shooting on record (**SEE APPENDIX C**) — the numbers Coach Cavenaugh has to weigh in the three seconds before he answers Marcus.
+Both options carry a real, sourced cost the naive version of this math misses. Fouling gives up nothing if Jordan bricks both shots — except that a missed second free throw is a live ball, and the Clippers can crash the boards for it just like a missed field goal; a stopped clock also means Houston's own offense loses whatever transition chance it would have had off a clean stop (**SEE APPENDIX D**). Playing it straight risks nothing on the transition front, but it also means Houston's primary rim-protecting center is out there committing ordinary defensive fouls in live-ball situations for the entire game — and the real NBA foul-out rule is unforgiving (**SEE APPENDIX C**).
 
-The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix E** — that is where Challenge 1 sends you.
+Every number Priya has to work with — Jordan's real shooting splits, the Clippers' real offensive efficiency, and the real foul-out rule — is in Appendices B and C. The vocabulary and the "how to…" skills this case asks of you are listed in **Appendix F** — that is where Challenge 1 sends you.
 
 ---
 
 ## Dilemma
 
-You are Coach John Cavenaugh.
+You are Priya Shah.
 
 Do you:
 
-**A.)** Commit an intentional foul, sending Kansas to a one-and-one free throw **OR**
+**A.)** Recommend **Hack-a-Jordan** — intentionally foul DeAndre Jordan away from the ball, all game **OR**
 
-**B.)** Play defense and contest Kansas's final shot
+**B.)** Recommend **Play It Straight** — defend every Clippers possession honestly, no intentional fouls
 
 ---
 
@@ -59,11 +55,11 @@ Do you:
 
 3.) Include the following:
 
-- **D1 — A season shooting-percentage table** (free-throw %, 2-point %, 3-point %) for each of the 8 Kansas players who played in the championship game, computed from their season makes and attempts (Appendix C).
-- **D2 — Kansas's best and worst season free-throw shooter, and best and worst season three-point shooter**, among the 8 who played — with the percentage that makes each one the pick, and why.
-- **D3 — The one-and-one probability**: the chance the fouled player converts both free throws and sends the game to overtime, computed from that player's own season free-throw percentage.
-- **D4 — A side-by-side comparison** of the single-shot percentages Coach Cavenaugh is really weighing (the fouled player's free-throw percentage vs. Kansas's most dangerous three-point shooter's percentage) against the true compound probability from D3 — with a written explanation of why the two comparisons point in different directions.
-- **D5 — An original bar graph** comparing free-throw, 2-point, and 3-point percentages for at least 4 of the 8 Kansas players who played in the championship game.
+- **D1 — DeAndre Jordan's real free-throw percentages** for the 2014-15 regular season and for the Clippers' real first-round 2015 playoff series (Appendix B), computed from his real makes and attempts, each rounded to one decimal place — plus the Clippers' real points scored per possession, computed from their real 2014-15 Offensive Rating (Appendix B).
+- **D2 — A first-pass "gut check" comparison**: the expected points from two free throws at Jordan's real season free-throw percentage, versus the Clippers' real points-per-possession on an ordinary defended possession. No adjustments yet — just the raw numbers, straight across.
+- **D3 — A corrected expected-points comparison** that starts from D2 and adds the two real, disclosed costs of fouling from Appendix D: the extra points Houston risks from a live-ball offensive rebound after Jordan misses his second free throw, and the transition-offense value Houston gives up on its own next possession by stopping the clock. Show every step of the arithmetic. This is the number Priya's memo actually has to defend.
+- **D4 — A foul-budget calculation.** Using the real NBA six-foul disqualification rule and the fourth-quarter planning scenario in Appendix C, determine how many more intentional fouls Houston's primary center can absorb before he's disqualified, and recompute the Clippers' points-per-possession for the rest of the stretch using Appendix D's stated backup-center adjustment for however much of it he'd have to watch from the bench.
+- **D5 — An original visual display** (bar graph or equivalent) comparing the D2 "gut check," D3 "corrected," and D4 "roster-adjusted" expected-points figures for Hack-a-Jordan against Play It Straight's real points-per-possession baseline.
 
 4.) An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.
 
@@ -71,100 +67,88 @@ Do you:
 
 ---
 
-## Appendix A: Coach John Cavenaugh
+## Appendix A: The Rockets, the Clippers, and a Real Series
 
-**This case is fiction.** Coach John Cavenaugh, the Memphis Tigers, and this specific championship game are invented for this case study — they are not real people, teams, or a real recorded game. (The scenario is loosely inspired by a real, famous NCAA finish; see the note at the bottom of this appendix.)
+This case is built on a **real 2015 NBA Western Conference Semifinals series** between the Houston Rockets and Los Angeles Clippers. Priya Shah, Houston's analytics coordinator in this case, is a fictional stand-in created for this exercise — but the teams, the players, the coach, the games, and every statistic in Appendix B and C are real, cited by number in **APPENDIX E**. Coach Kevin McHale really did coach the Rockets that season; this case does not put invented words in his mouth — Priya is the one making the recommendation you are asked to make.
 
-In this story, John Cavenaugh has coached the Memphis Tigers for over a decade, building the program from a middle-of-the-pack team into a nationally ranked contender. This season, Memphis went undefeated in conference play, spent multiple weeks ranked in the national top 3, and won three straight conference tournament games to reach the national final against a Kansas Jayhawks team with a long history of tournament success.
+**The real series so far, entering Game 4 (May 10, 2015):**
 
-*A note on the source: the underlying decision — foul or play defense, up two, with seconds left — is a real, famous coaching dilemma from the 2008 NCAA Men's Basketball Championship, when Kansas beat Memphis in overtime after Memphis missed the front end of a one-and-one free throw late and Kansas hit a game-tying three-pointer. This case fictionalizes the names, the exact score, and every player statistic — it does not claim to reproduce that real game's real numbers.*
+| Game | Date | Result |
+|---|---|---|
+| Game 1 | May 4, 2015 | Clippers 117, Rockets 101 |
+| Game 2 | May 6, 2015 | Rockets 115, Clippers 109 |
+| Game 3 | May 8, 2015 | Clippers 124, Rockets 99 |
 
----
-
-## Appendix B: The Championship Game — Box Score
-
-Final possession: Memphis 62, Kansas 60. Under 4 seconds remaining. Kansas has the ball.
-
-**Memphis Tigers**
-
-| Player | Minutes | FG M-A | 2PT M-A | 3PT M-A | FT M-A | Fouls | Points |
-|---|---|---|---|---|---|---|---|
-| Simar Rose | 40 | 6-16 | 5-10 | 1-6 | 3-4 | 1 | 16 |
-| Chris Gregory | 38 | 6-14 | 4-9 | 2-5 | 6-9 | 4 | 21 |
-| James Anderson | 37 | 2-9 | 0-2 | 2-7 | 1-3 | 3 | 7 |
-| Roberto Carlo | 35 | 4-11 | 3-9 | 1-2 | 2-3 | 2 | 11 |
-| Joe Thompson | 23 | 2-3 | 2-3 | 0-0 | 1-1 | 5 | 5 |
-| Sean Beane | 21 | 1-5 | 1-4 | 0-1 | 0-0 | 2 | 2 |
-| Will Scarlett | 3 | 0-0 | 0-0 | 0-0 | 0-0 | 0 | 0 |
-| Ian Mack | 2 | 0-1 | 0-0 | 0-1 | 0-0 | 0 | 0 |
-| Peter Nells | 1 | 0-0 | 0-0 | 0-0 | 0-0 | 0 | 0 |
-
-**Kansas Jayhawks**
-
-| Player | Minutes | FG M-A | 2PT M-A | 3PT M-A | FT M-A | Fouls | Points |
-|---|---|---|---|---|---|---|---|
-| Fiaro Russle | 37 | 3-8 | 3-6 | 0-2 | 1-2 | 3 | 7 |
-| Cooper Charmers | 35 | 3-7 | 2-5 | 1-2 | 6-11 | 3 | 13 |
-| Henry Peters | 30 | 6-10 | 3-6 | 3-4 | 2-2 | 5 | 17 |
-| Tegan Edgars | 23 | 2-4 | 0-2 | 2-2 | 1-3 | 1 | 7 |
-| Sam Robinson | 27 | 1-1 | 1-1 | 0-0 | 0-0 | 3 | 2 |
-| Channing Brown | 29 | 4-7 | 4-7 | 0-0 | 3-5 | 3 | 11 |
-| Diego Imor | 16 | 1-2 | 0-1 | 1-1 | 0-0 | 2 | 3 |
-| Allen Ivertown | 3 | 0-0 | 0-0 | 0-0 | 0-0 | 0 | 0 |
-
-These 8 Kansas players are who Coach Cavenaugh actually has to reason about — anyone who didn't play in this game isn't walking onto the floor for the final possession.
+Houston trails the series 2-1 entering Game 4 — a real, meaningful stretch of the season, not a scrimmage. "Hack-a-Jordan" was a real, widely covered NBA strategy that season: multiple opposing coaches, not just Houston, intentionally fouled Jordan away from the ball because of the real gap between his interior scoring efficiency and his real free-throw percentage (**SEE APPENDIX B**).
 
 ---
 
-## Appendix C: Kansas — Season Shooting Statistics
+## Appendix B: DeAndre Jordan and the Clippers, By the Numbers
 
-The 8 Kansas players who played in the championship game (Appendix B), with their full-season totals. These are the numbers behind D1-D5.
+All figures below are DeAndre Jordan's and the Clippers' **real, recorded statistics**, sourced in Appendix E. These are the numbers Priya has to work with in Games 1-3 — before Game 4 has been played.
 
-| Player | FT M-A | 2PT M-A | 3PT M-A |
+**DeAndre Jordan, free throws**
+
+| Split | Makes | Attempts | FT% |
 |---|---|---|---|
-| Fiaro Russle | 67-86 | 100-223 | 80-191 |
-| Cooper Charmers | 97-130 | 91-162 | 73-156 |
-| Henry Peters | 45-58 | 78-146 | 38-105 |
-| Tegan Edgars | 103-149 | 169-267 | 2-6 |
-| Sam Robinson | 88-113 | 49-88 | 35-110 |
-| Channing Brown | 80-114 | 212-382 | 2-12 |
-| Diego Imor | 66-122 | 109-176 | 0-0 |
-| Allen Ivertown | 26-38 | 43-83 | 0-0 |
+| 2014-15 regular season | 187 | 471 | 39.7% [S1] |
+| 2015 playoffs, Round 1 vs. San Antonio (7 games) | 28 | 73 | 38.4% [S2] |
 
-Memphis's own season shooting statistics are provided for context and for any additional comparisons you choose to make — they are not required for D1-D5, since Coach Cavenaugh's decision is about defending against *Kansas's* shooters, not his own team's.
+**Los Angeles Clippers, team offense, 2014-15 regular season**
 
-| Memphis Player | FT M-A | 2PT M-A | 3PT M-A |
+| Stat | Value |
+|---|---|
+| Offensive Rating (points scored per 100 possessions) | 112.4 [S3] |
+| Pace (possessions per 48 minutes) | 94.7 [S3] |
+
+Offensive Rating converts directly to points per possession by dividing by 100: 112.4 per 100 possessions is 1.124 points on an average Clippers possession.
+
+DeAndre Jordan attempted only 4 three-pointers all season (making 1) and made 71.3% of his real 2-point shots that season [S1] — a real, large gap between how well he scores near the basket and how well he shoots free throws, which is exactly what makes Hack-a-Jordan a real strategy other coaches used, not a made-up gimmick for this case.
+
+---
+
+## Appendix C: The Six-Foul Rule and the Fourth-Quarter Scenario
+
+**The real rule.** Under real NBA rules, a player is disqualified — "fouls out" — after committing 6 personal fouls in a 48-minute game, and must leave the floor for the rest of the game once the 6th is called [S4]. There is no way back in. Unlike some college and high-school rulebooks, an NBA player who is intentionally fouling away from the ball is charged a personal foul exactly like any other foul — it counts toward the same 6.
+
+**The real free-throw rule for an intentional foul.** An intentional (non-shooting) foul in the NBA sends the fouled player to the line for **two free throws**, regardless of whether he makes the first one — there is no "one-and-one" the way there is in NCAA men's basketball [S4]. Jordan always shoots both.
+
+**The fourth-quarter planning scenario (D4).** This is a stated scenario for you to compute with, not a claim about what actually happened in any specific real game: suppose Houston's primary center — the player McHale designates to do the fouling — enters the fourth quarter of a hard-fought Game 4 having already picked up 4 personal fouls over the first three quarters, an ordinary and realistic total for a physical center in a physical series. Use the real 6-foul rule above to work out how much room that leaves him.
+
+---
+
+## Appendix D: Modeling Assumptions
+
+> These figures are **not sourced** the way Appendix B and C are. They are stated scenario assumptions, chosen and explained by the case author, anchored to real published data where real data exists. A Hero may challenge them in discussion — that is a legitimate move, and this case is built to survive that challenge, not avoid it.
+
+| # | Assumption | Value used | Basis |
 |---|---|---|---|
-| Chris Gregory | 161-226 | 214-370 | 45-109 |
-| Simar Rose | 146-205 | 173-332 | 35-104 |
-| James Anderson | 65-114 | 62-124 | 51-153 |
-| Roberto Carlo | 79-117 | 115-251 | 10-33 |
-| Ian Mack | 24-36 | 23-47 | 66-182 |
-| Joe Thompson | 45-119 | 108-167 | 0-0 |
-| Sean Beane | 42-65 | 79-150 | 10-28 |
-| Will Scarlett | 16-25 | 16-36 | 51-139 |
+| MA1 | Jordan's real free-throw percentage (Appendix B) is used as his single-attempt make probability for both attempts of an intentional foul. | 39.7% per attempt | A real, standard simplifying convention — it does not account for game-to-game variance, defensive intensity, or fatigue, all of which real coaches also weigh. Real single-game variance is exactly what a case like this cannot predict in advance. |
+| MA2 | Extra expected points from a live-ball offensive rebound after Jordan misses his second free throw, valued at the Clippers' own real points-per-possession. | ≈ 0.07 points per intentional-foul sequence | Anchored to the closest real, dated, public estimate found: a missed free throw is offensive-rebounded roughly 10.4% of the time league-wide, versus 24.7% of missed field goals (2015-16 season — the nearest season with a clean public figure; 2014-15's own rate was not found published anywhere fetchable, so this one-season gap is disclosed rather than hidden) [S5]. This case treats a recovered live-ball possession as worth the Clippers' own real season points-per-possession (1.124), since that is the best real estimate of what an average Clippers possession is worth once they have it. |
+| MA3 | Transition-offense value Houston forfeits on its own next possession by intentionally fouling instead of forcing a live-ball stop. | 0.15 points per intentional-foul sequence | No single, clean, dated primary source specific to the 2014-15 season was found for this exact figure (see RESEARCH_LOG.md). Several independent public analyses from this era put transition offense at roughly 0.15-0.3 points per possession more efficient than half-court offense league-wide; this case uses the conservative low end of that real range rather than an unsupported precise number, and applies it only to Hack-a-Jordan, since fouling stops the clock and forces a dead-ball inbound — Houston never gets the live-ball chance to run. |
+| MA4 | How much the Clippers' effective points-per-possession rises when Houston's primary center is on the bench (foul trouble or disqualified), replaced by a backup. | +8.0 points per 100 possessions (1.204 points per possession with the backup in) | No clean, publicly available on/off defensive-rating split specific to this exact matchup was found (see RESEARCH_LOG.md). This is a stated, disclosed, deliberately modest assumption, reasoned from the well-established real pattern — documented across many NBA lineup studies in general, though not pinned to this specific Rockets-Clippers matchup — that a team's defense measurably worsens when its primary rim-protecting big is replaced by a lesser one. Treat this as a real, open, arguable number, not a hidden fact. |
 
 ---
 
-## Appendix D — Modeling Assumptions
+## Appendix E: Sources
 
-**The one-and-one rule.**
-
-**What is a one-and-one?** Under current NCAA men's basketball rules, once a team has committed 7 fouls in a half, every subsequent foul sends the fouled player to the free-throw line for a **one-and-one**: one free throw is attempted, and the shooter earns a *second* attempt only if the first is made. Miss the first attempt and the shooting stops there — and importantly, **the ball stays live after a missed front-end attempt**, recoverable by either team, not an automatic dead-ball turnover.
-
-**Assumption 1 — season percentage as single-attempt probability.** Each Kansas player's season shooting percentage (Appendix C) is treated as the probability that player makes *any single attempt* of that shot type (free throw, 2-point, or 3-point) on the final possession. This is a real simplification — it ignores defensive pressure specific to a game-ending possession, fatigue, and which defender is assigned — stated openly rather than modeled precisely.
-
-**Assumption 2 — the one-and-one is two dependent shots at the same probability.** If Memphis fouls a player with season free-throw percentage *p*, that player must make the first free throw (probability *p*) to even attempt the second (probability *p*, independent of the first make). The probability Kansas converts *both* and ties the game is therefore **p × p = p²** — not p. Missing either shot, in this simplified model, means Memphis wins outright.
-
-**Assumption 3 — the final possession.** Memphis leads 62-60 with under 4 seconds left and Kansas has the ball. A made Kansas 2-point shot ties the game (62-62, sending it to overtime); a made Kansas 3-point shot wins it outright for Kansas (63-62). This case does not require modeling what happens in a hypothetical overtime period — only which outcome (tie or Memphis win) each strategy makes more or less likely.
+| # | Claim | Value | Source | Date | Confidence |
+|---|---|---|---|---|---|
+| S1 | DeAndre Jordan's 2014-15 real NBA regular-season free-throw and 2-point shooting statistics | 187-471 FT (39.7%); 71.3% 2PT | Basketball-Reference.com — DeAndre Jordan player page, per-game/totals tables | Accessed 2026-08-18 | HIGH |
+| S2 | DeAndre Jordan's real 2015 playoff free-throw statistics, Round 1 vs. San Antonio | 28-73 FT (38.4%), 7 games | Basketball-Reference.com — DeAndre Jordan player page, playoffs table | Accessed 2026-08-18 | HIGH |
+| S3 | Los Angeles Clippers' real 2014-15 team Offensive Rating and Pace | ORtg 112.4, Pace 94.7 | Basketball-Reference.com — 2014-15 Los Angeles Clippers, Team Misc table | Accessed 2026-08-18 | HIGH |
+| S4 | Real NBA rule: a player is disqualified after 6 personal fouls in a 48-minute game; a real NBA rule: an intentional non-shooting foul sends the fouled player to the line for two free throws (no one-and-one) | 6-foul disqualification; two free throws per intentional foul | Wikipedia, "Personal foul (basketball)," cross-checked against multiple independent NBA-rules explainer sources, all in agreement on the 6-foul figure (a long-standing, uncontroversial rule) | Accessed 2026-08-18 | HIGH |
+| S5 | Real, dated league-wide estimate of the offensive-rebound rate on a missed free throw vs. a missed field goal | 10.4% (missed FT) vs. 24.7% (missed FG), 2015-16 NBA season | Fansided.com, "Offensive Rebounds and Three Pointers" (2016-01-06) | Accessed 2026-08-18 | MEDIUM — a secondary sports-analytics blog reporting its own observed league data without citing a primary NBA.com/Stats page, and the season (2015-16) is one year later than this case's own 2014-15 season; used only to anchor Appendix D's MA2, not as a bare cited fact. |
+| S6 | Real, verified box-score facts of the actual 2015 Western Conference Semifinals series through Game 3: dates, final scores, and the series standing entering Game 4 | See Appendix A table | ESPN.com — Rockets/Clippers game summaries, May 4, 6, and 8, 2015 | Accessed 2026-08-18 | HIGH |
+| S7 | Real, contemporaneous sports reporting establishing "Hack-a-Jordan" as a genuine, widely used strategy against DeAndre Jordan during the 2015 NBA season, not invented for this case | — | ESPN.com, "Let the hacking begin" (Kevin Arnovitz, 2015) | Accessed 2026-08-18 | HIGH |
 
 ---
 
-## Appendix E: "How To…" Math Questions To Research
+## Appendix F: "How To…" Math Questions To Research
 
 **Vocabulary**
 
-Percent · Decimal · Division · Quotient · Rounding · Bar Graph · Probability · Independent Event · Place Value
+Percent · Decimal · Division · Quotient · Rounding · Bar Graph · Probability · Event · Outcome · Dependent Event · Conditional Probability · Place Value
 
 **How to…**
 
@@ -172,17 +156,7 @@ Percent · Decimal · Division · Quotient · Rounding · Bar Graph · Probabili
 - How to divide decimal numbers
 - How to round a number to a specified place value
 - How to determine the probability of a compound event
-- How to determine the probability of a single event
+- How to determine the probability of conditional events
 - How to compare two or more values
 
-<!-- FACILITATOR ONLY -->
-
-## Balance Argument (facilitator reference — do not share with students before discussion)
-
-**Argument for A (foul):** Fouling Diego Imor — Kansas's worst season free-throw shooter among the 8 who played, at 54.1% — is the higher-percentage play once the math is done correctly. A one-and-one requires *two* makes, not one. Squaring Imor's 54.1% gives a real, lower 29.3% chance Kansas ties the game — well below Charmers' 46.8% chance of winning it outright on a single three. The foul also caps Kansas's best case at a tie, never an outright loss for Memphis.
-
-**Argument for B (defense):** The single-shot comparison Coach Cavenaugh actually sees in the huddle — 54.1% vs. 46.8% — genuinely favors defense: a contested shot at 46.8% is less likely to go in than a free, uncontested one at 54.1%. Fouling also guarantees Kansas reaches the line at all, forfeiting any chance of a clean defensive stop, a deflection, or a rushed/contested attempt that misses everything. Playing defense makes Kansas beat Memphis with a shot, not hands it two free looks.
-
-**The margin:** 54.1% − 46.8% = **7.3 percentage points** (single-shot basis) — close enough to genuinely argue either way, and one of the case's own required comparisons (D1/D4). The much larger gap the *correct*, compound math reveals (29.3% vs. 46.8%, a 17.5-point / ~60% relative gap) is real and disclosed in D3/D4, but is the case's central trap, not the graded closeness test — see FACILITATOR.md.
-
-**The trap:** A Hero compares Imor's single free-throw percentage (54.1%) directly to Charmers' three-point percentage (46.8%) and concludes fouling is the worse choice, since 54.1% is the bigger number. This comparison is apples-to-oranges — the free-throw route requires *two* successful shots, not one. Once a Hero correctly squares Imor's percentage (p² = 29.3%), the comparison flips hard in favor of fouling. Naming this explicitly is the whole point of D3/D4.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

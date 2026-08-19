@@ -4,25 +4,25 @@ Bidirectional deliverable ↔ skill matrix (case-write SPEC §1.5/§10).
 
 | Deliverable | Skills it forces (spine ids) |
 |---|---|
-| D1 season shooting-percentage table | advanced-numbers-percent, advanced-numbers-how-to-convert-numbers-to-percents, advanced-numbers-how-to-divide-decimal-numbers, advanced-numbers-decimal, number-sense-place-value |
-| D2 best/worst FT and 3PT shooter | number-sense-how-to-compare-two-or-more-values, measurement-how-to-round-a-number-to-a-specified-place-value, measurement-rounding, number-sense-place-value |
-| D3 one-and-one probability (p²) | statistics-and-probability-probability, statistics-and-probability-independent-event, statistics-and-probability-how-to-determine-the-probability-of-a-compound-event, advanced-numbers-percent |
-| D4 single-shot vs. compound comparison (the trap) | number-sense-how-to-compare-two-or-more-values, statistics-and-probability-how-to-determine-the-probability-of-a-single-event, advanced-numbers-percent |
+| D1 real FT%/PPP conversions | advanced-numbers-percent, advanced-numbers-how-to-convert-numbers-to-percents, advanced-numbers-how-to-divide-decimal-numbers, advanced-numbers-decimal, number-sense-place-value, basic-operations-division |
+| D2 naive "gut check" comparison | statistics-and-probability-probability, statistics-and-probability-event, statistics-and-probability-outcome, number-sense-how-to-compare-two-or-more-values |
+| D3 corrected expected-points comparison | statistics-and-probability-dependent-event, statistics-and-probability-conditional-probability, statistics-and-probability-how-to-determine-the-probability-of-a-compound-event, statistics-and-probability-how-to-determine-the-probability-of-conditional-events, advanced-numbers-percent, number-sense-how-to-compare-two-or-more-values |
+| D4 foul-budget calculation | basic-operations-division, basic-operations-quotient, measurement-rounding, measurement-how-to-round-a-number-to-a-specified-place-value, number-sense-place-value, number-sense-how-to-compare-two-or-more-values |
 | D5 original bar graph | number-sense-bar-graph, basic-operations-division, basic-operations-quotient |
 
 ## LEARNING GOAL CHECK
 
 **Test applied:** could a competent student produce this deliverable correctly without ever performing this skill? If yes, the mapping is fake.
 
-- **D1** cannot be produced without converting a makes/attempts ratio to a percent (dividing a decimal, then expressing it as a percent) for 8 players × 3 shot types = 24 conversions, each rounded to a stated decimal place -- which requires identifying the tenths-place digit. Genuinely forces `advanced-numbers-percent`, `-how-to-convert-numbers-to-percents`, `-how-to-divide-decimal-numbers`, `advanced-numbers-decimal`, `number-sense-place-value`.
-- **D2** requires sorting/comparing 8 players' percentages (from D1) to find the extremes, and rounding is used throughout D1's table to a consistent decimal place (the tenths place) so comparisons are apples-to-apples. Genuinely forces `number-sense-how-to-compare-two-or-more-values`, `measurement-how-to-round-a-number-to-a-specified-place-value`, `measurement-rounding`, `number-sense-place-value`.
-- **D3** is impossible without recognizing the one-and-one as two dependent-on-the-first-make attempts (an "event" whose probability compounds) and computing p². Genuinely forces `statistics-and-probability-probability`, `-independent-event`, `-how-to-determine-the-probability-of-a-compound-event`, `advanced-numbers-percent`.
-- **D4** requires comparing the raw single-attempt percentage (a single-event probability) against D3's compound result and explaining, in writing, why squaring changes the ranking. Genuinely forces `number-sense-how-to-compare-two-or-more-values`, `statistics-and-probability-how-to-determine-the-probability-of-a-single-event`, `advanced-numbers-percent`.
-- **D5** requires computing division-based percentages for at least 4 players and rendering them as bars with labeled axes/categories. Genuinely forces `number-sense-bar-graph`, `basic-operations-division`, `basic-operations-quotient`.
+- **D1** requires converting real makes/attempts (187/471, 28/73) into percentages (dividing a decimal, then expressing it as a percent) rounded to one decimal place, plus converting a real Offensive Rating (points per 100 possessions) into points per possession by dividing by 100. Genuinely forces `advanced-numbers-percent`, `-how-to-convert-numbers-to-percents`, `-how-to-divide-decimal-numbers`, `advanced-numbers-decimal`, `number-sense-place-value`, `basic-operations-division`.
+- **D2** is impossible without recognizing "expected points from two free throws" as an application of probability to a real event/outcome (each free throw is an event with two outcomes, make or miss) and comparing the result to the Clippers' real points-per-possession. Genuinely forces `statistics-and-probability-probability`, `-event`, `-outcome`, `number-sense-how-to-compare-two-or-more-values`.
+- **D3** cannot be produced without recognizing that "Jordan misses the second free throw AND the Clippers grab the offensive rebound" is a dependent, conditional sequence (the rebound chance only applies given the miss occurred) — a genuinely different mechanic from a simple independent-event calculation, and requires computing that conditional/compound probability and comparing the corrected total to D2's raw comparison. Genuinely forces `statistics-and-probability-dependent-event`, `-conditional-probability`, `-how-to-determine-the-probability-of-a-compound-event`, `-how-to-determine-the-probability-of-conditional-events`, `advanced-numbers-percent`, `number-sense-how-to-compare-two-or-more-values`.
+- **D4** requires using real division/subtraction against the real 6-foul rule (6 fouls minus 4 already accumulated = 2 remaining) and rounding/place-value discipline when recomputing the Clippers' backup-center-adjusted points-per-possession, then comparing that adjusted figure against the case's other numbers. Genuinely forces `basic-operations-division`, `-quotient`, `measurement-rounding`, `-how-to-round-a-number-to-a-specified-place-value`, `number-sense-place-value`, `number-sense-how-to-compare-two-or-more-values`.
+- **D5** requires computing/pulling forward division-based percentage and points-per-possession figures from D2-D4 for at least three comparison points and rendering them as bars with labeled axes/categories. Genuinely forces `number-sense-bar-graph`, `basic-operations-division`, `basic-operations-quotient`.
 
 ```
 LEARNING GOAL CHECK
-  deliverables: 5    claimed skills: 15    new_coverage: 1
+  deliverables: 5    claimed skills: 18    new_coverage: 0
   UNMAPPED DELIVERABLES: none
   UNREACHABLE SKILLS: none
   RESULT: PASS
@@ -30,19 +30,12 @@ LEARNING GOAL CHECK
 
 ## new_coverage note
 
-Checked every claimed skill's `n` value in `readmodel/standards_spine.json` at conversion time.
-Only `number-sense-place-value` was n=0 (genuinely uncovered anywhere in the spine before this
-case) — D1/D2 force it honestly, since rounding every computed percentage to a stated decimal
-place requires identifying which digit sits in that place. `statistics-and-probability-independent-event`
-(n=2) and `statistics-and-probability-how-to-determine-the-probability-of-a-compound-event` (n=3)
-are also genuinely forced by D3/D4 but are not n=0, so they stay in `standards[]` without counting
-toward `new_coverage[]`. Checked the full n=0 list in the spine (137 skills, dominated by geometry,
-pre-calculus, calculus, and discrete-math) for anything else this case might naturally force —
-nothing else fit without padding.
-
-**Update (2026-08-18, Tier 1 run):** the spine now shows `number-sense-place-value` at n=2,
-`covered_by=['Cinema','Air Traffic Controller']` — two other cases claimed it first since this
-note was written. `case.json.new_coverage[]` has been corrected to `[]` accordingly (the skill
-remains in `standards[]`, still genuinely forced by D1/D2, but this case is no longer the one that
-closes that gap). This is the legacy-conversion carve-out on T1-10, not a new defect in this
-case's deliverable mapping — see `case.json.new_coverage_note`.
+See `case.json.reinforcement_note` for the full accounting: every claimed skill was checked against
+`readmodel/standards_spine.json` before writing and none is `n == 0` — this case reinforces skills
+the spine already has real coverage for. The full `n == 0` list (dominated by geometry, pre-calculus,
+calculus, and discrete-math skills this case's real basketball-analytics math has no honest reach
+into) was checked and nothing fit without padding. `new_coverage[]` is `[]`, honestly, per the
+reinforcement carve-out on T1-10 (`skills/case-readiness/SKILL.md`, added 2026-08-17) — this case
+is a fresh authoring pass, not a legacy conversion, so the legacy-conversion carve-out does not
+apply; the reinforcement carve-out is the correct one and `case.json.reinforcement_note` records
+the required evidentiary basis for it.

@@ -200,13 +200,17 @@ distinction is the transferable skill, not the vote.
 
 ## The trap
 
-**Primary trap — a count read as an audit.** Most Heroes will read Appendix F's 65,534 as an audit
-and write "the commission examined every plan" straight into the pitch. Nothing in the packet
-examines anything: 65,534 is a count of how many plans exist, not evidence that any were checked.
-The only thing that licenses the claim is the D3 induction proof, and a pitch that quotes the
-screening count as a credential while skipping the base case has made exactly the mistake the case
-was built to catch. Watch for it in the pitch, and watch for its cousin in discussion — treating
-"we enumerated it" and "we proved it" as the same sentence.
+**Primary trap — a count read as an audit.** As of the 2026-08-18 revision, `case.md`'s Appendix F no
+longer prints 65,534 — a Hero has to derive it (D1, the Fundamental Counting Principle over the
+Appendix A county list). That makes the trap *stronger*, not weaker: most Heroes will compute
+65,536 (or 65,534 once the two empty-district assignments are dropped), feel the satisfaction of
+having done real work to get there, and write "the commission examined every plan" straight into
+the pitch anyway. Nothing in the packet examines anything: 65,534 is a count of how many plans
+exist, not evidence that any were checked — deriving it yourself doesn't change what it proves. The
+only thing that licenses the claim is the D3 induction proof, and a pitch that quotes the screening
+count as a credential while skipping the base case has made exactly the mistake the case was built
+to catch. Watch for it in the pitch, and watch for its cousin in discussion — treating "we
+enumerated it" and "we proved it" as the same sentence.
 
 **Second wrong path — the deviation basis.** Set out in full in the Data Deep Dive above. Most
 learners will quote one district's distance from the ideal — the half-size figure — against

@@ -13,7 +13,7 @@ Heroes, today we're doing something they do at Harvard and at Acton Business Sch
 
 Show a photo of a health worker carrying a cold box on the back of a motorcycle. Ask: *"How much do you think is inside that box, in dollars?"*
 
-Let them guess. Then tell them: a $102 box can hold about **$971 to $1,200** of vaccine (6 L ÷ 2.1 cm³/dose ≈ 2,857 doses at $0.34–$0.42/dose). The container is worth about 9–10% of what's inside it.
+Let them guess. Then tell them: a $77 box can hold about **$971 to $1,200** of vaccine (6 L ÷ 2.1 cm³/dose ≈ 2,857 doses at $0.34–$0.42/dose). The container is worth about 6–8% of what's inside it.
 
 > Adaeze has 9,000 doses, six villages, a 1,200 km circuit, and $420. Two of those villages have never seen a truck.
 > **Hero name — what do you do? Open for us.**
@@ -79,7 +79,7 @@ Now the numbers. Work these on the board with them.
 
 **The route plan.** Appendix F now states it explicitly: Order A's 4 boxes split 3-truck / 1-moto. Order B's 2 boxes are both on the truck.
 
-- Order A: 4 × $102.21 = **$408.84** (under $420) · truck capacity 3 × 2,857 = 8,571 L (≥ 7,000 needed) · moto capacity 1 × 2,857 = 2,857 (≥ 2,000 needed). **Every facility's full demand is met: 9,000 doses delivered, zero shortfall.**
+- Order A: 4 × $76.78 = **$307.12** (under $420) · truck capacity 3 × 2,857 = 8,571 L (≥ 7,000 needed) · moto capacity 1 × 2,857 = 2,857 (≥ 2,000 needed). **Every facility's full demand is met: 9,000 doses delivered, zero shortfall.**
 - Order B: 2 × $128.00 = **$256.00** · truck capacity 2 × 9,523 = 19,047, far more than the 7,000 truck demand needs. **7,000 delivered. Bulera and Nyamirama: zero.**
 
 Ask: *"So Order A delivers everywhere and Order B doesn't. Why is this even a discussion?"* — hold that question; the cold-life ledger below is the answer.
@@ -99,9 +99,9 @@ Ask: *"So Order A delivers everywhere and Order B doesn't. Why is this even a di
 | Facilities receiving zero | **0** | **2** (Bulera, Nyamirama — 2,000 doses of need) |
 | Arriving spoiled (excursion) | **800** (Nyamirama only) | 0 |
 | **Doses in spec** | **8,200** | **7,000** |
-| Cost | $408.84 | $256.00 |
+| Cost | $307.12 | $256.00 |
 
-**A wins by 1,200 doses — 17.1%.** Comfortably inside the 20% balance cap, and — see below — stable under any reasonable version of Assumption 1. A spends $152.84 more, reaches every village, and *still* cannot save Nyamirama. That last fact is the crux of the case, not a flaw in it.
+**A wins by 1,200 doses — 17.1%.** Comfortably inside the 20% balance cap, and — see below — stable under any reasonable version of Assumption 1. A spends $51.12 more, reaches every village, and *still* cannot save Nyamirama. That last fact is the crux of the case, not a flaw in it.
 
 ---
 
@@ -127,7 +127,7 @@ Deliver it slowly. Let each piece land.
 
 Now: **Bulera moves from hour 118 to hour 127. Nyamirama moves from 134 to 143.** Against the moto box's 124.3 h of effective cold life, **both** motorcycle stops are now excursions — Bulera's 1,200 that were safe a moment ago are gone too. Order A's in-spec delivery falls from 8,200 to **7,000 — a dead tie with Order B.** *(True for the case's default c = 4 h, and for c = 5 or 6 h — see the facilitator note above for c = 2 h.)*
 
-> *"You have 60 seconds. You paid $152.84 more, and after this, you have exactly what Order B always had. Are you changing your plan — or not?"*
+> *"You have 60 seconds. You paid $51.12 more, and after this, you have exactly what Order B always had. Are you changing your plan — or not?"*
 
 ## Immediate recommit
 
@@ -179,7 +179,7 @@ The physics was never in doubt: bigger boxes hold cold longer, and the surface-a
 
 Order A's win margin — 8,200 vs 7,000, 17.1% — is not a fragile number, *with respect to Assumption 1.* It holds for any lid-opening cost from 2 to 6 hours; Nyamirama's excursion is not a modeling artifact, it is a structural fact (its rated cold life is shorter than its trip, even before any opening penalty is applied at all). What *is* fragile is the twist: a nine-hour detour erases the entire margin and produces an exact tie for c ≥ 3 h — but at the low end of the case's own certified range (c = 2 h) the twist changes nothing (see the facilitator note before the Twist section). **A case can have a robust base result and a fragile margin of victory at the same time** — those are different properties, and this case has both.
 
-There is a third layer, for a room that's ready for it. Assumption 2 (treating cold life as the full in-spec time) is named in Appendix F as an *optimistic* simplification. Tighten it — say, only half of rated cold life counts as reliably in-spec, closer to how a real warming curve leaves +8 °C before it reaches +10 °C — and Order A's base-case margin collapses to a tie (both orders land at 3,950 doses). Loosen it instead and Order A's lead widens past the 20% balance cap (28.6% at +50%). Appendix F invites exactly this stress test ("if you think that matters, model it and show what changes") — a student who runs it is doing the advanced work the case is built to reward, not breaking it. Don't volunteer this unless the room is already pushing on Assumption 2 themselves; it's an extension, not a required beat.
+There is a third layer, for a room that's ready for it. Assumption 2 (treating cold life as the full in-spec time) is named in Appendix F as an *optimistic* simplification. Tighten it — say, only half of rated cold life counts as reliably in-spec, closer to how a real warming curve leaves +8 °C before it reaches +10 °C — and Order A's base-case margin collapses to a tie (both orders land at 3,950 doses). Loosen it instead and Order A's lead widens past the 20% balance cap (28.6% at +50%). Appendix F invites exactly this stress test ("if you think that matters, model it and show what changes") — a student who runs it is doing the advanced work the case is built to reward, not breaking it. Don't volunteer this unless the room is already pushing on Assumption 2 themselves; it's an extension, not a required beat. **This is disclosed, not eliminated.** `in_spec_fraction` is not a citable figure — Appendix F itself says so, plainly — because how quickly a specific box actually drifts past +8 °C on a specific future trip depends on ambient conditions that cannot be known in advance, the same irreducible forecast uncertainty as any future-conditions question. It carries a Category-F `case.json.sensitivity_disclosure[]` entry with a real justification on file. Per the 2026-08-13 disclosure-aware-pass-state amendment to `tier2_probes.py`, a genuinely unstable dial that is disclosed this way — category, param, and a real justification — passes Tier 2 probe 5 as `PASS (disclosed)`, not FAIL; recorded as such in `case.json.qa.tier2.P5`. A facilitator running this room should say the same thing the case says: the base result is real, the twist is fragile in one direction and the base margin is fragile in the other, and neither is a defect being hidden — both are named, on the record, and stress-testable by exactly the tool (Appendix F's own invitation) the case hands the student.
 
 Every learner who worked "doses delivered" as the metric got a defensible answer. So did everyone who worked "villages fully reached." They are different answers, and the difference was decided before anyone touched a calculator — in the sentence they wrote down at Anchor 2.
 

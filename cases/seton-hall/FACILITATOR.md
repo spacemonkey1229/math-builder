@@ -15,13 +15,14 @@ case-write SKILL.md step 5.
 **Critical fact this guide is built around:** the real 2020 NCAA Tournament was canceled outright
 on March 12, 2020, before any bracket or seed list was ever finalized. No real vote like the one
 this case dramatizes was ever made public. Two real rankings *did* exist the day the season froze —
-the final AP media poll (No. 15) and the NCAA's own NET ranking (No. 12) — and they are the twist
-below, not background color to mention early.
+the final AP media poll (No. 15) and the NCAA's own NET ranking (No. 15, through games of March 12,
+2020, the season's actual last date played) — and they are the twist below, not background color to
+mention early.
 
 ## Intro
 
 Frame the format: this is a real team's real, frozen-in-time season, and a real decision the actual
-NCAA committee never got to finish. Name the opener — "Eleven people, one tie vote, and a season
+NCAA committee never got to finish. Name the opener — "Ten people, one tie vote, and a season
 that got frozen mid-argument by history itself."
 
 ## Launch
@@ -79,18 +80,22 @@ Deliver slowly, with pauses:
 day this season stopped. Nobody made these up for this case."
 
 **Facilitator-only.** Reveal Appendix A: the final AP media poll had Seton Hall at **No. 15** — one
-spot inside the cutoff. The NCAA's own real NET system, the actual tool the real committee uses,
-had Seton Hall at **No. 12**. Both are real. Neither is a landslide.
+spot inside the cutoff. The NCAA's own real NET system, the actual tool the real committee uses, had
+Seton Hall at **No. 15** too, in the final week it was tracked (through games of March 12, 2020).
+Both are real. Neither is a landslide.
 
 This invalidates two overconfident positions at once, from opposite directions:
 
 - Heroes who built a Power Score from opponent-adjusted columns (Opp Off/Def Rating) and landed
   Seton Hall around 6th-9th of 25 will find the real world agrees they're in — but by a much
-  thinner margin (No. 15 of 16, not "comfortably 9th") than their own algorithm suggested.
+  thinner margin (No. 15 of 16 on *both* real rankings, not "comfortably 9th") than their own
+  algorithm suggested.
 - Heroes who built a Power Score from raw Team Off/Def Rating alone (skipping opponent adjustment
   entirely — the wrong path named below) and landed Seton Hall near or below the cutoff will find the real world's own
-  committee-grade tool, NET, put them solidly inside at No. 12 — a real signal their formula was
-  missing the schedule-strength half of the picture the whole time.
+  committee-grade tool, NET, also puts them just inside — at No. 15, matching the AP number almost
+  exactly — a second real, independent signal that their formula was missing the schedule-strength
+  half of the picture the whole time. It is not a wider safety margin; it is the same razor-thin one,
+  confirmed twice.
 
 Ask: "What just broke in your model? Were you wrong — or just missing information your formula
 never asked for?"
@@ -118,7 +123,7 @@ tell you your own formula needs a column it didn't have?"
 | 0:00–3:00 | Launch — read the 21-9 record aloud, cold-call for a gut read, no rating data yet |
 | 3:00–10:00 | Position defense — *"Convince us using your own Power Score, not just the win-loss record"* |
 | 10:00–15:00 | Pressure-test the models — *"Which columns did your formula actually use — and which did it skip?"* |
-| **15:00** | **DROP THE TWIST** — the real AP (No. 15) and NET (No. 12) rankings, delivered slowly |
+| **15:00** | **DROP THE TWIST** — the real AP (No. 15) and NET (No. 15) rankings, delivered slowly |
 | 15:00–20:00 | Immediate recommit — did the real data change anyone's vote |
 | 20:00–30:00 | Threaded deep conflict (opponent-adjustment; a résumé frozen incomplete) |
 | 30:00–45:00 | Close, re-vote, reflection, lessons learned |
@@ -151,7 +156,7 @@ Checked against SPEC.md §6's requirement that the twist survive both a **sequen
 
 ## Socratic questions
 
-1. Your Power Score put Seton Hall at [rank] of 25 — the real NET system, built by the actual NCAA for this exact job, had them at No. 12 of 353 (out of a real field of 353 teams). Does your formula agree with that, or did it miss something?
+1. Your Power Score put Seton Hall at [rank] of 25 — the real NET system, built by the actual NCAA for this exact job, had them at No. 15 of 353 (out of a real field of 353 teams). Does your formula agree with that, or did it miss something?
 2. Seton Hall's Team Offensive Rating ranks only 29th nationally, but its Opponents' Offensive Rating ranks 7th. What does the gap between those two numbers tell you that either one alone doesn't?
 3. The real AP poll margin is exactly one spot — 15th of a 16-cutoff, a real 6.25% margin. If you had to defend that margin as "clearly in" versus "basically a coin flip," which would you pick, and what number would you point to?
 4. Seton Hall's win-loss rank alone (ignoring schedule strength entirely) is 50th out of the 270 teams with a usable record in this case's data. Why might that number be misleading on its own?

@@ -46,6 +46,22 @@ ID, and took the top 50. Cross-checked the 50th/51st boundary (both degree 78 an
 ID 605 at degree 78, rank 51 = ID 871 at degree 78, tie broken by ID) to confirm the cutoff was
 handled deterministically. Recorded in Appendix B with the same S3 citation, `derived: true`.
 
+**2026-08-18 addendum — closing the D3 data gap.** Tier 2 (P1/P2) found that D3 asks Heroes to
+state Hub Sweep's exact total weight-eliminated "with the full arithmetic shown," but Appendix B
+originally published only unweighted degree, not enough to reach the exact 27,643 figure without
+either the full 13,838-edge list or a hand-wave. Re-downloaded the raw
+`CollegeMsg.txt.gz` and re-ran the same aggregation as P01/P02/P03 to compute, for each of the same
+50 individuals, their **weighted degree** (sum of incident edge weights, not just edge count) and
+the **internal edges** connecting two of those same 50 individuals to each other. Result: weighted
+degree sum over the 50 = 30,224; 382 internal edges with combined weight 2,581; 30,224 − 2,581 =
+27,643 exactly, and 6,241 − 382 = 5,859 distinct edges exactly — both reproducing the case's
+existing, previously-facilitator-only figures byte-for-byte. Cross-checked the full top-50 ID/degree
+list from this re-run against the published Appendix B table: all 50 rows match exactly, confirming
+this is the same underlying computation, re-run rather than re-derived differently. Added a Weighted
+Degree column plus the 30,224/382/2,581 disclosure to Appendix B and rewrote D3 to ask for this
+double-counting-correction arithmetic explicitly, restoring an honest, fully-derivable path from the
+published appendices to the case's own graded Hub Sweep total. See QA_REPORT.md's 2026-08-18 entry.
+
 ## P04 — Appendix C sample weighted subgraph
 
 Direct computation from the same processed dataset. First tried a pure ego-network around a

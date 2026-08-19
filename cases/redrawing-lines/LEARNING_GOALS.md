@@ -13,11 +13,29 @@ Bidirectional deliverable ↔ skill matrix. Run per `skills/case-write/SKILL.md`
 ## LEARNING GOAL CHECK
 
 ```
-deliverables: 5    claimed skills: 14    new_coverage: 10
+deliverables: 5    claimed skills: 14    new_coverage: 4
 UNMAPPED DELIVERABLES: none
 UNREACHABLE SKILLS: none
 RESULT: PASS
 ```
+
+**`new_coverage[]` revised 2026-08-18 (case-readiness pipeline remediation, Tier 1 T1-10).** At
+authoring time (2026-08-12) all ten of Binomial Coefficient, How to compute a binomial
+coefficient, Pigeonhole Principle, Recursive Formula, Base Case, How to write a recursive formula
+for a sequence, How to convert a recursive formula to an explicit formula, Mathematical Induction,
+Inductive Step and How to prove a statement using mathematical induction read `n=0` in the spine.
+Between then and this Tier 1 run, three other cases (Pattern Rights, The Keyspace Decision, Life
+Insurance) published and took the spine credit for six of those ten — Binomial Coefficient, How to
+compute a binomial coefficient, Pigeonhole Principle, Recursive Formula, How to write a recursive
+formula for a sequence, How to convert a recursive formula to an explicit formula — before this
+case ever published. Per `tier1_structural.py`'s T1-10 rule, a claim is only valid at `n==0` or
+when *this* case's own title is already in the skill's `covered_by[]`; neither holds for those six,
+so the claim is stale, not padding, and T1-10 flagged it correctly. All six remain genuinely forced
+by D1/D2 (see the forces-test above) and stay in `standards[]` — the case still teaches and
+requires them, it is just no longer the case that gets pipeline credit for being first. Only the
+four skills nobody has claimed yet — Base Case, Mathematical Induction, Inductive Step, How to
+prove a statement using mathematical induction, all still `n=0` — remain in `new_coverage[]`. No
+`reinforcement_note` is needed: the trimmed list is non-empty.
 
 **Forces test applied to each mapping** ("could a competent student produce this deliverable
 correctly without ever performing this skill?"):

@@ -212,12 +212,4 @@ Currency · Addition · Sum · Time · Percent · Bar Graph · Pie Chart
 - How to create a pie chart given a set of data
 - How to compare two or more values
 
-<!-- FACILITATOR ONLY -->
-
-## Balance Argument (facilitator reference — do not share with students before discussion)
-
-**Argument for A (car):** A rental car removes every timetable from the equation — no missed connections, no rushing for a specific Eurostar departure with heavy backpacks, and complete control over the Groningen day trip and the Stonehenge/Warner Bros. day, both of which are awkward to reach by public transit alone. The sisters also only pay for the car once and split it, rather than buying two of every ticket.
-
-**Argument for B (rail):** Every one of Option A's costs — the daily rental rate, fuel across two countries, a Channel crossing, and daily city access fees just to keep the car parked while sightseeing — adds up over 9 full days, several of which the car does nothing but sit in a garage. Rail pays only for the distance actually traveled, with no idle-day cost at all.
-
-**The margin:** close enough on the primary metric (total transportation cost in USD) that both a careful driver and a careful rail planner can build a real, defensible number — see `case.json`'s `balance` block and `sensitivity_model.py` for the worked figures. The real trap is not which option is cheaper on paper; it's that a Hero who forgets to price in the *idle-day* costs of a parked car (Appendix C's city access fees, plus daily parking) will understate Option A's true total by a meaningful amount, and a Hero who forgets that Appendix B's posted arrival times are already local-time-shifted will build an itinerary with an hour missing or an hour extra on every Channel-crossing leg.
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

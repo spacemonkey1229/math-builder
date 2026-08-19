@@ -31,7 +31,7 @@ The World Health Organization certifies these containers by a measurement called
 Her container budget is **$420**. The two approved purchase orders are:
 
 **Order A — The Light Fleet:**
-Four **AOV ACB-264SL** cold boxes, $102.21 each — $408.84 total. 6 litres of vaccine capacity per box, 25.4 kg fully loaded. Adaeze's team plans to send **three boxes on the truck route** (the four facilities in Appendix C reachable by road) and **one box on the motorcycle route** (Bulera and Nyamirama). At 25.4 kg, one worker can strap a box to a motorcycle — compare that against the WHO lifting guidance below before you decide how comfortable you are with it.
+Four **AOV ACB-264SL** cold boxes, $76.78 each — $307.12 total. 6 litres of vaccine capacity per box, 25.4 kg fully loaded. Adaeze's team plans to send **three boxes on the truck route** (the four facilities in Appendix C reachable by road) and **one box on the motorcycle route** (Bulera and Nyamirama). At 25.4 kg, one worker can strap a box to a motorcycle — compare that against the WHO lifting guidance below before you decide how comfortable you are with it.
 
 **Order B — The Heavy Pair:**
 Two **Blowkings CB-20-CF** cold boxes, $128.00 each — $256.00 total. 20 litres of vaccine capacity per box, 49.5 kg fully loaded — far cheaper per litre than Order A, but at 49.5 kg each box needs two people and a vehicle. Both boxes go on the truck route. **Bulera and Nyamirama receive nothing.**
@@ -89,7 +89,7 @@ All five containers below are WHO PQS prequalified and listed in the UNICEF Supp
 |---|---|---|---|---|---|---|---|
 | B Medical RCW4 (carrier) | E004/002 | 3 | 36.2 × 28.3 × 29.9 | 30.3 | 7.3 | 6 × 0.3 L + 1 × 0.6 L | 344.79 |
 | B Medical RCW8 | E004/003 | 6 | 58.8 × 28.8 × 43.7 | 57.9 | 16.4 | 2 × 0.3 L + 10 × 0.6 L | 396.88 |
-| **AOV ACB-264SL** | E004/023 | **6** | **62.40 × 50.20 × 42.60** | **132.3** | **25.4** | 26 × 0.4 L | **102.21** |
+| **AOV ACB-264SL** | E004/023 | **6** | **62.40 × 50.20 × 42.60** | **132.3** | **25.4** | 26 × 0.4 L | **76.78** |
 | B Medical RCW25 | E004/005 | 20 | 71 × 55 × 49.9 | 134.6 | 38.9 | 24 × 0.6 L | 602.36 |
 | **Blowkings CB-20-CF** | E004/025 | **20** | **79.5 × 56.2 × 56.5** | **138.0** | **49.5** | 39 × 0.4 L | **128.00** |
 
