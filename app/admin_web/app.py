@@ -228,13 +228,16 @@ def student_html(learner_id):
 
 @app.route('/cases/<case_id>/published/<filename>')
 def case_interactive_html(case_id, filename):
-    # The student-facing interactive case page -- deliberately NOT behind
-    # the admin passcode (see require_auth() above): a student doing the
-    # actual work has no admin login, and never should need one. Scoped
-    # tightly on purpose: published/ folders also hold guide-only material
-    # (Facilitator Guide, Guide Notes .docx) that must never be reachable
-    # here, so only an exact "<...> Interactive.html" filename with no path
-    # separators in either segment is servable -- everything else 404s.
+    # The student-facing case files (Interactive.html, Case Study.docx,
+    # Data.xlsx) -- deliberately NOT behind the admin passcode (see
+    # require_auth() above): a student doing the actual work has no admin
+    # login, and never should need one. Scoped tightly on purpose:
+    # published/ folders also hold guide-only material (Facilitator Guide,
+    # Guide Notes .docx) that must never be reachable here -- see
+    # admin_core.is_student_published_file()'s own docstring for the
+    # audience check this relies on, and its 2026-08-21 fix notes for why
+    # this route used to reject every non-Interactive.html file, breaking
+    # the dashboard's own docx/xlsx download links for the entire corpus.
     #
     # Diagnosed 2026-08-12: Vercel's Python WSGI adapter hands Flask a
     # PATH_INFO that is still percent-encoded (e.g. "...Robotics%20Engineer
@@ -247,7 +250,7 @@ def case_interactive_html(case_id, filename):
     case_id = unquote(case_id)
     filename = unquote(filename)
     if '/' in case_id or '..' in case_id or '/' in filename or '..' in filename \
-            or not filename.endswith(' - Interactive.html'):
+            or not admin_core.is_student_published_file(case_id, filename):
         return jsonify({"error": "not found"}), 404
     directory = os.path.join(_CASES_DIR, case_id, 'published')
     path = os.path.join(directory, filename)

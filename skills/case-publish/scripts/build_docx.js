@@ -10,7 +10,27 @@ const path = require('path');
 const {
   Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell,
   WidthType, ShadingType, BorderStyle, AlignmentType, ExternalHyperlink, PageBreak,
+  ImageRun,
 } = require('docx');
+
+// Minimal PNG/JPEG dimension reader (avoids adding an image-size dependency).
+function getImageDimensions(buf) {
+  if (buf.length >= 24 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  }
+  if (buf[0] === 0xff && buf[1] === 0xd8) {
+    let i = 2;
+    while (i < buf.length) {
+      if (buf[i] !== 0xff) { i++; continue; }
+      const marker = buf[i + 1];
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        return { height: buf.readUInt16BE(i + 5), width: buf.readUInt16BE(i + 7) };
+      }
+      i += 2 + buf.readUInt16BE(i + 2);
+    }
+  }
+  return { width: 520, height: 390 }; // fallback
+}
 
 const args = process.argv.slice(2);
 const caseId = args[0];
@@ -71,7 +91,7 @@ function parseTable(lines) {
   });
 }
 
-function mdToParagraphs(md, { stripFacilitator = true } = {}) {
+function mdToParagraphs(md, { stripFacilitator = true, cdir = null } = {}) {
   if (stripFacilitator) {
     // The marker may be a bare `<!-- FACILITATOR ONLY -->` or an annotated
     // one-line comment like `<!-- FACILITATOR ONLY: ... -->` (the form used
@@ -115,6 +135,37 @@ function mdToParagraphs(md, { stripFacilitator = true } = {}) {
       continue;
     }
     if (/^---+\s*$/.test(line.trim())) { i++; continue; }
+    // image: ![alt](relative/path.png) -- embed the file, keyed off cdir, at a page-safe width.
+    const imgM = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
+    if (imgM) {
+      const [, alt, relPath] = imgM;
+      i++;
+      if (cdir && !/^https?:\/\//.test(relPath)) {
+        const absPath = path.join(cdir, relPath);
+        if (fs.existsSync(absPath)) {
+          const data = fs.readFileSync(absPath);
+          const isPng = data[0] === 0x89 && data[1] === 0x50;
+          const { width, height } = getImageDimensions(data);
+          const maxWidth = 460; // points, fits US-letter body with margins
+          const scale = width > maxWidth ? maxWidth / width : 1;
+          out.push(new Paragraph({
+            children: [new ImageRun({
+              data,
+              type: isPng ? 'png' : 'jpg',
+              transformation: { width: Math.round(width * scale), height: Math.round(height * scale) },
+            })],
+            alignment: AlignmentType.CENTER,
+          }));
+          if (alt) {
+            out.push(new Paragraph({ children: [new TextRun({ text: alt, italics: true, size: 18 })], alignment: AlignmentType.CENTER, spacing: { after: 120 } }));
+          }
+          continue;
+        }
+      }
+      // Missing/unresolvable image: keep the alt text visible rather than dropping the line silently.
+      out.push(new Paragraph({ children: [new TextRun({ text: `[Image: ${alt}]`, italics: true })] }));
+      continue;
+    }
     // list item (bullet or numbered, incl. sub-lettered a.) b.))
     const bulletM = line.match(/^(\s*)([-*]|\d+[.)]|[a-z][.)])\s+(.*)$/);
     if (bulletM) {
@@ -163,7 +214,7 @@ function mdToParagraphs(md, { stripFacilitator = true } = {}) {
   return out;
 }
 
-function buildStudentDoc(caseMd, title) {
+function buildStudentDoc(caseMd, title, cdir) {
   const lines = caseMd.split('\n');
   const titleLine = (lines[0] || `Case Study: ${title}`).replace(/^#{1,2}\s+/, '');
   const subLine = lines[1] || '';
@@ -173,7 +224,7 @@ function buildStudentDoc(caseMd, title) {
     new Paragraph({ children: [new TextRun({ text: subLine, italics: true, size: 22 })], alignment: AlignmentType.CENTER, spacing: { after: 240 } }),
   ];
   return new Document({
-    sections: [{ properties: { page: US_LETTER }, children: [...header, ...mdToParagraphs(body, { stripFacilitator: true })] }],
+    sections: [{ properties: { page: US_LETTER }, children: [...header, ...mdToParagraphs(body, { stripFacilitator: true, cdir })] }],
   });
 }
 
@@ -196,7 +247,7 @@ async function main() {
   const outDir = path.join(cdir, 'published');
   fs.mkdirSync(outDir, { recursive: true });
 
-  const studentDoc = buildStudentDoc(caseMd, title);
+  const studentDoc = buildStudentDoc(caseMd, title, cdir);
   const facDoc = buildFacilitatorDoc(facMd, title);
 
   const studentPath = path.join(outDir, `${title} - Case Study.docx`);

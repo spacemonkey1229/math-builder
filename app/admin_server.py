@@ -51,12 +51,13 @@ def _student_html_path(learner_id):
 
 
 def _case_html_path(case_id, filename):
-    """Same scoping as admin_web/app.py's case_interactive_html(): only an
-    exact '<...> Interactive.html' file directly under cases/<id>/published/
-    is servable -- published/ also holds guide-only .docx material that must
+    """Same scoping as admin_web/app.py's case_interactive_html(): only the
+    student-audience files under cases/<id>/published/ (Interactive.html,
+    Case Study.docx, Data.xlsx -- see admin_core.is_student_published_file())
+    are servable -- published/ also holds guide-only .docx material that must
     never be reachable this way."""
     if '/' in case_id or '..' in case_id or '/' in filename or '..' in filename \
-            or not filename.endswith(' - Interactive.html'):
+            or not admin_core.is_student_published_file(case_id, filename):
         return None
     path = os.path.join(CASES_DIR, case_id, 'published', filename)
     return path if os.path.isfile(path) else None
@@ -102,6 +103,31 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    _CONTENT_TYPES = {
+        '.html': 'text/html; charset=utf-8',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    }
+
+    def _serve_case_file(self, path, missing_msg):
+        # Like _serve_html_file, but for cases/<id>/published/* -- now also
+        # docx/xlsx (see admin_core.is_student_published_file()), which need
+        # their own Content-Type and a download disposition rather than the
+        # inline text/html every other route here serves.
+        if not os.path.isfile(path):
+            return self._json(404, {"error": missing_msg})
+        with open(path, 'rb') as f:
+            body = f.read()
+        ext = os.path.splitext(path)[1].lower()
+        content_type = self._CONTENT_TYPES.get(ext, 'application/octet-stream')
+        self.send_response(200)
+        self.send_header('Content-Type', content_type)
+        self.send_header('Content-Length', str(len(body)))
+        if ext != '.html':
+            self.send_header('Content-Disposition', f'attachment; filename="{os.path.basename(path)}"')
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
         p = urllib.parse.urlparse(self.path)
         if p.path in ('/', '/index.html'):
@@ -115,7 +141,7 @@ class Handler(BaseHTTPRequestHandler):
             path = _case_html_path(m.group(1), m.group(2))
             if path is None:
                 return self._json(404, {"error": "not found"})
-            return self._serve_html_file(path, "not found")
+            return self._serve_case_file(path, "not found")
         m = re.match(r'^/(?:app/)?student-([^/]+)\.html$', urllib.parse.unquote(p.path))
         if m:
             path = _student_html_path(m.group(1))

@@ -22,7 +22,7 @@ This module does not introduce new policy — same rules as
 skills/case-track/SKILL.md and skills/submission-score/SKILL.md documented
 before any of this had a UI on top of it.
 """
-import csv, datetime, io, os, random, re, subprocess, sys, unicodedata
+import csv, datetime, io, json, os, random, re, subprocess, sys, unicodedata
 
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 _CASES_DIR = os.path.join(os.path.dirname(_APP_DIR), 'cases')
@@ -30,6 +30,45 @@ _CASES_DIR = os.path.join(os.path.dirname(_APP_DIR), 'cases')
 
 def case_interactive_filename(title):
     return f"{title} - Interactive.html"
+
+
+def is_student_published_file(case_id, filename):
+    """True iff cases/<case_id>/published/<filename> is on this case's own
+    MANIFEST.json with audience == "student" -- the boundary the public,
+    unauthenticated /cases/<id>/published/<filename> route relies on to
+    serve the student-facing Case Study.docx/Data.xlsx/Interactive.html
+    while continuing to hard-block Facilitator Guide.docx and Guide Notes.docx
+    (audience == "facilitator"), which contain the balance/twist/trap answers
+    and must never be reachable without an admin login.
+
+    Reads the manifest fresh every call rather than caching: this is a
+    request-time authorization check, and a stale cache here would be a
+    security bug, not a performance one -- MANIFEST.json is small and this
+    route is not hot enough to need caching.
+
+    Diagnosed 2026-08-21: for months this route accepted *only* an exact
+    ' - Interactive.html' suffix, so the dashboard's own "Downloads" panel
+    (built from this same MANIFEST.json data) linked to docx/xlsx URLs that
+    404'd for every single case in the corpus -- not a case-specific bug.
+    """
+    manifest_path = os.path.join(_CASES_DIR, case_id, 'published', 'MANIFEST.json')
+    if os.path.isfile(manifest_path):
+        try:
+            with open(manifest_path, encoding='utf-8') as f:
+                manifest = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return False
+        return any(
+            entry.get('audience') == 'student' and entry.get('name') == filename
+            for entry in manifest.get('files', [])
+        )
+    # No manifest (a handful of older cases -- see 2026-08-21 fix notes):
+    # fall back to a filename-shape allowlist, still with an explicit
+    # facilitator-material denylist so a missing manifest can never widen
+    # access, only narrow it relative to the manifest path above.
+    if re.search(r'facilitator|guide notes', filename, re.IGNORECASE):
+        return False
+    return bool(re.search(r'[-—] (Interactive\.html|Case Study\.docx|Data\.xlsx)$', filename))
 
 
 def _case_interactive_info(case_id, title):
