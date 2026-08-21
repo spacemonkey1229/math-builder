@@ -57,7 +57,7 @@ def load(name):
 
 
 CONCEPT_HDR = re.compile(
-    r"^### (C\d+) — (.+?) · score ([\d.]+) · tier (\S+)", re.M
+    r"^### (C\d+) — (.+?)\s+·\s+score\s+([\d.]+)\s+·\s+tier\s+(\S+)", re.M
 )
 
 

@@ -714,26 +714,35 @@ def build_data():
     for c in corpus_cases:
         r = recon[c["title"]]
         ci = ci_by_title.get(r["col"]) if r["col"] else None
+        # A corpus record's own path never updates after conversion -- it's
+        # frozen at its original legacy location. Once a case is reconciled
+        # to a pipeline record, prefer the reconciled paths (which do track
+        # cases/<id>/) for locating case.json / published HTML / pipeline docs.
+        pipeline_path = None
+        if ci and ci.get("paths", {}).get("case_json"):
+            pipeline_path = str(Path(ci["paths"]["case_json"]).parent)
+        elif c["path"].startswith("cases/"):
+            pipeline_path = c["path"]
         cj = None
-        if c["path"].startswith("cases/"):
-            jp = ROOT / c["path"] / "case.json"
+        if pipeline_path:
+            jp = ROOT / pipeline_path / "case.json"
             if jp.exists():
                 cj = json.loads(jp.read_text(encoding="utf-8"))
         links = case_links(c)
-        if c["path"].startswith("cases/"):
-            pub_dir = ROOT / c["path"] / "published"
+        if pipeline_path:
+            pub_dir = ROOT / pipeline_path / "published"
             if pub_dir.is_dir():
                 for hp in sorted(pub_dir.glob("*.html")):
-                    rel = c["path"] + "/published/" + hp.name
+                    rel = pipeline_path + "/published/" + hp.name
                     links["interactive_html"].append(make_link(rel, hp.name, "interactive_html", True))
         extra = []
-        if cj:
+        if cj and pipeline_path:
             for fn, lab in (("case.md", "Case source (markdown)"),
                             ("QA_REPORT.md", "QA report (facilitator)"),
                             ("FACILITATOR.md", "Facilitator pack"),
                             ("case.json", "case.json (machine record)")):
-                if (ROOT / c["path"] / fn).exists():
-                    extra.append(make_link(c["path"] + "/" + fn, lab, "pipeline", False))
+                if (ROOT / pipeline_path / fn).exists():
+                    extra.append(make_link(pipeline_path + "/" + fn, lab, "pipeline", False))
         lib.append({
             "title": c["title"],
             "year": c["year"],
@@ -3775,6 +3784,8 @@ def verify(quiet=False):
     # --- recompute everything straight from source
     spine = load("standards_spine.json")
     corpus = load("corpus_index.json")["cases"]
+    cases_index_v = load("cases_index.json")
+    ci_by_title_v = {c["title"]: c for c in cases_index_v["cases"]}
     tree = load("curriculum_tree.json")
     gapq = load("gap_queue.json")
     roster = load("roster.json")
@@ -3918,12 +3929,27 @@ def verify(quiet=False):
 
     live = [l for l in hrefs if l["href"] is not None]
     corpus_files = sum(len(v) for c in corpus for v in c["assets"].values())
-    # interactive_html links are discovered by globbing cases/<id>/published/*.html rather than
-    # listed in corpus_index.json's assets{} -- count them the same way here so this check's
-    # expectation stays in sync with what the page actually emits.
+    # interactive_html links are discovered by globbing <pipeline_path>/published/*.html rather
+    # than listed in corpus_index.json's assets{} -- count them the same way here so this check's
+    # expectation stays in sync with what the page actually emits. pipeline_path prefers the
+    # reconciled cases_index.json record's own paths (which track cases/<id>/ after conversion)
+    # over the corpus record's frozen original path -- same rule as the build loop.
+    # mirror the build loop's own lookup exactly: ci is keyed by the reconciled
+    # matrix column (data["cases"][i]["matrix_col"]), not by the corpus title.
+    matrix_col_by_title = {c["title"]: c.get("matrix_col") for c in data["cases"]}
+    def _pipeline_path(c):
+        col = matrix_col_by_title.get(c["title"])
+        ci = ci_by_title_v.get(col) if col else None
+        if ci and ci.get("paths", {}).get("case_json"):
+            return str((ROOT / ci["paths"]["case_json"]).parent.relative_to(ROOT))
+        if c["path"].startswith("cases/"):
+            return c["path"]
+        return None
     corpus_files += sum(
-        len(list((ROOT / c["path"] / "published").glob("*.html")))
-        for c in corpus if c["path"].startswith("cases/") and (ROOT / c["path"] / "published").is_dir()
+        len(list((ROOT / pp / "published").glob("*.html")))
+        for c in corpus
+        for pp in [_pipeline_path(c)]
+        if pp and (ROOT / pp / "published").is_dir()
     )
     ck("asset links emitted", len(hrefs), data["links"]["total"])
     ck("every emitted href decodes+resolves to a file on disk", len(broken), 0)

@@ -1,0 +1,1251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Reserve Asymptote — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+  .formula-box{font-family:var(--sans);font-size:1.05rem;font-weight:700;color:var(--navy);
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:12px 0;text-align:center}
+  #d6chart{display:block;margin:10px auto;background:#fff;border:1px solid var(--line);border-radius:8px}
+  .legend-row{display:flex;gap:18px;justify-content:center;font-family:var(--sans);font-size:.8rem;margin-top:8px}
+  .legend-row .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Reserve Asymptote</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">HS-entry / HS</span>
+      <span class="pill">Limits &amp; Continuity</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+  <p class="lede">Harlan Voss reads the same line of the spreadsheet for the third time, because the third time it still doesn't smooth out the way it's supposed to.</p>
+  <p>It's 6:50 on a Tuesday evening and the office is empty except for the hum of the server closet down the hall. Highline Life &amp; Annuity files its new longevity-annuity reserve basis with the state insurance department in eleven days, and Harlan is the analyst whose initials go at the bottom of the actuarial memorandum. Next to a cold cup of coffee sits a printout with a single circled number: the reserve rate the model assigns to a policyholder turning exactly one hundred years old this filing year.</p>
+  <p>Two spreadsheets are open side by side. The left one holds the formula his mentor taught him three years ago &mdash; a clean, smooth curve that grinds through every attained age in seconds and has never once caused a filing to bounce. The right one holds the actual published mortality table, age by age, exactly as printed, with a jump near the top that the smooth formula quietly glides past.</p>
+  <p>Both spreadsheets are supposed to produce the same thing: the dollars of reserve required per thousand dollars of promised benefit. They don't agree &mdash; not by a little, and not everywhere, but very sharply in exactly one place.</p>
+  <p>Harlan minimizes his email, opens a blank sheet of scratch paper, and writes both formulas at the top of the page. He has eleven days to decide which one goes in the filing.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+  <p>Harlan Voss is a senior actuarial analyst at Highline Life &amp; Annuity Company, a regional insurer. He is one of two analysts responsible for the reserve basis behind Highline's newest product, the Horizon Series &mdash; a single-premium immediate annuity that pays monthly income for as long as the policyholder lives, including the small but real number of policyholders who live past age 100. Harlan's manager signs the filing, but the supporting math carries Harlan's initials, and it is Harlan who has to explain any of it if a regulator's own actuary asks a question during review.</p>
+  <p>Highline must submit its statutory reserve basis for the Horizon Series to the state insurance department in <strong>11 days</strong> (see Appendix A). The basis is a single, filed methodology &mdash; Highline cannot submit two competing calculations and let the regulator pick one, and it cannot swap methods later without a full refiling.</p>
+  <p>Two methods are on the table.</p>
+  <div class="card">
+    <p style="margin-bottom:6px"><strong>The Smooth Curve.</strong> Highline's actuaries have a closed-form formula they have used for years: one smooth equation that estimates the dollar reserve required per $1,000 of promised benefit at any attained age, built to track the real published mortality data closely and to keep climbing gradually toward its long-run ceiling as age increases (see Appendix B). It is one line in a spreadsheet, it has never triggered a regulatory objection on any other Highline product, and it never has a break in it &mdash; it is a single smooth curve for every age from 0 to 120.</p>
+    <p style="margin-bottom:0"><strong>The Full Table.</strong> The alternative is to price every attained age directly off the actual published mortality table, exactly as printed &mdash; including the table's own closing convention at its oldest recorded age, where every survivor still living is treated as certain to die within that final interval (see Appendix C). It is slower to compute by hand, and it produces a number that jumps sharply at that boundary &mdash; which happens to be the exact age band where Highline's own block of Horizon Series contracts still has real survivors on the books this filing year (see Appendix D).</p>
+  </div>
+  <p>Both methods are legitimate starting points; nothing in Highline's filing rules requires one over the other. What differs is how each one treats a single attained age, and how much of Highline's in-force block sits exactly there. Background on both the industry's standard mortality tables and the mathematical model behind &ldquo;smooth toward an asymptote&rdquo; is in Appendix E. Neither the Smooth Curve's exact formula nor the size of Highline's in-force block is drawn from a public source &mdash; both are stated Modeling Assumptions, disclosed in full in Appendix F. Every external source cited anywhere in this case is collected in Appendix G. The vocabulary and &ldquo;how to&hellip;&rdquo; skills this case asks you to research are listed in Appendix H &mdash; that is where Challenge 1 sends you.</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Harlan Voss, senior actuarial analyst at Highline Life &amp; Annuity Company. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Smooth Curve</h4>
+      <p style="margin:0">Recommend the Smooth Curve — price every attained age with Highline's closed-form asymptotic formula.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Full Table</h4>
+      <p style="margin:0">Recommend the Full Table — price every attained age directly off the published mortality table, including its closing convention at the top.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include six deliverables (D1&ndash;D6): a one-sided limit estimate from the real table (D1), the Smooth Curve's asymptote and algebraic limit at age 100 (D2), a continuity determination for both functions at age 100 (D3), the single-cohort dollar and percentage gap (D4), the portfolio-wide blended margin and the age-100 cohort's share of the total dollar gap (D5), and an original graph of both functions for ages 85&ndash;105 (D6).</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+  <details id="apx-a">
+    <summary>Appendix A &mdash; The Filing Constraint</summary>
+    <div class="inner">
+      <table>
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Days remaining until Highline's statutory reserve filing is due</td><td class="num">11</td></tr>
+        <tr><td>Number of competing reserve methodologies Highline may submit in one filing</td><td class="num">1</td></tr>
+        <tr><td>Whether Highline may change methodology after the filing is approved without a full refiling</td><td>No</td></tr>
+        <tr><td>Horizon Series product type</td><td>Single-premium immediate annuity, lifetime income</td></tr>
+        <tr><td>Filing document Harlan's math supports</td><td>The actuarial memorandum accompanying the statutory reserve filing</td></tr>
+      </table>
+      <p class="side-note">Highline Life &amp; Annuity Company and the Horizon Series product are a scenario construction for this case &mdash; there is no real insurer by this name. The filing rule stated above reflects standard actuarial filing practice and is used here as the case's hard constraint, not as a citation to any specific state's regulation.</p>
+    </div>
+  </details>
+
+  <details id="apx-b">
+    <summary>Appendix B &mdash; The Smooth Curve &mdash; Formula and Derivation</summary>
+    <div class="inner">
+      <p>Highline's Smooth Curve formula estimates the dollars of reserve required per $1,000 of face value, C<sub>A</sub>(x), at attained age x:</p>
+      <div class="formula-box">C<sub>A</sub>(x) = 1000 &minus; 851.8963 &times; (0.973722)<sup>(x&minus;90)</sup></div>
+      <p class="side-note">Rounded to four and six decimal places respectively so the equation is easy to copy into a calculator; using these rounded coefficients reproduces every value in the table below to the penny.</p>
+      <p><strong>How this formula was built (Appendix F, MA1):</strong> the formula is an exponential-approach-to-an-asymptote curve, calibrated so that it passes through the two real published data points at x=90 and x=99 from Appendix C, and set to approach a long-run asymptote of $1,000 per $1,000 of face value as x&nbsp;&rarr;&nbsp;&infin; &mdash; the same ultimate number the Full Table converges to eventually, since every insured individual eventually dies with certainty. The formula assumes that ultimate value is approached smoothly, rather than reached abruptly at any single age.</p>
+      <table id="tblApxB">
+        <tr><th>Attained age x</th><th>C<sub>A</sub>(x), $ per $1,000 face</th></tr>
+        <tr><td>90</td><td class="num">148.10</td></tr>
+        <tr><td>91</td><td class="num">170.49</td></tr>
+        <tr><td>92</td><td class="num">192.29</td></tr>
+        <tr><td>93</td><td class="num">213.51</td></tr>
+        <tr><td>94</td><td class="num">234.18</td></tr>
+        <tr><td>95</td><td class="num">254.30</td></tr>
+        <tr><td>96</td><td class="num">273.90</td></tr>
+        <tr><td>97</td><td class="num">292.98</td></tr>
+        <tr><td>98</td><td class="num">311.56</td></tr>
+        <tr><td>99</td><td class="num">329.65</td></tr>
+        <tr><td>100</td><td class="num">347.27</td></tr>
+        <tr><td>105 (for your D6 graph)</td><td class="num">428.64</td></tr>
+      </table>
+      <p class="side-note">The formula is defined and continuous for every real number x except x = &minus;50 (where the base exponential expression would require dividing by zero in an equivalent rational form) &mdash; far outside any attained age that matters to this case.</p>
+    </div>
+  </details>
+
+  <details id="apx-c">
+    <summary>Appendix C &mdash; The Full Table &mdash; U.S. Life Table, 2022</summary>
+    <div class="inner">
+      <p>This is the real, published mortality table Highline's regulator would recognize as a legitimate valuation basis: <strong>Table 1, &ldquo;Life table for the total population: United States, 2022,&rdquo;</strong> from the CDC's National Vital Statistics Reports [S1]. q<sub>x</sub> is the probability that a person alive at exact age x dies before reaching age x+1. The dollars of reserve required per $1,000 of face value under the Full Table method is C<sub>B</sub>(x) = 1000&middot;q<sub>x</sub>.</p>
+      <table id="tblApxC">
+        <tr><th>Attained age x</th><th>q<sub>x</sub></th><th>C<sub>B</sub>(x), $ per $1,000 face</th></tr>
+        <tr><td>90</td><td class="num">0.148104</td><td class="num">148.10</td></tr>
+        <tr><td>91</td><td class="num">0.164457</td><td class="num">164.46</td></tr>
+        <tr><td>92</td><td class="num">0.181983</td><td class="num">181.98</td></tr>
+        <tr><td>93</td><td class="num">0.200630</td><td class="num">200.63</td></tr>
+        <tr><td>94</td><td class="num">0.220320</td><td class="num">220.32</td></tr>
+        <tr><td>95</td><td class="num">0.240942</td><td class="num">240.94</td></tr>
+        <tr><td>96</td><td class="num">0.262361</td><td class="num">262.36</td></tr>
+        <tr><td>97</td><td class="num">0.284411</td><td class="num">284.41</td></tr>
+        <tr><td>98</td><td class="num">0.306908</td><td class="num">306.91</td></tr>
+        <tr><td>99</td><td class="num">0.329650</td><td class="num">329.65</td></tr>
+        <tr class="hi"><td><strong>100 and over</strong></td><td class="num"><strong>1.000000</strong></td><td class="num"><strong>1000.00</strong></td></tr>
+      </table>
+      <p class="side-note">The last row is not a typo and it is not a rounding artifact &mdash; it is exactly how the source table defines it. The published table does not continue age-by-age past 99. Instead, everyone still alive at exact age 100 is grouped into a single open-ended interval, &ldquo;100 and over,&rdquo; and by the definition of the table, the probability that a person in that open interval eventually dies within that interval is exactly 1 &mdash; because there is no higher age band left for them to be counted in. This is a standard, real convention for closing out the top of a published life table, not something specific to this case [S1].</p>
+      <p class="side-note">Source [S1]: National Center for Health Statistics, &ldquo;United States Life Tables, 2022,&rdquo; National Vital Statistics Reports, Vol. 74, No. 2 (April 8, 2025), Table 1. Values read directly from the report's published data file: ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/NVSR/74-02/Table01.xlsx, accessed 2026-08-18. Report: cdc.gov/nchs/data/nvsr/nvsr74/nvsr74-02.pdf.</p>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; Highline's Horizon Series In-Force Block</summary>
+    <div class="inner">
+      <p>Highline's Horizon Series block, as of this filing year, has contracts still in force at each attained age from 90 through the open &ldquo;100 and over&rdquo; group. Each contract has a face value of $1,000 (see Appendix F, MA2, for how this block was built).</p>
+      <table id="tblApxD">
+        <tr><th>Attained age x</th><th>Contracts in force</th><th>Face value in force</th></tr>
+        <tr><td>90</td><td class="num">112</td><td class="num">$112,000</td></tr>
+        <tr><td>91</td><td class="num">95</td><td class="num">$95,000</td></tr>
+        <tr><td>92</td><td class="num">80</td><td class="num">$80,000</td></tr>
+        <tr><td>93</td><td class="num">65</td><td class="num">$65,000</td></tr>
+        <tr><td>94</td><td class="num">52</td><td class="num">$52,000</td></tr>
+        <tr><td>95</td><td class="num">41</td><td class="num">$41,000</td></tr>
+        <tr><td>96</td><td class="num">31</td><td class="num">$31,000</td></tr>
+        <tr><td>97</td><td class="num">23</td><td class="num">$23,000</td></tr>
+        <tr><td>98</td><td class="num">16</td><td class="num">$16,000</td></tr>
+        <tr><td>99</td><td class="num">11</td><td class="num">$11,000</td></tr>
+        <tr class="hi"><td><strong>100 and over</strong></td><td class="num"><strong>8</strong></td><td class="num"><strong>$8,000</strong></td></tr>
+        <tr><td><strong>Total</strong></td><td class="num"><strong>534</strong></td><td class="num"><strong>$534,000</strong></td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; The Real Industry Table and the Real Asymptotic Model</summary>
+    <div class="inner">
+      <p>Two real, published facts sit behind this case's dilemma.</p>
+      <p><strong>The industry's own standard annuity mortality table has the same shape of problem.</strong> U.S. life insurers pricing annuities generally use the Society of Actuaries' 2012 Individual Annuity Mortality (2012 IAM) Basic Table &mdash; a published table covering ages 0 through 120 (SOA Table Identity 2581 for males, 2582 for females), publicly viewable at the SOA's own mortality table library [S3]. It was built by blending several different graduation methods across different age ranges rather than one formula for the whole table &mdash; which is exactly the kind of construction that can create a seam at the boundary between methods. This case uses the CDC's population life table (Appendix C) instead, because this case's author could not independently verify specific digit-level values from the SOA table's interactive lookup tool (see Appendix F, MA3).</p>
+      <p><strong>The &ldquo;smooth asymptotic&rdquo; idea in the Smooth Curve formula is a real, named actuarial and demographic technique.</strong> When statisticians need to model mortality at the very oldest ages &mdash; where raw death counts get too small to trust &mdash; the standard method is the <strong>Kannisto model</strong>, a logistic-curve formula for the force of mortality built to approach a fixed asymptote smoothly as age increases. It is the method the Human Mortality Database itself uses to close out life tables at the oldest ages, fit using data from age 80 onward, with smoothed rates applied starting from an age the database sets per-population (constrained to fall between 80 and 95) [S4]. Highline's Smooth Curve formula in Appendix B is this same style of model, applied here as a stated, illustrative version rather than a full statistical fit (see Appendix F, MA1).</p>
+      <p>The Society of Actuaries has also published real methodology guidance specifically on annuity reserving practice: the <strong>&ldquo;2012 Individual Annuity Reserving Report &amp; Table&rdquo;</strong> (SOA Payout Annuity Table Team, September 28, 2011), prepared at the request of the NAIC's Life Actuarial Task Force to guide how the 2012 IAM table should be used for statutory annuity reserves [S2]. It establishes that the choice of how to apply a mortality table to reserving &mdash; not just which table &mdash; is a real, filed, professional decision.</p>
+    </div>
+  </details>
+
+  <details id="apx-f">
+    <summary>Appendix F &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="side-note">These figures and formulas are not sourced in the way Appendices C and E are. They are stated scenario assumptions chosen by the case author, built from real public data where possible. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+      <table id="tblApxF">
+        <tr><th>#</th><th>Assumption</th><th>Value / method used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>The Smooth Curve's specific formula parameters</td>
+          <td>C<sub>A</sub>(x) = 1000&minus;851.8963(0.973722)<sup>(x&minus;90)</sup>, calibrated to pass exactly through the real published C<sub>B</sub>(90) and C<sub>B</sub>(99) values</td>
+          <td>No public source publishes a firm's own proprietary mortality-smoothing formula. The Kannisto model (Appendix E, [S4]) establishes this general style of formula is genuine, standard practice.</td>
+          <td>The case's central finding &mdash; that the Full Table has a boundary the Smooth Curve does not &mdash; holds for any smooth, boundary-free formula in this family.</td></tr>
+        <tr><td>MA2</td><td>The size and shape of Highline's in-force block (Appendix D)</td>
+          <td>Contract counts by attained age = real CDC survivorship values l<sub>x</sub>, scaled down by a factor of 200 and rounded to whole contracts</td>
+          <td>Highline is fictional; no real in-force block exists to cite. The age-distribution shape is grounded in real national survivorship data.</td>
+          <td>The portfolio-wide margin in D5 is sensitive to this scaling.</td></tr>
+        <tr><td>MA3</td><td>Use of the CDC table in place of the SOA 2012 IAM Basic Table</td>
+          <td>All worked numbers use CDC Table 1 (2022), not the SOA table</td>
+          <td>The SOA table's specific q<sub>x</sub> digit values could not be independently verified from its interactive lookup tool.</td>
+          <td>None &mdash; a dataset substitution, not a numeric assumption that could flip the dilemma.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-g">
+    <summary>Appendix G &mdash; Sources</summary>
+    <div class="inner">
+      <table id="tblApxG">
+        <tr><th>#</th><th>Claim</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>U.S. total-population life table q<sub>x</sub>, ages 90&ndash;99, and the &ldquo;100 and over&rdquo; closure convention (q=1)</td>
+          <td><a href="https://www.cdc.gov/nchs/data/nvsr/nvsr74/nvsr74-02.pdf" target="_blank" rel="noopener">NCHS, &ldquo;United States Life Tables, 2022,&rdquo; NVSR Vol. 74 No. 2</a></td>
+          <td>2025-04-08 (2022 data year)</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Real, published SOA methodology report on annuity reserving practice tied to the 2012 IAM table</td>
+          <td><a href="https://www.soa.org/resources/experience-studies/2011/2012-ind-annuity-reserving-rpt/" target="_blank" rel="noopener">&ldquo;2012 Individual Annuity Reserving Report &amp; Table,&rdquo; SOA</a></td>
+          <td>2011-09-28</td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>Existence, coverage, and blended-graduation-method construction of the SOA 2012 IAM Basic Table</td>
+          <td><a href="https://mort.soa.org/ViewTable.aspx?TableIdentity=2581" target="_blank" rel="noopener">SOA mortality table library, Table Identity 2581</a></td>
+          <td>Accessed 2026-08-18</td><td>MEDIUM</td></tr>
+        <tr><td>S4</td><td>The Kannisto model is a real, named, logistic-curve mortality model with a horizontal asymptote</td>
+          <td><a href="https://www.mortality.org/File/GetDocument/Public/Docs/MethodsProtocolV6.pdf" target="_blank" rel="noopener">Human Mortality Database, Methods Protocol v6</a></td>
+          <td>Accessed 2026-08-18</td><td>HIGH</td></tr>
+      </table>
+    </div>
+  </details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-19. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: One-sided limit estimate</h4>
+    <div class="goal">Using Appendix C's table, estimate the one-sided limit of the Full Table reserve function as attained age approaches 100 from below.</div>
+    <div class="fieldrow"><label for="d1val">Your estimate ($ per $1,000 face)</label><input type="number" step="0.01" id="d1val"><button onclick="checkD1()">Check</button><span class="fb" id="fbD1"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: Algebraic limit and asymptote</h4>
+    <div class="goal">From the Smooth Curve equation, identify its horizontal asymptote, then evaluate the limit algebraically as x&nbsp;&rarr;&nbsp;100.</div>
+    <div class="fieldrow"><label for="d2asym">Horizontal asymptote ($)</label><input type="number" step="0.01" id="d2asym"><button onclick="checkD2()">Check</button><span class="fb" id="fbD2a"></span></div>
+    <div class="fieldrow"><label for="d2lim">Limit as x&rarr;100 ($ per $1,000 face)</label><input type="number" step="0.01" id="d2lim"><span class="fb" id="fbD2b"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: Continuity determination</h4>
+    <div class="goal">Is each function continuous at attained age 100? Compare each one-sided limit to the function's actual value there.</div>
+    <div class="fieldrow"><label for="d3full">Full Table at x=100</label>
+      <select id="d3full"><option value="">choose&hellip;</option><option value="continuous">Continuous</option><option value="discontinuous">Discontinuous</option></select>
+      <button onclick="checkD3()">Check</button><span class="fb" id="fbD3a"></span></div>
+    <div class="fieldrow"><label for="d3smooth">Smooth Curve at x=100</label>
+      <select id="d3smooth"><option value="">choose&hellip;</option><option value="continuous">Continuous</option><option value="discontinuous">Discontinuous</option></select>
+      <span class="fb" id="fbD3b"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: Single-cohort dollar gap</h4>
+    <div class="goal">Compute the reserve per $1,000 face under each method for a policyholder exactly at attained age 100, then the dollar and percentage gap.</div>
+    <div class="fieldrow"><label for="d4a">C<sub>A</sub>(100), Smooth Curve ($)</label><input type="number" step="0.01" id="d4a"><span class="fb" id="fbD4a"></span></div>
+    <div class="fieldrow"><label for="d4b">C<sub>B</sub>(100), Full Table ($)</label><input type="number" step="0.01" id="d4b"><span class="fb" id="fbD4b"></span></div>
+    <div class="fieldrow"><label for="d4gap">Dollar gap ($)</label><input type="number" step="0.01" id="d4gap"><span class="fb" id="fbD4c"></span></div>
+    <div class="fieldrow"><label for="d4pct">Percentage gap (%)</label><input type="number" step="0.1" id="d4pct"><button onclick="checkD4()">Check all</button><span class="fb" id="fbD4d"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; D5: Portfolio-wide margin</h4>
+    <div class="goal">Using Appendix D's in-force block, compute the blended reserve per $1,000 of total face value under each method, the margin between them, and the age-100 cohort's share of the total dollar difference.</div>
+    <div class="fieldrow"><label for="d5a">Blended rate, Method A ($)</label><input type="number" step="0.01" id="d5a"><span class="fb" id="fbD5a"></span></div>
+    <div class="fieldrow"><label for="d5b">Blended rate, Method B ($)</label><input type="number" step="0.01" id="d5b"><span class="fb" id="fbD5b"></span></div>
+    <div class="fieldrow"><label for="d5margin">Margin between methods (%)</label><input type="number" step="0.01" id="d5margin"><span class="fb" id="fbD5c"></span></div>
+    <div class="fieldrow"><label for="d5share">Age-100 cohort's share of total dollar gap (%)</label><input type="number" step="0.1" id="d5share"><button onclick="checkD5()">Check all</button><span class="fb" id="fbD5d"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 6 &mdash; D6: Plot both functions</h4>
+    <div class="goal">Graph the Smooth Curve (continuous, ages 85&ndash;105) and the Full Table (given only for ages 90&ndash;100) on the same axes. Mark the asymptote and the discontinuity.</div>
+    <button onclick="drawD6Chart()">Plot both functions</button>
+    <canvas id="d6chart" width="620" height="320"></canvas>
+    <div class="legend-row">
+      <span><span class="sw" style="background:#1a3a5c"></span>Smooth Curve C<sub>A</sub>(x)</span>
+      <span><span class="sw" style="background:#a3312a"></span>Full Table C<sub>B</sub>(x)</span>
+      <span><span class="sw" style="background:#c9a227"></span>Asymptote ($1,000)</span>
+    </div>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p>Go back to Step 5. You found a portfolio-wide blended margin between the two methods &mdash; and on its own, a blended margin this small is easy to read as &ldquo;these two methods barely disagree.&rdquo;</p>
+      <p>Now go back to Step 4. That single-cohort comparison at exactly age 100 told a very different story &mdash; a much larger relative gap, at exactly the one age where Highline has real survivors on the books this year.</p>
+      <p>Ask yourself: does a small number in aggregate tell the whole story, when nearly all of the real dollar exposure might be sitting in one narrow slice of the portfolio? Statutory reserve adequacy is generally checked cohort by cohort, not only in aggregate &mdash; a company can be technically deficient at one attained age even while its overall block reserve looks comfortable. Click below to have the calculator show you exactly what share of the total dollar difference the age-100 cohort accounts for.</p>
+      <button class="gold" onclick="revealConcentration()" id="concBtn">Show me the concentration</button>
+      <div id="concResult" style="margin-top:10px;font-weight:700"></div>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">I've seen the concentration figure &mdash; factor it into my Challenge 2 pitch.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+      <li><a href="https://www.cdc.gov/nchs/data/nvsr/nvsr74/nvsr74-02.pdf" target="_blank" rel="noopener">[S1] NCHS, &ldquo;United States Life Tables, 2022&rdquo;</a></li>
+      <li><a href="https://www.soa.org/resources/experience-studies/2011/2012-ind-annuity-reserving-rpt/" target="_blank" rel="noopener">[S2] SOA, &ldquo;2012 Individual Annuity Reserving Report &amp; Table&rdquo;</a></li>
+      <li><a href="https://mort.soa.org/ViewTable.aspx?TableIdentity=2581" target="_blank" rel="noopener">[S3] SOA mortality table library, 2012 IAM Basic Table</a></li>
+      <li><a href="https://www.mortality.org/File/GetDocument/Public/Docs/MethodsProtocolV6.pdf" target="_blank" rel="noopener">[S4] Human Mortality Database, Methods Protocol v6</a></li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Reserve Asymptote &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/the-reserve-asymptote/sensitivity_model.py
+// (case.md sha256: eb911f782bb96bbf056e1441cd54e71d8bc20624e3b0385f3770e209aa816d33)
+// PARAMS/FLEX/evaluate() mirror the Python file's contract. Only PARAMS values
+// are given here (raw modeling assumptions, Appendix F MA1/MA2) -- no computed
+// verdict (margin, winner, concentration share) is ever written as a literal
+// anywhere in this file; every derived figure below is computed live.
+const PARAMS = { k: 851.8963, b: 0.973722, age100_contracts: 8 };
+const FLEX = ["k", "b", "age100_contracts"];
+
+// Appendix C: the Full Table's real, published q_x values (source S1) plus the
+// "100 and over" open-group closure convention (q_x = 1). Cited data, not flexed.
+const FULL_TABLE_QX = {
+  90: 0.148104, 91: 0.164457, 92: 0.181983, 93: 0.200630, 94: 0.220320,
+  95: 0.240942, 96: 0.262361, 97: 0.284411, 98: 0.306908, 99: 0.329650,
+  100: 1.000000
+};
+
+// Appendix D: contract counts by attained age, except the age-100-and-over
+// cohort, which is PARAMS.age100_contracts (MA2's own flexible dial).
+const OTHER_AGE_CONTRACTS = { 90: 112, 91: 95, 92: 80, 93: 65, 94: 52, 95: 41, 96: 31, 97: 23, 98: 16, 99: 11 };
+
+function C_A(x, params){
+  const p = Object.assign({}, PARAMS, params || {});
+  return 1000.0 - p.k * Math.pow(p.b, x - 90);
+}
+function C_B(x){
+  const qx = FULL_TABLE_QX[x];
+  return qx === undefined ? null : 1000.0 * qx;
+}
+// evaluate(): blended dollars of reserve required per $1,000 of face value
+// across the whole in-force block, negated per the project's higher-is-better
+// convention (mirrors sensitivity_model.py's evaluate()).
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const age100 = Math.max(0, p.age100_contracts);
+  let totalContracts = age100;
+  let reserveA = age100 * C_A(100, p);
+  let reserveB = age100 * C_B(100);
+  for(const age in OTHER_AGE_CONTRACTS){
+    const n = OTHER_AGE_CONTRACTS[age];
+    totalContracts += n;
+    reserveA += n * C_A(Number(age), p);
+    reserveB += n * C_B(Number(age));
+  }
+  const blendedA = reserveA / totalContracts;
+  const blendedB = reserveB / totalContracts;
+  return { A: -blendedA, B: -blendedB, blendedA, blendedB };
+}
+// Per-age dollar exposure (contracts x |C_B - C_A|), used to compute what
+// share of the TOTAL dollar difference the age-100 cohort accounts for.
+function perAgeAbsGap(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const age100 = Math.max(0, p.age100_contracts);
+  const rows = [];
+  for(const age in OTHER_AGE_CONTRACTS){
+    const n = OTHER_AGE_CONTRACTS[age];
+    const gap = Math.abs(C_B(Number(age)) - C_A(Number(age), p));
+    rows.push({ age: Number(age), n, gap, dollarGap: n * gap });
+  }
+  const gap100 = Math.abs(C_B(100) - C_A(100, p));
+  rows.push({ age: 100, n: age100, gap: gap100, dollarGap: age100 * gap100 });
+  return rows;
+}
+function computeAge100SharePct(params){
+  const rows = perAgeAbsGap(params);
+  const total = rows.reduce((s, r) => s + r.dollarGap, 0);
+  const row100 = rows.find(r => r.age === 100);
+  return total ? 100 * row100.dollarGap / total : 0;
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkD1(){
+  const v = parseFloat(val('d1val'));
+  // The one-sided limit from below is estimated from the real table's approach
+  // toward age 100 -- i.e. the last known Full Table value before the boundary.
+  const target = C_B(99);
+  fb('fbD1', near(v, target, 1.0));
+}
+function checkD2(){
+  const asym = parseFloat(val('d2asym'));
+  const lim = parseFloat(val('d2lim'));
+  const asymTarget = 1000; // stated in the formula itself: C_A(x) -> 1000 as x -> infinity
+  const limTarget = C_A(100, {});
+  fb('fbD2a', near(asym, asymTarget, 1.0));
+  fb('fbD2b', near(lim, limTarget, 1.0));
+}
+function checkD3(){
+  const oneSidedLimit = C_B(99);
+  const actualAt100 = C_B(100);
+  const fullIsContinuous = near(oneSidedLimit, actualAt100, 0.01);
+  const smoothIsContinuous = true; // C_A is a single closed-form exponential, continuous everywhere
+  const fullPick = val('d3full');
+  const smoothPick = val('d3smooth');
+  fb('fbD3a', fullPick === (fullIsContinuous ? 'continuous' : 'discontinuous'));
+  fb('fbD3b', smoothPick === (smoothIsContinuous ? 'continuous' : 'discontinuous'));
+}
+function checkD4(){
+  const a = parseFloat(val('d4a'));
+  const b = parseFloat(val('d4b'));
+  const gap = parseFloat(val('d4gap'));
+  const pct = parseFloat(val('d4pct'));
+  const targetA = C_A(100, {});
+  const targetB = C_B(100);
+  const targetGap = targetB - targetA;
+  const targetPct = 100 * targetGap / targetA;
+  fb('fbD4a', near(a, targetA, 1.0));
+  fb('fbD4b', near(b, targetB, 1.0));
+  fb('fbD4c', near(gap, targetGap, 1.0));
+  fb('fbD4d', near(pct, targetPct, 2.0));
+}
+function checkD5(){
+  const a = parseFloat(val('d5a'));
+  const b = parseFloat(val('d5b'));
+  const margin = parseFloat(val('d5margin'));
+  const share = parseFloat(val('d5share'));
+  const ev = evaluate({});
+  const targetMargin = 100 * Math.abs(ev.blendedA - ev.blendedB) / Math.min(ev.blendedA, ev.blendedB);
+  const targetShare = computeAge100SharePct({});
+  fb('fbD5a', near(a, ev.blendedA, 0.5));
+  fb('fbD5b', near(b, ev.blendedB, 0.5));
+  fb('fbD5c', near(margin, targetMargin, 0.15));
+  fb('fbD5d', near(share, targetShare, 2.0));
+}
+function drawD6Chart(){
+  const canvas = document.getElementById('d6chart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const xMin = 85, xMax = 105, yMin = 0, yMax = 1050;
+  const padL = 50, padB = 30, padT = 14, padR = 14;
+  const xToPx = x => padL + (x - xMin) / (xMax - xMin) * (W - padL - padR);
+  const yToPx = y => H - padB - (y - yMin) / (yMax - yMin) * (H - padT - padB);
+
+  ctx.strokeStyle = '#dfe4ea'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, H - padB); ctx.lineTo(W - padR, H - padB); ctx.stroke();
+  ctx.fillStyle = '#5b6472'; ctx.font = '10px sans-serif';
+  ctx.fillText('age', W / 2, H - 6);
+  ctx.save(); ctx.translate(12, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('$ per $1,000 face', 0, 0); ctx.restore();
+
+  // asymptote line at $1000
+  ctx.strokeStyle = '#c9a227'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(xToPx(xMin), yToPx(1000)); ctx.lineTo(xToPx(xMax), yToPx(1000)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Smooth Curve, continuous 85-105
+  ctx.strokeStyle = '#1a3a5c'; ctx.lineWidth = 2; ctx.beginPath();
+  for(let x = xMin; x <= xMax; x += 0.25){
+    const y = C_A(x, {});
+    const px = xToPx(x), py = yToPx(Math.min(y, yMax));
+    if(x === xMin) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  // Full Table, only defined 90-100 in Appendix C -- plot given points, mark jump at 100
+  ctx.strokeStyle = '#a3312a'; ctx.lineWidth = 2; ctx.beginPath();
+  let started = false;
+  for(let age = 90; age <= 99; age++){
+    const y = C_B(age);
+    const px = xToPx(age), py = yToPx(y);
+    if(!started){ ctx.moveTo(px, py); started = true; } else { ctx.lineTo(px, py); }
+  }
+  ctx.stroke();
+  // the jump at age 100
+  ctx.fillStyle = '#a3312a';
+  ctx.beginPath(); ctx.arc(xToPx(99.98), yToPx(C_B(99)), 3, 0, 7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(xToPx(100), yToPx(C_B(100)), 4, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#a3312a'; ctx.setLineDash([2, 3]);
+  ctx.beginPath(); ctx.moveTo(xToPx(100), yToPx(C_B(99))); ctx.lineTo(xToPx(100), yToPx(C_B(100))); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#1f2530'; ctx.font = '10px sans-serif';
+  ctx.fillText('jump discontinuity at x=100', xToPx(90.5), yToPx(950));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "the-reserve-asymptote"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "One-sided limit estimate from the real table as attained age approaches 100 from below."],
+  ["D2", "Horizontal asymptote identified from the Smooth Curve's equation and its limit at x=100 evaluated algebraically."],
+  ["D3", "Continuity determination for the Full Table function and the Smooth Curve formula at attained age 100."],
+  ["D4", "Single-cohort dollar and percentage gap between the two methods at exactly attained age 100."],
+  ["D5", "Portfolio-wide blended margin between the two methods, and the share of the total dollar gap attributable to the age-100 cohort alone."],
+  ["D6", "Original graph of both reserve functions, ages 85-105, marking the discontinuity and the asymptote."]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Limit": {def: "The value a function's output gets closer and closer to as the input approaches some point.",
+    url: "https://www.khanacademy.org/math/differential-calculus/dc-limits/dc-limits-from-tables/v/approximating-limit-from-table"},
+  "Asymptote": {def: "A line a curve gets closer and closer to but never actually reaches, as the input grows very large (or approaches some value).",
+    url: "https://www.khanacademy.org/math/precalculus/x9e81a4f98389efdf:rational-functions/x9e81a4f98389efdf:graphs-of-rational-functions/v/graphs-of-rational-functions-horizontal-asymptote"},
+  "Informal Continuity": {def: "A function is continuous if you can draw its graph without ever picking up your pencil -- no holes, jumps, or breaks.",
+    url: "https://www.khanacademy.org/math/calculus-all-old/limits-and-continuity-calc/continuity-at-a-point-calc/v/limits-to-define-continuity"},
+  "One-Sided Limit": {def: "The value a function approaches as the input gets closer to a point from just one direction -- from below or from above.",
+    url: "https://www.khanacademy.org/math/calculus-all-old/limits-and-continuity-calc/one-sided-limits-calc/v/numerically-estimating-limit"},
+  "Continuity": {def: "Formally, a function is continuous at a point if the limit as you approach that point equals the function's actual value there.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-limits-new/ab-1-13/e/continuity"},
+  "Discontinuity": {def: "A point where a function is not continuous -- for example a jump discontinuity, where the left- and right-hand limits disagree.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-limits-new/ab-1-10/v/types-of-discontinuities"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"}
+};
+const HOWTO = [
+  ["How to estimate a limit from a table or graph", "One-Sided Limit"],
+  ["How to identify a vertical or horizontal asymptote from a function's equation", "Asymptote"],
+  ["How to evaluate a limit algebraically", "Limit"],
+  ["How to determine whether a function is continuous at a point", "Continuity"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function revealConcentration(){
+  const share = computeAge100SharePct();
+  document.getElementById('concResult').textContent =
+    'The age-100 cohort alone accounts for ' + round(share,1) + '% of the total dollar difference between the two methods, summed age by age.';
+}
+function onTwistToggle(){
+  // Gating only -- no separate recompute needed for this case's notebook;
+  // the Twist's own arithmetic is exposed on demand via revealConcentration().
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

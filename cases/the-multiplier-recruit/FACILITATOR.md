@@ -56,7 +56,7 @@ Surface Appendix E's three Modeling Assumptions honestly: MA1 (Calder County's o
 coefficient matrix is not a purchased RIMS II table — it's calibrated to real published examples,
 because a real one costs $520 and Calder County isn't real anyway), MA2 (the $3,000/job rate is
 borrowed from Florida's real QTI program, not Calder County's own passed law), MA3 (both companies'
-headcounts are invented, sized to make the "more direct jobs" trap genuinely tempting). Ask which
+headcounts are invented, sized to make the naive "more direct jobs wins" read genuinely tempting). Ask which
 one is actually load-bearing for the *comparison* (MA1 is — a different real county's own purchased
 multipliers could change the exact margin) and which one nets out of the comparison in relative
 terms (MA2 does, because both bids pay the identical flat rate).
@@ -99,7 +99,25 @@ numbers reasonably concludes the two bids are financially indistinguishable per 
 that Cascade — with more than double the direct hires — must therefore be the better use of the
 county's money. Only D4's matrix solve reveals that the identical *rate* produces a meaningfully
 different *regional* return, because the rate is paid per direct job while the payoff is measured
-in total regional jobs. See **The trap** below.
+in total regional jobs.
+
+## The trap
+
+Both bids pay the exact same $3,000 per direct job — a Hero who stops there, or who simply compares
+140 direct jobs to 310, will conclude Cascade Distribution is the clearly better use of the same
+incentive money, since it buys more than twice the direct jobs at the identical rate. That
+comparison never asks what happens to Calder County's economy *after* the hiring — it silently
+assumes every job an employer creates has the same regional ripple effect, when the entire point of
+Appendix B's matrix is that it does not. Watch for a pitch that reports 310 > 140 and calls that
+decisive without ever opening Appendix B.
+
+**A second, quieter trap survives even correct matrix work.** A Hero can build and solve the
+matrix correctly, reach D4's totals (Cascade 368.02 vs. Meridian 191.62 total regional jobs), and
+still recommend Cascade — because 368.02 > 191.62 too, if you stop at raw totals and never divide by
+the incentive dollars each bid actually costs (D5). This is more dangerous than the headcount trap
+above because it survives real linear-algebra work and can read as "we did the sophisticated
+model, and it still says Cascade." Watch for a pitch that cites D4's totals alone; press for the
+per-$10,000 figure before accepting a recommendation.
 
 ## Close
 
@@ -128,33 +146,17 @@ did they land on Anvil for the multiplier reason, or did they just guess right?
 | 8:00–12:00 | Anchor 3 — name the five-step process before opening Appendix B |
 | 12:00–15:00 | Anchor 4 — surface MA1–MA3, ask which is load-bearing for the comparison |
 | 15:00–30:00 | Data Deep Dive — D1–D5 worked in two desks, reconvene for the shared table |
-| **~25:00** | **NAME THE TRAP** — identical per-job rate, very different regional return |
+| **~25:00** | **NAME THE TRAP / TWIST** — identical per-job rate, very different regional return (this case's twist is mathematical, not narrative; it drops here) |
 | 30:00–40:00 | Deep conflict — direct jobs vs. regional jobs; trusting a hand-built matrix |
 | 40:00–45:00 | Close, re-vote, reflection, lessons learned |
-
-## The trap
-
-Both bids pay the exact same $3,000 per direct job — a Hero who stops there, or who simply compares
-140 direct jobs to 310, will conclude Cascade Distribution is the clearly better use of the same
-incentive money, since it buys more than twice the direct jobs at the identical rate. That
-comparison never asks what happens to Calder County's economy *after* the hiring — it silently
-assumes every job an employer creates has the same regional ripple effect, when the entire point of
-Appendix B's matrix is that it does not. Watch for a pitch that reports 310 > 140 and calls that
-decisive without ever opening Appendix B.
 
 ## Socratic questions
 
 1. Both bids pay exactly $3,000 per direct job. If the rate is identical, why isn't the case a tie?
-2. Cascade Distribution creates more than double Meridian's direct jobs. What would Meridian's
-   local-purchasing coefficients have to look like for Cascade to win on the case's actual metric
-   instead?
-3. Appendix B's matrix is a stated assumption, not a purchased RIMS II table. What about the way it
-   was built should make you trust it more than a number pulled out of thin air — and what would
-   make you trust it less?
-4. You computed a determinant of 0.716 for (I − A) before solving anything. What would it have
-   meant for Ben's model if that determinant had come out to 0?
-5. If Calder County doubled its incentive rate for both bids, would you expect the *margin* between
-   Meridian and Cascade to grow, shrink, or stay exactly the same — and why?
+2. Cascade Distribution creates more than double Meridian's direct jobs. What would Meridian's local-purchasing coefficients have to look like for Cascade to win on the case's actual metric instead?
+3. Appendix B's matrix is a stated assumption, not a purchased RIMS II table. What about the way it was built should make you trust it more than a number pulled out of thin air — and what would make you trust it less?
+4. You computed a determinant of 0.716 for (I − A) before solving anything. What would it have meant for Ben's model if that determinant had come out to 0?
+5. If Calder County doubled its incentive rate for both bids, would you expect the *margin* between Meridian and Cascade to grow, shrink, or stay exactly the same — and why?
 
 ## Lessons Learned
 
@@ -169,6 +171,17 @@ decisive without ever opening Appendix B.
 
 Matrix · Matrix Dimension · Determinant · Identity Matrix · How to add and multiply matrices · How
 to find the determinant of a 2x2 matrix · How to solve a system of equations using a matrix
+
+## Facilitator note — margin stability (Tier 2 P5)
+
+The 13.3% margin does not flip which employer wins under a ±50% flex of any single matrix
+coefficient in Appendix B (Meridian/Option A always wins in this scripted sweep) — but a ±50% flex
+on `a11`, `a21`, or `a22` alone can push the margin **past SPEC §2's 20% cap** in one direction.
+This is disclosed, not hidden: see `case.json.sensitivity_disclosure[]` (Category X — Appendix B's
+matrix is a good-faith estimate calibrated to real BEA RIMS II comparables, not a purchased table
+for Calder County itself). If a Hero pushes hard on "how sure are we about these four numbers,"
+this is the honest answer: sure enough that the *winner* doesn't move, not sure enough that the
+*margin size* is guaranteed to stay under 20%.
 
 ## Facilitator note — sensitivity (SPEC §6)
 

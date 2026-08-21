@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Multiplier Recruit — Interactive</title>
+<!-- Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md -->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Multiplier Recruit</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Pre-Calculus &middot; Matrices</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+<p class="lede">The email from the site-selection consultant landed at 4:52 the night before, and Ben Okafor has read it eleven times since. Both offers are still open. Both close in eighteen hours. On his desk are two folders, each thick with letterhead and site plans, and one number he cannot stop thinking about: the Calder County Industrial Development Authority has exactly one incentive package to hand out this fiscal year, and the board votes at nine tomorrow morning.</p>
+<p>To his left, Meridian Forgeworks &mdash; a precision-components manufacturer that would buy steel, tooling, and packaging from a dozen local shops Ben already knows by name. To his right, Cascade Distribution &mdash; a regional logistics center that would hire more people outright and open a building on the county's biggest vacant industrial lot within the year. His predecessor used to settle calls like this with a gut feeling and a spreadsheet of direct hires. Ben pulls up the regional input-output worksheet instead, the one the board has never once asked him to actually show his work on. Tonight, he thinks, they will.</p>
+<p>He opens both employer packets side by side, uncaps a pen, and starts building the matrix.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+<p>Ben Okafor is the regional economic development analyst for the Calder County Industrial Development Authority (IDA). He is responsible for recommending which employer the IDA should recruit with the county's single annual incentive package, and accountable to the IDA board for showing that his recommendation is not just a guess (see Appendix A). Two employers have each submitted a formal relocation offer, and the IDA can fund only one:</p>
+<p><strong>The Anvil Bid</strong> &mdash; recruiting <strong>Meridian Forgeworks</strong>, a precision-components manufacturer that would hire 140 people directly and purchase most of its steel, tooling, and packaging from local suppliers already operating in Calder County (see Appendix A).</p>
+<p><strong>The Waypoint Bid</strong> &mdash; recruiting <strong>Cascade Distribution</strong>, a regional logistics and distribution center that would hire 310 people directly, more than double Meridian's direct headcount, but would purchase comparatively little from other Calder County businesses once its building and racking are installed (see Appendix A).</p>
+<p>Both employers would receive the exact same incentive rate per direct job they create &mdash; Calder County's incentive program pays a flat dollar amount per net new full-time job, modeled on a real, publicly published state incentive schedule (see Appendix D). Read only by that headline rate, the two bids are identical: the same dollars per direct job, every time. That is exactly why the headline rate cannot be the number the board votes on.</p>
+<p>What the flat per-job rate does not capture is what economists call the regional multiplier effect: money a new employer spends locally on suppliers and services gets spent again by those suppliers' own workers, and again by the next round of local vendors, before it finally leaks out of the county. A manufacturer that buys heavily from local suppliers keeps more of each dollar circulating inside Calder County than a distribution center that buys comparatively little locally &mdash; even if the distribution center hires more people directly. The real federal tool for measuring exactly this effect is the U.S. Bureau of Economic Analysis's Regional Input-Output Modeling System, RIMS II (see Appendix C) &mdash; the same tool practicing regional economic developers like Ben actually use, priced per region ordered directly from BEA. Calder County's IDA has never purchased a RIMS II table for its own county, so Ben has to build his own regional model by hand, calibrated to real, published RIMS II multiplier examples (see Appendices B and C), starting from the same kind of county-level baseline employment picture the real U.S. Census Bureau's County Business Patterns program publishes for every U.S. county [S4].</p>
+<p>Ben's recommendation must be judged on one number: <strong>total regional jobs supported &mdash; direct, indirect, and induced &mdash; per $10,000 of incentive spent</strong>, found by solving Calder County's two-sector regional economy as a system of linear equations using matrices (see Appendices B, D and E). Every sourced and assumed figure in this case is listed in Appendix F, and the vocabulary and &ldquo;how to&hellip;&rdquo; skills this case will ask of you are listed in Appendix G &mdash; that is where Challenge 1 sends you.</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Ben Okafor. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Anvil Bid</h4>
+      <p style="margin:0">Recommend The Anvil Bid &mdash; recruit Meridian Forgeworks, the precision-components manufacturer with heavier local supplier purchasing (140 direct jobs).</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Waypoint Bid</h4>
+      <p style="margin:0">Recommend The Waypoint Bid &mdash; recruit Cascade Distribution, the regional logistics center with more direct jobs but lighter local purchasing (310 direct jobs).</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: D1) a labeled 2&times;2 regional technical coefficient matrix A, every entry defined in words, with its dimensions stated; D2) the identity matrix I and the computed matrix (I &minus; A), with every entry shown as an arithmetic step; D3) the determinant of (I &minus; A), computed by hand, with a one-sentence explanation of why a nonzero determinant is required before D4 can be solved; D4) the solved total-regional-jobs vector x = (I &minus; A)<sup>&minus;1</sup>d for each employer's direct-jobs vector d, with the full matrix arithmetic shown; D5) a final decision table &mdash; direct jobs, total regional jobs supported, incentive dollars owed, and jobs supported per $10,000 of incentive, for both employers &mdash; with your recommendation stated and defended using that last column.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+<details open>
+  <summary>Appendix A &mdash; Employer Bids</summary>
+  <div class="inner">
+    <table id="apxA">
+      <tr><th></th><th>Meridian Forgeworks (The Anvil Bid)</th><th>Cascade Distribution (The Waypoint Bid)</th></tr>
+      <tr><td>Industry</td><td>Durable-goods manufacturing (precision metal components)</td><td>Trade, transportation &amp; warehousing (regional distribution center)</td></tr>
+      <tr><td>Direct jobs created (net new, full-time)</td><td class="num">140 [MA3]</td><td class="num">310 [MA3]</td></tr>
+      <tr><td>Regional sector assigned in the model (Appendix B)</td><td>Sector 1 &mdash; Manufacturing</td><td>Sector 2 &mdash; Trade, Transportation &amp; Warehousing</td></tr>
+      <tr><td>Direct-jobs vector d used in D4</td><td>d = [140, 0]<sup>T</sup></td><td>d = [0, 310]<sup>T</sup></td></tr>
+    </table>
+    <p class="side-note">Both employers are fictional companies invented for this case (see Appendix E, MA3); their direct headcounts are the case's own stated scenario numbers, sized to be realistic for a manufacturer and a distribution center of the kind that regularly compete for a single county incentive package.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix B &mdash; Calder County's Regional Technical Coefficient Matrix</summary>
+  <div class="inner">
+    <p>Ben's model divides Calder County's economy into two sectors for this decision: <strong>Sector 1 &mdash; Manufacturing</strong> (Meridian Forgeworks's industry) and <strong>Sector 2 &mdash; Trade, Transportation &amp; Warehousing</strong> (Cascade Distribution's industry).</p>
+    <p>Each entry of the technical coefficient matrix A below is the number of dollars a sector must buy from Calder County businesses &mdash; not from outside the region &mdash; to produce one additional dollar of its own output. Column 1 is Sector 1's local buying pattern; column 2 is Sector 2's.</p>
+    <table id="apxB">
+      <tr><th></th><th>buys from Sector 1 (Mfg)</th><th>buys from Sector 2 (Trade/Trans/Whse)</th></tr>
+      <tr><td>to produce $1 of Sector 1 output</td><td class="num">0.20</td><td class="num">0.05</td></tr>
+      <tr><td>to produce $1 of Sector 2 output</td><td class="num">0.08</td><td class="num">0.10</td></tr>
+    </table>
+    <p class="side-note"><strong>These four numbers are a stated Modeling Assumption, not a purchased RIMS II table for Calder County (see Appendix E, MA1).</strong> Calder County is fictional, so BEA has no county to sell a multiplier table for &mdash; and even for a real county, that table costs $520 (see Appendix C). The values above were chosen so that solving the system in D4 reproduces regional output-multiplier magnitudes close to the real, published RIMS II examples in Appendix C, and so they preserve the real, sourced direction that manufacturing re-spends more of each dollar locally than trade/distribution does.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix C &mdash; Real RIMS II Reference Data (BEA)</summary>
+  <div class="inner">
+    <p>This appendix is real, published federal data, reproduced here so you can check Appendix B's assumption against it &mdash; it is <strong>not</strong> Calder County's own data.</p>
+    <table id="apxC">
+      <tr><th>Claim</th><th>Value</th><th>Source</th></tr>
+      <tr><td>Price to order RIMS II multipliers for one region (county or contiguous-county group)</td><td class="num">$520 per region, all industries</td><td>[S1]</td></tr>
+      <tr><td>RIMS II's current data vintage</td><td>2024 regional data, 2017 national benchmark input-output data, released May 2026</td><td>[S1]</td></tr>
+      <tr><td>Real Type I final-demand output multiplier, &ldquo;Miscellaneous manufacturing,&rdquo; Butler County, OH</td><td class="num">1.3616</td><td>[S2]</td></tr>
+      <tr><td>Real Type I final-demand output multiplier, &ldquo;Management of companies&rdquo; (a service industry), Butler County, OH</td><td class="num">1.1810</td><td>[S2]</td></tr>
+      <tr><td>National intermediate-input share of output, Manufacturing (2012 data)</td><td class="num">52.1%</td><td>[S2]</td></tr>
+      <tr><td>National intermediate-input share of output, Services (2012 data)</td><td class="num">36.5%</td><td>[S2]</td></tr>
+    </table>
+    <h3>What a Type I final-demand multiplier means</h3>
+    <p>For every extra $1 of output a region's final-demand delivers to one industry, the multiplier is the total dollar change in output across every industry in the region once the resulting local supply-chain purchases (but not household spending &mdash; that's what makes it &ldquo;Type I,&rdquo; not &ldquo;Type II&rdquo;) ripple through. A multiplier of 1.3616 means $1.00 of new manufacturing demand produces $1.3616 of total regional output. This is exactly the same idea Appendix B's matrix computes by hand: (I &minus; A)<sup>&minus;1</sup> applied to a demand vector is a Leontief-style multiplier calculation, the same family of math behind BEA's own published RIMS II tables.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix D &mdash; Calder County Incentive Schedule</summary>
+  <div class="inner">
+    <table id="apxD">
+      <tr><th></th><th>Value</th></tr>
+      <tr><td>Incentive paid per net new full-time direct job (flat rate, both bids)</td><td class="num">$3,000 per job [S3, MA2]</td></tr>
+      <tr><td>Meridian Forgeworks (140 direct jobs) &mdash; total incentive owed</td><td class="num">140 &times; $3,000 = $420,000</td></tr>
+      <tr><td>Cascade Distribution (310 direct jobs) &mdash; total incentive owed</td><td class="num">310 &times; $3,000 = $930,000</td></tr>
+    </table>
+    <p class="side-note"><strong>This rate is a stated Modeling Assumption, anchored to a real, currently active state program (see Appendix E, MA2).</strong> Florida's Qualified Target Industry (QTI) Tax Refund pays $3,000 per net new full-time job (base rate; $6,000 in a designated rural community), under Section 288.106, Florida Statutes [S3]. Calder County is not Florida and does not run the QTI program &mdash; this case borrows QTI's real base per-job rate as a realistic, defensible flat rate for a fictional county's own incentive program, disclosed here rather than presented as Calder County's own passed legislation.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix E &mdash; Modeling Assumptions</summary>
+  <div class="inner">
+    <p class="side-note">These figures are not sourced. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+    <table id="apxE">
+      <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+      <tr><td>MA1</td><td>Calder County's regional technical coefficient matrix A (Appendix B)</td><td>a<sub>11</sub>=0.20, a<sub>12</sub>=0.05, a<sub>21</sub>=0.08, a<sub>22</sub>=0.10</td><td>Calder County is fictional, so no purchased RIMS II table exists for it. These four values were chosen so the resulting output multipliers land within a few hundredths of BEA's real, published examples for a real county, and preserve the real, sourced direction that manufacturing carries a higher local multiplier than trade/distribution.</td></tr>
+      <tr><td>MA2</td><td>Calder County's flat incentive rate, $3,000 per net new direct job (Appendix D)</td><td>$3,000/job</td><td>Anchored to Florida's real QTI Tax Refund base rate under Section 288.106, Florida Statutes. Calder County does not run Florida's actual program; this case borrows its real base rate as a realistic flat-rate stand-in.</td></tr>
+      <tr><td>MA3</td><td>Direct job counts: Meridian Forgeworks 140; Cascade Distribution 310 (Appendix A)</td><td>140 and 310</td><td>Both companies are fictional; there is no real employer to source hiring plans from. Values were chosen to be realistic for a mid-size manufacturer and a regional distribution center, and so Cascade's headcount lead is large enough to make the naive &ldquo;more direct jobs wins&rdquo; read genuinely tempting.</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix F &mdash; Sources</summary>
+  <div class="inner">
+    <table id="apxF">
+      <tr><th>id</th><th>Claim</th><th>Value</th><th>Source</th></tr>
+      <tr><td>S1</td><td>Price and current data vintage to order RIMS II multipliers for one region</td><td>$520 per region, all industries; 2024 regional data with 2017 national benchmark input-output data</td><td>U.S. Bureau of Economic Analysis, RIMS II Order Multipliers page</td></tr>
+      <tr><td>S2</td><td>Real Type I final-demand output multipliers and national intermediate-input shares</td><td>1.3616 (mfg), 1.1810 (mgmt of companies), Butler County OH; 52.1% / 36.5% national shares</td><td>Franklin, McComb, Rzeznik, Survey of Current Business 99(12), Dec 2019, BEA</td></tr>
+      <tr><td>S3</td><td>Florida's QTI Tax Refund per-job incentive rate</td><td>$3,000 per net new FTE job (base rate); $6,000 rural</td><td>Enterprise Florida, Inc. QTI Tax Refund fact sheet, Section 288.106, Fla. Stat.</td></tr>
+      <tr><td>S4</td><td>Existence and scope of the Census Bureau's County Business Patterns program</td><td>Annual county-level establishment/employment/payroll series</td><td>U.S. Census Bureau, County Business Patterns (CBP)</td></tr>
+    </table>
+  </div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-20. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+<div class="stepbox">
+  <h4>Step 1 &mdash; D1: Build the matrix A and state its dimensions</h4>
+  <div class="goal">Given data is in Appendix B. Type the matrix's four entries and its dimensions (e.g. &ldquo;2x2&rdquo;).</div>
+  <div class="fieldrow"><label for="d1_a11">a&#8321;&#8321; (Sector 1 buys from Sector 1)</label><input type="number" step="0.01" id="d1_a11"></div>
+  <div class="fieldrow"><label for="d1_a12">a&#8321;&#8322; (Sector 1 buys from Sector 2)</label><input type="number" step="0.01" id="d1_a12"></div>
+  <div class="fieldrow"><label for="d1_a21">a&#8322;&#8321; (Sector 2 buys from Sector 1)</label><input type="number" step="0.01" id="d1_a21"></div>
+  <div class="fieldrow"><label for="d1_a22">a&#8322;&#8322; (Sector 2 buys from Sector 2)</label><input type="number" step="0.01" id="d1_a22"></div>
+  <div class="fieldrow"><label for="d1_dim">Matrix dimensions</label><input type="text" id="d1_dim" placeholder="e.g. 2x2"></div>
+  <button onclick="checkD1()">Check</button><span class="fb" id="d1_fb"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; D2: Identity matrix I and (I &minus; A)</h4>
+  <div class="goal">Write the 2&times;2 identity matrix, then subtract A from it entry by entry.</div>
+  <div class="fieldrow"><label>I entries (top row, bottom row)</label>
+    <input type="number" step="1" id="d2_i11" placeholder="I11"><input type="number" step="1" id="d2_i12" placeholder="I12">
+    <input type="number" step="1" id="d2_i21" placeholder="I21"><input type="number" step="1" id="d2_i22" placeholder="I22">
+  </div>
+  <div class="fieldrow"><label>(I &minus; A) entries (top row, bottom row)</label>
+    <input type="number" step="0.01" id="d2_ima11" placeholder="m11"><input type="number" step="0.01" id="d2_ima12" placeholder="m12">
+    <input type="number" step="0.01" id="d2_ima21" placeholder="m21"><input type="number" step="0.01" id="d2_ima22" placeholder="m22">
+  </div>
+  <button onclick="checkD2()">Check</button><span class="fb" id="d2_fb"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; D3: Determinant of (I &minus; A)</h4>
+  <div class="goal">Use the 2&times;2 determinant formula: for [[m11,m12],[m21,m22]], det = m11&middot;m22 &minus; m12&middot;m21.</div>
+  <div class="fieldrow"><label for="d3_det">det(I &minus; A)</label><input type="number" step="0.001" id="d3_det"></div>
+  <div class="fieldrow"><label for="d3_why">Why must it be nonzero to solve D4?</label><textarea id="d3_why" style="width:340px" placeholder="one sentence"></textarea></div>
+  <button onclick="checkD3()">Check</button><span class="fb" id="d3_fb"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; D4: Solve x = (I &minus; A)<sup>&minus;1</sup>d for each employer</h4>
+  <div class="goal">d = [140, 0]<sup>T</sup> for Meridian; d = [0, 310]<sup>T</sup> for Cascade (see Appendix A).</div>
+  <div class="fieldrow"><label>Meridian: x&#8321;, x&#8322;, total</label>
+    <input type="number" step="0.01" id="d4_mx1" placeholder="x1"><input type="number" step="0.01" id="d4_mx2" placeholder="x2">
+    <input type="number" step="0.01" id="d4_mtotal" placeholder="total">
+  </div>
+  <div class="fieldrow"><label>Cascade: x&#8321;, x&#8322;, total</label>
+    <input type="number" step="0.01" id="d4_cx1" placeholder="x1"><input type="number" step="0.01" id="d4_cx2" placeholder="x2">
+    <input type="number" step="0.01" id="d4_ctotal" placeholder="total">
+  </div>
+  <button onclick="checkD4()">Check</button><span class="fb" id="d4_fb"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 5 &mdash; D5: Final decision table</h4>
+  <div class="goal">For each employer: total regional jobs (from D4), incentive dollars owed (Appendix D), and jobs supported per $10,000 of incentive.</div>
+  <table>
+    <tr><th></th><th>Meridian Forgeworks</th><th>Cascade Distribution</th></tr>
+    <tr><td>Direct jobs</td><td class="num">140</td><td class="num">310</td></tr>
+    <tr><td>Total regional jobs supported</td><td class="num"><input type="number" step="0.01" id="d5_m_total"></td><td class="num"><input type="number" step="0.01" id="d5_c_total"></td></tr>
+    <tr><td>Incentive dollars owed</td><td class="num"><input type="number" step="1" id="d5_m_incentive"></td><td class="num"><input type="number" step="1" id="d5_c_incentive"></td></tr>
+    <tr><td>Jobs supported per $10,000 of incentive</td><td class="num"><input type="number" step="0.01" id="d5_m_per10k"></td><td class="num"><input type="number" step="0.01" id="d5_c_per10k"></td></tr>
+  </table>
+  <div class="fieldrow"><label for="d5_rec">Your recommendation and one-sentence defense</label><textarea id="d5_rec" style="width:420px" placeholder="A or B, and why, using the last row"></textarea></div>
+  <button onclick="checkD5()">Check</button><span class="fb" id="d5_fb"></span>
+  <p class="side-note">This checks your arithmetic, not your recommendation &mdash; there is no single right answer here, only correct or incorrect math.</p>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+<p>Look back at Appendix D. Both bids pay <em>exactly</em> the same $3,000 per direct job. If the rate is identical, is the county's choice really a wash?</p>
+<p>An identical per-job rate tells you the two bids cost the same for each direct hire. It does not tell you what each employer's hiring does to the rest of Calder County's economy after the hiring happens &mdash; and that is exactly what Appendix B's matrix is built to capture. Before you lock in a recommendation, make sure D5's last column &mdash; jobs per $10,000 of incentive &mdash; is actually the number your pitch is defending, not just D4's raw totals.</p>
+
+<div id="twistApplyNote" class="side-note" style="display:none;color:#e8e3d5;border-top-color:#555">
+  Good &mdash; D4 gives you total regional jobs. D5 asks for jobs <em>per $10,000 of incentive</em>. Those are not the same column.
+</div>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Remind me to check D5's per-$10,000 column before I lock in a recommendation.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+<li><strong>S1</strong> &mdash; U.S. Bureau of Economic Analysis, &ldquo;RIMS II: Regional Input-Output Modeling System &mdash; Order Multipliers,&rdquo; apps.bea.gov/regional/rims/rimsii/ (accessed 2026-08-18)</li>
+<li><strong>S2</strong> &mdash; Franklin H, McComb T, Rzeznik SJ. &ldquo;Benchmark Update of the Regional Input-Output Modeling System.&rdquo; Survey of Current Business 99(12), Dec 2019, BEA (accessed 2026-08-18)</li>
+<li><strong>S3</strong> &mdash; Enterprise Florida, Inc. &ldquo;Qualified Target Industry Tax Refund&rdquo; program fact sheet, Section 288.106, Florida Statutes (accessed 2026-08-18)</li>
+<li><strong>S4</strong> &mdash; U.S. Census Bureau, &ldquo;County Business Patterns (CBP),&rdquo; census.gov/programs-surveys/cbp.html (accessed 2026-08-18)</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Multiplier Recruit &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/the-multiplier-recruit/sensitivity_model.py
+// case.md sha256 (per case.json qa.case_md_sha256): ec9eab1b52d1e58782bda25f185782fc668bb4a0ad62a7ddacbb469e192656ed
+const PARAMS = { a11:0.20, a12:0.05, a21:0.08, a22:0.10, rate_per_job:3000, jobs_A:140, jobs_B:310 };
+const FLEX = ["a11","a12","a21","a22","rate_per_job","jobs_A","jobs_B"];
+
+function iMinusA(p){
+  return { m11: 1 - p.a11, m12: -p.a12, m21: -p.a21, m22: 1 - p.a22 };
+}
+function detIA(p){
+  const m = iMinusA(p);
+  return m.m11 * m.m22 - m.m12 * m.m21;
+}
+function solve2x2(p, d1, d2){
+  const m = iMinusA(p);
+  const det = m.m11 * m.m22 - m.m12 * m.m21;
+  if(det === 0) return null;
+  const inv11 = m.m22/det, inv12 = -m.m12/det, inv21 = -m.m21/det, inv22 = m.m11/det;
+  return [ inv11*d1 + inv12*d2, inv21*d1 + inv22*d2 ];
+}
+function regionalTotals(p){
+  const xa = solve2x2(p, p.jobs_A, 0);
+  const xb = solve2x2(p, 0, p.jobs_B);
+  if(!xa || !xb) return { A: null, B: null, xa: null, xb: null };
+  return { A: xa[0]+xa[1], B: xb[0]+xb[1], xa, xb };
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const t = regionalTotals(p);
+  if(t.A === null) return { A: -Infinity, B: -Infinity };
+  const incentiveA = p.jobs_A * p.rate_per_job;
+  const incentiveB = p.jobs_B * p.rate_per_job;
+  const metricA = incentiveA ? t.A / (incentiveA/10000) : -Infinity;
+  const metricB = incentiveB ? t.B / (incentiveB/10000) : -Infinity;
+  return { A: metricA, B: metricB };
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkD1(){
+  const a11=parseFloat(val('d1_a11')), a12=parseFloat(val('d1_a12')), a21=parseFloat(val('d1_a21')), a22=parseFloat(val('d1_a22'));
+  const dim = (document.getElementById('d1_dim').value || '').trim();
+  const okDim = /^2\s*[x\u00d7]\s*2$/i.test(dim);
+  const ok = near(a11,PARAMS.a11,0.005) && near(a12,PARAMS.a12,0.005) && near(a21,PARAMS.a21,0.005) && near(a22,PARAMS.a22,0.005) && okDim;
+  fb('d1_fb', ok);
+}
+function checkD2(){
+  const i11=parseFloat(val('d2_i11')), i12=parseFloat(val('d2_i12')), i21=parseFloat(val('d2_i21')), i22=parseFloat(val('d2_i22'));
+  const okI = i11===1 && i12===0 && i21===0 && i22===1;
+  const m11=parseFloat(val('d2_ima11')), m12=parseFloat(val('d2_ima12')), m21=parseFloat(val('d2_ima21')), m22=parseFloat(val('d2_ima22'));
+  const exp = iMinusA(PARAMS);
+  const okM = near(m11,exp.m11,0.005) && near(m12,exp.m12,0.005) && near(m21,exp.m21,0.005) && near(m22,exp.m22,0.005);
+  fb('d2_fb', okI && okM);
+}
+function checkD3(){
+  const d = parseFloat(val('d3_det'));
+  const exp = detIA(PARAMS);
+  fb('d3_fb', near(d, exp, 0.005));
+}
+function checkD4(){
+  const mx1=parseFloat(val('d4_mx1')), mx2=parseFloat(val('d4_mx2')), mtot=parseFloat(val('d4_mtotal'));
+  const cx1=parseFloat(val('d4_cx1')), cx2=parseFloat(val('d4_cx2')), ctot=parseFloat(val('d4_ctotal'));
+  const t = regionalTotals(PARAMS);
+  const okA = t.xa && near(mx1,t.xa[0],0.1) && near(mx2,t.xa[1],0.1) && near(mtot,t.A,0.1);
+  const okB = t.xb && near(cx1,t.xb[0],0.1) && near(cx2,t.xb[1],0.1) && near(ctot,t.B,0.1);
+  fb('d4_fb', !!(okA && okB));
+}
+function checkD5(){
+  const mTotal=parseFloat(val('d5_m_total')), mInc=parseFloat(val('d5_m_incentive')), mPer=parseFloat(val('d5_m_per10k'));
+  const cTotal=parseFloat(val('d5_c_total')), cInc=parseFloat(val('d5_c_incentive')), cPer=parseFloat(val('d5_c_per10k'));
+  const t = regionalTotals(PARAMS);
+  const res = evaluate({});
+  const expIncA = PARAMS.jobs_A * PARAMS.rate_per_job;
+  const expIncB = PARAMS.jobs_B * PARAMS.rate_per_job;
+  const okA = near(mTotal,t.A,0.1) && near(mInc,expIncA,1) && near(mPer,res.A,0.05);
+  const okB = near(cTotal,t.B,0.1) && near(cInc,expIncB,1) && near(cPer,res.B,0.05);
+  fb('d5_fb', okA && okB);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "the-multiplier-recruit"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "A labeled 2x2 regional technical coefficient matrix A, every entry defined in words, with the matrix's dimensions stated."],
+  ["D2", "The identity matrix I and the computed matrix (I - A), with every entry shown as an arithmetic step."],
+  ["D3", "The determinant of (I - A), computed by hand, with an explanation of why a nonzero determinant matters."],
+  ["D4", "The solved total-regional-jobs vector x = (I - A)^-1 d for each employer's direct-jobs vector d, with full matrix arithmetic shown."],
+  ["D5", "A final decision table: direct jobs, total regional jobs supported, incentive dollars owed, and jobs supported per $10,000 of incentive, for both employers, with a stated recommendation."]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Matrix": {def: "A rectangular array of numbers arranged in rows and columns.",
+    url: "https://www.mathsisfun.com/algebra/matrix-introduction.html"},
+  "Matrix Dimension": {def: "The size of a matrix, written as rows times columns -- a 2x2 matrix has 2 rows and 2 columns.",
+    url: "https://www.mathsisfun.com/algebra/matrix-introduction.html"},
+  "Determinant": {def: "A special number calculated from a square matrix; for a 2x2 matrix [[a,b],[c,d]] it equals ad minus bc.",
+    url: "https://www.mathsisfun.com/algebra/matrix-determinant.html"},
+  "Identity Matrix": {def: "A square matrix with 1s on the main diagonal and 0s everywhere else -- multiplying by it leaves any matrix unchanged.",
+    url: "https://www.cuemath.com/algebra/identity-matrix/"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"}
+};
+const HOWTO = [
+  ["How to add and multiply matrices", "Matrix"],
+  ["How to find the determinant of a 2x2 matrix", "Determinant"],
+  ["How to solve a system of equations using a matrix", "Identity Matrix"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const box = document.getElementById('twistApplyNote');
+  if(box) box.style.display = applied ? 'block' : 'none';
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

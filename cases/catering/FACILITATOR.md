@@ -146,6 +146,20 @@ already expect the wedding's lead to hold?
   prompt to surface it.
 - Whether the +15-guest twist felt like a meaningful reveal or an expected, minor adjustment.
 
+**A real, disclosed instability, for a facilitator who gets pushed on it:** Appendix C, Assumption
+2's delivery-mileage estimates are not routed or sourced — that is stated plainly in the case text.
+If a Hero (or the room) asks "what if the corporate mileage estimate is off," the honest answer is
+that it genuinely matters: flexing `corporate_miles` (18 miles, Adobitron HQ) up by 50% (to 27
+miles) pushes the case's own margin from 17.99% to 20.3%, past this project's 20% balance cap —
+`wedding_miles` and the 7% buffer rate both stay stable across the same ±50% range, so this is
+specific to the corporate estimate, not the case's math in general. There is no more-precise real
+number to look up here — Adobitron is a fictional company invented for this case, so there is no
+real address to route a distance against. This is disclosed, not eliminated: it carries a
+Category-F `case.json.sensitivity_disclosure[]` entry. If pressed, tell the room the honest thing —
+the wedding's real lead over the corporate party (17.99%, before any twist) is genuine but not
+enormous, and part of why it's not enormous is a delivery-distance estimate that could reasonably
+have been drawn a little differently.
+
 ## Standards Touched On
 
 Decimal · Percent · Multiplication · Equation · Variable · How to multiply decimal numbers · How to

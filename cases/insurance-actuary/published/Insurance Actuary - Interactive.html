@@ -1,0 +1,1008 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Insurance Actuary — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  case.md sha256 (per case.json.qa.case_md_sha256): f3370fa37e99adc7da098e3ffc4a3f55a0bb4fd82b6594d21c67079d5fe0e7a1
+  HARD LINE (MCS-37): this file must never print the balance-test verdict (2019 forecast
+  rates, blended remaining-book rates, the margin, the winner) as a static literal anywhere
+  outside a <script> tag's live computation. Every one of those numbers below is computed
+  in the browser from the case's own raw Appendix A/B data, never pre-printed in prose.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC — Insurance Actuary */
+  .classcode{font-family:var(--sans);font-weight:700;color:var(--navy-dk);background:var(--gold-lt);padding:1px 6px;border-radius:4px}
+  .quick-facts{display:flex;flex-wrap:wrap;gap:10px 22px;font-family:var(--sans);font-size:.86rem}
+  .quick-facts div{min-width:150px}
+  .quick-facts strong{display:block;color:var(--navy);font-size:.74rem;text-transform:uppercase;letter-spacing:.03em}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 2 L20 5 V11 C20 17 16.5 20.5 12 22 C7.5 20.5 4 17 4 11 V5 Z"/></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M2 20h20"/></symbol>
+  <symbol id="icon-car" viewBox="0 0 24 24"><path d="M3 13l2-6h14l2 6"/><path d="M3 13h18v5H3z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Launchpad</div>
+        <h1>Case Study: Insurance Actuary</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch &middot; HS-entry</span>
+      <span class="pill">Mean &middot; Linear &middot; Percent &middot; Ratio</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">The mahogany table is already half full. Sofia Ficonia takes the folding chair against the wall — the one reserved for staff who present nothing and say less — and sets her laptop bag between her feet. Eight years at Safetylife and she has never once been in this room while the Board was in it.</p>
+  <p>Uni Kimuni buttons his suit jacket at the head of the table. He is thirty-nine and has been CEO for eleven months, hired the week the old leadership was walked out for losing a third of the company's revenue in four years. He glances back at Sofia — not at the Board, at her — and says it quietly enough that only she catches it: "Sure this is the right call?"</p>
+  <p>She has run the numbers four times. She has run them a fifth time this morning, on the drive in, replaying the arithmetic in her head at every red light. Two spreadsheets sit open on the laptop she has not yet closed: one titled YOUNG, one titled SENIOR. A third file, the one she has not opened since Tuesday, is titled MIDDLE — and stays closed, because the team settled that question days ago. Kimuni is still watching her.</p>
+  <p>She nods.</p>
+  <p>He turns to the table, opens the folder in front of him, and begins: "Effective 2019, Safetylife will discontinue automobile insurance for one driver age class." Twelve board members lean forward. Sofia's cursor sits blinking over the export button on the spreadsheet that isn't open yet.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Safetylife has sold personal and commercial automobile insurance in Carbosia — a developed nation with insurance laws similar to most U.S. states — for 79 years. In 2014 it was Carbosia's largest personal auto insurer, writing over Ĉ3.2 billion (Carbosian Caribs) in premium. Every year since, its revenue and market share fell; by 2018, revenue had dropped to Ĉ2.4 billion. The Board dismissed the old leadership and hired Uni Kimuni, who has publicly committed to growing 2019 revenue by 2% — a promise he made to the Board and to Safetylife's shareholders before he had seen a single claims file.</p>
+  <p>Kimuni's plan, built with Sofia's actuarial team, is to narrow Safetylife's personal auto book to two of its three driver-age classes: <strong>Young</strong> (14–24), <strong>Middle-aged</strong> (25–64), and <strong>Senior</strong> (65+). One class is discontinued entirely — no new policies, no renewals. The team has already ruled out cutting Middle-aged: it is Safetylife's largest and most stable customer segment by far, and no analysis the actuaries ran supported discarding the company's core book. The real decision is between the other two.</p>
+  <p>Safetylife prices and tracks risk using a 27-class code: every policy is classified by <strong>Vehicle Size</strong> (Small / Medium / Large), <strong>Driver Age</strong> (Young / Middle / Senior), and <strong>Driver Risk</strong> (Low / Average / High, based on driving record), coded by the first letter of each in that order. A large car with a middle-aged primary driver and a driving record showing a higher likelihood of future claims is class <span class="classcode">LMH</span>. Three years of quarterly claims data — car-years of exposure, number of claims, and Ĉ amount of claims incurred, across all 27 classes and 5 required coverages (Bodily Injury, Property Damage, Comprehensive, Collision, Personal Injury) — sit in Safetylife's system for every quarter from 2016 through 2018 (see Appendix A and Appendix B).</p>
+  <p>Carbosian law requires every vehicle owner to carry all five coverages before a title transfers, so the 27-class matrix is Safetylife's complete personal-auto book — there is no discontinued-coverage carve-out to lean on. Whichever age class the Board votes to cut, every policy in it, across all 9 Vehicle Size × Risk combinations, is gone: every customer, every premium dollar, every claim.</p>
+  <p>Age-based risk classification is not a Safetylife invention — real auto insurers flag both young and senior drivers for different, well-documented reasons (see Appendix D). Safetylife's own risk-code key, and worked examples of how a class code is built, are reproduced for reference (see Appendix C). Additional background on the actuarial profession itself is available for the "how to…" research task (see Appendix E), and the full list of vocabulary and "how to…" questions this case draws on is in Appendix Z.</p>
+  <p>Sofia's task, and the room's, is not "which class costs the most." It is which single cut most helps Kimuni make good on a 2% revenue-growth promise he has already made in public (see Appendix A).</p>
+  <div class="card">
+    <div class="quick-facts">
+      <div><strong>Coverages required</strong>Bodily Injury, Property Damage, Comprehensive, Collision, Personal Injury (all 5, every policy)</div>
+      <div><strong>Age classes</strong>Young (14–24) &middot; Middle-aged (25–64) &middot; Senior (65+)</div>
+      <div><strong>Vehicle sizes</strong>Small &middot; Medium &middot; Large</div>
+      <div><strong>Risk tiers</strong>Low &middot; Average &middot; High</div>
+      <div><strong>History given</strong>12 quarters, 2016 Q1–2018 Q4</div>
+    </div>
+  </div>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Sofia Ficonia. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Discontinue Young</h4>
+      <p style="margin:0">Recommend Safetylife discontinue policies for Young drivers (14–24).</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Discontinue Senior</h4>
+      <p style="margin:0">Recommend Safetylife discontinue policies for Senior drivers (65+).</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix Z. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which option you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1.</strong> A 2019 claims-cost forecast table for all three driver-age classes, built from the 2016–2018 quarterly trend. <strong>D2.</strong> A blended (weighted-average) 2019 claims-cost-per-vehicle comparison for Safetylife's <em>remaining</em> book under Option A and under Option B, with the margin stated as a percent. <strong>D3.</strong> A ranked breakdown of the 27 risk classes within Young and Senior showing greatest/least claims cost, and each age class's exposure share by risk tier. <strong>D4.</strong> At least one original chart of the Ĉ-per-vehicle claims trend for all three classes across all 12 quarters.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Safetylife Claims Data by Driver-Age Class, 2016–2018 (Quarterly)</summary>
+    <div class="inner">
+      <p>All figures are car-years of exposure and Ĉ claims incurred, summed across all 5 required coverages and all 9 Vehicle-Size × Risk sub-classes within each driver-age class. Source: Safetylife's own bundled claims workbook (see Appendix B for the full 27-class detail this rolls up from). One car-year of exposure is one vehicle insured for a full year; a vehicle insured for one quarter is ¼ of a car-year.</p>
+      <h4>Quarterly car-years of exposure</h4>
+      <table id="tblExposure">
+        <tr><th>Quarter</th><th class="num">Young</th><th class="num">Middle-aged</th><th class="num">Senior</th></tr>
+        <tr><td>2016 Q1</td><td class="num">53,224</td><td class="num">243,097</td><td class="num">153,595</td></tr>
+        <tr><td>2016 Q2</td><td class="num">53,964</td><td class="num">246,563</td><td class="num">155,917</td></tr>
+        <tr><td>2016 Q3</td><td class="num">54,437</td><td class="num">248,653</td><td class="num">156,935</td></tr>
+        <tr><td>2016 Q4</td><td class="num">54,579</td><td class="num">248,837</td><td class="num">156,630</td></tr>
+        <tr><td>2017 Q1</td><td class="num">54,628</td><td class="num">248,659</td><td class="num">157,007</td></tr>
+        <tr><td>2017 Q2</td><td class="num">55,068</td><td class="num">251,021</td><td class="num">158,745</td></tr>
+        <tr><td>2017 Q3</td><td class="num">55,350</td><td class="num">252,627</td><td class="num">159,307</td></tr>
+        <tr><td>2017 Q4</td><td class="num">55,434</td><td class="num">252,603</td><td class="num">158,747</td></tr>
+        <tr><td>2018 Q1</td><td class="num">55,398</td><td class="num">251,896</td><td class="num">158,804</td></tr>
+        <tr><td>2018 Q2</td><td class="num">55,845</td><td class="num">254,642</td><td class="num">160,483</td></tr>
+        <tr><td>2018 Q3</td><td class="num">55,893</td><td class="num">255,698</td><td class="num">160,414</td></tr>
+        <tr><td>2018 Q4</td><td class="num">55,663</td><td class="num">254,725</td><td class="num">159,012</td></tr>
+      </table>
+      <h4>Quarterly Ĉ claims incurred (all coverages)</h4>
+      <table id="tblClaims">
+        <tr><th>Quarter</th><th class="num">Young</th><th class="num">Middle-aged</th><th class="num">Senior</th></tr>
+        <tr><td>2016 Q1</td><td class="num">100,693,118</td><td class="num">417,593,876</td><td class="num">279,911,613</td></tr>
+        <tr><td>2016 Q2</td><td class="num">113,976,755</td><td class="num">381,249,897</td><td class="num">295,039,075</td></tr>
+        <tr><td>2016 Q3</td><td class="num">113,589,075</td><td class="num">431,307,164</td><td class="num">302,607,475</td></tr>
+        <tr><td>2016 Q4</td><td class="num">114,712,887</td><td class="num">421,605,301</td><td class="num">320,671,193</td></tr>
+        <tr><td>2017 Q1</td><td class="num">115,801,146</td><td class="num">427,651,000</td><td class="num">305,867,859</td></tr>
+        <tr><td>2017 Q2</td><td class="num">108,722,060</td><td class="num">416,800,035</td><td class="num">324,291,581</td></tr>
+        <tr><td>2017 Q3</td><td class="num">120,817,896</td><td class="num">443,943,267</td><td class="num">323,332,576</td></tr>
+        <tr><td>2017 Q4</td><td class="num">114,173,843</td><td class="num">454,576,808</td><td class="num">313,956,811</td></tr>
+        <tr><td>2018 Q1</td><td class="num">120,102,268</td><td class="num">460,875,438</td><td class="num">331,356,790</td></tr>
+        <tr><td>2018 Q2</td><td class="num">106,321,090</td><td class="num">442,558,679</td><td class="num">321,135,663</td></tr>
+        <tr><td>2018 Q3</td><td class="num">120,104,053</td><td class="num">450,445,898</td><td class="num">325,741,157</td></tr>
+        <tr><td>2018 Q4</td><td class="num">116,356,882</td><td class="num">478,618,020</td><td class="num">316,956,571</td></tr>
+      </table>
+      <p><strong>How the 2019 figures are forecast.</strong> Safetylife has no 2019 data yet — the Board is voting before the year starts. This case's method: fit a least-squares line to each age class's 12 quarters of exposure and 12 quarters of claims amount, then extend that line through 2019 Q1–Q4 and sum the four projected quarters into an annual 2019 figure. Try it yourself in the Working Notebook below.</p>
+      <blockquote>These figures are not sourced from real Carbosian data — Carbosia and Safetylife are fictional. But the method used to turn Safetylife's own 3 years of history into a 2019 forecast is a real modeling choice this case makes in the open, not a fact anyone can look up. <strong>MA1:</strong> the 2016–2018 quarterly trend continues unchanged into 2019, for every driver-age class. This is standard actuarial trending practice absent any signal of a rate change, new regulation, or underwriting shift for 2019 — none of which Safetylife has announced.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Full 27 Risk-Class Breakdown, 2016–2018 Combined</summary>
+    <div class="inner">
+      <p>Every Vehicle-Size × Driver-Age × Driver-Risk combination, summed across all 12 quarters and all 5 coverages. This is Safetylife's complete book — more detail than any single deliverable needs. Deciding which rows matter to your pitch, and which are noise once you've picked a side, is part of the work.</p>
+      <table id="tblRiskClasses">
+        <tr><th>Risk Class</th><th>Vehicle Size</th><th>Driver Age</th><th>Driver Risk</th><th class="num">Car-Years Exposure</th><th class="num">Total Claims (Ĉ)</th></tr>
+        <tr><td class="classcode">LSH</td><td>Large</td><td>Senior</td><td>High</td><td class="num">180,569</td><td class="num">526,552,918</td></tr>
+        <tr><td class="classcode">SSH</td><td>Small</td><td>Senior</td><td>High</td><td class="num">211,325</td><td class="num">584,925,028</td></tr>
+        <tr><td class="classcode">SMH</td><td>Small</td><td>Middle-aged</td><td>High</td><td class="num">182,630</td><td class="num">475,881,355</td></tr>
+        <tr><td class="classcode">LMH</td><td>Large</td><td>Middle-aged</td><td>High</td><td class="num">257,479</td><td class="num">661,015,251</td></tr>
+        <tr><td class="classcode">LYA</td><td>Large</td><td>Young</td><td>Average</td><td class="num">82,987</td><td class="num">195,946,935</td></tr>
+        <tr><td class="classcode">SYH</td><td>Small</td><td>Young</td><td>High</td><td class="num">94,277</td><td class="num">220,757,346</td></tr>
+        <tr><td class="classcode">SYA</td><td>Small</td><td>Young</td><td>Average</td><td class="num">96,508</td><td class="num">216,160,406</td></tr>
+        <tr><td class="classcode">LYH</td><td>Large</td><td>Young</td><td>High</td><td class="num">61,496</td><td class="num">134,638,782</td></tr>
+        <tr><td class="classcode">MMA</td><td>Medium</td><td>Middle-aged</td><td>Average</td><td class="num">568,456</td><td class="num">1,241,701,421</td></tr>
+        <tr><td class="classcode">MMH</td><td>Medium</td><td>Middle-aged</td><td>High</td><td class="num">328,867</td><td class="num">716,955,201</td></tr>
+        <tr><td class="classcode">MSH</td><td>Medium</td><td>Senior</td><td>High</td><td class="num">240,345</td><td class="num">513,672,047</td></tr>
+        <tr><td class="classcode">SSA</td><td>Small</td><td>Senior</td><td>Average</td><td class="num">120,332</td><td class="num">250,698,345</td></tr>
+        <tr><td class="classcode">MYH</td><td>Medium</td><td>Young</td><td>High</td><td class="num">121,096</td><td class="num">250,820,705</td></tr>
+        <tr><td class="classcode">SSL</td><td>Small</td><td>Senior</td><td>Low</td><td class="num">212,560</td><td class="num">392,355,408</td></tr>
+        <tr><td class="classcode">MYA</td><td>Medium</td><td>Young</td><td>Average</td><td class="num">67,234</td><td class="num">119,828,733</td></tr>
+        <tr><td class="classcode">LYL</td><td>Large</td><td>Young</td><td>Low</td><td class="num">53,255</td><td class="num">92,200,648</td></tr>
+        <tr><td class="classcode">MYL</td><td>Medium</td><td>Young</td><td>Low</td><td class="num">42,526</td><td class="num">72,503,921</td></tr>
+        <tr><td class="classcode">MSA</td><td>Medium</td><td>Senior</td><td>Average</td><td class="num">313,813</td><td class="num">533,712,174</td></tr>
+        <tr><td class="classcode">LSA</td><td>Large</td><td>Senior</td><td>Average</td><td class="num">341,117</td><td class="num">568,563,918</td></tr>
+        <tr><td class="classcode">SYL</td><td>Small</td><td>Young</td><td>Low</td><td class="num">40,104</td><td class="num">62,513,597</td></tr>
+        <tr><td class="classcode">MML</td><td>Medium</td><td>Middle-aged</td><td>Low</td><td class="num">381,188</td><td class="num">571,143,449</td></tr>
+        <tr><td class="classcode">MSL</td><td>Medium</td><td>Senior</td><td>Low</td><td class="num">208,303</td><td class="num">304,124,343</td></tr>
+        <tr><td class="classcode">LMA</td><td>Large</td><td>Middle-aged</td><td>Average</td><td class="num">419,389</td><td class="num">611,862,257</td></tr>
+        <tr><td class="classcode">SMA</td><td>Small</td><td>Middle-aged</td><td>Average</td><td class="num">271,109</td><td class="num">375,580,009</td></tr>
+        <tr><td class="classcode">LSL</td><td>Large</td><td>Senior</td><td>Low</td><td class="num">67,232</td><td class="num">86,264,183</td></tr>
+        <tr><td class="classcode">LML</td><td>Large</td><td>Middle-aged</td><td>Low</td><td class="num">324,435</td><td class="num">333,758,835</td></tr>
+        <tr><td class="classcode">SML</td><td>Small</td><td>Middle-aged</td><td>Low</td><td class="num">275,468</td><td class="num">239,327,605</td></tr>
+      </table>
+      <p class="side-note">Notice this table has no "Rate" column — computing Ĉ/vehicle for a given class from Car-Years Exposure and Total Claims is exactly what Challenge 3's D3 asks you to do (see the Working Notebook, Step 4).</p>
+      <h4>Risk-tier composition by driver-age class</h4>
+      <p>Share of each age class's total 2016–2018 car-years of exposure that falls in each Driver Risk tier:</p>
+      <table id="tblRiskTiers">
+        <tr><th>Driver Age</th><th class="num">Low</th><th class="num">Average</th><th class="num">High</th></tr>
+        <tr><td>Young</td><td class="num">20.6%</td><td class="num">37.4%</td><td class="num">42.0%</td></tr>
+        <tr><td>Middle-aged</td><td class="num">32.6%</td><td class="num">41.8%</td><td class="num">25.6%</td></tr>
+        <tr><td>Senior</td><td class="num">25.7%</td><td class="num">40.9%</td><td class="num">33.4%</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Risk Classification Key</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Vehicle Size</th><th>Driver Age</th><th>Driver Risk</th></tr>
+        <tr><td>Code letter</td><td>S / M / L</td><td>Y / M / S</td><td>L / A / H</td></tr>
+        <tr><td>Small</td><td>Small</td><td>Young (14–24)</td><td>Low</td></tr>
+        <tr><td>Medium</td><td>Medium</td><td>Middle-aged (25–64)</td><td>Average</td></tr>
+        <tr><td>Large</td><td>Large</td><td>Senior (65+)</td><td>High</td></tr>
+      </table>
+      <p>A policy on a large car with a middle-aged primary driver and a driving record indicating a higher likelihood of future claims-causing incidents is coded <span class="classcode">LMH</span>. Codes are read Vehicle Size, then Driver Age, then Driver Risk, always in that order.</p>
+      <p>Every policy carries five required coverages under Carbosian law: <strong>Bodily Injury Liability</strong> (max Ĉ150,000/person, Ĉ300,000/accident), <strong>Personal Injury</strong> (max Ĉ30,000/claimant), <strong>Property Damage</strong> (max Ĉ150,000/claimant), <strong>Collision</strong> (Ĉ3,000 deductible, pays repair or cash value above that), and <strong>Comprehensive</strong> (Ĉ3,000 deductible, non-collision incidents: fire, theft, weather, animal strikes). Appendix A and Appendix B's claims amounts are net of these deductibles and limits already applied.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Real-World Context: Age and Auto-Insurance Risk</summary>
+    <div class="inner">
+      <p>Safetylife and Carbosia are fictional, but the reason actuaries look at driver age at all is not. Two real, cited findings on why age-based risk classification is standard actuarial practice — not just a Safetylife policy:</p>
+      <ul>
+        <li><strong>Young drivers.</strong> The fatal crash rate per mile driven for drivers age 16–19 is just over <strong>3 times</strong> the rate for drivers age 20 and older, based on National Household Travel Survey data (Insurance Institute for Highway Safety, "Fatality Facts: Teenagers"). Inexperience, not recklessness alone, is the standard actuarial explanation cited for this gap. [S1]</li>
+        <li><strong>Senior drivers.</strong> Passenger-vehicle drivers age 85+ have a fatal crash involvement rate of <strong>7.9 per 100 million miles traveled</strong>, compared with <strong>1.6</strong> for drivers age 60–64; the rate begins climbing measurably around age 70–74 (<strong>2.1</strong> per 100 million miles). Critically, the Insurance Institute for Highway Safety attributes this rise "largely to increased susceptibility to injuries, particularly to the chest, and medical complications, rather than an increased tendency to get into crashes" — i.e., older drivers are not shown to crash more often, but crashes involving them are costlier and more often fatal (Insurance Institute for Highway Safety, "Fatality Facts: Older People," citing Cicchino, 2015). [S2]</li>
+      </ul>
+      <p>Both patterns are exactly what actuaries mean when they say a risk class is "flagged": Young drivers by claim frequency and inexperience, Senior drivers by claim severity and injury risk — two different real-world reasons an insurer's own data (see Appendix A and Appendix B) can show two different age classes both running above the company average.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Additional Resources</summary>
+    <div class="inner">
+      <ul>
+        <li><strong>Article:</strong> <a href="https://www.beanactuary.org/what/day-in-the-life/" target="_blank" rel="noopener">"A Day in the Life of an Actuary"</a> — Be An Actuary (a joint program of the Society of Actuaries and the Casualty Actuarial Society), on what actuaries actually do day to day.</li>
+        <li><strong>Video:</strong> <a href="https://www.youtube.com/watch?v=qjXgpJpSlCc" target="_blank" rel="noopener">"What Do Actuaries Do?"</a> — a short explainer on the actuarial profession, including how actuaries price risk by class.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix Z &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-20. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; 2019 forecast: Ĉ per vehicle (D1)</h4>
+    <div class="goal">Fit a least-squares line to each class's 12 quarters of exposure, and to its 12 quarters of claims, from Appendix A. Extend each line through 2019 Q1&ndash;Q4, sum the four projected quarters, then divide forecast claims by forecast exposure to get a Ĉ/vehicle rate. Do this once per age class.</div>
+    <div class="fieldrow"><label for="s1_young">Young &mdash; 2019 forecast Ĉ/vehicle</label><input type="number" id="s1_young" step="0.01"><span class="fb" id="fb_s1_young"></span></div>
+    <div class="fieldrow"><label for="s1_middle">Middle-aged &mdash; 2019 forecast Ĉ/vehicle</label><input type="number" id="s1_middle" step="0.01"><span class="fb" id="fb_s1_middle"></span></div>
+    <div class="fieldrow"><label for="s1_senior">Senior &mdash; 2019 forecast Ĉ/vehicle</label><input type="number" id="s1_senior" step="0.01"><span class="fb" id="fb_s1_senior"></span></div>
+    <button onclick="checkStep1()">Check Step 1</button>
+    <p class="side-note">Tolerance is &plusmn;1% &mdash; small rounding differences in your regression are fine.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Blended remaining-book rate (D2)</h4>
+    <div class="goal">Using your Step 1 forecasts (or the notebook's, if you haven't finished Step 1), compute the exposure-weighted blended Ĉ/vehicle for Safetylife's <em>remaining</em> book under each option: Option A keeps Middle + Senior; Option B keeps Young + Middle.</div>
+    <div class="fieldrow"><label for="s2_a">Option A remaining-book Ĉ/vehicle</label><input type="number" id="s2_a" step="0.01"><span class="fb" id="fb_s2_a"></span></div>
+    <div class="fieldrow"><label for="s2_b">Option B remaining-book Ĉ/vehicle</label><input type="number" id="s2_b" step="0.01"><span class="fb" id="fb_s2_b"></span></div>
+    <button onclick="checkStep2()">Check Step 2</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; The margin, as a percent (D2)</h4>
+    <div class="goal">Which option's remaining book has the lower blended rate, and by what percent lower is the better rate than the worse one? (Percent difference relative to the lower/better rate.)</div>
+    <div class="fieldrow">
+      <label for="s3_winner">Lower blended rate belongs to</label>
+      <select id="s3_winner"><option value="">choose one&hellip;</option><option value="A">Option A</option><option value="B">Option B</option></select>
+    </div>
+    <div class="fieldrow"><label for="s3_margin">Margin (%)</label><input type="number" id="s3_margin" step="0.01"><span class="fb" id="fb_s3"></span></div>
+    <button onclick="checkStep3()">Check Step 3</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; One risk class's own rate (D3)</h4>
+    <div class="goal">Pick any risk class from Appendix B and compute its own Ĉ/vehicle rate: Total Claims ÷ Car-Years Exposure. Do this for several classes within Young and Senior to build your D3 ranking.</div>
+    <div class="fieldrow">
+      <label for="s4_class">Risk class code</label>
+      <select id="s4_class"></select>
+    </div>
+    <div class="fieldrow"><label for="s4_rate">Your computed rate (Ĉ/vehicle)</label><input type="number" id="s4_rate" step="0.01"><span class="fb" id="fb_s4"></span></div>
+    <button onclick="checkStep4()">Check Step 4</button>
+    <p class="side-note">D4's chart: use the &ldquo;Download CSV&rdquo; buttons on Appendix A's two tables to pull the raw quarterly numbers into a spreadsheet and chart Ĉ/vehicle (claims ÷ exposure) per quarter, per class &mdash; that's your original visual.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-shield"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>"Senior's Low-risk sub-segment alone — drivers coded &hellip;SL across all three vehicle sizes — is a large slice of exposure on its own. Young's <em>entire</em> book, every risk tier combined, is not much bigger. Cutting all of Senior throws out a low-risk customer pool almost as large as the whole Young age class — drivers who have never filed a High-tier claim. Does that change your recommendation?"</p>
+      <p>And, pointed the other way, for a room that has already swung hard toward B: "Young's High-risk tier is the largest High-risk share of any of the three age classes (see Appendix B's risk-tier table). If Young is proportionally the riskiest-skewed class even though its blended rate isn't the deciding factor in D2, does that change anything?"</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Show the live-computed composition numbers behind this twist (from Appendix B's own data, computed here &mdash; not looked up)</label>
+      </div>
+      <div id="twistComputed" style="display:none;margin-top:10px;font-family:var(--sans);font-size:.86rem"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] Insurance Institute for Highway Safety — "Fatality Facts: Teenagers." Fatal crash rate per mile driven, ages 16–19 vs. 20+: "just over 3 times." Accessed 2026-08-20. <a href="https://www.iihs.org/research-areas/fatality-statistics/detail/teenagers" target="_blank" rel="noopener">iihs.org</a></li>
+      <li>[S2] Insurance Institute for Highway Safety — "Fatality Facts: Older People," citing Cicchino (2015). Fatal crash involvement rate per 100 million miles by driver age (85+: 7.9; 60–64: 1.6; 70–74: 2.1); older-driver risk attributed to injury susceptibility, not crash frequency. Accessed 2026-08-20. <a href="https://www.iihs.org/research-areas/fatality-statistics/detail/older-people" target="_blank" rel="noopener">iihs.org</a></li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Insurance Actuary &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/insurance-actuary/case.md
+   Appendix A and Appendix B (case.md sha256 f3370fa3...5fe0e7a1). JS port of
+   sensitivity_model.py's _linreg()/_forecast_2019()/evaluate() so this notebook
+   and the Tier-2 Probe 5 sensitivity check can never silently diverge.
+   ================================================================ */
+const QUARTERS = [0,1,2,3,4,5,6,7,8,9,10,11];
+const FORECAST_QUARTERS = [12,13,14,15];
+
+const EXP_YOUNG  = [53224,53964,54437,54579,54628,55068,55350,55434,55398,55845,55893,55663];
+const EXP_MIDDLE = [243097,246563,248653,248837,248659,251021,252627,252603,251896,254642,255698,254725];
+const EXP_SENIOR = [153595,155917,156935,156630,157007,158745,159307,158747,158804,160483,160414,159012];
+
+const AMT_YOUNG  = [100693118,113976755,113589075,114712887,115801146,108722060,120817896,114173843,120102268,106321090,120104053,116356882];
+const AMT_MIDDLE = [417593876,381249897,431307164,421605301,427651000,416800035,443943267,454576808,460875438,442558679,450445898,478618020];
+const AMT_SENIOR = [279911613,295039075,302607475,320671193,305867859,324291581,323332576,313956811,331356790,321135663,325741157,316956571];
+
+const PARAMS = { trend_continuation: 1.0 };
+
+function linreg(y){
+  const n = y.length;
+  const xbar = QUARTERS.reduce((a,b)=>a+b,0)/n;
+  const ybar = y.reduce((a,b)=>a+b,0)/n;
+  let num=0, den=0;
+  for(let i=0;i<n;i++){ num += (QUARTERS[i]-xbar)*(y[i]-ybar); den += (QUARTERS[i]-xbar)**2; }
+  const slope = num/den;
+  const intercept = ybar - slope*xbar;
+  return {slope, intercept};
+}
+function forecast2019(y, trendContinuation){
+  const {slope} = linreg(y);
+  const scaledSlope = slope * trendContinuation;
+  const n = y.length;
+  const xbar = QUARTERS.reduce((a,b)=>a+b,0)/n;
+  const ybar = y.reduce((a,b)=>a+b,0)/n;
+  const scaledIntercept = ybar - scaledSlope*xbar;
+  return FORECAST_QUARTERS.reduce((sum,t)=> sum + scaledIntercept + scaledSlope*t, 0);
+}
+function classForecasts(trendContinuation){
+  return {
+    Young:  { exp: forecast2019(EXP_YOUNG, trendContinuation),  amt: forecast2019(AMT_YOUNG, trendContinuation) },
+    Middle: { exp: forecast2019(EXP_MIDDLE, trendContinuation), amt: forecast2019(AMT_MIDDLE, trendContinuation) },
+    Senior: { exp: forecast2019(EXP_SENIOR, trendContinuation), amt: forecast2019(AMT_SENIOR, trendContinuation) },
+  };
+}
+/* Direct, interpretable Ĉ/vehicle rates (lower is better) -- the same
+   arithmetic sensitivity_model.py's evaluate() uses before it takes the
+   Probe-5-only reciprocal restatement. This notebook checks against these
+   directly, since that's the number the case itself asks students for. */
+function evaluateRates(trendContinuation){
+  const fc = classForecasts(trendContinuation);
+  const aRate = (fc.Middle.amt + fc.Senior.amt) / (fc.Middle.exp + fc.Senior.exp);
+  const bRate = (fc.Young.amt + fc.Middle.amt) / (fc.Young.exp + fc.Middle.exp);
+  return { fc, aRate, bRate };
+}
+
+/* Appendix B -- the full 27 risk-class table, given data. */
+const RISK_CLASSES = [
+  ["LSH","Large","Senior","High",180569,526552918],["SSH","Small","Senior","High",211325,584925028],
+  ["SMH","Small","Middle-aged","High",182630,475881355],["LMH","Large","Middle-aged","High",257479,661015251],
+  ["LYA","Large","Young","Average",82987,195946935],["SYH","Small","Young","High",94277,220757346],
+  ["SYA","Small","Young","Average",96508,216160406],["LYH","Large","Young","High",61496,134638782],
+  ["MMA","Medium","Middle-aged","Average",568456,1241701421],["MMH","Medium","Middle-aged","High",328867,716955201],
+  ["MSH","Medium","Senior","High",240345,513672047],["SSA","Small","Senior","Average",120332,250698345],
+  ["MYH","Medium","Young","High",121096,250820705],["SSL","Small","Senior","Low",212560,392355408],
+  ["MYA","Medium","Young","Average",67234,119828733],["LYL","Large","Young","Low",53255,92200648],
+  ["MYL","Medium","Young","Low",42526,72503921],["MSA","Medium","Senior","Average",313813,533712174],
+  ["LSA","Large","Senior","Average",341117,568563918],["SYL","Small","Young","Low",40104,62513597],
+  ["MML","Medium","Middle-aged","Low",381188,571143449],["MSL","Medium","Senior","Low",208303,304124343],
+  ["LMA","Large","Middle-aged","Average",419389,611862257],["SMA","Small","Middle-aged","Average",271109,375580009],
+  ["LSL","Large","Senior","Low",67232,86264183],["LML","Large","Middle-aged","Low",324435,333758835],
+  ["SML","Small","Middle-aged","Low",275468,239327605],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  const trend = PARAMS.trend_continuation;
+  const fc = classForecasts(trend);
+  const trueYoung = fc.Young.amt / fc.Young.exp;
+  const trueMiddle = fc.Middle.amt / fc.Middle.exp;
+  const trueSenior = fc.Senior.amt / fc.Senior.exp;
+  const uy = parseFloat(val('s1_young')), um = parseFloat(val('s1_middle')), us = parseFloat(val('s1_senior'));
+  fb('fb_s1_young', near(uy, trueYoung, trueYoung*0.01));
+  fb('fb_s1_middle', near(um, trueMiddle, trueMiddle*0.01));
+  fb('fb_s1_senior', near(us, trueSenior, trueSenior*0.01));
+}
+function checkStep2(){
+  const {aRate, bRate} = evaluateRates(PARAMS.trend_continuation);
+  const ua = parseFloat(val('s2_a')), ub = parseFloat(val('s2_b'));
+  fb('fb_s2_a', near(ua, aRate, aRate*0.01));
+  fb('fb_s2_b', near(ub, bRate, bRate*0.01));
+}
+function checkStep3(){
+  const {aRate, bRate} = evaluateRates(PARAMS.trend_continuation);
+  const trueWinner = aRate < bRate ? 'A' : 'B';
+  const worse = Math.max(aRate, bRate), better = Math.min(aRate, bRate);
+  // Margin relative to the BETTER (lower) rate -- matches the case's own
+  // stated convention: the worse option's rate is stated as X% higher than
+  // the better option's own rate, not X% of the worse option's own rate.
+  const trueMargin = (worse - better) / better * 100;
+  const uw = document.getElementById('s3_winner').value;
+  const um = parseFloat(val('s3_margin'));
+  const ok = (uw === trueWinner) && near(um, trueMargin, 0.3);
+  fb('fb_s3', ok);
+}
+function checkStep4(){
+  const code = document.getElementById('s4_class').value;
+  const row = RISK_CLASSES.find(r => r[0] === code);
+  if(!row){ fb('fb_s4', false); return; }
+  const trueRate = row[5] / row[4];
+  const ur = parseFloat(val('s4_rate'));
+  fb('fb_s4', near(ur, trueRate, trueRate*0.01));
+}
+(function populateClassSelect(){
+  const sel = document.getElementById('s4_class');
+  RISK_CLASSES.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r[0];
+    opt.textContent = `${r[0]} — ${r[1]} / ${r[2]} / ${r[3]}`;
+    sel.appendChild(opt);
+  });
+})();
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "insurance-actuary";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "2019 claims-cost forecast table for Young, Middle-aged, and Senior, built from the 2016–2018 quarterly trend"],
+  ["D2", "Blended 2019 claims-cost-per-vehicle comparison for the remaining book under Option A and Option B, with the margin as a percent"],
+  ["D3", "Ranked breakdown of the 27 risk classes within Young and Senior, plus each age class's risk-tier exposure share"],
+  ["D4", "Original chart comparing the Ĉ-per-vehicle claims trend for Young, Middle-aged, and Senior across all 12 quarters"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (>=8 terms, all https:// links to
+   allowlisted domains). Mean/Ratio/Percent/Data/Bar Graph/Decimal/
+   Measurement reused verbatim from Cold Chain's verified starter set
+   (templates/INTERACTIVE_HTML_CONTRACT.md §3); Linear verified fresh
+   for this case on 2026-08-20 (mathsisfun.com/algebra/linear-equations.html).
+   ================================================================ */
+const GLOSSARY = {
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"},
+  "Linear": {def: "Changing by a constant amount for each step -- a linear equation graphs as a straight line.",
+    url: "https://www.mathsisfun.com/algebra/linear-equations.html"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Measurement": {def: "Assigning a number to a physical quantity -- length, time, mass -- using a chosen unit.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+};
+const HOWTO = [
+  ["how to find the mean of a set of data", "Mean"],
+  ["how to write a linear equation given a set of data", "Linear"],
+  ["how to find the percent of a number", "Percent"],
+  ["how to convert numbers to percents", "Percent"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link glossary concepts in prose.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC shape / CASE-SPECIFIC content — twist reveal/apply.
+   The twist here doesn't change which option wins (case.json has no
+   evaluate_twist -- the twist is a composition reflection, not a
+   modeling-assumption change), so onTwistToggle() shows live-computed
+   Appendix B composition numbers rather than recomputing A/B.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const box = document.getElementById('twistComputed');
+  const show = document.getElementById('applyTwist').checked;
+  if(!show){ box.style.display='none'; return; }
+  const seniorLow = RISK_CLASSES.filter(r => r[2]==='Senior' && r[3]==='Low').reduce((s,r)=>s+r[4],0);
+  const youngTotal = RISK_CLASSES.filter(r => r[2]==='Young').reduce((s,r)=>s+r[4],0);
+  const youngHigh = RISK_CLASSES.filter(r => r[2]==='Young' && r[3]==='High').reduce((s,r)=>s+r[4],0);
+  const youngHighShare = (youngHigh/youngTotal*100);
+  box.innerHTML = `<div class="row" style="display:flex;justify-content:space-between;border-bottom:1px solid #444;padding:6px 0">
+      <span>Senior Low-risk exposure (all vehicle sizes, car-years)</span><span>${Math.round(seniorLow).toLocaleString()}</span></div>
+    <div class="row" style="display:flex;justify-content:space-between;border-bottom:1px solid #444;padding:6px 0">
+      <span>Young's entire book, all risk tiers (car-years)</span><span>${Math.round(youngTotal).toLocaleString()}</span></div>
+    <div class="row" style="display:flex;justify-content:space-between;padding:6px 0">
+      <span>Young High-risk share of Young's own exposure</span><span>${round(youngHighShare,1)}%</span></div>`;
+  box.style.display='block';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

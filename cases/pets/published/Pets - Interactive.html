@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Pets — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Pets</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Decimals &middot; Percent &middot; Data &amp; Graphs</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+<p class="lede">&ldquo;Toby, can you please pass the spatula?&rdquo; Chloe asks, reaching for a second helping of their mom&rsquo;s lasagna. She sets the pan down and glances at her brother across the table.</p>
+<p>&ldquo;So, Mom,&rdquo; Chloe says, careful with the words, like she&rsquo;s rehearsed them. &ldquo;Toby and I worked really hard on our apprenticeships this summer. We think we&rsquo;ve shown we&rsquo;re responsible. You know how we&rsquo;ve talked about getting a pet?&rdquo;</p>
+<p>Toby jumps in before she can finish. &ldquo;We&rsquo;d pay for everything ourselves. With what we made this summer.&rdquo;</p>
+<p>Their mom sets down her fork. She&rsquo;s quiet for a second &mdash; the kind of quiet that means she&rsquo;s actually thinking about it, not the kind that means no.</p>
+<p>&ldquo;You two have shown a lot of maturity,&rdquo; she says finally. &ldquo;I&rsquo;d be willing to support that. But pets are expensive, and they&rsquo;re a long-term commitment. What kind are you two thinking?&rdquo;</p>
+<p>Chloe and Toby glance at each other. &ldquo;We&rsquo;re not totally sure yet,&rdquo; Chloe admits.</p>
+<p>&ldquo;Come up with a real plan,&rdquo; their mom says, &ldquo;and pitch it to me next week. Numbers and all. Then we&rsquo;ll talk.&rdquo;</p>
+<p>Toby is already pulling out his phone, opening a blank note. Chloe grabs a napkin and starts writing dollar signs down the side of it before the lasagna&rsquo;s even cold.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+<p>Toby (12) and Chloe (13) Thompson are the youngest of six children; their four older siblings have moved away for work and college. Their mom is a widow of 8 years who works from home as a teacher for the online school Williamstown Academy. The family lives in a 4-bedroom, 1,955-square-foot home on a &frac14;-acre lot in the suburbs of Redmond, Washington, and travels about three times a year, for no more than a week at a time, to visit family.</p>
+<p>Years ago the Thompsons owned a goldendoodle named Tikky Tikky Tembo. She was hit by a car and died nearly 8 years ago, and the loss &mdash; combined with the demands of a household of seven &mdash; kept the family from taking on another pet since. Toby and Chloe have wanted a real pet for years; they&rsquo;ve &ldquo;raised&rdquo; stuffed animals since early childhood and would rather start with a young animal than an older one.</p>
+<div class="card">
+<p style="margin:0 0 8px">This summer, Toby and Chloe completed apprenticeships and together earned <strong>$1,620</strong>. Chloe&rsquo;s apprenticeship turned into ongoing part-time work paying <strong>$140&ndash;$180 per month</strong>.</p>
+<p style="margin:0">Their mom has told them she will support the pet <strong>only if they cover its costs from that money</strong> &mdash; and she has one non-negotiable condition of her own: <strong>whichever pet they choose, they must also carry pet insurance for it.</strong> That is not optional, and it is not up for pitch (see Appendix D).</p>
+</div>
+<p>Chloe&rsquo;s favorite cat breed is a Scottish Fold. Toby&rsquo;s favorite dog breed is a Beagle. (A neighbor&rsquo;s Rainbow Lorikeet, which the two have helped board once or twice a year, came up too &mdash; but neither Toby nor Chloe has ever said it&rsquo;s a pet they&rsquo;d choose for themselves, only one they enjoy visiting, so it never became a real option for this pitch.) Both of them want a young animal &mdash; a puppy or a kitten &mdash; not an adult rescue.</p>
+<p>Because a dog and a cat do not, on average, live the same number of years, &ldquo;which one costs more, total&rdquo; is not a fair question by itself &mdash; a Beagle that lives three years longer than a Scottish Fold will always rack up a bigger lifetime number, even if it costs about the same per year it&rsquo;s alive. Whatever pitch Toby and Chloe bring to their mom has to account for that (see Appendices A, B, and C). Every dollar figure in this case that isn&rsquo;t a direct citation is a disclosed, stated Modeling Assumption (see Appendix E) &mdash; none is invented quietly. The vocabulary and &ldquo;how to&hellip;&rdquo; skills this case will ask you to research are listed in Appendix F.</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Chloe and Toby Thompson. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Pitch to get a dog</h4>
+      <p style="margin:0">A Beagle &mdash; Toby's favorite.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Pitch to get a cat</h4>
+      <p style="margin:0">A Scottish Fold &mdash; Chloe's favorite.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include:
+    <ul style="font-family:var(--sans);font-size:.92rem">
+      <li style="margin-bottom:8px"><strong>D1.</strong> A Day-1 startup cost table for your chosen pet &mdash; purchase price plus every one-time item &mdash; with a labeled total, and a stated comparison against the Thompsons&rsquo; $1,620.</li>
+      <li style="margin-bottom:8px"><strong>D2.</strong> A Year-1 total cost calculation (Day-1 total plus 12 months of ongoing costs), computed both with and without Mom&rsquo;s required pet insurance.</li>
+      <li style="margin-bottom:8px"><strong>D3.</strong> A full-lifetime total cost calculation for your chosen pet, using its real expected lifespan, with insurance included every year.</li>
+      <li style="margin-bottom:8px"><strong>D4.</strong> A cost-per-year-of-expected-lifespan calculation for BOTH pets, dividing each pet&rsquo;s lifetime total by its own expected lifespan, explaining why this is a fairer comparison than the raw lifetime totals.</li>
+      <li style="margin-bottom:8px"><strong>D5.</strong> Two original visual displays: a bar graph comparing both options&rsquo; cost-per-year-of-life figures, and a pie chart breaking your chosen pet&rsquo;s lifetime total down by category.</li>
+      <li style="margin-bottom:8px"><strong>D6.</strong> A one-paragraph recommendation on Mom&rsquo;s insurance requirement, stating what percent of your chosen pet&rsquo;s Year-1 total the insurance premium adds.</li>
+    </ul></li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+<details open>
+  <summary>Appendix A &mdash; The Beagle (Toby&rsquo;s Pick)</summary>
+  <div class="inner">
+    <table id="apxTableA"><tr><th>Cost category</th><th>Figure</th><th>Notes</th></tr><tr><td>Purchase price, certified breeder</td><td>$1,000&ndash;$1,500</td><td>Toby and Chloe want a purebred puppy, not an adult rescue</td></tr><tr><td>One-time setup (vet exam, vaccines, spay/neuter, microchip, bed, crate, toys, grooming tools)</td><td>$710&ndash;$1,200</td><td>Bundled one-time figure</td></tr><tr><td>Ongoing annual cost (food, grooming, routine vet/medication, home-proofing/replacement items, toys)</td><td>$1,332&ndash;$3,000</td><td>Excludes insurance &mdash; see Appendix D</td></tr><tr><td>Pet insurance (accident + illness)</td><td>$300&ndash;$900 / year</td><td>See Appendix D</td></tr><tr><td>Expected lifespan</td><td>12&ndash;15 years</td><td>See Appendix C</td></tr></table>
+    <p class="side-note">Sources: [S1], [S2], [S6] &mdash; see Appendix E for how single figures were chosen from these ranges.</p>
+  </div>
+</details>
+<details>
+  <summary>Appendix B &mdash; The Scottish Fold (Chloe&rsquo;s Pick)</summary>
+  <div class="inner">
+    <table id="apxTableB"><tr><th>Cost category</th><th>Figure</th><th>Notes</th></tr><tr><td>Purchase price, responsible breeder (pet-quality kitten)</td><td>$1,000&ndash;$2,500</td><td>Toby and Chloe want a kitten, not an adult rescue</td></tr><tr><td>One-time setup (spay/neuter, microchip, carrier, bowls, litter box, scratching post, toys)</td><td>$600&ndash;$1,500</td><td>Bundled one-time figure</td></tr><tr><td>Ongoing annual cost (food, grooming, medications/vet visits, litter/home-proofing, toys)</td><td>$1,095&ndash;$2,655</td><td>Excludes insurance &mdash; see Appendix D</td></tr><tr><td>Pet insurance (accident + illness)</td><td>$30 / month ($360 / year)</td><td>See Appendix D</td></tr><tr><td>Expected lifespan</td><td>10 years (average, all Scottish Folds)</td><td>See Appendix C</td></tr></table>
+    <p class="side-note">Sources: [S3], [S4], [S5] &mdash; see Appendix E for how single figures were chosen from these ranges.</p>
+  </div>
+</details>
+<details>
+  <summary>Appendix C &mdash; Why the Two Pets Don&rsquo;t Live the Same Number of Years</summary>
+  <div class="inner">
+    <p>A Beagle&rsquo;s average <span class="gterm-placeholder"></span>lifespan is commonly reported at 10&ndash;15 years (most sources cluster around 12&ndash;15) [S2]. A Scottish Fold&rsquo;s average lifespan is different from what you might expect: a healthy Scottish Fold can live 13&ndash;16 years, but the breed carries a genetic condition (a cartilage disorder linked to the same gene that causes its trademark folded ears) that shortens the breed-wide average to about 10 years [S5]. This is real, documented, and not something either pet&rsquo;s breeder would put in an ad.</p>
+    <p>This matters directly for D4: comparing the two pets&rsquo; total lifetime cost side by side is not the same question as comparing what a year of each pet actually costs.</p>
+  </div>
+</details>
+<details>
+  <summary>Appendix D &mdash; Mom&rsquo;s Insurance Requirement</summary>
+  <div class="inner">
+    <p>Mom&rsquo;s condition is not a suggestion: whichever pet Toby and Chloe pitch, the plan must include pet insurance, every year of that pet&rsquo;s life. This appendix gives the real numbers so D6 can be answered with data, not opinion.</p>
+    <table id="apxTableD"><tr><th></th><th>Beagle</th><th>Scottish Fold</th></tr><tr><td>Average monthly premium (accident + illness)</td><td>$25&ndash;$75</td><td>~$30</td></tr><tr><td>Average annual premium</td><td>$300&ndash;$900</td><td>~$360</td></tr></table>
+    <p class="side-note">Sources: [S1], [S6], [S4]. Dog insurance runs higher than cat insurance on average industry-wide, largely because dogs visit the vet more often and for more expensive conditions [S6].</p>
+  </div>
+</details>
+<details>
+  <summary>Appendix E &mdash; Modeling Assumptions</summary>
+  <div class="inner">
+    <p><em>These figures are not sourced as single numbers. They are stated scenario choices, each with a real, disclosed basis in Appendices A, B, and D. A Hero may challenge any of them in discussion &mdash; that is a legitimate move.</em></p>
+    <table id="apxTableE"><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr><tr><td>MA1</td><td>Beagle purchase price</td><td>$1,250</td><td>Midpoint of the certified-breeder range ($1,000&ndash;$1,500) [S1]</td></tr><tr><td>MA2</td><td>Beagle one-time setup cost</td><td>$955</td><td>Midpoint of the bundled one-time figure ($710&ndash;$1,200) [S2, S6]</td></tr><tr><td>MA3</td><td>Beagle ongoing annual cost (no insurance)</td><td>$2,166 / year</td><td>Midpoint of the ongoing-cost range ($1,332&ndash;$3,000) [S1]</td></tr><tr><td>MA4</td><td>Beagle annual insurance premium</td><td>$600 / year</td><td>Midpoint of the Beagle premium range ($300&ndash;$900) [S1, S6]</td></tr><tr><td>MA5</td><td>Beagle expected lifespan</td><td>13 years</td><td>Midpoint of the commonly-cited 12&ndash;15-year range [S2]</td></tr><tr><td>MA6</td><td>Scottish Fold purchase price</td><td>$1,750</td><td>Midpoint of the responsible-breeder, pet-quality range ($1,000&ndash;$2,500) [S3]</td></tr><tr><td>MA7</td><td>Scottish Fold one-time setup cost</td><td>$1,050</td><td>Midpoint of the bundled one-time figure ($600&ndash;$1,500) [S4]</td></tr><tr><td>MA8</td><td>Scottish Fold ongoing annual cost (no insurance)</td><td>$1,875 / year</td><td>Midpoint of the ongoing-cost range ($1,095&ndash;$2,655) [S4]</td></tr><tr><td>MA9</td><td>Scottish Fold annual insurance premium</td><td>$360 / year</td><td>Direct cited point figure of $30/month [S4]</td></tr><tr><td>MA10</td><td>Scottish Fold expected lifespan</td><td>10 years</td><td>Breed-wide average, not the higher healthy-individual figure [S5]</td></tr></table>
+  </div>
+</details>
+<details>
+  <summary>Sources</summary>
+  <div class="inner">
+    <table id="apxTableSources"><tr><th>#</th><th>Claim</th><th>Source</th><th>Date</th><th>Confidence</th></tr><tr><td>S1</td><td>Beagle purchase price (breeder), annual ownership cost breakdown by category</td><td>Insurify, &ldquo;Cost of Owning a Beagle (2026)&rdquo;</td><td>2026</td><td>HIGH</td></tr><tr><td>S2</td><td>Beagle life expectancy (10&ndash;15 years)</td><td>PetMD, &ldquo;Beagle Dog Breed Health and Care&rdquo;</td><td>2026</td><td>HIGH</td></tr><tr><td>S3</td><td>Scottish Fold breeder pricing tiers</td><td>Petful, &ldquo;Scottish Fold Price: 2026 Cost Guide by Tier&rdquo;</td><td>2026</td><td>HIGH</td></tr><tr><td>S4</td><td>Scottish Fold purchase/setup/ongoing cost, insurance premium</td><td>Catster, &ldquo;How Much Does a Scottish Fold Cost in 2026?&rdquo;</td><td>2026</td><td>HIGH</td></tr><tr><td>S5</td><td>Scottish Fold lifespan and genetic basis for its shortened breed-wide average</td><td>Catster, &ldquo;How Long Does a Scottish Fold Live?&rdquo;</td><td>2026</td><td>HIGH</td></tr><tr><td>S6</td><td>Beagle-specific cost breakdown, cross-validating S1</td><td>Hepper, &ldquo;How Much Does a Beagle Cost? (2026 Price Guide)&rdquo;</td><td>2026</td><td>HIGH</td></tr><tr><td>S7</td><td>National average pet insurance premiums, dogs vs. cats</td><td>Insurify, &ldquo;How Much Is Pet Insurance in 2026?&rdquo;</td><td>2026-08-20</td><td>MEDIUM</td></tr></table>
+  </div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-20. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+<div class="stepbox">
+  <h4>Setup &mdash; pick which pet you're calculating</h4>
+  <div class="fieldrow">
+    <label for="petSelect">I'm building the numbers for:</label>
+    <select id="petSelect" onchange="renderPetLabels()">
+      <option value="A">Option A &mdash; the Beagle</option>
+      <option value="B">Option B &mdash; the Scottish Fold</option>
+    </select>
+  </div>
+  <p class="side-note">Use Appendix E's stated values (MA1&ndash;MA10) for your inputs below &mdash; those are the single numbers this case uses, not the full cited ranges in Appendices A/B/D.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 1 &mdash; Day-1 startup cost (D1)</h4>
+  <div class="goal">Purchase price + one-time setup cost = Day-1 total. Then compare it to the Thompsons' $1,620.</div>
+  <div class="fieldrow"><label for="s1_purchase">Purchase price ($)</label><input type="number" id="s1_purchase" step="0.01"></div>
+  <div class="fieldrow"><label for="s1_setup">One-time setup cost ($)</label><input type="number" id="s1_setup" step="0.01"></div>
+  <div class="fieldrow"><label for="s1_day1">Your Day-1 total ($)</label><input type="number" id="s1_day1" step="0.01">
+    <button onclick="checkDay1()">Check</button><span class="fb" id="fb_day1"></span></div>
+  <div class="fieldrow"><label for="s1_shortfall">Amount short of $1,620 (0 if covered)</label><input type="number" id="s1_shortfall" step="0.01">
+    <button onclick="checkShortfall()">Check</button><span class="fb" id="fb_shortfall"></span></div>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; Year-1 total cost (D2)</h4>
+  <div class="goal">Day-1 total + 12 months of ongoing costs. Compute it twice: with insurance, and without.</div>
+  <div class="fieldrow"><label for="s2_ongoing">Ongoing annual cost, no insurance ($)</label><input type="number" id="s2_ongoing" step="0.01"></div>
+  <div class="fieldrow"><label for="s2_insurance">Annual insurance premium ($)</label><input type="number" id="s2_insurance" step="0.01"></div>
+  <div class="fieldrow"><label for="s2_year1_noins">Year-1 total, WITHOUT insurance ($)</label><input type="number" id="s2_year1_noins" step="0.01">
+    <button onclick="checkYear1(false)">Check</button><span class="fb" id="fb_year1_noins"></span></div>
+  <div class="fieldrow"><label for="s2_year1_ins">Year-1 total, WITH insurance ($)</label><input type="number" id="s2_year1_ins" step="0.01">
+    <button onclick="checkYear1(true)">Check</button><span class="fb" id="fb_year1_ins"></span></div>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; Lifetime total and cost-per-year, BOTH pets (D3/D4)</h4>
+  <div class="goal">Lifetime total = Day-1 + (annual total with insurance &times; expected lifespan). Cost-per-year = lifetime total &divide; lifespan. Do this for BOTH options, not just the one you're pitching.</div>
+  <div class="fieldrow"><label for="s3_lifetime_a">Beagle (A) lifetime total ($)</label><input type="number" id="s3_lifetime_a" step="0.01">
+    <button onclick="checkLifetime('A')">Check</button><span class="fb" id="fb_lifetime_a"></span></div>
+  <div class="fieldrow"><label for="s3_peryear_a">Beagle (A) cost per year ($)</label><input type="number" id="s3_peryear_a" step="0.01">
+    <button onclick="checkPerYear('A')">Check</button><span class="fb" id="fb_peryear_a"></span></div>
+  <div class="fieldrow"><label for="s3_lifetime_b">Scottish Fold (B) lifetime total ($)</label><input type="number" id="s3_lifetime_b" step="0.01">
+    <button onclick="checkLifetime('B')">Check</button><span class="fb" id="fb_lifetime_b"></span></div>
+  <div class="fieldrow"><label for="s3_peryear_b">Scottish Fold (B) cost per year ($)</label><input type="number" id="s3_peryear_b" step="0.01">
+    <button onclick="checkPerYear('B')">Check</button><span class="fb" id="fb_peryear_b"></span></div>
+  <p class="side-note">In your write-up, explain in your own words why comparing the two per-year figures is a fairer question than comparing the two raw lifetime totals.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; Insurance as a percent of Year-1 (D6)</h4>
+  <div class="goal">What percent of your chosen pet's Year-1 total does the insurance premium add? (insurance &divide; Year-1-with-insurance &times; 100)</div>
+  <div class="fieldrow"><label for="s4_pct">Insurance as % of Year-1</label><input type="number" id="s4_pct" step="0.01">
+    <button onclick="checkInsurancePct()">Check</button><span class="fb" id="fb_ins_pct"></span></div>
+</div>
+
+<div class="stepbox">
+  <h4>Step 5 &mdash; Your two visual displays (D5)</h4>
+  <div class="goal">This notebook doesn't draw your charts for you &mdash; build them in the tool of your choice (Sheets, graph paper, etc.) using the numbers you just calculated above.</div>
+  <ul style="font-family:var(--sans);font-size:.9rem">
+    <li>A bar graph comparing Option A's and Option B's cost-per-year-of-life figures (Step 3).</li>
+    <li>A pie chart breaking your chosen pet's lifetime total down by category: purchase price, one-time supplies, food/grooming/vet (ongoing), insurance.</li>
+  </ul>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+<p>Everyone&rsquo;s been comparing total lifetime dollars. But here&rsquo;s something neither pet&rsquo;s breeder puts in an ad: a Scottish Fold&rsquo;s folded ears come from a real genetic mutation &mdash; the same mutation also affects cartilage all over its body. It&rsquo;s a documented health condition, not folklore, and it&rsquo;s a real reason the breed&rsquo;s average lifespan runs shorter than a healthy individual&rsquo;s best case. A Beagle is expected to live about 13 years. A Scottish Fold, on average, about 10 (see Appendix C).</p>
+<p>Go back to your Step 3 numbers. Does the per-year comparison &mdash; not the raw lifetime totals &mdash; change your recommendation, or not? And a harder question: is a lower cost-per-year a genuinely good thing here, when the reason it's lower is a shorter expected life caused by a real health condition?</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">I've re-read Appendix C and reconsidered my Step 3 numbers</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+<li>[S1] Insurify, &ldquo;Cost of Owning a Beagle (2026)&rdquo; &mdash; <a href="https://insurify.com/pet-insurance/knowledge/how-much-is-beagle/" target="_blank" rel="noopener">insurify.com</a></li>
+<li>[S2] PetMD, &ldquo;Beagle Dog Breed Health and Care&rdquo; &mdash; <a href="https://www.petmd.com/dog/breeds/beagle" target="_blank" rel="noopener">petmd.com</a></li>
+<li>[S3] Petful, &ldquo;Scottish Fold Price: 2026 Cost Guide by Tier&rdquo; &mdash; <a href="https://www.petful.com/cat-breeds/scottish-fold-price/" target="_blank" rel="noopener">petful.com</a></li>
+<li>[S4] Catster, &ldquo;How Much Does a Scottish Fold Cost in 2026?&rdquo; &mdash; <a href="https://www.catster.com/lifestyle/scottish-fold-cost/" target="_blank" rel="noopener">catster.com</a></li>
+<li>[S5] Catster, &ldquo;How Long Does a Scottish Fold Live?&rdquo; &mdash; <a href="https://www.catster.com/cat-health-care/how-long-does-scottish-fold-live/" target="_blank" rel="noopener">catster.com</a></li>
+<li>[S6] Hepper, &ldquo;How Much Does a Beagle Cost? (2026 Price Guide)&rdquo; &mdash; <a href="https://articles.hepper.com/beagle-cost/" target="_blank" rel="noopener">articles.hepper.com</a></li>
+<li>[S7] Insurify, &ldquo;How Much Is Pet Insurance in 2026?&rdquo; &mdash; <a href="https://insurify.com/pet-insurance/average-pet-insurance-cost/" target="_blank" rel="noopener">insurify.com</a></li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Pets &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Source of record: cases/pets/case.json (case_md_sha256 9ec1a8eb50b05dea5f70e9aca9aba1dc6b65a2033eb59bddd4581639d26af2b2)
+// PARAMS are the ten stated Modeling Assumptions (MA1-MA10), reproduced verbatim -- raw
+// given data, not a computed verdict. evaluate()/evaluate_twist() compute the per-year
+// figures live, at runtime, from these inputs -- nothing below is a pre-computed answer.
+const PARAMS = {
+  purchase_a_usd: 1250, setup_a_usd: 955, annual_noins_a_usd: 2166, insurance_a_usd: 600, lifespan_a_years: 13,
+  purchase_b_usd: 1750, setup_b_usd: 1050, annual_noins_b_usd: 1875, insurance_b_usd: 360, lifespan_b_years: 10,
+  summer_earnings_usd: 1620
+};
+const FLEX = ["annual_noins_a_usd", "annual_noins_b_usd", "insurance_a_usd", "lifespan_a_years", "lifespan_b_years", "purchase_b_usd"];
+
+function evaluate(params){
+  const day1A = params.purchase_a_usd + params.setup_a_usd;
+  const annualTotalA = params.annual_noins_a_usd + params.insurance_a_usd;
+  const year1A = day1A + annualTotalA;
+  const lifetimeA = day1A + annualTotalA * params.lifespan_a_years;
+  const perYearA = lifetimeA / params.lifespan_a_years;
+
+  const day1B = params.purchase_b_usd + params.setup_b_usd;
+  const annualTotalB = params.annual_noins_b_usd + params.insurance_b_usd;
+  const year1B = day1B + annualTotalB;
+  const lifetimeB = day1B + annualTotalB * params.lifespan_b_years;
+  const perYearB = lifetimeB / params.lifespan_b_years;
+
+  return {
+    A: perYearA, B: perYearB,
+    day1A, day1B, year1A, year1B, lifetimeA, lifetimeB,
+    year1NoInsA: day1A + params.annual_noins_a_usd,
+    year1NoInsB: day1B + params.annual_noins_b_usd,
+    insPctYear1A: 100 * params.insurance_a_usd / year1A,
+    insPctYear1B: 100 * params.insurance_b_usd / year1B,
+  };
+}
+// The Twist (Appendix C) doesn't change any input value -- MA5/MA10 already bake in the
+// real breed-wide lifespan figures. It changes what a Hero understands the numbers to mean,
+// not the numbers themselves, so evaluate_twist() intentionally returns the same result.
+function evaluate_twist(params){ return evaluate(params); }
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function renderPetLabels(){ /* no-op placeholder: reserved for future per-pet label swap */ }
+
+function activeParamsFor(letter){
+  const r = evaluate(PARAMS);
+  return letter === 'A'
+    ? { purchase: PARAMS.purchase_a_usd, setup: PARAMS.setup_a_usd, ongoing: PARAMS.annual_noins_a_usd, insurance: PARAMS.insurance_a_usd, lifespan: PARAMS.lifespan_a_years, day1: r.day1A, year1: r.year1A, year1NoIns: r.year1NoInsA, lifetime: r.lifetimeA, perYear: r.A, insPct: r.insPctYear1A }
+    : { purchase: PARAMS.purchase_b_usd, setup: PARAMS.setup_b_usd, ongoing: PARAMS.annual_noins_b_usd, insurance: PARAMS.insurance_b_usd, lifespan: PARAMS.lifespan_b_years, day1: r.day1B, year1: r.year1B, year1NoIns: r.year1NoInsB, lifetime: r.lifetimeB, perYear: r.B, insPct: r.insPctYear1B };
+}
+
+function checkDay1(){
+  const letter = document.getElementById('petSelect').value;
+  const a = activeParamsFor(letter);
+  const day1 = Number(val('s1_day1'));
+  fb('fb_day1', near(day1, a.day1, 1));
+}
+function checkShortfall(){
+  const letter = document.getElementById('petSelect').value;
+  const a = activeParamsFor(letter);
+  const expected = Math.max(0, round(a.day1 - PARAMS.summer_earnings_usd));
+  const given = Number(val('s1_shortfall'));
+  fb('fb_shortfall', near(given, expected, 1));
+}
+function checkYear1(withInsurance){
+  const letter = document.getElementById('petSelect').value;
+  const a = activeParamsFor(letter);
+  if(withInsurance){
+    fb('fb_year1_ins', near(Number(val('s2_year1_ins')), a.year1, 1));
+  } else {
+    fb('fb_year1_noins', near(Number(val('s2_year1_noins')), a.year1NoIns, 1));
+  }
+}
+function checkLifetime(letter){
+  const a = activeParamsFor(letter);
+  const id = letter === 'A' ? 's3_lifetime_a' : 's3_lifetime_b';
+  const fid = letter === 'A' ? 'fb_lifetime_a' : 'fb_lifetime_b';
+  fb(fid, near(Number(val(id)), a.lifetime, 2));
+}
+function checkPerYear(letter){
+  const a = activeParamsFor(letter);
+  const id = letter === 'A' ? 's3_peryear_a' : 's3_peryear_b';
+  const fid = letter === 'A' ? 'fb_peryear_a' : 'fb_peryear_b';
+  fb(fid, near(Number(val(id)), a.perYear, 0.5));
+}
+function checkInsurancePct(){
+  const letter = document.getElementById('petSelect').value;
+  const a = activeParamsFor(letter);
+  fb('fb_ins_pct', near(Number(val('s4_pct')), a.insPct, 0.5));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "pets"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Day-1 startup cost table, with total and comparison to $1,620"],
+  ["D2", "Year-1 total cost, with insurance and without"],
+  ["D3", "Full-lifetime total cost for your chosen pet"],
+  ["D4", "Cost-per-year-of-lifespan for BOTH pets, with your explanation"],
+  ["D5", "Bar graph (cost-per-year, both pets) and pie chart (your pet's lifetime total by category)"],
+  ["D6", "Insurance as a percent of Year-1 total, and your recommendation"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Currency": {def: "Physical or digital money -- coins, banknotes, or a balance -- used as a medium of exchange.",
+    url: "https://www.mathsisfun.com/definitions/currency.html"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Addition": {def: "Combining two or more numbers to find their total, or sum.",
+    url: "https://www.khanacademy.org/math/cc-fourth-grade-math/imp-addition-and-subtraction-2/imp-adding-multi-digit-numbers/e/multi-digit-addition"},
+  "Subtraction": {def: "Finding the difference between two numbers by taking one away from the other.",
+    url: "https://www.khanacademy.org/math/cc-fourth-grade-math/imp-addition-and-subtraction-2/imp-subtracting-multi-digit-numbers/e/multi-digit-subtraction"},
+  "Multiplication": {def: "Repeated addition of the same number a set number of times.",
+    url: "https://www.khanacademy.org/math/arithmetic-home/multiply-divide/mult-intro/v/basic-multiplication"},
+  "Division": {def: "Splitting a number into equal parts or groups.",
+    url: "https://www.khanacademy.org/math/arithmetic-home/multiply-divide/division-intro/v/division-1"},
+  "Rounding": {def: "Adjusting a number to a nearby, simpler value at a specified place value.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-place-value-and-decimals/imp-rounding-decimals/e/rounding_numbers"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Pie Chart": {def: "A circular chart divided into slices, where each slice's size shows its share of the whole.",
+    url: "https://www.khanacademy.org/math/statistics-probability/analyzing-categorical-data/one-categorical-variable/v/reading-pie-graphs-circle-graphs"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+};
+const HOWTO = [
+  ["How to add decimal numbers", "Decimal"],
+  ["How to subtract decimal numbers", "Decimal"],
+  ["How to multiply decimal numbers", "Decimal"],
+  ["How to divide decimal numbers", "Decimal"],
+  ["How to add multi-digit numbers", "Addition"],
+  ["How to subtract multi-digit numbers", "Subtraction"],
+  ["How to multiply any two numbers", "Multiplication"],
+  ["How to divide a multi-digit number by a 2-digit number", "Division"],
+  ["How to round a number to a specified place value", "Rounding"],
+  ["How to find the percent of a number", "Percent"],
+  ["How to compare two or more values", "Data"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  // No numeric recompute needed -- the Twist (Appendix C's genetic-lifespan fact) is
+  // already fully reflected in MA5/MA10 (13 vs. 10 years), which Step 3 already uses.
+  // Toggling this just marks that the Hero has re-read Appendix C before finalizing D3/D4.
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

@@ -58,8 +58,7 @@ Business Patterns program publishes for every U.S. county [S4] (SEE APPENDIX F).
 
 Ben's recommendation must be judged on one number: **total regional jobs supported — direct,
 indirect, and induced — per $10,000 of incentive spent**, found by solving Calder County's
-two-sector regional economy as a system of linear equations using matrices (SEE APPENDICES B, D
-and E). Every sourced and assumed figure in this case is listed in **APPENDIX F**, and the
+two-sector regional economy as a system of linear equations using matrices (SEE APPENDICES B, D and E). Every sourced and assumed figure in this case is listed in **APPENDIX F**, and the
 vocabulary and "how to…" skills this case will ask of you are listed in **APPENDIX G** — that is
 where Challenge 1 sends you.
 

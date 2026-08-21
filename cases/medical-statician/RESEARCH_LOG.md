@@ -1,0 +1,28 @@
+# Research Log — Medical Statistician
+
+Legacy conversion research pass, 2026-08-20. One row per placeholder-equivalent claim in the case.
+
+| # | Claim needed | Searched | Found | Verdict |
+|---|---|---|---|---|
+| P01 | Canine diabetes prevalence, age of onset, sex risk, at-risk breeds | WebSearch "canine diabetes mellitus prevalence 1 in 300"; WebFetch of Merck Animal Health's Vetsulin dog-diabetes page | Merck page confirmed ~1 in 300 prevalence, 4-14 yr onset, unspayed females ~2x risk, and 10 of the original source's 12 named at-risk breeds (Golden Retriever and Labrador Retriever not independently confirmed by the fetched content -- dropped rather than carried forward unverified) | SOURCED — S1, HIGH |
+| P02 | Total pet dogs in the U.S. | WebSearch "AVMA number of dogs owned United States 2024"; WebFetch attempted on avma.org (JS-rendered, returned empty) | ~89.7 million dogs (2024), attributed via WebSearch snippet directly to the AVMA Pet Ownership and Demographics Sourcebook; AVMA's own page could not be rendered by the fetch tool | SOURCED — S2, MEDIUM (not directly fetched; not load-bearing for the primary metric, context only) |
+| P03/P04 | Sampling method definitions (probability vs. non-probability) | Preserved from the original legacy source's own Appendix D resource list (Qualtrics guide; Panacek & Bagley journal article) | Both are real, standard, uncontested methodological references; not independently re-fetched during this conversion since their content (method definitions) is stable, uncontested textbook material | SOURCED — S3/S4, MEDIUM |
+| P05 | Real-world per-patient recruitment cost benchmark, to ground the case's own recruitment-cost assumption | WebSearch "veterinary clinical trial patient recruitment cost per subject multi-site study"; WebSearch "clinical trial cost per patient recruited multi-site vs single-site convenience sample" | No veterinary-specific benchmark exists in the public literature (genuine NOT FOUND for the veterinary case specifically). Real human multi-site clinical-trial literature found instead: recruitment cost per completed subject ranges under $10 to over $1,300; one cited multi-site comparative study found a mean of $277/patient randomized (range $74-$797 across sites in the SAME study); online vs. offline recruitment averaged $72 vs. $199 per enrollee | NOT FOUND (veterinary-specific) -> Stated Modeling Assumption exit taken (SPEC §5 exit 1). MA1 ($250/subject, Option A) and MA2 ($90/subject, Option B) are both built on this real, cited range rather than invented -- see case.json.modeling_assumptions and Appendix G/D |
+| P06 | Margin of error formula and 95% confidence z-score | WebFetch of the SurveyMonkey Margin of Error Calculator (the exact page the original legacy source itself links to) | Confirmed z = 1.96 at 95% confidence; standard formula MOE = z x sqrt(p(1-p)/n) reproduced in-document (Appendix E) per case-research's link-survives-death rule, since the fetch tool's rendering of the page's own formula text was partial | SOURCED — S6, HIGH |
+| P07 | Legal standard for "adequate and well-controlled" new animal drug effectiveness studies | WebSearch "FDA Center for Veterinary Medicine new animal drug application substantial evidence effectiveness study design"; WebFetch of 21 CFR 514.117 via Cornell Legal Information Institute (ecfr.gov redirected to an unblock/anti-bot page and was not followed) | Direct quote obtained: a well-controlled study requires "a design that permits a valid comparison with one or more controls," with assignment that "is random and minimizes bias" | SOURCED — S7, HIGH |
+| P08 | FDA CVM's stance on real-world/non-randomized data (registry, clinic-record data) in effectiveness submissions -- the real basis for this case's Twist | WebSearch "FDA GFI 266 real-world data real-world evidence new animal drugs guidance"; WebFetch of fda.gov/media/139953/download (returned 404) | Existence, exact title ("Use of Real-World Data and Real-World Evidence to Support Effectiveness of New Animal Drugs"), guidance number (GFI #266), and finalization date (Federal Register, October 6, 2021) confirmed via WebSearch (Federal Register listing + FDA guidance-portal index); the guidance document's own body text could not be directly quoted since both direct-download URLs attempted returned errors | SOURCED — S8, HIGH (title/number/date confirmed via a government listing; body text not independently quoted, disclosed in case.json source note) |
+
+## Rejected / not used
+
+- **Braxtons.com** (the original source's own citation for the canine-diabetes claims) was not
+  re-used — it is an unverifiable veterinary-supply blog with no visible authorship or date, and a
+  real, better-attributed manufacturer source (Merck Animal Health) was found carrying nearly
+  identical figures. Per SPEC §5, a plausible-looking number is not the same as a true one; the
+  weaker original citation was replaced rather than kept alongside the stronger one.
+- A direct veterinary-trial-specific recruitment-cost figure was searched for and not found. This
+  is recorded as a genuine NOT FOUND, not smoothed over — see P05 above.
+- FDA's own `fda.gov/animal-veterinary/...` and `fda.gov/media/139953/download` pages both returned
+  errors on direct fetch (404). The guidance's existence and metadata were independently confirmed
+  via a second channel (WebSearch of the Federal Register's own publication listing), which is why
+  S8 is graded HIGH on metadata (org, title, guidance number, date all confirmed by a primary
+  government listing) despite the body text itself not being independently quoted.

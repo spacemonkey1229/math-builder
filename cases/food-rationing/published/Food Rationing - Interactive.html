@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Food Rationing — Interactive</title>
+<!-- Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md -->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC: family roster card */
+  .roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+  .roster .person{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:var(--sans);font-size:.82rem}
+  .roster .person strong{color:var(--navy);display:block;margin-bottom:2px}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-boat" viewBox="0 0 24 24"><path d="M3 15l2 5h14l2-5z"/><path d="M6 15V6h5l6 6"/><path d="M12 3v3"/></symbol>
+  <symbol id="icon-drop" viewBox="0 0 24 24"><path d="M12 3c4 5 7 8.5 7 12a7 7 0 1 1-14 0c0-3.5 3-7 7-12z"/></symbol>
+  <symbol id="icon-bowl" viewBox="0 0 24 24"><path d="M3 11h18a9 6 0 0 1-18 0z"/><path d="M12 11V5"/><path d="M9 5h6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: Food Rationing</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">MS-stretch &middot; HS-entry</span>
+      <span class="pill">Arithmetic &middot; Percent &middot; Ratio &amp; Proportion</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <svg class="banner-art" viewBox="0 0 900 160" role="img" aria-label="A small sailboat adrift on open water under a gray sky">
+    <rect width="900" height="160" fill="#dfe9f0"/>
+    <rect y="100" width="900" height="60" fill="#7fa8c2"/>
+    <path d="M0 100 Q 60 90 120 100 T 240 100 T 360 100 T 480 100 T 600 100 T 720 100 T 840 100 T 900 100 V160 H0 Z" fill="#6f9ab5"/>
+    <g transform="translate(430,55)">
+      <path d="M0 0 L60 60 L-60 60 Z" fill="#f4f6f8" stroke="#1a3a5c" stroke-width="2"/>
+      <path d="M-60 60 L70 60 L40 78 L-40 78 Z" fill="#1a3a5c"/>
+      <line x1="0" y1="-8" x2="0" y2="60" stroke="#122943" stroke-width="3"/>
+    </g>
+  </svg>
+  <p class="lede">Rain lashes the cabin windows sideways. Tamara Murray braces one boot against the nav table and hauls on a line that isn't holding anything anymore &mdash; the sail tore an hour ago, and the boat has been drifting since. "We have to fix this!" she yells. Her father-in-law John, gripping the other end of the torn canvas, yells back, "I can't get it to hold &mdash; it's too damaged!"</p>
+  <p>Behind them, Fiona is crying into a cushion. "What are we going to do, Mom? We're stranded!" Easton has his arms wrapped around himself, pale and silent, the way he's looked for a couple of days now. Chance just wants to be picked up.</p>
+  <p>By morning the wind has dropped. The sail is gone. The power is out. Tamara works through the boat systems one at a time, the way she was trained to. Water filters &mdash; fine, they can run for a long while. Cooking fuel &mdash; plenty. She opens the food locker last, already knowing the news won't be good, and it isn't. Far from the nearest port, drifting instead of sailing, with no radio and no way to know if a ship passes tomorrow or not for a long while &mdash; and a family who all need to eat every single day until one does.</p>
+  <p>Tamara sits back on her heels, the locker still open, and starts doing the math in her head.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>The Murray family left mainland Mexico 12 days ago, sailing toward a planned resupply stop at Ebon Atoll. The storm hit six days short of that stop, snapping the boat's power and its sail and leaving it adrift somewhere in the open Pacific, within roughly 1,000 miles of Ebon Atoll (see Appendix B). With no radio and no way to steer, the family's only real plan is to wait for a passing ship &mdash; which could appear as soon as tomorrow, or not for as long as a month. Nobody back home expects a check-in until the family reaches port, so nobody yet knows they are missing.</p>
+  <div class="roster">
+    <div class="person"><strong>Tamara, 35</strong>Experienced sailor; mother to all four children; in great health</div>
+    <div class="person"><strong>John, 70</strong>Tamara's father-in-law; manages Type 2 diabetes</div>
+    <div class="person"><strong>Fiona, 7</strong>In good health</div>
+    <div class="person"><strong>Easton, 9</strong>Seasick for the past two days; not keeping much food down</div>
+    <div class="person"><strong>Chance, 2</strong>In good health</div>
+  </div>
+  <p class="side-note">Aaron, the children's father, stayed in the U.S. for work and is not aboard &mdash; he is not part of the ration count (see Appendix A).</p>
+  <p>Water and cooking fuel are not the problem &mdash; the boat's purifiers and fuel supply could last for months (see Appendix B). Food is the problem. The family provisioned for a short final leg to Ebon Atoll, not for weeks adrift, and what's left in the food locker (see Appendix C) has to somehow cover five people for an unknown number of days.</p>
+  <p>Tamara has to decide how the remaining food gets divided. She could <strong>ration the food equally</strong>, giving every family member the identical daily amount, regardless of age, health, or seasickness. Or she could <strong>ration the food by need</strong> &mdash; protecting John's diabetes management with a full, dependable ration, and giving Chance's much smaller toddler body and seasick Easton's unsettled stomach less than a full adult share (see Appendices D, E, F and G). Every figure in this case that isn't a direct citation is a disclosed, stated Modeling Assumption (see Appendix H) &mdash; none is invented quietly.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Tamara Murray. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Ration Equally</h4>
+      <p style="margin:0">Every family member gets the identical daily amount, regardless of age, health, or seasickness.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Ration by Need</h4>
+      <p style="margin:0">Protect John's diabetes management and give Chance's smaller body its real toddler-sized share, with reduced rations for seasick Easton who isn't keeping food down.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix J. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: D1) a total caloric inventory of the remaining food supply &mdash; convert the real quantities in Appendix C into calories, item by item, using the per-unit values in Appendix D, and show every multiplication before adding them into one grand total; D2) a stated, defended rationing horizon &mdash; since no one knows if rescue is 1 day or 30 days away, state the number of days you are rationing the food for and defend that choice; D3) a detailed per-person rationing plan for your chosen option &mdash; a real menu, in real calories and real food items, showing what each family member eats and on which days, and what percent of their full recommended daily calories your plan delivers; D4) a total-days-of-coverage comparison &mdash; using Appendix D's total supply and Appendix E's full recommended calories, calculate how many days the supply would last under Option A versus Option B, and the percent difference between them; D5) two original visual displays: one bar graph comparing the Option A and Option B totals from D4, and one pie chart showing how your chosen plan's daily calories are split among the five family members.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+<details open>
+  <summary>Appendix A &mdash; The Murray Family</summary>
+  <div class="inner">
+    <table id="apxA">
+      <tr><th>Name</th><th>Age</th><th>Role / Health</th></tr>
+      <tr><td>Tamara Murray</td><td class="num">35</td><td>Experienced sailor; mother to all four children; in great health</td></tr>
+      <tr><td>John Murray</td><td class="num">70</td><td>Experienced sailor; Tamara's father-in-law; in good general health; manages Type 2 diabetes</td></tr>
+      <tr><td>Fiona Murray</td><td class="num">7</td><td>In good health</td></tr>
+      <tr><td>Easton Murray</td><td class="num">9</td><td>Seasick for the past two days; not keeping much food down</td></tr>
+      <tr><td>Chance Murray</td><td class="num">2</td><td>In good health</td></tr>
+      <tr><td>Aaron Murray</td><td class="num">34</td><td>Father to all four children; stayed in the U.S. for work; <strong>not aboard</strong></td></tr>
+    </table>
+    <p class="side-note">Five people are aboard and rationing the food. Aaron is not part of the ration count.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix B &mdash; The Voyage, the Storm, and What's Not the Problem</summary>
+  <div class="inner">
+    <p>The family left mainland Mexico 12 days ago, sailing toward a planned resupply stop at Ebon Atoll. The storm struck six days short of that stop, disabling the boat's power and sail. The boat is now adrift, somewhere within roughly 1,000 miles of Ebon Atoll, with no radio and no way to steer toward help. The family's only realistic plan is to wait for a passing ship &mdash; which could come as soon as tomorrow or as long as a month from now. Nobody back in the U.S. expects a check-in until the family reaches Ebon Atoll, so no search will begin before then.</p>
+    <p>Two systems are <strong>not</strong> in danger: the boat's water purifiers can produce drinking water for months, and there is plenty of cooking fuel. Food is the one supply that is genuinely limited &mdash; the family provisioned for a short final leg to port, not for an open-ended wait at sea.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix C &mdash; Remaining Food Supply (Full Inventory)</summary>
+  <div class="inner">
+    <p>This is the real, complete list of what's left in the food locker, exactly as counted. Some categories carry real quantities; many spice, condiment, and "none remaining" rows are included for completeness, but most contribute little or nothing to the family's total calories &mdash; Appendix D explains which items this case actually counts, and why.</p>
+    <table id="apxC">
+      <tr><th>Category</th><th>Item</th><th>Amount left</th></tr>
+      <tr><td>Dry Goods</td><td>Rice (white and brown)</td><td>4 pounds</td></tr>
+      <tr><td>Dry Goods</td><td>Quinoa, orzo, couscous, other grains</td><td>2 pounds</td></tr>
+      <tr><td>Dry Goods</td><td>Pasta (spaghetti, bowties/penne)</td><td>2 boxes (16 oz each)</td></tr>
+      <tr><td>Dry Goods</td><td>Ramen</td><td>6 single-serving packets</td></tr>
+      <tr><td>Dry Goods</td><td>Boxed stuffing</td><td>6 oz box</td></tr>
+      <tr><td>Dry Goods</td><td>Crackers</td><td>2 boxes</td></tr>
+      <tr><td>Dry Goods</td><td>Oatmeal</td><td>10 single-serve packets</td></tr>
+      <tr><td>Dry Goods</td><td>Cereal (granola)</td><td>36 oz bag</td></tr>
+      <tr><td>Dry Goods</td><td>Dried fruits (mixed)</td><td>1 pound</td></tr>
+      <tr><td>Dry Goods</td><td>Bread</td><td>1 loaf</td></tr>
+      <tr><td>Dry Goods</td><td>Tortillas</td><td>6</td></tr>
+      <tr><td>Dry Goods</td><td>Popcorn</td><td>10 bags</td></tr>
+      <tr><td>Baking &amp; Spices</td><td>Flour</td><td>2 pounds</td></tr>
+      <tr><td>Baking &amp; Spices</td><td>Salt</td><td>26 oz container</td></tr>
+      <tr><td>Baking &amp; Spices</td><td>Pepper</td><td>10 oz container</td></tr>
+      <tr><td>Baking &amp; Spices</td><td>Chocolate chips</td><td>12 oz bag</td></tr>
+      <tr><td>Baking &amp; Spices</td><td>Vanilla extract</td><td>1 bottle</td></tr>
+      <tr><td>Baking &amp; Spices</td><td>assorted small spice containers</td><td>1 small container each</td></tr>
+      <tr><td>Canned/Preserved</td><td>Coconut milk</td><td>2 cans</td></tr>
+      <tr><td>Canned/Preserved</td><td>Black olives</td><td>1 can</td></tr>
+      <tr><td>Canned/Preserved</td><td>Corn</td><td>5 cans</td></tr>
+      <tr><td>Canned/Preserved</td><td>Beans (black, kidney, garbanzo, white, refried, green)</td><td>6 cans</td></tr>
+      <tr><td>Canned/Preserved</td><td>Tomatoes</td><td>4 large</td></tr>
+      <tr><td>Canned/Preserved</td><td>Jalape&ntilde;os</td><td>2</td></tr>
+      <tr><td>Canned/Preserved</td><td>Sundried tomatoes</td><td>1 small jar</td></tr>
+      <tr><td>Canned/Preserved</td><td>Peaches</td><td>4</td></tr>
+      <tr><td>Canned/Preserved</td><td>Pineapple</td><td>2 cans</td></tr>
+      <tr><td>Canned/Preserved</td><td>Pears</td><td>2 cans</td></tr>
+      <tr><td>Condiments &amp; Sauces</td><td>Hot sauce</td><td>1 bottle</td></tr>
+      <tr><td>Condiments &amp; Sauces</td><td>Ketchup</td><td>16 oz</td></tr>
+      <tr><td>Condiments &amp; Sauces</td><td>Mayo</td><td>10 oz</td></tr>
+      <tr><td>Condiments &amp; Sauces</td><td>Mustard</td><td>8 oz</td></tr>
+      <tr><td>Condiments &amp; Sauces</td><td>Soy sauce</td><td>10 oz</td></tr>
+      <tr><td>Condiments &amp; Sauces</td><td>White vinegar</td><td>10 oz</td></tr>
+      <tr><td>Condiments &amp; Sauces</td><td>Olive oil</td><td>10 oz</td></tr>
+      <tr><td>Condiments &amp; Sauces</td><td>Honey</td><td>6 cups</td></tr>
+      <tr><td>Dairy</td><td>Boxed milk</td><td>12 oz</td></tr>
+      <tr><td>Dairy</td><td>Butter</td><td>2 sticks</td></tr>
+      <tr><td>Dairy</td><td>Eggs</td><td>8</td></tr>
+      <tr><td>Meats</td><td>Steaks</td><td>one 12 oz</td></tr>
+      <tr><td>Meats</td><td>Bacon</td><td>2 pounds</td></tr>
+      <tr><td>Meats</td><td>Sandwich meats</td><td>one 8 oz package</td></tr>
+      <tr><td>Meats</td><td>Ground beef</td><td>3 pounds</td></tr>
+      <tr><td>Frozen</td><td>Frozen peas</td><td>1 bag, 16 oz</td></tr>
+      <tr><td>Frozen</td><td>Popsicles</td><td>8</td></tr>
+      <tr><td>Vegetables</td><td>Romaine lettuce</td><td>1 head</td></tr>
+      <tr><td>Vegetables</td><td>Onions</td><td>2</td></tr>
+      <tr><td>Vegetables</td><td>Potatoes</td><td>5</td></tr>
+      <tr><td>Vegetables</td><td>Carrots</td><td>4</td></tr>
+      <tr><td>Vegetables</td><td>Apples</td><td>4</td></tr>
+      <tr><td>Vegetables</td><td>Oranges</td><td>6</td></tr>
+      <tr><td>Vegetables</td><td>Limes</td><td>2</td></tr>
+      <tr><td>Sweets/Snacks</td><td>Chocolate bars</td><td>10</td></tr>
+      <tr><td>Sweets/Snacks</td><td>Fruit gummies</td><td>20</td></tr>
+      <tr><td>Sweets/Snacks</td><td>Granola/power bars</td><td>6</td></tr>
+      <tr><td>Drinks</td><td>Hot cocoa</td><td>8 packets</td></tr>
+      <tr><td>Drinks</td><td>Bottled water</td><td>4</td></tr>
+    </table>
+    <p class="side-note">Source: the Murray family's own real boat provisioning inventory, "Personal Boat Food Shopping List" [S1].</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix D &mdash; Caloric Value of the Core Supply</summary>
+  <div class="inner">
+    <p>Most of the family's total calories come from a manageable subset of the list above &mdash; the dense staples, not the spice jars or the single lime. This case counts calories from the 21 items below, using typical U.S. commercial/USDA-sourced calorie values per unit [S2&ndash;S16]. Small-quantity produce and items marked "None" in the original inventory are real but contribute a small, uncounted share of total calories &mdash; excluded here, not hidden, and noted as a real simplification (see Appendix H, MA4).</p>
+    <table id="apxD">
+      <tr><th>#</th><th>Item</th><th>Amount</th><th>kcal per unit</th><th>Subtotal (kcal)</th></tr>
+      <tr><td>1</td><td>Rice (white &amp; brown)</td><td>4 lb</td><td class="num">1,650 kcal/lb</td><td class="num">6,600</td></tr>
+      <tr><td>2</td><td>Other dry grains (quinoa, orzo, couscous)</td><td>2 lb</td><td class="num">1,650 kcal/lb</td><td class="num">3,300</td></tr>
+      <tr><td>3</td><td>Pasta</td><td>2 lb</td><td class="num">1,680 kcal/lb</td><td class="num">3,360</td></tr>
+      <tr><td>4</td><td>Instant oatmeal</td><td>10 packets</td><td class="num">130 kcal/packet</td><td class="num">1,300</td></tr>
+      <tr><td>5</td><td>Cereal (granola)</td><td>36 oz</td><td class="num">4.9 kcal/g (1,021 g)</td><td class="num">5,000</td></tr>
+      <tr><td>6</td><td>Bread</td><td>1 loaf, 20 slices</td><td class="num">77 kcal/slice</td><td class="num">1,540</td></tr>
+      <tr><td>7</td><td>Tortillas</td><td>6</td><td class="num">145 kcal each</td><td class="num">870</td></tr>
+      <tr><td>8</td><td>Popcorn</td><td>10 bags</td><td class="num">170 kcal/bag</td><td class="num">1,700</td></tr>
+      <tr><td>9</td><td>Ground beef</td><td>3 lb</td><td class="num">1,152 kcal/lb</td><td class="num">3,456</td></tr>
+      <tr><td>10</td><td>Bacon</td><td>2 lb</td><td class="num">1,890 kcal/lb</td><td class="num">3,780</td></tr>
+      <tr><td>11</td><td>Eggs</td><td>8</td><td class="num">72 kcal each</td><td class="num">576</td></tr>
+      <tr><td>12</td><td>Butter</td><td>2 sticks</td><td class="num">808 kcal/stick</td><td class="num">1,616</td></tr>
+      <tr><td>13</td><td>Dried fruit</td><td>1 lb</td><td class="num">1,353 kcal/lb</td><td class="num">1,353</td></tr>
+      <tr><td>14</td><td>Canned beans</td><td>6 cans</td><td class="num">230 kcal/can</td><td class="num">1,380</td></tr>
+      <tr><td>15</td><td>Canned corn</td><td>5 cans</td><td class="num">344 kcal/can</td><td class="num">1,720</td></tr>
+      <tr><td>16</td><td>Coconut milk</td><td>2 cans</td><td class="num">757 kcal/can</td><td class="num">1,513</td></tr>
+      <tr><td>17</td><td>Chocolate chips</td><td>12 oz (340 g)</td><td class="num">5.0 kcal/g</td><td class="num">1,700</td></tr>
+      <tr><td>18</td><td>Honey</td><td>6 cups</td><td class="num">1,031 kcal/cup</td><td class="num">6,186</td></tr>
+      <tr><td>19</td><td>Chocolate bars</td><td>10</td><td class="num">210 kcal each</td><td class="num">2,100</td></tr>
+      <tr><td>20</td><td>Granola/power bars</td><td>6</td><td class="num">200 kcal each</td><td class="num">1,200</td></tr>
+      <tr><td>21</td><td>Fruit gummies</td><td>20</td><td class="num">70 kcal each</td><td class="num">1,400</td></tr>
+      <tr><td></td><td></td><td></td><td class="num"><strong>Total core caloric supply</strong></td><td class="num"><strong>51,650 kcal</strong></td></tr>
+    </table>
+    <p class="side-note">Sources for each row are listed in Appendix I [S2&ndash;S16]; several rows share a source where the same reference food category applies.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix E &mdash; Daily Calorie Needs by Person</summary>
+  <div class="inner">
+    <p>The U.S. government's own official calorie-needs table [S17] estimates how many calories a person needs per day, by age, sex, and activity level. This case uses the "moderately active" column for every family member except where noted.</p>
+    <table id="apxE">
+      <tr><th>Person</th><th>Age / Sex</th><th>Activity assumption</th><th>Full recommended daily calories</th></tr>
+      <tr><td>Tamara</td><td>35, F</td><td>Moderately active</td><td class="num">2,000 kcal</td></tr>
+      <tr><td>John</td><td>70, M</td><td>Moderately active</td><td class="num">2,200 kcal</td></tr>
+      <tr><td>Fiona</td><td>7, F</td><td>Moderately active</td><td class="num">1,600 kcal</td></tr>
+      <tr><td>Easton</td><td>9, M</td><td>Moderately active (healthy baseline)</td><td class="num">1,800 kcal</td></tr>
+      <tr><td>Chance</td><td>2</td><td>(table does not split by sex at this age)</td><td class="num">1,000 kcal</td></tr>
+    </table>
+    <p class="side-note">Source: U.S. Department of Health and Human Services / USDA, "Estimated Calorie Needs per Day, by Age, Sex, and Physical Activity Level" [S17].</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix F &mdash; Two Ways to Ration: The Setup</summary>
+  <div class="inner">
+    <p><strong>Option A &mdash; Equal.</strong> Every one of the five family members receives the same flat daily ration: 2,000 kcal/person/day &mdash; the same 2,000-calorie figure the FDA uses as its one general reference amount on every U.S. Nutrition Facts label [S18], regardless of age or size.</p>
+    <p><strong>Option B &mdash; Need-based.</strong> Each family member receives their own individual full recommended calories from Appendix E &mdash; except Easton, whose ongoing seasickness has him mostly confined to his bunk rather than at his usual activity level. His ration is matched to the <em>sedentary</em> (not moderately active) column of the same official table for a 9-year-old boy: 1,600 kcal, not an invented percentage cut (see Appendix H, MA1). John's ration is his own full, protected 2,200 kcal &mdash; his diabetes changes how consistently he needs to eat, not how much (see Appendix G).</p>
+    <p class="side-note">D4 asks you to total each option's daily consumption, divide it into Appendix D's supply, and compare how many days each option covers &mdash; neither option gets the family anywhere close to a full month at everyone's full recommended calories, which is exactly why D2 asks you to decide, and defend, how many days you are actually rationing for, and D3 asks you to design a real plan for that many days.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix G &mdash; Real-World Rationing and Health Context</summary>
+  <div class="inner">
+    <p><strong>International maritime survival rations.</strong> Under the international Life-Saving Appliances (LSA) Code, every ocean-going liferaft is required to carry a minimum food ration of 10,000 kJ (about 2,390 kcal) per person it's rated to carry [S19] &mdash; issued identically to every occupant, regardless of age or health. This is real international maritime practice for exactly this kind of emergency, and it treats "equal" as the default.</p>
+    <p><strong>Type 2 diabetes and meal consistency.</strong> The American Diabetes Association's clinical guidance emphasizes that for a person managing diabetes with a fixed medication routine, keeping the timing and amount of carbohydrate intake consistent from day to day is what matters most for safe blood sugar control [S20] &mdash; not necessarily eating more total calories than anyone else.</p>
+    <p><strong>Seasickness and eating.</strong> Public health travel guidance recommends eating small amounts of food frequently, rather than large meals, to manage ongoing motion sickness and nausea [S21].</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix H &mdash; Modeling Assumptions</summary>
+  <div class="inner">
+    <p class="side-note">These figures are not sourced the way Appendices D, E, and G's figures are. They are stated scenario assumptions chosen by the case author, each with a real basis. A Hero may challenge any of them in discussion &mdash; that is a legitimate move.</p>
+    <table id="apxH">
+      <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+      <tr><td>MA1</td><td>Easton's Option B ration is matched to a sedentary 9-year-old boy's official calorie estimate, not a specific "percent reduced for vomiting" figure</td><td class="num">1,600 kcal (vs. 1,800 kcal baseline)</td><td>No public dataset states an exact calorie penalty for ongoing seasickness. This case re-classifies Easton's activity level using the same official table (Appendix E), since he is genuinely spending most of his time confined to his bunk.</td></tr>
+      <tr><td>MA2</td><td>Option A's flat "equal" ration is set at 2,000 kcal/person/day</td><td class="num">2,000 kcal</td><td>Anchored to the FDA's own general 2,000-calorie nutrition-label reference (Appendix F) &mdash; the single most recognizable "one number for everyone" figure a real family would reach for.</td></tr>
+      <tr><td>MA3</td><td>John's diabetes is modeled as requiring a full, consistent ration rather than a larger or smaller one</td><td class="num">2,200 kcal (his own full table value)</td><td>Real ADA guidance (Appendix G) concerns consistency of carbohydrate timing for people on a fixed medication routine, not total calorie need.</td></tr>
+      <tr><td>MA4</td><td>Appendix D's "core caloric supply" total excludes small-quantity produce, individual spice containers, and condiments</td><td class="num">51,650 kcal total</td><td>These items are real (Appendix C) but each contributes a small enough share of total calories that including them would not change which option wins &mdash; disclosed here rather than silently dropped.</td></tr>
+      <tr><td>MA5</td><td>Tortillas, popcorn, chocolate bars, granola bars, and fruit gummies use typical commercial-average calorie values, since the source inventory does not name a specific brand</td><td class="num">Values listed in Appendix D</td><td>The original inventory lists these items generically. Typical U.S. commercial averages are used rather than any one specific product's label.</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix I &mdash; Sources</summary>
+  <div class="inner">
+    <table id="apxI">
+      <tr><th>id</th><th>Claim</th><th>Source</th></tr>
+      <tr><td>S1</td><td>The Murray family's real remaining boat food inventory</td><td>Personal Boat Food Shopping List (family's own real provisioning document)</td></tr>
+      <tr><td>S2&ndash;S16</td><td>Per-item calorie values for the 21 counted supply items</td><td>USDA FoodData Central and aggregated commercial nutrition databases (myfooddata.com, fatsecret.com, foodstruct.com)</td></tr>
+      <tr><td>S17</td><td>Estimated Calorie Needs per Day, by Age, Sex, and Physical Activity Level</td><td>U.S. Dept. of Health &amp; Human Services / USDA, 2015&ndash;2020 Dietary Guidelines for Americans, Appendix 2</td></tr>
+      <tr><td>S18</td><td>Nutrition Facts label %DV is based on a 2,000-calorie daily reference diet</td><td>U.S. Food and Drug Administration, Nutrition Facts Label guidance</td></tr>
+      <tr><td>S19</td><td>Minimum liferaft food ration under the international Life-Saving Appliances (LSA) Code</td><td>IMO Life-Saving Appliances Code, via maritime-safety regulatory summaries</td></tr>
+      <tr><td>S20</td><td>Consistency of carbohydrate timing/amount matters most for people with diabetes on a fixed medication routine</td><td>American Diabetes Association, "Nutrition Recommendations and Interventions for Diabetes," Diabetes Care journal</td></tr>
+      <tr><td>S21</td><td>Eating small amounts of food frequently helps manage motion sickness/seasickness</td><td>CDC Travelers' Health / Mayo Clinic first-aid guidance on motion sickness</td></tr>
+    </table>
+  </div>
+</details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix J &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-20. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+<div class="stepbox">
+  <h4>Step 1 &mdash; D1: Total caloric inventory</h4>
+  <div class="goal">Warm-up: convert one item from Appendix C using Appendix D's rate, then enter your full 21-item grand total.</div>
+  <div class="fieldrow"><label for="d1_rice">Rice: 4 lb &times; 1,650 kcal/lb =</label><input type="number" step="1" id="d1_rice"></div>
+  <div class="fieldrow"><label for="d1_total">Your grand total, all 21 items (kcal)</label><input type="number" step="1" id="d1_total"></div>
+  <button onclick="checkD1()">Check</button><span class="fb" id="d1_fb"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; D2: Your rationing horizon</h4>
+  <div class="goal">Nobody knows if rescue is 1 day or 30 days away (Appendix B). State and defend your own number of days.</div>
+  <div class="fieldrow"><label for="d2_days">Your chosen horizon (days)</label><input type="number" step="1" id="d2_days"></div>
+  <div class="fieldrow"><label for="d2_why">Your defense (one sentence)</label><textarea id="d2_why" style="width:340px;min-height:44px;font-family:var(--sans);border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px" placeholder="why this many days?"></textarea></div>
+  <button onclick="checkD2()">Check</button><span class="fb" id="d2_fb"></span>
+  <p class="side-note">This only checks that your number is a real, defendable choice within the case's own 1&ndash;30 day uncertainty window &mdash; there is no single correct horizon.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; D3: Percent of full daily calories</h4>
+  <div class="goal">Pick one family member from your plan. Enter the calories your plan gives them on one day, and what percent that is of their Appendix E full recommended calories.</div>
+  <div class="fieldrow"><label for="d3_person">Family member</label>
+    <select id="d3_person">
+      <option value="tamara">Tamara (2,000 full)</option>
+      <option value="john">John (2,200 full)</option>
+      <option value="fiona">Fiona (1,600 full)</option>
+      <option value="easton">Easton (1,800 full moderately-active / 1,600 sedentary)</option>
+      <option value="chance">Chance (1,000 full)</option>
+    </select>
+  </div>
+  <div class="fieldrow"><label for="d3_cal">Calories in your plan that day</label><input type="number" step="1" id="d3_cal"></div>
+  <div class="fieldrow"><label for="d3_pct">Your computed percent of full daily calories</label><input type="number" step="0.1" id="d3_pct"></div>
+  <button onclick="checkD3()">Check</button><span class="fb" id="d3_fb"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; D4: Total-days-of-coverage comparison</h4>
+  <div class="goal">Total each option's daily consumption (Appendix F), then divide Appendix D's supply by each total to get days of coverage, then find the percent difference.</div>
+  <div class="fieldrow"><label>Option A total daily consumption (kcal)</label><input type="number" step="1" id="d4_a_daily"></div>
+  <div class="fieldrow"><label>Option A days of coverage</label><input type="number" step="0.01" id="d4_a_days"></div>
+  <div class="fieldrow"><label>Option B total daily consumption (kcal)</label><input type="number" step="1" id="d4_b_daily"></div>
+  <div class="fieldrow"><label>Option B days of coverage</label><input type="number" step="0.01" id="d4_b_days"></div>
+  <div class="fieldrow"><label>Percent difference between A and B</label><input type="number" step="0.01" id="d4_pct"></div>
+  <button onclick="checkD4()">Check</button><span class="fb" id="d4_fb"></span>
+  <p class="side-note">This checks your arithmetic, not which option you should pick &mdash; there is no single right recommendation, only correct or incorrect math.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 5 &mdash; D5: Two original visual displays</h4>
+  <div class="goal">Describe each chart you built. This just confirms you made both &mdash; it can't grade a picture.</div>
+  <div class="fieldrow"><label for="d5_bar">Your bar graph (what it compares)</label><textarea id="d5_bar" style="width:340px;min-height:40px;font-family:var(--sans);border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px" placeholder="e.g. Option A vs Option B days of coverage"></textarea></div>
+  <div class="fieldrow"><label for="d5_pie">Your pie chart (what it shows)</label><textarea id="d5_pie" style="width:340px;min-height:40px;font-family:var(--sans);border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px" placeholder="e.g. daily calories split among the 5 family members"></textarea></div>
+  <button onclick="checkD5()">Check</button><span class="fb" id="d5_fb"></span>
+</div>
+
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-drop"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>A week passes. No ship comes. Easton is now barely keeping anything down at all. John's blood sugar is becoming harder to manage. Then, tucked behind a bulkhead panel, Tamara finds something the family forgot was there: a sealed, waterproof emergency ration pack &mdash; the kind every liferaft is required to carry. A standard LSA Code liferaft ration pack holds 10,000 kJ, about 2,390 kcal (Appendix G).</p>
+      <p>Does it matter who gets it? Each option's own philosophy determines how the family would use a single, one-person pack. Think through both: would your option split it five ways, the same as everything else &mdash; or earmark it entirely to one person?</p>
+      <div id="twistApplyNote" class="side-note" style="display:none;color:#e8e3d5;border-top-color:#555">
+        Good &mdash; now check whether your D4 comparison would still change the same way under both options, or by different amounts. That difference is the actual point of the Twist.
+      </div>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Remind me to re-check whether the found ration changes my plan &mdash; and whether it changes both options by the same amount.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li><strong>S1</strong> &mdash; "Personal Boat Food Shopping List," the Murray family's own real provisioning document (legacy case source)</li>
+      <li><strong>S2&ndash;S16</strong> &mdash; USDA FoodData Central and aggregated commercial nutrition databases (myfooddata.com, fatsecret.com, foodstruct.com), accessed 2026-08-19</li>
+      <li><strong>S17</strong> &mdash; U.S. Department of Health and Human Services / USDA, "Estimated Calorie Needs per Day, by Age, Sex, and Physical Activity Level," 2015&ndash;2020 Dietary Guidelines for Americans</li>
+      <li><strong>S18</strong> &mdash; U.S. Food and Drug Administration, Nutrition Facts Label guidance</li>
+      <li><strong>S19</strong> &mdash; IMO Life-Saving Appliances (LSA) Code, via maritime-safety regulatory summaries</li>
+      <li><strong>S20</strong> &mdash; American Diabetes Association, "Nutrition Recommendations and Interventions for Diabetes," Diabetes Care journal</li>
+      <li><strong>S21</strong> &mdash; CDC Travelers' Health / Mayo Clinic first-aid guidance on motion sickness</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Food Rationing &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, ported from cases/food-rationing/sensitivity_model.py
+   case.md sha256 (per case.json qa.case_md_sha256): 35e2fb0f3e9ab0f0eb519262aaf69850a56a974df61c954d502ff73ffdc9565c
+   ================================================================ */
+const PARAMS = {
+  total_supply_kcal: 51650.0,
+  tamara_need_kcal: 2000.0,
+  john_need_kcal: 2200.0,
+  fiona_need_kcal: 1600.0,
+  chance_need_kcal: 1000.0,
+  flat_ration_kcal: 2000.0,
+  easton_need_b_kcal: 1600.0,
+  twist_hidden_ration_kcal: 2390.0
+};
+const FLEX = ["flat_ration_kcal", "easton_need_b_kcal"];
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const totalDailyA = 5.0 * p.flat_ration_kcal;
+  const totalDailyB = p.tamara_need_kcal + p.john_need_kcal + p.fiona_need_kcal + p.easton_need_b_kcal + p.chance_need_kcal;
+  return { A: p.total_supply_kcal / totalDailyA, B: p.total_supply_kcal / totalDailyB, totalDailyA, totalDailyB };
+}
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const base = evaluate(p);
+  const extraA = p.twist_hidden_ration_kcal / base.totalDailyA;
+  const extraB = p.twist_hidden_ration_kcal / p.easton_need_b_kcal;
+  return { A: base.A + extraA, B: base.B + extraB };
+}
+const PERSON_NEEDS = { tamara: 2000, john: 2200, fiona: 1600, easton: 1800, chance: 1000 };
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkD1(){
+  const rice = parseFloat(val('d1_rice'));
+  const total = parseFloat(val('d1_total'));
+  const okRice = near(rice, 6600, 5);
+  const okTotal = near(total, PARAMS.total_supply_kcal, 50);
+  fb('d1_fb', okRice && okTotal);
+}
+function checkD2(){
+  const days = parseFloat(val('d2_days'));
+  const why = (document.getElementById('d2_why').value || '').trim();
+  const ok = Number.isFinite(days) && days >= 1 && days <= 30 && why.length > 8;
+  fb('d2_fb', ok);
+}
+function checkD3(){
+  const person = document.getElementById('d3_person').value;
+  const cal = parseFloat(val('d3_cal'));
+  const pct = parseFloat(val('d3_pct'));
+  const need = PERSON_NEEDS[person];
+  const expected = need ? (cal / need) * 100 : NaN;
+  fb('d3_fb', Number.isFinite(cal) && Number.isFinite(pct) && near(pct, expected, 0.5));
+}
+function checkD4(){
+  const aDaily = parseFloat(val('d4_a_daily'));
+  const aDays = parseFloat(val('d4_a_days'));
+  const bDaily = parseFloat(val('d4_b_daily'));
+  const bDays = parseFloat(val('d4_b_days'));
+  const pct = parseFloat(val('d4_pct'));
+  const res = evaluate({});
+  const okA = near(aDaily, res.totalDailyA, 1) && near(aDays, res.A, 0.05);
+  const okB = near(bDaily, res.totalDailyB, 1) && near(bDays, res.B, 0.05);
+  const expectedPct = Math.abs((res.B - res.A) / res.A * 100);
+  const okPct = near(Math.abs(pct), expectedPct, 0.5);
+  fb('d4_fb', !!(okA && okB && okPct));
+}
+function checkD5(){
+  const bar = (document.getElementById('d5_bar').value || '').trim();
+  const pie = (document.getElementById('d5_pie').value || '').trim();
+  fb('d5_fb', bar.length > 6 && pie.length > 6);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "food-rationing";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "A total caloric inventory of the remaining food supply, item by item, with every multiplication shown before the grand total."],
+  ["D2", "A stated, defended rationing horizon (your own number of days, defended in your own words)."],
+  ["D3", "A detailed per-person rationing plan for your chosen option, with percent of full recommended calories delivered."],
+  ["D4", "A total-days-of-coverage comparison between Option A and Option B, with the percent difference between them."],
+  ["D5", "Two original visual displays: a bar graph (A vs. B totals) and a pie chart (your plan's daily split by person)."]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). Reused verbatim from prior
+   verified cases per MCS-21 (a URL fetched and confirmed for one
+   case is a legitimate source for the same term reused elsewhere).
+   ================================================================ */
+const GLOSSARY = {
+  "Addition": {def: "Combining two or more numbers into a single total.",
+    url: "https://www.khanacademy.org/math/arithmetic-home/addition-subtraction"},
+  "Multiplication": {def: "Combining equal-sized groups to find a total -- repeated addition, done faster.",
+    url: "https://www.khanacademy.org/math/cc-third-grade-math/intro-to-multiplication/multiply-with-groups-of-objects/v/multiplication-intro"},
+  "Division": {def: "Splitting a quantity into equal parts or groups.",
+    url: "https://www.mathsisfun.com/numbers/division.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Proportion": {def: "A statement that two ratios are equal, used to find a missing amount.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Unit": {def: "A defined quantity -- a centimeter, an hour, a liter -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Pie Chart": {def: "A circular chart divided into slices, where each slice's size shows its share of the whole.",
+    url: "https://www.mathsisfun.com/data/pie-charts.html"}
+};
+const HOWTO = [
+  ["How to add multi-digit numbers", "Addition"],
+  ["How to multiply any two numbers", "Multiplication"],
+  ["How to divide a multi-digit number by a 2-digit number", "Division"],
+  ["How to find the percent of a number", "Percent"],
+  ["How to find equivalent ratios", "Ratio"],
+  ["How to create a pie chart given a set of data", "Pie Chart"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const box = document.getElementById('twistApplyNote');
+  if(box) box.style.display = applied ? 'block' : 'none';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

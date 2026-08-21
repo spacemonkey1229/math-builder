@@ -1,0 +1,1225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Player Of The Year — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  case.md sha256 (per case.json.qa.case_md_sha256): eeab9a47b9ed46f65ce1e59f094c9e816a9805831144f1bb679d97f344cbb4ea
+  HARD LINE (MCS-37): this file must never print the balance-test verdict (CompositeA/
+  CompositeB scores, the #1-vs-#2 margin in points or percent, the winner) as a static
+  literal anywhere outside a <script> tag's live computation. Every one of those numbers
+  is computed in the browser from the case's own raw Appendix A/B data, never pre-printed
+  in prose. The Twist section deliberately omits the specific stat-correction figure and
+  the FACILITATOR.md/case.json QA-history note about a corrected arithmetic error — both
+  are facilitator-only and are not reproduced anywhere in this file.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  /* no case-specific CSS overrides needed */
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <!-- no additional icons needed for this case -->
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: Player Of The Year</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Statistics &amp; Probability &middot; Negative Numbers &middot; Decimals</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+  <p class="lede">The green room smells like hairspray and cold coffee. Renata Voss checks her phone one more
+  time &mdash; nothing new from either committee member &mdash; then sets it face-down on the table between
+  two laptops, each one open to a spreadsheet she has rebuilt from scratch three times tonight. Through the
+  wall, she can hear the crowd settling into their seats, the low hum of fourteen families who flew in not
+  knowing which of their daughters is about to be called the best volleyball player in the country. Marcus,
+  two seats down, is still muttering about block rates. Diane hasn't looked up from her laptop in twenty
+  minutes. Both of them handed Renata a finished formula an hour ago, confident, printed, signed. Both
+  formulas are honest. Both are defensible. And they don't agree.</p>
+  <p>Renata is the chair of the AVCA Player Of The Year Committee, which means the split doesn't get to stay
+  a disagreement &mdash; in eleven minutes, a name goes on a card, and Kerri Walsh-Jennings reads it out loud
+  to a theater full of cameras. Renata pulls both spreadsheets toward her, scrolls to the bottom row of each,
+  and stares at the two totals sitting side by side. A stagehand leans through the doorway. &ldquo;Two minutes
+  to places.&rdquo; Renata doesn't answer. She's still reading.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+  <p>The 2027-2028 NCAA Division I Women's Volleyball season ended with the University of Wisconsin upsetting
+  the heavily favored University of Louisville for the national championship. With the season closed, the
+  American Volleyball Coaches Association (AVCA) runs the sport's most prestigious postseason honors. The
+  process happens in two stages. First, a nationwide committee of coaches reviews the season and names 14
+  players &mdash; the best of the more than 340 Division I women's volleyball programs &mdash; to the AVCA
+  First-Team All-American squad. The AVCA's own published materials describe this as a multi-stage process
+  (preseason watch list, midseason additions, semifinalists, and finalists) run by a standing Awards Committee
+  (see Appendix F). Once the 14 are set, a second body, the AVCA Player Of The Year Committee, meets to select
+  one name from among them.</p>
+  <p>Renata Voss chairs that second committee. Its instructions, inherited from decades of past committees, are
+  deliberately loose: weigh the players' individual statistics, and also &ldquo;weigh the quality of the
+  teams&rdquo; behind them (see Appendix F). Two of Renata's committee members took that instruction and built
+  two different, fully-worked scoring systems from it.</p>
+  <p><strong>Marcus's system &mdash; the All-Purpose Production Index &mdash;</strong> scores all 14 finalists
+  identically, position blind, as an unweighted average of how many standard deviations above or below the
+  national field each player sits across five countable per-set categories: kills, aces, blocks, assists, and
+  digs (see Appendix B, Appendix D).</p>
+  <p><strong>Diane's system &mdash; the Role-Weighted &times; Team-Success Composite &mdash;</strong> scores each
+  finalist only on the categories that define excellence at her specific position, then multiplies that score
+  by a bonus tied to how far her team ran in the national rankings (see Appendix D).</p>
+  <p>Both systems must be run, in full, consistently, across all 14 named finalists (see Appendix A) using the
+  same real, published national statistics and the stat definitions both committee members work from (see
+  Appendix A, Appendix B, Appendix C). The committee cannot pick a favorite player and then choose whichever
+  formula gets her there &mdash; it must adopt one methodology and let that methodology name the winner,
+  whoever that turns out to be. Both formulas also rest on a short list of scenario-level design choices that a
+  rigorous committee discloses rather than buries (see Appendix E).</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Renata Voss, Chair of the AVCA Player Of The Year Committee. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Adopt Marcus's All-Purpose Production Index</h4>
+      <p style="margin:0">Under this system, Anna Stevenson (MB, Louisville) is the 2027-2028 AVCA Player Of The Year.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Adopt Diane's Role-Weighted &times; Team-Success Composite</h4>
+      <p style="margin:0">Under this system, Sydney Hilley (S, Wisconsin) is the 2027-2028 AVCA Player Of The Year.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">D1. A completed Methodology A composite table for all 14 finalists (each z-score plus her CompositeA). D2. A completed Methodology B composite table for all 14 finalists (role-relevant z-scores, RoleZ, TeamMult, CompositeB). D3. A force ranking of all 14 finalists, 1&ndash;14, under each methodology, side by side. D4. At least two original visual displays comparing the two methodologies. D5. A written comparison of the margin between the #1- and #2-ranked finalist under each methodology, in composite points and as a percent gap.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+  <details open>
+    <summary>Appendix A &mdash; 2027-2028 AVCA First-Team All-American Finalists: Full Season Statistics</summary>
+    <div class="inner">
+      <p>Every stat below is per set (or a percentage), pulled from the 2027-2028 NCAA Division I Women's
+      Volleyball season's national statistical leaderboards. <strong>NR</strong> means the player did not rank
+      nationally in that category &mdash; not that she scored a zero, but that the category isn't part of her
+      role (a setter's kill total, a libero's hitting percentage). Cells marked <strong>(d)</strong> were
+      derived by back-computing from a different leaderboard's raw counts rather than read directly off that
+      stat's own ranked list (see Appendix E, Note 1).</p>
+      <table id="apxATable"><thead><tr><th>Player</th><th>Pos</th><th>School (Conf.)</th><th>Hit %</th><th>Kills/Set</th><th>Attacks/Set</th><th>Digs/Set</th><th>Assists/Set</th><th>Aces/Set</th><th>Blocks/Set</th><th>Team RPI</th><th>Team W-L</th></tr></thead><tbody><tr><td>Betsy Torres</td><td>OH</td><td>Texas (Big 12)</td><td class='num'>NR</td><td class='num'>3.91</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>0.44</td><td class='num'>0.65 (d)</td><td class='num'>4</td><td class='num'>27-2</td></tr><tr><td>Nicole Peterson</td><td>MB</td><td>Wisconsin (Big Ten)</td><td class='num'>0.430</td><td class='num'>3.41</td><td class='num'>6.40 (d)</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>0.01 (d)</td><td class='num'>1.43</td><td class='num'>2</td><td class='num'>31-3</td></tr><tr><td>Stephanie Roberts</td><td>RS</td><td>Minnesota (Big Ten)</td><td class='num'>0.254 (d)</td><td class='num'>4.75</td><td class='num'>12.58</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>0.19 (d)</td><td class='num'>0.72 (d)</td><td class='num'>13</td><td class='num'>22-9</td></tr><tr><td>Shawna Capellen</td><td>OH</td><td>Utah (Pac-12)</td><td class='num'>0.276 (d)</td><td class='num'>5.19</td><td class='num'>12.50</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>0.31 (d)</td><td class='num'>0.49 (d)</td><td class='num'>23</td><td class='num'>22-9</td></tr><tr><td>Lauren Bates</td><td>L/DS</td><td>Wisconsin (Big Ten)</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>4.35</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>2</td><td class='num'>31-3</td></tr><tr><td>Julia Bergmann</td><td>OH</td><td>Georgia Tech (ACC)</td><td class='num'>0.284 (d)</td><td class='num'>4.44</td><td class='num'>9.95</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>0.32 (d)</td><td class='num'>0.60 (d)</td><td class='num'>5</td><td class='num'>26-6</td></tr><tr><td>Mastana Brambilla</td><td>OH</td><td>Georgia Tech (ACC)</td><td class='num'>0.286 (d)</td><td class='num'>4.34</td><td class='num'>10.14</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>0.21 (d)</td><td class='num'>0.44 (d)</td><td class='num'>5</td><td class='num'>26-6</td></tr><tr><td>Anna DeFluer</td><td>OH</td><td>Louisville (ACC)</td><td class='num'>NR</td><td class='num'>3.27</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>1</td><td class='num'>32-1</td></tr><tr><td>Tori Dent</td><td>S</td><td>Louisville (ACC)</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>10.74</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>1</td><td class='num'>32-1</td></tr><tr><td>Samantha Drechsel</td><td>OH</td><td>Washington (Pac-12)</td><td class='num'>NR</td><td class='num'>3.48</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>0.27 (d)</td><td class='num'>0.57 (d)</td><td class='num'>16</td><td class='num'>26-5</td></tr><tr><td>Sydney Hilley</td><td>S</td><td>Wisconsin (Big Ten)</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>11.95</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>2</td><td class='num'>31-3</td></tr><tr><td>Mac May</td><td>OH</td><td>UCLA (Pac-12)</td><td class='num'>0.268 (d)</td><td class='num'>4.85</td><td class='num'>11.66</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>0.39</td><td class='num'>0.45 (d)</td><td class='num'>17</td><td class='num'>25-6</td></tr><tr><td>Yossiana Pressley</td><td>OH</td><td>Baylor (Big 12)</td><td class='num'>0.280 (d)</td><td class='num'>4.53</td><td class='num'>10.37</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>0.15 (d)</td><td class='num'>0.55 (d)</td><td class='num'>6</td><td class='num'>22-6</td></tr><tr><td>Anna Stevenson</td><td>MB</td><td>Louisville (ACC)</td><td class='num'>0.427</td><td class='num'>2.79</td><td class='num'>5.23 (d)</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>NR</td><td class='num'>1.35</td><td class='num'>1</td><td class='num'>32-1</td></tr></tbody></table>
+      <p class="side-note"><em>Sets played and Points/Set are included in the accompanying data workbook for
+      completeness but are not used by either proposed formula &mdash; deciding what to ignore is part of the
+      work.</em></p>
+      <p class="side-note">Source: <code>2027-2028 NCAA Division I Women's Volleyball Statistics.xlsx</code>,
+      9-tab national statistical leaderboard, provided with the case materials.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; National Reference Population (for computing z-scores)</summary>
+    <div class="inner">
+      <p>Both proposed methodologies compare each finalist to the national field. The table below is the
+      <a class="gterm" data-term="Mean">mean</a> and standard deviation of each stat, computed across every
+      player who appeared on that stat's own national ranked leaderboard (not just the 14 finalists) &mdash;
+      the honest &ldquo;how does this player compare to the field&rdquo; baseline both committee members
+      agreed to use.</p>
+      <table id="apxBTable"><thead><tr><th>Category</th><th>National Mean</th><th>National SD</th><th>n (players ranked)</th></tr></thead><tbody><tr><td>Hitting %</td><td>0.356</td><td>0.033</td><td class='num'>150</td></tr><tr><td>Kills/Set</td><td>2.333</td><td>0.784</td><td class='num'>1,500</td></tr><tr><td>Blocks/Set</td><td>1.084</td><td>0.130</td><td class='num'>301</td></tr><tr><td>Assists/Set</td><td>9.997</td><td>0.756</td><td class='num'>150</td></tr><tr><td>Digs/Set</td><td>4.617</td><td>0.426</td><td class='num'>150</td></tr><tr><td>Aces/Set</td><td>0.405</td><td>0.061</td><td class='num'>150</td></tr><tr><td>Attacks/Set</td><td>10.844</td><td>0.925</td><td class='num'>150</td></tr></tbody></table>
+      <p>z-score formula (used identically by both methodologies for every category they touch):</p>
+      <p><code>z(player's value) = (player's value &minus; national mean) / national SD</code></p>
+      <p class="side-note">Source: derived from the same national leaderboard tabs cited in Appendix A. Note
+      that each leaderboard is itself only the top 150&ndash;1,500 nationally ranked players in that category
+      (an already-elite subpopulation, not the full ~5,000-plus D-I roster) &mdash; see Appendix E, Note 2.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Volleyball Statistics Glossary</summary>
+    <div class="inner">
+      <p>Definitions below are reproduced from the AVCA National Volleyball Statistics Manual (the same public
+      glossary AVCA-affiliated broadcasts and stat sheets use).</p>
+      <ul>
+        <li><strong>Kill</strong> &mdash; awarded any time a player's attack is unreturnable by the opposition,
+        or leads directly to a blocking error by the opposition; results in a point or side-out.</li>
+        <li><strong>Attack Attempt</strong> &mdash; any ball played over the net in a genuine attempt to score a
+        point or side-out (spiked, tipped, or hit overhead).</li>
+        <li><strong>Hitting Efficiency (Hitting %)</strong> &mdash; (Kills &minus; Errors) / Total Attack
+        Attempts. Compared on a similar scale to a batting average; a mark over .300 is considered elite.</li>
+        <li><strong>Ace</strong> &mdash; a serve that results directly in a point (untouched, unplayable, or the
+        receiving team is caught out of rotation).</li>
+        <li><strong>Block</strong> &mdash; awarded whenever a player (alone or with a teammate) blocks the ball
+        into the opponent's court, leading directly to a point or side-out. A <strong>Block Assist</strong> is
+        credited to every player involved in a multi-player block; a <strong>Block Solo</strong> is one player
+        alone.</li>
+        <li><strong>Assist</strong> &mdash; awarded whenever a player passes or sets the ball to a teammate who
+        then attacks it for a Kill (not for any other outcome).</li>
+        <li><strong>Dig</strong> &mdash; awarded whenever a player passes a ball that the opposition has
+        attacked, and keeps it in play.</li>
+      </ul>
+      <p class="side-note">Source: <code>Stat_Definitions.pdf</code>, AVCA National Volleyball Statistics Manual
+      excerpt, provided with the case materials (also published at avca.org).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; The Two Proposed Scoring Methodologies</summary>
+    <div class="inner">
+      <h3>Methodology A &mdash; Marcus's &ldquo;All-Purpose Production Index&rdquo;</h3>
+      <p>Score every finalist identically, position blind, across the same five per-set categories every rally
+      can generate: Kills, Aces, Blocks, Assists, Digs. Convert each to a z-score against the national field
+      (Appendix B), then average the five z-scores with equal weight. If a finalist isn't nationally ranked in
+      a category, that category is scored at league average (z&nbsp;=&nbsp;0) rather than penalized &mdash; see
+      Appendix E, Note 1 for why.</p>
+      <p><code>CompositeA(player) = mean( z(Kills/Set), z(Aces/Set), z(Blocks/Set), z(Assists/Set), z(Digs/Set) )</code><br>
+      <code>where any category the player isn't nationally ranked in contributes z = 0</code></p>
+      <h3>Methodology B &mdash; Diane's &ldquo;Role-Weighted &times; Team-Success Composite&rdquo;</h3>
+      <p>Score each finalist only on the categories that define excellence at her position, then multiply by a
+      team-success factor tied to her team's final national RPI rank.</p>
+      <p><strong>Role-relevant categories, by position:</strong></p>
+      <table id="apxDRoleTable"><thead><tr><th>Position</th><th>Categories scored</th></tr></thead><tbody><tr><td>OH / RS (pin hitters)</td><td>Kills/Set, Hitting %, Aces/Set</td></tr><tr><td>MB (middle blocker)</td><td>Blocks/Set, Hitting %, Kills/Set</td></tr><tr><td>S (setter)</td><td>Assists/Set</td></tr><tr><td>L/DS (libero / defensive specialist)</td><td>Digs/Set</td></tr></tbody></table>
+      <p><strong>Team-success multiplier</strong>, based on the team's final-season RPI rank (out of roughly
+      340 Division I programs; see Appendix A for each finalist's Team RPI):</p>
+      <p><code>RoleZ(player) = mean( z(category) for each category in that player's role-category list )</code><br>
+      <code>TeamMult(RPI) = 1 + 0.5 &times; (1 &minus; (RPI &minus; 1) / 49)&nbsp;&nbsp;&nbsp;if RPI &le; 50</code><br>
+      <code>TeamMult(RPI) = 1.0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if RPI &gt; 50</code><br>
+      <code>CompositeB(player) = RoleZ(player) &times; TeamMult(Team RPI)</code></p>
+      <p>For example, the nation's #1-RPI team's players receive the maximum +50% bonus (TeamMult = 1.50); a
+      team ranked exactly 50th receives no bonus at all (TeamMult = 1.00); a team ranked outside the top 50
+      also receives no bonus.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p>Every real formula still requires a few scenario-level design choices. Both are stated here, with the
+      reasoning behind them &mdash; not their effect on the outcome. Both are worth stress-testing: try flexing
+      each one by &plusmn;50% and see whether your recommendation changes.</p>
+      <ul>
+        <li><strong>Note 1 &mdash; the z = 0 convention (both methodologies).</strong> A finalist who isn't
+        nationally ranked in a category is scored at league average (z = 0) for that category, not penalized as
+        if she failed at it. The reasoning: a setter's missing kill total reflects &ldquo;this isn't her
+        job,&rdquo; not &ldquo;she attempted kills and scored zero.&rdquo; Scoring it as a hard zero would
+        systematically punish every specialist position (setters, liberos) purely for not doing something
+        outside their role. This convention applies identically under Methodology B when one of a player's own
+        role categories (Appendix D's table) is unranked for her &mdash; for example, Betsy Torres (OH) has no
+        ranked Hit%, one of the three OH/RS role categories, and scores z = 0 for it under Methodology B just as
+        she would under Methodology A. Some of the &ldquo;not nationally ranked&rdquo; cells in Appendix A were
+        still recoverable by back-computing from raw counts in a different leaderboard tab rather than that
+        stat's own ranked list (marked (d)) &mdash; those are real, derived numbers, not assumptions.</li>
+        <li><strong>Note 2 &mdash; the national reference population (both methodologies).</strong> The
+        mean/SD baseline in Appendix B is computed only from each stat's own national leaderboard (the top
+        150&ndash;1,500 ranked players), not the full D-I field of roughly 5,000-plus players. This is the only
+        publicly published national ranking <a class="gterm" data-term="Data">data</a> available, and using it
+        as &ldquo;the field&rdquo; is a reasonable modeling choice &mdash; but it means a z-score of 0
+        represents &ldquo;average among an already elite subset,&rdquo; not &ldquo;average among every D-I
+        player.&rdquo;</li>
+        <li><strong>Note 3 &mdash; the team-success multiplier curve (Methodology B).</strong> The specific
+        shape of TeamMult(RPI) &mdash; linear decay from RPI 1 to RPI 50, capped at +50%, with zero bonus beyond
+        RPI 50 &mdash; is a scenario assumption representing &ldquo;weigh the quality of the teams,&rdquo; not a
+        universal formula every analyst would agree on. A steeper curve, a different cutoff, or a cap other than
+        50% would change how much team success counts relative to individual production.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; How the AVCA Selects Its Player Of The Year</summary>
+    <div class="inner">
+      <p>The American Volleyball Coaches Association's Division I Women's Volleyball Awards Committee is
+      responsible for the entire multi-stage postseason honors process each year: a preseason watch list,
+      midseason watch-list additions, a semifinalist announcement, and a final group of finalists before the
+      Player Of The Year is named. The Awards Committee &mdash; not any single coach &mdash; runs every phase of
+      that process.</p>
+      <p class="side-note">Source: American Volleyball Coaches Association, &ldquo;2025 AVCA Division I Player
+      of the Year&rdquo; award page, avca.org, accessed 2026-08-20.
+      <a href="https://www.avca.org/award/2025-avca-player-of-the-year-award-watch-list/" target="_blank" rel="noopener">avca.org/award/2025-avca-player-of-the-year-award-watch-list</a></p>
+    </div>
+  </details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-20. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+  <div class="stepbox">
+    <h4>Step 1 &mdash; One category z-score (D1/D2)</h4>
+    <div class="goal">Pick any finalist and any of the five production categories, then compute her z-score
+    against the national field: z = (player's value &minus; national mean) / national SD (Appendix B). If she
+    isn't nationally ranked in that category, remember the z = 0 convention (Appendix E, Note 1).</div>
+    <div class="fieldrow"><label for="s1_player">Finalist</label><select id="s1_player"><option value="Betsy Torres">Betsy Torres</option><option value="Nicole Peterson">Nicole Peterson</option><option value="Stephanie Roberts">Stephanie Roberts</option><option value="Shawna Capellen">Shawna Capellen</option><option value="Lauren Bates">Lauren Bates</option><option value="Julia Bergmann">Julia Bergmann</option><option value="Mastana Brambilla">Mastana Brambilla</option><option value="Anna DeFluer">Anna DeFluer</option><option value="Tori Dent">Tori Dent</option><option value="Samantha Drechsel">Samantha Drechsel</option><option value="Sydney Hilley">Sydney Hilley</option><option value="Mac May">Mac May</option><option value="Yossiana Pressley">Yossiana Pressley</option><option value="Anna Stevenson">Anna Stevenson</option></select></div>
+    <div class="fieldrow"><label for="s1_cat">Category</label><select id="s1_cat"><option value="kills">Kills/Set</option><option value="aces">Aces/Set</option><option value="blocks">Blocks/Set</option><option value="assists">Assists/Set</option><option value="digs">Digs/Set</option></select></div>
+    <div class="fieldrow"><label for="s1_z">Your computed z-score</label><input type="number" id="s1_z" step="0.001"><span class="fb" id="fb_s1"></span></div>
+    <button onclick="checkStep1()">Check Step 1</button>
+    <p class="side-note">Tolerance is &plusmn;0.01 &mdash; small rounding differences are fine.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; CompositeA for one finalist (D1)</h4>
+    <div class="goal">Compute Methodology A's CompositeA for any one finalist: the mean of her five z-scores
+    (Kills, Aces, Blocks, Assists, Digs), scoring any unranked category at z = 0.</div>
+    <div class="fieldrow"><label for="s2_player">Finalist</label><select id="s2_player"><option value="Betsy Torres">Betsy Torres</option><option value="Nicole Peterson">Nicole Peterson</option><option value="Stephanie Roberts">Stephanie Roberts</option><option value="Shawna Capellen">Shawna Capellen</option><option value="Lauren Bates">Lauren Bates</option><option value="Julia Bergmann">Julia Bergmann</option><option value="Mastana Brambilla">Mastana Brambilla</option><option value="Anna DeFluer">Anna DeFluer</option><option value="Tori Dent">Tori Dent</option><option value="Samantha Drechsel">Samantha Drechsel</option><option value="Sydney Hilley">Sydney Hilley</option><option value="Mac May">Mac May</option><option value="Yossiana Pressley">Yossiana Pressley</option><option value="Anna Stevenson">Anna Stevenson</option></select></div>
+    <div class="fieldrow"><label for="s2_val">Your CompositeA</label><input type="number" id="s2_val" step="0.001"><span class="fb" id="fb_s2"></span></div>
+    <button onclick="checkStep2()">Check Step 2</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; CompositeB for one finalist (D2)</h4>
+    <div class="goal">Compute Methodology B's CompositeB for any one finalist: her RoleZ (mean of her
+    role-relevant category z-scores, Appendix D's table) times her team's TeamMult (from the RPI formula).</div>
+    <div class="fieldrow"><label for="s3_player">Finalist</label><select id="s3_player"><option value="Betsy Torres">Betsy Torres</option><option value="Nicole Peterson">Nicole Peterson</option><option value="Stephanie Roberts">Stephanie Roberts</option><option value="Shawna Capellen">Shawna Capellen</option><option value="Lauren Bates">Lauren Bates</option><option value="Julia Bergmann">Julia Bergmann</option><option value="Mastana Brambilla">Mastana Brambilla</option><option value="Anna DeFluer">Anna DeFluer</option><option value="Tori Dent">Tori Dent</option><option value="Samantha Drechsel">Samantha Drechsel</option><option value="Sydney Hilley">Sydney Hilley</option><option value="Mac May">Mac May</option><option value="Yossiana Pressley">Yossiana Pressley</option><option value="Anna Stevenson">Anna Stevenson</option></select></div>
+    <div class="fieldrow"><label for="s3_val">Your CompositeB</label><input type="number" id="s3_val" step="0.001"><span class="fb" id="fb_s3"></span></div>
+    <button onclick="checkStep3()">Check Step 3</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; The margin between two finalists (D5)</h4>
+    <div class="goal">Pick a methodology and two finalists (whichever two you found closest together, or
+    farthest apart, in your own D3 ranking). Compute the gap between their composite scores in points, and as
+    a percent gap relative to the lower of the two.</div>
+    <div class="fieldrow">
+      <label for="s4_method">Methodology</label>
+      <select id="s4_method"><option value="A">Methodology A</option><option value="B">Methodology B</option></select>
+    </div>
+    <div class="fieldrow"><label for="s4_p1">Finalist 1 (higher composite)</label><select id="s4_p1"><option value="Betsy Torres">Betsy Torres</option><option value="Nicole Peterson">Nicole Peterson</option><option value="Stephanie Roberts">Stephanie Roberts</option><option value="Shawna Capellen">Shawna Capellen</option><option value="Lauren Bates">Lauren Bates</option><option value="Julia Bergmann">Julia Bergmann</option><option value="Mastana Brambilla">Mastana Brambilla</option><option value="Anna DeFluer">Anna DeFluer</option><option value="Tori Dent">Tori Dent</option><option value="Samantha Drechsel">Samantha Drechsel</option><option value="Sydney Hilley">Sydney Hilley</option><option value="Mac May">Mac May</option><option value="Yossiana Pressley">Yossiana Pressley</option><option value="Anna Stevenson">Anna Stevenson</option></select></div>
+    <div class="fieldrow"><label for="s4_p2">Finalist 2 (lower composite)</label><select id="s4_p2"><option value="Betsy Torres">Betsy Torres</option><option value="Nicole Peterson">Nicole Peterson</option><option value="Stephanie Roberts">Stephanie Roberts</option><option value="Shawna Capellen">Shawna Capellen</option><option value="Lauren Bates">Lauren Bates</option><option value="Julia Bergmann">Julia Bergmann</option><option value="Mastana Brambilla">Mastana Brambilla</option><option value="Anna DeFluer">Anna DeFluer</option><option value="Tori Dent">Tori Dent</option><option value="Samantha Drechsel">Samantha Drechsel</option><option value="Sydney Hilley">Sydney Hilley</option><option value="Mac May">Mac May</option><option value="Yossiana Pressley">Yossiana Pressley</option><option value="Anna Stevenson">Anna Stevenson</option></select></div>
+    <div class="fieldrow"><label for="s4_pts">Margin (composite points)</label><input type="number" id="s4_pts" step="0.001"><span class="fb" id="fb_s4a"></span></div>
+    <div class="fieldrow"><label for="s4_pct">Margin (percent gap)</label><input type="number" id="s4_pct" step="0.1"><span class="fb" id="fb_s4b"></span></div>
+    <button onclick="checkStep4()">Check Step 4</button>
+    <p class="side-note">D4's charts: use the &ldquo;Download CSV&rdquo; buttons on Appendix A/B's tables to
+    pull the raw numbers into a spreadsheet and build your own bar graph and scatter plot &mdash; that's your
+    original visual work.</p>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p>Once you have Methodology A's top-two margin in hand from Step 4: real NCAA per-set stats are
+      reported to two decimal places. A single late scorer's-table correction to any one finalist's raw
+      per-set number &mdash; the ordinary kind of revision that happens after a stat sheet gets a second look
+      &mdash; can be enough to move a composite average built from five categories by more than Methodology
+      A's own top-two gap. <strong>Does Methodology A still have a clear winner once you account for that?</strong></p>
+      <p>Recompute Step 4 for Methodology A after toggling the correction below, and compare: did the winner
+      change? Did the margin shrink, grow, or flip sides entirely?</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply a routine box-score correction to one finalist's Methodology-A inputs and recheck Step 4</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+      <li>[S1] 2027-2028 NCAA Division I Women's Volleyball Statistics.xlsx (9-tab national leaderboard workbook), provided case materials.</li>
+      <li>[S2] National reference population (mean/SD/n per category), derived from the same national leaderboard tabs.</li>
+      <li>[S3] AVCA National Volleyball Statistics Manual (Stat_Definitions.pdf), provided case materials; also published at avca.org.</li>
+      <li>[S4] American Volleyball Coaches Association, &ldquo;2025 AVCA Division I Player of the Year&rdquo; award page &mdash; <a href="https://www.avca.org/award/2025-avca-player-of-the-year-award-watch-list/" target="_blank" rel="noopener">avca.org</a>, accessed 2026-08-20.
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Player Of The Year &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/player-of-the-year/sensitivity_model.py
+// (case_md_sha256: eeab9a47b9ed46f65ce1e59f094c9e816a9805831144f1bb679d97f344cbb4ea)
+// Appendix A raw per-player stats. NR (not ranked) is null.
+const PLAYERS = {
+  "Betsy Torres":      {pos:"OH",  hit:null,  kills:3.91, aces:0.44, blocks:0.65, assists:null,  digs:null, rpi:4},
+  "Nicole Peterson":   {pos:"MB",  hit:0.430, kills:3.41, aces:0.01, blocks:1.43, assists:null,  digs:null, rpi:2},
+  "Stephanie Roberts": {pos:"RS",  hit:0.254, kills:4.75, aces:0.19, blocks:0.72, assists:null,  digs:null, rpi:13},
+  "Shawna Capellen":   {pos:"OH",  hit:0.276, kills:5.19, aces:0.31, blocks:0.49, assists:null,  digs:null, rpi:23},
+  "Lauren Bates":      {pos:"L/DS",hit:null,  kills:null, aces:null, blocks:null, assists:null,  digs:4.35, rpi:2},
+  "Julia Bergmann":    {pos:"OH",  hit:0.284, kills:4.44, aces:0.32, blocks:0.60, assists:null,  digs:null, rpi:5},
+  "Mastana Brambilla": {pos:"OH",  hit:0.286, kills:4.34, aces:0.21, blocks:0.44, assists:null,  digs:null, rpi:5},
+  "Anna DeFluer":      {pos:"OH",  hit:null,  kills:3.27, aces:null, blocks:null, assists:null,  digs:null, rpi:1},
+  "Tori Dent":         {pos:"S",   hit:null,  kills:null, aces:null, blocks:null, assists:10.74, digs:null, rpi:1},
+  "Samantha Drechsel": {pos:"OH",  hit:null,  kills:3.48, aces:0.27, blocks:0.57, assists:null,  digs:null, rpi:16},
+  "Sydney Hilley":     {pos:"S",   hit:null,  kills:null, aces:null, blocks:null, assists:11.95, digs:null, rpi:2},
+  "Mac May":           {pos:"OH",  hit:0.268, kills:4.85, aces:0.39, blocks:0.45, assists:null,  digs:null, rpi:17},
+  "Yossiana Pressley": {pos:"OH",  hit:0.280, kills:4.53, aces:0.15, blocks:0.55, assists:null,  digs:null, rpi:6},
+  "Anna Stevenson":    {pos:"MB",  hit:0.427, kills:2.79, aces:null, blocks:1.35, assists:null,  digs:null, rpi:1},
+};
+
+// Appendix B -- national reference population (cited data, not flexed).
+const NATIONAL = {
+  hit:     [0.356, 0.033],
+  kills:   [2.333, 0.784],
+  blocks:  [1.084, 0.130],
+  assists: [9.997, 0.756],
+  digs:    [4.617, 0.426],
+  aces:    [0.405, 0.061],
+};
+
+// Appendix D -- role-relevant categories by position.
+const ROLE_CATEGORIES = {
+  OH: ["kills", "hit", "aces"],
+  RS: ["kills", "hit", "aces"],
+  MB: ["blocks", "hit", "kills"],
+  S:  ["assists"],
+  "L/DS": ["digs"],
+};
+
+// Appendix E -- disclosed modeling-assumption dials.
+const PARAMS = {
+  unranked_z_penalty: 0.0,   // MA1: z=0 for an unranked category, not a penalty
+  team_mult_max_bonus: 0.5,  // MA3: max TeamMult bonus for a #1-RPI team
+  team_mult_cutoff_rpi: 50,  // MA3: RPI rank beyond which no bonus applies
+};
+const FLEX = ["unranked_z_penalty"]; // the only dial that moves Methodology A's own top-2 margin
+
+function _z(cat, value, unrankedPenalty){
+  if(value === null || value === undefined) return unrankedPenalty ? -Math.abs(unrankedPenalty) : 0.0;
+  const [mean, sd] = NATIONAL[cat];
+  return (value - mean) / sd;
+}
+function _compositeA(name, params, statsOverride){
+  const p = Object.assign({}, PARAMS, params || {});
+  const stats = statsOverride || PLAYERS[name];
+  const cats = ["kills", "aces", "blocks", "assists", "digs"];
+  const zs = cats.map(c => _z(c, stats[c], p.unranked_z_penalty));
+  return zs.reduce((a,b)=>a+b,0) / zs.length;
+}
+function _teamMult(rpi, p){
+  if(rpi > p.team_mult_cutoff_rpi) return 1.0;
+  const span = p.team_mult_cutoff_rpi - 1;
+  return 1 + p.team_mult_max_bonus * (1 - (rpi - 1) / span);
+}
+function _compositeB(name, params, statsOverride){
+  const p = Object.assign({}, PARAMS, params || {});
+  const stats = statsOverride || PLAYERS[name];
+  const cats = ROLE_CATEGORIES[stats.pos];
+  const zs = cats.map(c => _z(c, stats[c], p.unranked_z_penalty));
+  const roleZ = zs.reduce((a,b)=>a+b,0) / zs.length;
+  return roleZ * _teamMult(stats.rpi, p);
+}
+// evaluate(params) -- CONTRACT shape {A, B}: Methodology A's own #1 finalist's
+// CompositeA and the #2 finalist's CompositeA (reproduces sensitivity_model.py's
+// evaluate(), which reports margin_pct as the case's own primary balance metric).
+function evaluate(params){
+  const scores = Object.keys(PLAYERS).map(name => [name, _compositeA(name, params)]);
+  scores.sort((a,b) => b[1] - a[1]);
+  return {A: scores[0][1], B: scores[1][1]};
+}
+// evaluate_twist(params) -- same shape, with the Twist's own perturbation (a
+// single finalist's raw input shifted by a realistic box-score-correction
+// margin) applied before recomputing. Numbers live here, in computation only.
+function evaluate_twist(params){
+  const stats = Object.assign({}, PLAYERS["Anna Stevenson"], {blocks: 1.344});
+  const scores = Object.keys(PLAYERS).map(name => {
+    const s = (name === "Anna Stevenson") ? stats : PLAYERS[name];
+    return [name, _compositeA(name, params, s)];
+  });
+  scores.sort((a,b) => b[1] - a[1]);
+  return {A: scores[0][1], B: scores[1][1]};
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkStep1(){
+  const player = document.getElementById('s1_player').value;
+  const cat = document.getElementById('s1_cat').value;
+  const stats = PLAYERS[player];
+  const trueZ = _z(cat, stats[cat], PARAMS.unranked_z_penalty);
+  const uz = parseFloat(val('s1_z'));
+  fb('fb_s1', near(uz, trueZ, 0.01));
+}
+function checkStep2(){
+  const player = document.getElementById('s2_player').value;
+  const trueVal = _compositeA(player, {});
+  const uv = parseFloat(val('s2_val'));
+  fb('fb_s2', near(uv, trueVal, 0.01));
+}
+function checkStep3(){
+  const player = document.getElementById('s3_player').value;
+  const trueVal = _compositeB(player, {});
+  const uv = parseFloat(val('s3_val'));
+  fb('fb_s3', near(uv, trueVal, 0.01));
+}
+function checkStep4(){
+  const method = document.getElementById('s4_method').value;
+  const p1 = document.getElementById('s4_p1').value;
+  const p2 = document.getElementById('s4_p2').value;
+  const compFn = method === 'A' ? _compositeA : _compositeB;
+  const c1 = compFn(p1, {});
+  const c2 = compFn(p2, {});
+  const truePts = Math.abs(c1 - c2);
+  const truePct = Math.abs(c2) > 1e-9 ? (truePts / Math.abs(c2)) * 100 : (truePts / Math.abs(c1)) * 100;
+  const upts = parseFloat(val('s4_pts'));
+  const upct = parseFloat(val('s4_pct'));
+  fb('fb_s4a', near(upts, truePts, 0.01));
+  fb('fb_s4b', near(upct, truePct, 0.5));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "player-of-the-year"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Methodology A composite table: all 14 finalists' five z-scores + CompositeA"],
+  ["D2", "Methodology B composite table: role-relevant z-scores, RoleZ, TeamMult, CompositeB"],
+  ["D3", "Force ranking of all 14 finalists, 1–14, under each methodology, side by side"],
+  ["D4", "At least two original visual displays comparing the two methodologies"],
+  ["D5", "Written comparison of the #1 vs. #2 margin (points and percent) under each methodology"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"},
+  "Negative Number": {def: "A number less than zero; subtracting a negative number has the same effect as adding a positive one.",
+    url: "https://www.mathsisfun.com/positive-negative-integers.html"},
+  "Rounding": {def: "Making a number simpler while keeping its value close to the original.",
+    url: "https://www.mathsisfun.com/rounding-numbers.html"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.mathsisfun.com/data/bar-graphs.html"},
+  "Scatter Plot": {def: "A graph that plots pairs of values as points on a coordinate plane to show a relationship between two data sets.",
+    url: "https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data/introduction-to-scatterplots/v/constructing-scatter-plot"},
+  "Order of Operations": {def: "The fixed sequence (parentheses, exponents, multiply/divide, add/subtract) for evaluating an expression with more than one operation.",
+    url: "https://www.mathsisfun.com/operation-order-pemdas.html"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Comparisons": {def: "Determining whether one value is greater than, less than, or equal to another.",
+    url: "https://www.khanacademy.org/math/cc-fourth-grade-math/imp-comparing-multi-digit-numbers"}
+};
+const HOWTO = [
+  ["how to find the mean of a set of data", "Mean"],
+  ["how to subtract with negative numbers", "Negative Number"],
+  ["how to divide with negative numbers", "Negative Number"],
+  ["how to multiply with negative numbers", "Negative Number"],
+  ["how to divide decimal numbers", "Decimal"],
+  ["how to multiply decimal numbers", "Decimal"],
+  ["how to round a number to a specified place value", "Rounding"],
+  ["how to compare two or more values", "Comparisons"],
+  ["how to evaluate an expression with multiple operations without exponents (Order of Operations)", "Order of Operations"],
+  ["how to create a scatter plot given a set of data", "Scatter Plot"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+let TWIST_APPLIED = false;
+function onTwistToggle(){
+  TWIST_APPLIED = document.getElementById('applyTwist').checked;
+  // Re-point checkStep2/checkStep4's Methodology-A math at the twist-adjusted
+  // model (evaluate_twist's per-player composite) while the box is checked.
+  const origA = _compositeA;
+  window._compositeA = function(name, params, statsOverride){
+    if(TWIST_APPLIED && name === 'Anna Stevenson' && !statsOverride){
+      const s = Object.assign({}, PLAYERS['Anna Stevenson'], {blocks: 1.344});
+      return origA(name, params, s);
+    }
+    return origA(name, params, statsOverride);
+  };
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

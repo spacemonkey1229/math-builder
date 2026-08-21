@@ -11,7 +11,10 @@ id) traces back to lessons learned while it was still under Best Practices.
 ## Paste-ready block
 
 ```
-Project: Math Builder · State: ACTIVE · Phase: 2 (Build)
+Project: Math Builder · Governance: library · State: ACTIVE · Phase: 2 (Build)
+
+> Governance tier `library` declared 2026-08-18 (R34): graduated 2026-08-01.
+> See `Best Practices/PORTFOLIO_WIP.md` §Governance tiers.
 Prime directive: Build and mechanically gate quantitative case studies for middle/high school
 math — never fabricating a number, a URL, or a verdict — until at least one case reaches
 VERIFIED with a real cohort.

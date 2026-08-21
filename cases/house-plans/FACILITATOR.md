@@ -107,10 +107,32 @@ amenity list?"
 
 ## The trap
 
-A Hero treats $495,000 as the real ceiling and never finds the true $550,000 figure — every
-downstream number (affordable tier, amenity budget) is then wrong in the same direction. The case's
-real first step is arithmetic, not opinion: find the actual number before arguing about it. Watch
-for a pitch that never mentions the 90% condition at all.
+**The most likely trap: reaching for the wrong operation on D2 instead of correctly dividing by
+90%.** Two independent fresh-solver runs of this case both converged on a Hero who *does* engage
+with Appendix C's condition — they don't ignore it — but pick the wrong arithmetic move to apply
+it. Watch for either of these two concrete errors, both of which produce a number close enough to
+the real $550,000 that it doesn't look obviously wrong:
+
+- **Adding 10%:** `$495,000 × 1.10 = $544,500` (a natural "10% more" instinct) instead of
+  `$495,000 ÷ 0.90 = $550,000`. Only ~1% off, so it survives a casual sanity check.
+- **Taking 90% of the loan:** `$495,000 × 0.90 = $445,500` — the over-practiced "part = whole ×
+  percent" reflex fires on the first dollar figure next to a percent, even though $495,000 is
+  already the *part*, not the whole. This one is the more dangerous variant: the result comes out
+  *below* $495,000, which should be an immediate red flag (the true ceiling must exceed the loan
+  amount, since the family also puts in their own 10%) — but a rushed Hero rarely checks that
+  direction. Downstream, it can flip the dilemma outright: at a wrong ceiling of $445,500 the Ranch
+  Estate's cheapest tier ($454,792.80 at Standard) becomes unbuildable at any finish, silently
+  eliminating Option B before a real comparison ever happens.
+
+Cold-call for the *operation*, not just the final number: "walk us through how you got from
+$495,000 to your ceiling" will surface either wrong move, and a ceiling that lands below $495,000
+is an instant tell for the second variant.
+
+A third, less likely but still real trap: a Hero treats $495,000 as the real ceiling and never
+finds a bigger number at all — ignoring the 90% condition entirely. Every downstream number
+(affordable tier, amenity budget) is then wrong in the same direction, and the pitch simply never
+mentions the 90% condition. The case's real first step is arithmetic, not opinion: find the actual
+number before arguing about it.
 
 ## Socratic questions
 

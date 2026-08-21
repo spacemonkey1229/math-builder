@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Fast Food — Interactive</title>
+<!-- Built from templates/interactive_shell.html for cases/fast-food. -->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+  /* Fast Food -- case-specific tweaks */
+  .franchise-badge{display:inline-block;font-family:var(--sans);font-size:.72rem;font-weight:700;
+    padding:2px 9px;border-radius:999px;margin-left:6px}
+  .franchise-badge.sub{background:#e7effa;color:var(--navy)}
+  .franchise-badge.papa{background:#fbeceb;color:#8f2c22}
+
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+  <symbol id="icon-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6v12M18 6v12"/></symbol>
+  <symbol id="icon-percent" viewBox="0 0 24 24"><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/><path d="M19 5L5 19"/></symbol>
+
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Fast Food</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS</span>
+      <span class="pill">Percent &middot; Equations</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+  <p class="lede">&ldquo;Are we really going to do this?&rdquo; Devin asks, pulling into the garage with dinner from their favorite drive-thru still warm on the passenger seat. &ldquo;Yeah,&rdquo; Chris says, killing the engine but not moving to get out. &ldquo;We&rsquo;ve talked about it for months. The timing&rsquo;s right &mdash; the house sale closed, the neighborhood&rsquo;s exploding, and we&rsquo;ve got people who actually want to invest with us.&rdquo;</p>
+  <p>Devin exhales, feeling the mix of excitement and nausea that comes with betting a chunk of your savings on a business you don&rsquo;t own yet. She pulls a folder off the dash &mdash; two franchise packets, both dog-eared from weeks of research, both promising, both real.</p>
+  <p>&ldquo;I&rsquo;ll get everyone together next week,&rdquo; she says. &ldquo;But we walk in with an actual pick. Not &lsquo;we&rsquo;re leaning toward&rsquo; &mdash; a pick, with numbers.&rdquo;</p>
+  <p>Chris nods slowly, already running the problem in his head the way he runs every problem at work. Two logos. Two very different bets. One presentation, five days away, in front of the people trusting them with real money.</p>
+  <p>He reaches for his laptop.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+  <p>Devin Reynolds (35) is a primary care physician at St. Luke&rsquo;s Hospital in Meridian, Idaho. Her husband Chris (34) is a mechanical engineer in Boise who is ready to leave his job to run the franchise full-time if the group moves forward &mdash; which means the business needs a real staff on day one, not just an owner-operator.</p>
+  <p>After selling a home Devin owned before their marriage, the couple has <strong>$186,000</strong> in liquid savings plus <strong>$345,000</strong> in home-sale proceeds. A small group of family and friends has offered to invest alongside them, adding <strong>$275,000</strong> in committed capital (see Appendix A for how each franchise&rsquo;s own start-up cost compares against the group&rsquo;s combined total).</p>
+  <div class="card">
+    <strong style="font-family:var(--sans);color:var(--navy)">Quick facts &mdash; total available capital</strong>
+    <table style="margin-top:8px">
+      <tr><td>Liquid savings</td><td class="num">$186,000</td></tr>
+      <tr><td>Home-sale proceeds</td><td class="num">$345,000</td></tr>
+      <tr><td>Investor group capital</td><td class="num">$275,000</td></tr>
+      <tr><td><strong>Total available capital</strong></td><td class="num"><strong>$806,000</strong></td></tr>
+    </table>
+  </div>
+  <p>Chris and Devin first looked at their own favorite chains, but the existing franchisees in the Meridian area hold territorial rights that block any new location for those brands. After months of research, two other national franchise opportunities remain live options: a Subway franchise and a Papa John&rsquo;s franchise (see Appendix A and Appendix B). The group wants to build in Meridian, Idaho, a fast-growing suburb of Boise (see Appendix D for the real growth data behind that pitch).</p>
+  <p>Whichever franchise they choose, the investor group meets in five days to hear a specific financial plan: the total start-up investment and staffing needed to open, the franchise&rsquo;s ongoing fees and first-year operating costs, projected first-year revenue, and how long it will take the business to pay back what everyone put in (see Appendix C for the modeling assumptions behind the staffing and operating-cost figures, Appendix E for the full source citations behind every figure, and Appendix F for the &ldquo;how to&hellip;&rdquo; math questions the case draws on).</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Chris and Devin Reynolds. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Pitch to purchase a Subway franchise</h4>
+      <p style="margin:0">Lower start-up cost, a franchise format Devin and Chris already understand, and a smaller bet on a business they&rsquo;ve never run.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Pitch to purchase a Papa John&rsquo;s franchise</h4>
+      <p style="margin:0">A bigger bet, but real published economics that edge out Subway on first-year ROI and break-even speed, even modeled conservatively.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include D1 &mdash; a start-up cost check; D2 &mdash; a first-year operating cost table; D3 &mdash; projected first-year revenue and net profit; D4 &mdash; break-even point in months (a one-step equation); D5 &mdash; break-even monthly revenue (a variable-on-both-sides equation); and D6 &mdash; a recommendation comparing both franchises&rsquo; first-year ROI. See the Working Notebook below.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; Franchise Start-Up Costs</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Subway</th><th>Papa John&rsquo;s</th></tr>
+        <tr><td>Franchise fee (USD)</td><td class="num">$15,000 [S1]</td><td class="num">$25,000 [S6]</td></tr>
+        <tr><td>Total initial investment range (USD)</td><td class="num">$199,135 &ndash; $536,745 [S2]</td><td class="num">$281,485 &ndash; $890,267 [S7]</td></tr>
+        <tr><td>Investment range midpoint (USD)</td><td class="num">$367,940</td><td class="num">$585,876</td></tr>
+        <tr><td>Employees needed to open (Day 1)</td><td class="num">6 [MA1]</td><td class="num">9 [MA1]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-b">
+    <summary>Appendix B &mdash; Franchise Operating Economics</summary>
+    <div class="inner">
+      <table>
+        <tr><th></th><th>Subway</th><th>Papa John&rsquo;s</th></tr>
+        <tr><td>Royalty fee (% of gross sales)</td><td class="num">8.0% [S3]</td><td class="num">5.0% [S8]</td></tr>
+        <tr><td>Ad/marketing fund contribution (% of gross sales)</td><td class="num">4.5% [S4]</td><td class="num">6.0% [S9]</td></tr>
+        <tr><td>Food cost (% of revenue)</td><td class="num">32% [S12]</td><td class="num">25% [S13]</td></tr>
+        <tr><td>Labor cost (% of revenue)</td><td class="num">30% [S11]</td><td class="num">30% [S11]</td></tr>
+        <tr><td>Average Unit Volume &mdash; AUV (USD/year)</td><td class="num">$500,000 [S5]</td><td class="num">$600,000 [S10, MA3]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-c">
+    <summary>Appendix C &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are not fully sourced from a real published number. They are stated scenario assumptions chosen by the case author, disclosed here rather than buried in a table. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+      <table>
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Employees needed to open, Day 1</td><td>Subway: 6, Papa John&rsquo;s: 9</td>
+          <td>No public per-location headcount is published by either franchisor. Subway&rsquo;s counter-service sandwich format is commonly staffed leaner than a pizza operation running a kitchen plus delivery drivers; the extra 3 for Papa John&rsquo;s reflects drivers. Informational only &mdash; this figure does not feed any dollar calculation in D1&ndash;D6.</td>
+          <td>None &mdash; not load-bearing to the dilemma.</td></tr>
+        <tr><td>MA2</td><td>Monthly fixed operating costs (rent + utilities + insurance)</td><td>Subway: $3,500/month, Papa John&rsquo;s: $4,200/month</td>
+          <td>Partly sourced: Meridian, ID&rsquo;s average retail lease rate is $28/sq&nbsp;ft/year [S14b], and Subway&rsquo;s typical footprint is widely reported near 1,200&nbsp;sq&nbsp;ft [S15] &mdash; together implying roughly $2,800/month in rent, plus an estimated $700/month for utilities and insurance (not published). Papa John&rsquo;s typical footprint is not published; a modestly larger ~1,400&nbsp;sq&nbsp;ft delivery/carryout format is assumed, at the same lease rate, plus a higher $850/month utilities/insurance estimate.</td>
+          <td>The case&rsquo;s most load-bearing assumption &mdash; flexed &plusmn;50% under Tier 2 Probe 5.</td></tr>
+        <tr><td>MA3</td><td>Papa John&rsquo;s first-year revenue modeled at the bottom quartile of system AUV ($600,000) rather than the system median ($1.1M)</td><td>$600,000/year</td>
+          <td>Papa John&rsquo;s own FDD Item 19 data reports a 2.3x spread between top-quartile ($1.4M) and bottom-quartile (~$600K) units [S10]. A brand-new Meridian, ID location &mdash; a mid-size suburban market &mdash; is modeled as more comparable to the lower-volume quartile of the system than the median. Subway does not disclose Item 19 data at all, so its single available estimate [S5] is used as-is.</td>
+          <td>Load-bearing &mdash; flexed &plusmn;50% under Tier 2 Probe 5; the single assumption most responsible for how close the two options land on first-year ROI.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; Meridian, Idaho: Market Growth</summary>
+    <div class="inner">
+      <p>Meridian, Idaho&rsquo;s population was estimated at <strong>130,138</strong> as of 2024, growing at an average annual rate of approximately <strong>5.5%</strong> &mdash; among the fastest-growing cities in the Boise metro area [S14a].</p>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; Sources</summary>
+    <div class="inner">
+      <table>
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Subway initial franchise fee</td><td>$15,000</td><td><a href="https://www.subwayfranchise.com/en-us/faqs" target="_blank" rel="noopener">Subway Franchising &mdash; Official FAQ</a></td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Subway total initial investment range</td><td>$199,135 &ndash; $536,745</td><td><a href="https://www.subwayfranchise.com/en-us/faqs" target="_blank" rel="noopener">Subway Franchising &mdash; Official FAQ</a></td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>Subway royalty fee</td><td>8.0% of gross sales</td><td><a href="https://www.subwayfranchise.com/en-us/faqs" target="_blank" rel="noopener">Subway Franchising &mdash; Official FAQ</a></td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Subway advertising fund contribution</td><td>4.5% of gross sales</td><td><a href="https://www.subwayfranchise.com/en-us/faqs" target="_blank" rel="noopener">Subway Franchising &mdash; Official FAQ</a></td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>Subway average unit volume (AUV)</td><td>&asymp;$500,000/yr (median est.)</td><td>Industry estimate cross-referenced with Circana&rsquo;s 2026 U.S. restaurant revenue data; Subway does not disclose FDD Item 19 data.</td><td>MEDIUM</td></tr>
+        <tr><td>S6</td><td>Papa John&rsquo;s initial franchise fee</td><td>$25,000 per unit</td><td><a href="https://franchise.papajohns.com/franchise/investment-requirements" target="_blank" rel="noopener">Papa John&rsquo;s Franchising &mdash; Investment Requirements</a></td><td>HIGH</td></tr>
+        <tr><td>S7</td><td>Papa John&rsquo;s total initial investment range</td><td>$281,485 &ndash; $890,267</td><td><a href="https://franchise.papajohns.com/franchise/investment-requirements" target="_blank" rel="noopener">Papa John&rsquo;s Franchising &mdash; Investment Requirements</a></td><td>HIGH</td></tr>
+        <tr><td>S8</td><td>Papa John&rsquo;s royalty fee</td><td>5.0% of Net Sales</td><td><a href="https://franchise.papajohns.com/franchise/investment-requirements" target="_blank" rel="noopener">Papa John&rsquo;s Franchising &mdash; Investment Requirements</a></td><td>HIGH</td></tr>
+        <tr><td>S9</td><td>Papa John&rsquo;s marketing fund contribution</td><td>6.0% of Net Sales</td><td><a href="https://franchise.papajohns.com/franchise/investment-requirements" target="_blank" rel="noopener">Papa John&rsquo;s Franchising &mdash; Investment Requirements</a></td><td>HIGH</td></tr>
+        <tr><td>S10</td><td>Papa John&rsquo;s AUV, median and quartile spread</td><td>Median $1.1M; top quartile $1.4M; bottom quartile &asymp;$600K</td><td>FDD Item 19 data aggregation, cross-verified across two independent aggregator sources.</td><td>MEDIUM</td></tr>
+        <tr><td>S11</td><td>Restaurant labor cost distribution (aggregate, all segments)</td><td>&asymp;30% of revenue used (derived)</td><td>2025 restaurant labor cost/profitability industry survey (7shifts benchmark reporting); the 30% figure is this case&rsquo;s own derived estimate, not a verbatim quote.</td><td>MEDIUM</td></tr>
+        <tr><td>S12</td><td>Sandwich/QSR food cost benchmark (Subway)</td><td>32% of revenue (top of 28&ndash;35% range)</td><td>General restaurant-industry food cost benchmark reporting, 2025&ndash;2026.</td><td>MEDIUM</td></tr>
+        <tr><td>S13</td><td>Pizza food cost benchmark (Papa John&rsquo;s)</td><td>25% of revenue (within 24&ndash;30% range)</td><td>General pizza-industry food cost benchmark reporting, 2025&ndash;2026.</td><td>MEDIUM</td></tr>
+        <tr><td>S14a</td><td>Meridian, Idaho population and annual growth rate</td><td>130,138 (2024); &asymp;5.5%/yr</td><td><a href="https://www.idaho-demographics.com/meridian-demographics" target="_blank" rel="noopener">Idaho Demographics</a>, citing U.S. Census Bureau</td><td>HIGH</td></tr>
+        <tr><td>S14b</td><td>Meridian, Idaho average retail lease rate</td><td>&asymp;$28/sq&nbsp;ft/year</td><td>CommercialCafe retail market data for Meridian, ID</td><td>MEDIUM</td></tr>
+        <tr><td>S15</td><td>Typical Subway location footprint</td><td>&asymp;1,200&nbsp;sq&nbsp;ft (traditional format)</td><td>Cross-referenced across multiple franchise-industry reporting sources.</td><td>MEDIUM</td></tr>
+      </table>
+    </div>
+  </details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-20. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Start-up cost check</h4>
+    <div class="goal">Add the group's three funding sources, then check your chosen franchise's investment range against that total.</div>
+    <div class="fieldrow"><label for="s1liquid">Liquid savings ($)</label><input type="number" id="s1liquid" value="186000"></div>
+    <div class="fieldrow"><label for="s1home">Home-sale proceeds ($)</label><input type="number" id="s1home" value="345000"></div>
+    <div class="fieldrow"><label for="s1inv">Investor group capital ($)</label><input type="number" id="s1inv" value="275000"></div>
+    <div class="fieldrow"><label for="s1franchise">Franchise you're pitching</label>
+      <select id="s1franchise"><option value="A">A &mdash; Subway</option><option value="B">B &mdash; Papa John's</option></select>
+    </div>
+    <button onclick="checkStep1()">Check</button><span id="fb1" class="fb"></span>
+    <div id="s1out" class="side-note"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2 &amp; D3: Operating costs, revenue &amp; net profit</h4>
+    <div class="goal">Using your chosen franchise's AUV as revenue, compute each Appendix B cost as a percent of that revenue, then find net profit.</div>
+    <div class="fieldrow"><label for="s2revenue">Revenue &mdash; AUV ($/year)</label><input type="number" id="s2revenue" value="500000"></div>
+    <div class="fieldrow"><label for="s2royalty">Royalty rate (%)</label><input type="number" step="0.1" id="s2royalty" value="8"></div>
+    <div class="fieldrow"><label for="s2ad">Ad/marketing rate (%)</label><input type="number" step="0.1" id="s2ad" value="4.5"></div>
+    <div class="fieldrow"><label for="s2food">Food cost rate (%)</label><input type="number" step="0.1" id="s2food" value="32"></div>
+    <div class="fieldrow"><label for="s2labor">Labor cost rate (%)</label><input type="number" step="0.1" id="s2labor" value="30"></div>
+    <div class="fieldrow"><label for="s2fixed">Monthly fixed cost ($)</label><input type="number" id="s2fixed" value="3500"></div>
+    <button onclick="checkStep2()">Check</button><span id="fb2" class="fb"></span>
+    <div id="s2out" class="side-note"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D4 &amp; D5: Break-even</h4>
+    <div class="goal">D4: solve the one-step equation investment&nbsp;midpoint&nbsp;=&nbsp;monthly&nbsp;net&nbsp;profit&nbsp;&times;&nbsp;months for months. D5: solve monthly&nbsp;revenue&nbsp;=&nbsp;fixed&nbsp;cost&nbsp;+&nbsp;(percent&nbsp;rate&nbsp;&times;&nbsp;monthly&nbsp;revenue) for revenue, the unknown on both sides.</div>
+    <div class="fieldrow"><label for="s3d4">D4 &mdash; break-even (months)</label><input type="number" step="0.01" id="s3d4"></div>
+    <button onclick="checkStep3d4()">Check D4</button><span id="fb3a" class="fb"></span>
+    <div class="fieldrow"><label for="s3d5">D5 &mdash; break-even monthly revenue ($)</label><input type="number" step="0.01" id="s3d5"></div>
+    <button onclick="checkStep3d5()">Check D5</button><span id="fb3b" class="fb"></span>
+    <div id="s3out" class="side-note"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D6: ROI recommendation</h4>
+    <div class="goal">Compute first-year ROI (net profit &divide; investment midpoint, as a percent) for both franchises and compare.</div>
+    <div class="fieldrow"><label for="s4roi">Your chosen franchise's ROI (%)</label><input type="number" step="0.01" id="s4roi"></div>
+    <button onclick="checkStep4()">Check</button><span id="fb4" class="fb"></span>
+    <div id="s4out" class="side-note"></div>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p>Idaho&rsquo;s minimum wage just went up, effective this year. Your labor cost as a share of revenue just rose from 30% to 34% for both franchises.</p>
+      <p>Recompute Step 2&ndash;4 with the new labor rate below to see what actually happens to net profit, break-even, and ROI &mdash; for both options.</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the 34% labor cost to my Working Notebook calculations</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+      <li>Subway Franchising &mdash; Official FAQ: <a href="https://www.subwayfranchise.com/en-us/faqs" target="_blank" rel="noopener">subwayfranchise.com/en-us/faqs</a></li>
+      <li>Papa John&rsquo;s Franchising &mdash; Investment Requirements: <a href="https://franchise.papajohns.com/franchise/investment-requirements" target="_blank" rel="noopener">franchise.papajohns.com</a></li>
+      <li>Idaho Demographics (Meridian population/growth): <a href="https://www.idaho-demographics.com/meridian-demographics" target="_blank" rel="noopener">idaho-demographics.com</a></li>
+      <li>Full source table with every citation: see Appendix E above, or the case's Data workbook.</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Fast Food &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/fast-food/sensitivity_model.py (case.md sha256: 1ad5a2d9280ce256b2e09ea4ef91276129ff3dd629a50c06c62bea7832b5a722)
+const PARAMS = {
+  subway_investment_mid: 367940.0,
+  papa_investment_mid: 585876.0,
+  subway_royalty_pct: 0.08,
+  subway_ad_pct: 0.045,
+  papa_royalty_pct: 0.05,
+  papa_marketing_pct: 0.06,
+  labor_pct: 0.30,
+  subway_auv: 500000.0,
+  papa_auv: 600000.0,
+  subway_food_pct: 0.32,
+  papa_food_pct: 0.25,
+  subway_fixed_monthly: 3500.0,
+  papa_fixed_monthly: 4200.0,
+  twist_labor_pct: 0.34,
+};
+const FLEX = ["papa_auv", "subway_fixed_monthly", "papa_fixed_monthly", "subway_food_pct", "papa_food_pct"];
+
+function roi_(revenue, pctSum, fixedMonthly, investmentMid) {
+  const variableCost = revenue * pctSum;
+  const totalCost = variableCost + fixedMonthly * 12;
+  const netProfit = revenue - totalCost;
+  return 100.0 * netProfit / investmentMid;
+}
+function evaluate(params) {
+  const p = Object.assign({}, PARAMS, params || {});
+  const subPct = p.subway_royalty_pct + p.subway_ad_pct + p.subway_food_pct + p.labor_pct;
+  const pjPct = p.papa_royalty_pct + p.papa_marketing_pct + p.papa_food_pct + p.labor_pct;
+  return {
+    A: roi_(p.subway_auv, subPct, p.subway_fixed_monthly, p.subway_investment_mid),
+    B: roi_(p.papa_auv, pjPct, p.papa_fixed_monthly, p.papa_investment_mid)
+  };
+}
+function evaluate_twist(params) {
+  const p = Object.assign({}, PARAMS, params || {});
+  const subPct = p.subway_royalty_pct + p.subway_ad_pct + p.subway_food_pct + p.twist_labor_pct;
+  const pjPct = p.papa_royalty_pct + p.papa_marketing_pct + p.papa_food_pct + p.twist_labor_pct;
+  return {
+    A: roi_(p.subway_auv, subPct, p.subway_fixed_monthly, p.subway_investment_mid),
+    B: roi_(p.papa_auv, pjPct, p.papa_fixed_monthly, p.papa_investment_mid)
+  };
+}
+
+// Franchise reference data for Steps 1-4 (Appendix A/B raw values, not a verdict).
+const FRANCHISES = {
+  A: { name: "Subway", fee: 15000, invLow: 199135, invHigh: 536745, invMid: 367940,
+       royalty: 0.08, ad: 0.045, food: 0.32, labor: 0.30, auv: 500000, fixedMonthly: 3500 },
+  B: { name: "Papa John's", fee: 25000, invLow: 281485, invHigh: 890267, invMid: 585876,
+       royalty: 0.05, ad: 0.06, food: 0.25, labor: 0.30, auv: 600000, fixedMonthly: 4200 }
+};
+const TOTAL_CAPITAL = 806000;
+let twistApplied = false;
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkStep1(){
+  const total = Number(val('s1liquid')) + Number(val('s1home')) + Number(val('s1inv'));
+  const fr = document.getElementById('s1franchise').value;
+  const f = FRANCHISES[fr];
+  const fits = total >= f.invHigh;
+  const margin = total - f.invHigh;
+  document.getElementById('s1out').innerHTML =
+    `Total available capital: $${round(total,0).toLocaleString()}. ${f.name}'s investment range: $${f.invLow.toLocaleString()} - $${f.invHigh.toLocaleString()} (fee $${f.fee.toLocaleString()}). `
+    + (fits ? `The top of the range <strong>fits</strong>, with $${Math.abs(round(margin,0)).toLocaleString()} left over.`
+             : `The top of the range does <strong>not</strong> fit -- short by $${Math.abs(round(margin,0)).toLocaleString()}.`);
+  fb('fb1', near(total, TOTAL_CAPITAL, 1), true);
+}
+
+function checkStep2(){
+  const revenue = Number(val('s2revenue'));
+  const royalty = Number(val('s2royalty'))/100;
+  const ad = Number(val('s2ad'))/100;
+  const food = Number(val('s2food'))/100;
+  const labor = Number(val('s2labor'))/100;
+  const fixedMonthly = Number(val('s2fixed'));
+  const royaltyD = revenue*royalty, adD = revenue*ad, foodD = revenue*food, laborD = revenue*labor;
+  const variableCost = royaltyD+adD+foodD+laborD;
+  const totalCost = variableCost + fixedMonthly*12;
+  const netProfit = revenue - totalCost;
+  document.getElementById('s2out').innerHTML =
+    `Royalty $${round(royaltyD,0).toLocaleString()} + Ad/marketing $${round(adD,0).toLocaleString()} + Food $${round(foodD,0).toLocaleString()} + Labor $${round(laborD,0).toLocaleString()} `
+    + `+ Fixed (annualized) $${round(fixedMonthly*12,0).toLocaleString()} = total cost $${round(totalCost,0).toLocaleString()}. `
+    + `<strong>Net profit: $${round(netProfit,0).toLocaleString()}</strong> (monthly $${round(netProfit/12,2).toLocaleString()}).`;
+  // Compare against the JS-ported model for whichever franchise these inputs match (Subway base case is the default fill).
+  const base = (twistApplied ? evaluate_twist({}) : evaluate({}));
+  const subwayNet = 500000 - (500000*(0.08+0.045+0.32+(twistApplied?0.34:0.30)) + 3500*12);
+  fb('fb2', near(netProfit, subwayNet, 1) || netProfit > 0, true);
+}
+
+function breakEvenMonths(investmentMid, netProfitMonthly){ return investmentMid / netProfitMonthly; }
+function breakEvenRevenue(fixedMonthly, pctSum){ return fixedMonthly / (1 - pctSum); }
+
+function checkStep3d4(){
+  const student = Number(val('s3d4'));
+  const expected = breakEvenMonths(367940, 85500/12);
+  fb('fb3a', near(student, expected, 0.5), true);
+  document.getElementById('s3out').innerHTML =
+    `D4 equation: investment midpoint = monthly net profit &times; months, so months = investment midpoint &divide; monthly net profit. For Subway's base numbers: $367,940 &divide; $7,125/mo &asymp; ${round(expected,2)} months.`;
+}
+function checkStep3d5(){
+  const student = Number(val('s3d5'));
+  const pctSum = 0.08+0.045+0.32+0.30;
+  const expected = breakEvenRevenue(3500, pctSum);
+  fb('fb3b', near(student, expected, 5), true);
+  document.getElementById('s3out').innerHTML +=
+    `<br>D5 equation: revenue = fixed cost + (rate &times; revenue), so revenue &times; (1 - rate) = fixed cost. For Subway's base numbers: $3,500 &divide; (1 - 0.745) &asymp; $${round(expected,2).toLocaleString()}/month.`;
+}
+
+function checkStep4(){
+  const student = Number(val('s4roi'));
+  const base = evaluate({});
+  const ok = near(student, base.A, 0.5) || near(student, base.B, 0.5);
+  fb('fb4', ok, true);
+  document.getElementById('s4out').innerHTML =
+    `Base-case first-year ROI: Subway ${round(base.A,2)}%, Papa John's ${round(base.B,2)}%.`
+    + (twistApplied ? ` After the twist (34% labor): Subway ${round(evaluate_twist({}).A,2)}%, Papa John's ${round(evaluate_twist({}).B,2)}%.` : '');
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "fast-food"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Start-up cost check (total capital vs. chosen franchise's investment range)"],
+  ["D2", "First-year operating cost table (royalty, ad/marketing, food, labor)"],
+  ["D3", "Projected first-year revenue and net profit"],
+  ["D4", "Break-even point in months (one-step equation)"],
+  ["D5", "Break-even monthly revenue (variable on both sides)"],
+  ["D6", "Recommendation comparing first-year ROI"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.mathsisfun.com/percentage.html"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34 -- add or subtract by lining up the decimal points.",
+    url: "https://www.mathsisfun.com/adding-decimals.html"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Equation": {def: "A statement that two things are equal, written with an equals sign connecting two expressions.",
+    url: "https://www.mathsisfun.com/definitions/equation.html"},
+  "Variable": {def: "A symbol -- usually a letter like x -- used to represent a value we don't know yet.",
+    url: "https://www.mathsisfun.com/definitions/variable.html"},
+  "Comparing Values": {def: "Using symbols like <, >, and = to show whether one value is less than, greater than, or equal to another.",
+    url: "https://www.mathsisfun.com/equal-less-greater.html"},
+  "One-Step Equation": {def: "An equation solved with a single operation -- add, subtract, multiply, or divide the same amount on both sides.",
+    url: "https://www.mathsisfun.com/algebra/equations-solving.html"},
+  "Multi-Step Equation": {def: "An equation that takes more than one operation to solve, sometimes with the variable appearing on both sides.",
+    url: "https://www.mathsisfun.com/algebra/equations-solving.html"},
+};
+const HOWTO = [
+  ["How to find the percent of a number", "Percent"],
+  ["How to convert numbers to percents", "Percent"],
+  ["How to add decimal numbers", "Decimal"],
+  ["How to subtract decimal numbers", "Decimal"],
+  ["How to compare two or more values", "Comparing Values"],
+  ["How to solve a one-step equation", "One-Step Equation"],
+  ["How to solve a multi-step equation with a variable on both sides", "Multi-Step Equation"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  twistApplied = document.getElementById('applyTwist').checked;
+  document.getElementById('s2labor').value = twistApplied ? 34 : 30;
+  const label = document.getElementById('twistToggleLabel');
+  const base = twistApplied ? evaluate_twist({}) : evaluate({});
+  document.getElementById('s4out').innerHTML =
+    `Recomputed ROI ${twistApplied ? 'with the wage twist applied' : '(base case)'}: Subway ${round(base.A,2)}%, Papa John's ${round(base.B,2)}%.`;
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

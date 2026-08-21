@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Roofline Call — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  /* Roofline Call: no case-specific overrides beyond the shared design system. */
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <!-- Roofline Call uses only the shared icon set + inline decorative SVGs above. -->
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Roofline Call</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Geometry &middot; Fundamentals of Geometry</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+<figure>
+  <div class="box-compare">
+    <div class="col">
+      <svg width="180" height="110" viewBox="0 0 180 110">
+        <rect x="20" y="70" width="140" height="30" fill="#eef3f8" stroke="#dfe4ea"/>
+        <polygon points="10,70 90,20 170,70" fill="none" stroke="#1a3a5c" stroke-width="3"/>
+        <line x1="90" y1="20" x2="90" y2="70" stroke="#c9a227" stroke-width="2" stroke-dasharray="4 3"/>
+      </svg>
+      <div class="label">The Gable Line</div>
+      <div class="sub">two planes, one ridge</div>
+    </div>
+    <div class="col">
+      <svg width="180" height="110" viewBox="0 0 180 110">
+        <rect x="20" y="70" width="140" height="30" fill="#eef3f8" stroke="#dfe4ea"/>
+        <polygon points="10,70 55,20 125,20 170,70" fill="none" stroke="#1a3a5c" stroke-width="3"/>
+        <line x1="55" y1="20" x2="10" y2="70" stroke="#1a3a5c" stroke-width="2"/>
+        <line x1="125" y1="20" x2="170" y2="70" stroke="#1a3a5c" stroke-width="2"/>
+        <line x1="55" y1="20" x2="125" y2="20" stroke="#c9a227" stroke-width="2" stroke-dasharray="4 3"/>
+      </svg>
+      <div class="label">The Hip Wrap</div>
+      <div class="sub">four planes, hips at both ends</div>
+    </div>
+  </div>
+  <figcaption>Side-view silhouettes only &mdash; no dimensions here. Every real number lives in the Appendices below.</figcaption>
+</figure>
+
+  
+<p class="lede">Colton Marsh has the roof plan open on two monitors and a client meeting in ninety minutes.</p>
+<p>He's been drafting for six months at Marsh &amp; Iyer Design-Build, and this is the first framing set he's allowed to sign off on himself before it goes to the truss shop. The client &mdash; a couple adding a bedroom wing to their ranch house &mdash; keeps forwarding him photos of houses on the next street over. "We want something that doesn't look like a box," the email says. Colton knows exactly what that means: they want the roof to wrap the corners instead of just running straight to two gable ends.</p>
+<p>He pulls up both roof plans side by side. One is the simple version he drew first &mdash; two planes meeting at a single ridge line, the kind of roof a framing crew can cut with a speed square and not think twice about. The other wraps all four sides, the kind that photographs better from the street and sheds rain off every wall instead of dumping it off two ends &mdash; but every corner where those extra planes meet is a compound angle a framer has to mark by hand, one rafter at a time.</p>
+<p>His supervisor sticks her head in. "Whichever one you send to the shop this afternoon is the one we're framing. You've got the numbers &mdash; which one actually pencils out?"</p>
+<p>Colton pulls up his takeoff spreadsheet and starts counting rafters.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+<p>Colton Marsh is a residential architectural drafter at Marsh &amp; Iyer Design-Build, a small firm that both designs and builds its own projects. He is responsible for producing the framing plan a crew can cut directly from &mdash; which means every angle on the plan has to be one a framer can actually mark and cut, not just something that looks right on the elevation drawing.</p>
+<p>The job is a single rectangular addition, <strong>24 feet wide by 52 feet long</strong>, framed at a <strong>6-in-12 roof pitch</strong> (a rise of 6 inches for every 12 inches of horizontal run) on both roof options under consideration, so the comparison isn't muddied by two different slopes (see Appendix B). Two roof plans are on the table for the same footprint.</p>
+<p><strong>The Gable Line</strong> frames the roof as two planes meeting at one long ridge that runs the full 52-foot length of the building. Every rafter is a <strong>common rafter</strong> &mdash; same length, same single angle cut at the eave (a birdsmouth seat cut) and the same single angle cut at the ridge, repeated down the whole run. No compound angles anywhere on this plan.</p>
+<p><strong>The Hip Wrap</strong> frames the roof as four planes: the two long sides still carry common rafters, but each end of the building is capped by a hip roof &mdash; four hip rafters running diagonally from each corner up to the ends of a shortened ridge, filled in by a run of jack rafters that get shorter and shorter as they approach each corner. Every hip and every jack rafter needs a compound-angle cut &mdash; two bevels marked at once, not one &mdash; because the rafter isn't just climbing the roof slope, it's also crossing the building at 45 degrees in plan.</p>
+<p>Both plans use the same 2-inch by 8-inch dimension lumber, spaced 16 inches on center, for every rafter, hip, and ridge board &mdash; a stock size and spacing Colton chose because it comfortably clears the framing span this run requires with margin to spare (see Appendix A), so lumber grade isn't a variable between the two options, only the roof geometry is. Framing lumber is priced by the board-foot (see Appendix C), and every individual rafter cut &mdash; simple or compound &mdash; costs the crew labor time at the shop's carpenter wage rate (see Appendix D).</p>
+<p>The client's email is the only real pressure driving Option B: a hip roof sheds wind and rain off every wall instead of concentrating it at two gable ends, and it's the look they specifically asked for. Whether that's worth what the compound cuts actually cost &mdash; in lumber, and in the crew's time &mdash; is the number Colton has to work out and defend before the truss shop cutoff. All figures in this case are sourced in Appendix F, or stated as an explicit modeling assumption in Appendix E where no public figure exists. The vocabulary and the "how to&hellip;" skills this case will ask of you are listed in Appendix H.</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Colton Marsh, residential architectural drafter. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Draft The Gable Line</h4>
+      <p style="margin:0">Two roof planes, one straight ridge, every rafter a simple single-angle cut &mdash; the kind a framing crew can cut with a speed square and not think twice about.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Draft The Hip Wrap</h4>
+      <p style="margin:0">Four roof planes, hip and jack rafters at both ends, every one of them a compound-angle cut &mdash; the kind that photographs better from the street and sheds rain off every wall.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong>) a labeled framing sketch for each option marking the ridge vertex, a rafter drawn as a ray, one pair of parallel lines, and one pair of perpendicular lines actually present in that option's plan; <strong>D2</strong>) the birdsmouth plumb-cut and level-cut angles computed from the stated pitch, verified complementary; <strong>D3</strong>) one acute angle and one obtuse angle actually occurring in each option's framing, naming the vertex and the rays that form each; <strong>D4</strong>) for The Hip Wrap only, proof that each hip rafter's plan-view line bisects the building's 90&deg; corner into a pair of adjacent, complementary angles; <strong>D5</strong>) a full framing takeoff comparing both options &mdash; rafter counts and lengths, total board-feet, and board-feet per square foot of attic space &mdash; stating the winner and by how much.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+<details open>
+  <summary>Appendix A &mdash; Framing Lumber &amp; Span Reference</summary>
+  <div class="inner">
+    <table id="apxA">
+      <tr><th></th><th>Value</th></tr>
+      <tr><td>Lumber size used, all members</td><td>2 in &times; 8 in nominal (rafters, hips, jacks, ridge boards)</td></tr>
+      <tr><td>Species / grade</td><td>Douglas Fir&ndash;Larch, No. 2 [S1]</td></tr>
+      <tr><td>Rafter spacing</td><td>16 in on center, both options</td></tr>
+      <tr><td>Maximum span, 2&times;8, DF&ndash;Larch No. 2, 16" o.c. (live load 20 psf, dead load 20 psf, no ceiling attached)</td><td>16 ft &ndash; 0 in [S1]</td></tr>
+      <tr><td>Actual rafter run required, this job (half the building width)</td><td>12 ft &ndash; 0 in</td></tr>
+    </table>
+    <p class="side-note">The 12-foot run this job actually needs is well inside the 16-foot span the chosen lumber size supports &mdash; Colton sized up from the minimum on purpose so a single lumber order works for every member on the job, hips and jacks included.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix B &mdash; The Roofline</summary>
+  <div class="inner">
+    <p class="side-note">Colton's own design for this addition &mdash; not a public building plan (a firm's project drawings are proprietary), but built entirely from real, standard framing geometry.</p>
+    <table id="apxB">
+      <tr><th></th><th>Value</th></tr>
+      <tr><td>Building footprint</td><td>24 ft wide &times; 52 ft long</td></tr>
+      <tr><td>Roof pitch, both options</td><td>6-in-12 (rise 6 in per 12 in of run)</td></tr>
+      <tr><td>Roof pitch, decimal angle from horizontal</td><td>26.57&deg;</td></tr>
+      <tr><td>Common-rafter run (half the building width)</td><td>12.0 ft</td></tr>
+      <tr><td>Common-rafter rise</td><td>6.0 ft</td></tr>
+      <tr><td>Common-rafter length (run and rise combined)</td><td>13.42 ft</td></tr>
+      <tr><td>Enclosed attic floor area (= building footprint)</td><td>1,248 sq ft</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix C &mdash; Lumber Pricing</summary>
+  <div class="inner">
+    <table id="apxC">
+      <tr><th></th><th>Value</th></tr>
+      <tr><td>Framing lumber composite price</td><td>$536.15 per 1,000 board feet [S2]</td></tr>
+      <tr><td>Price per board foot</td><td>$0.53615</td></tr>
+      <tr><td>Board-foot formula used</td><td>(thickness in &times; width in &times; length in ft) &divide; 12 &mdash; for 2&times;8 stock this reduces to length(ft) &times; 1.3333</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix D &mdash; Framing Takeoff</summary>
+  <div class="inner">
+    <table id="apxD">
+      <tr><th></th><th>The Gable Line (A)</th><th>The Hip Wrap (B)</th></tr>
+      <tr><td>Ridge length</td><td>52 ft (full building length)</td><td>28 ft (building length &minus; building width)</td></tr>
+      <tr><td>Common rafters (both sides of ridge)</td><td>80 rafters &times; 13.42 ft = 1,073.31 ft</td><td>44 rafters &times; 13.42 ft = 590.32 ft</td></tr>
+      <tr><td>Hip rafters</td><td>0</td><td>4 rafters &times; 18.00 ft = 72.00 ft</td></tr>
+      <tr><td>Jack rafters</td><td>0</td><td>36 rafters, lengths stepping from 1.49 ft to 13.42 ft in 1.49 ft increments = 268.33 ft</td></tr>
+      <tr><td>Ridge board</td><td>52 ft</td><td>28 ft</td></tr>
+      <tr><td>Total lumber length, all members</td><td>1,125.31 ft</td><td>958.65 ft</td></tr>
+      <tr><td>Total board feet (2&times;8 stock)</td><td>1,500.42 BF</td><td>1,278.20 BF</td></tr>
+      <tr><td>Enclosed attic area</td><td>1,248 sq ft</td><td>1,248 sq ft</td></tr>
+      <tr><td class="hi"><strong>Board-feet per square foot of attic space</strong></td><td class="hi num"><strong>1.20 BF/sq ft</strong></td><td class="hi num"><strong>1.02 BF/sq ft</strong></td></tr>
+    </table>
+    <p class="side-note">Every hip and jack rafter length above comes directly from the roof's own geometry (see Appendix B): the hip run is the common-rafter run scaled by &radic;2 (since a hip travels diagonally across the building corner in plan view), and each jack rafter's length steps down from a full common rafter by a fixed amount per 16-inch spacing interval, following the same rise-over-run relationship as every other rafter on the job.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix E &mdash; Modeling Assumptions</summary>
+  <div class="inner">
+    <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author, each with a real basis named below. A Hero may challenge them in discussion.</blockquote>
+    <table id="apxE">
+      <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+      <tr><td>MA1</td><td>Time to mark and cut one common rafter's birdsmouth seat + ridge plumb cut (a "simple cut set")</td><td>4 minutes per rafter</td><td>A single-bevel square cut, marked once with a speed square against a stop block and repeated identically down the run.</td></tr>
+      <tr><td>MA2</td><td>Time to mark and cut one hip or jack rafter's compound-angle cut (a "compound cut set"), as a multiple of MA1</td><td>3&times; the simple-cut time (12 minutes)</td><td>A compound cut requires laying out two bevels at once, typically with a hip-valley scale or a compound-miter saw set to two angles, plus a test-fit. No public per-cut timing study exists for this operation.</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix F &mdash; Sources</summary>
+  <div class="inner">
+    <table id="apxF">
+      <tr><th>id</th><th>Claim</th><th>Value</th><th>Source</th><th>Accessed</th><th>Confidence</th></tr>
+      <tr><td>S1</td><td>Maximum span, 2&times;8 Douglas Fir&ndash;Larch No. 2 rafter, 16" o.c., live load 20 psf / dead load 20 psf, no ceiling attached</td><td>16 ft &ndash; 0 in</td><td><a href="https://www.mycarpentry.com/rafter-span-tables.html" target="_blank" rel="noopener">mycarpentry.com, &ldquo;Rafter Span Tables&rdquo;</a></td><td>2026-08-19</td><td>MEDIUM</td></tr>
+      <tr><td>S2</td><td>Framing lumber composite price</td><td>$536.15 per 1,000 board feet, week of Aug 14, 2026</td><td><a href="https://www.nahb.org/news-and-economics/housing-economics/National-Statistics/Framing-Lumber-Prices" target="_blank" rel="noopener">NAHB, &ldquo;Framing Lumber Prices&rdquo; (Madison's Lumber Price Index)</a></td><td>2026-08-19</td><td>HIGH</td></tr>
+      <tr><td>S3</td><td>Median hourly wage, carpenters, United States</td><td>$28.51/hr, May 2024 data</td><td><a href="https://www.bls.gov/ooh/construction-and-extraction/carpenters.htm" target="_blank" rel="noopener">U.S. BLS, Occupational Outlook Handbook, &ldquo;Carpenters&rdquo;</a></td><td>2026-08-19</td><td>HIGH</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix G &mdash; Learn More</summary>
+  <div class="inner">
+    <p class="side-note">Curious about the real-world math and industry behind this case? These resources go beyond what the challenges require.</p>
+    <ul class="howto-list">
+      <li><a href="https://en.wikipedia.org/wiki/Hip_roof" target="_blank" rel="noopener">Hip roof &mdash; Wikipedia</a> &mdash; background on hip roof geometry, wind performance, and why builders choose it over a gable roof.</li>
+      <li><a href="https://en.wikipedia.org/wiki/Framing_square" target="_blank" rel="noopener">Framing square &mdash; Wikipedia</a> &mdash; the traditional layout tool carpenters use to mark rafter and hip cut angles by hand.</li>
+      <li><a href="https://en.wikipedia.org/wiki/Rafter" target="_blank" rel="noopener">Rafter &mdash; Wikipedia</a> &mdash; background on common, hip, and jack rafters and how they frame a roof together.</li>
+      <li><a href="https://en.wikipedia.org/wiki/Board_foot" target="_blank" rel="noopener">Board foot &mdash; Wikipedia</a> &mdash; the lumber-volume unit used throughout Appendices C and D.</li>
+    </ul>
+  </div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-20. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+<div class="stepbox">
+  <h4>Step 1 &mdash; Birdsmouth Angles (D2)</h4>
+  <div class="goal">Compute the plumb-cut and level-cut angles for the birdsmouth seat cut from the stated pitch, then verify they're complementary.</div>
+  <div class="fieldrow"><label for="s1_run">Common-rafter run (ft) &mdash; Appendix B</label><input type="number" id="s1_run" step="0.01"></div>
+  <div class="fieldrow"><label for="s1_rise">Common-rafter rise (ft) &mdash; Appendix B</label><input type="number" id="s1_rise" step="0.01"></div>
+  <div class="fieldrow"><label for="s1_plumb">Your plumb-cut angle (&deg;)</label><input type="number" id="s1_plumb" step="0.01"></div>
+  <div class="fieldrow"><label for="s1_level">Your level-cut angle (&deg;)</label><input type="number" id="s1_level" step="0.01"></div>
+  <button onclick="checkGeometry()">Check</button><span class="fb" id="fb1"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; Hip Corner Bisection (D3 / D4)</h4>
+  <div class="goal">For The Hip Wrap: show the hip rafter's plan-view line bisects the building's 90&deg; corner into a pair of angles, and verify they are adjacent and complementary.</div>
+  <div class="fieldrow"><label for="s2_corner">Building corner angle (&deg;)</label><input type="number" id="s2_corner" step="0.01"></div>
+  <div class="fieldrow"><label for="s2_a1">First angle the hip creates (&deg;)</label><input type="number" id="s2_a1" step="0.01"></div>
+  <div class="fieldrow"><label for="s2_a2">Second angle the hip creates (&deg;)</label><input type="number" id="s2_a2" step="0.01"></div>
+  <button onclick="checkHip()">Check</button><span class="fb" id="fb2"></span>
+  <p class="side-note">D3 also asks you to name one acute and one obtuse angle actually present in each option's framing, and the vertex/rays that form each &mdash; do that on your own labeled sketch (D1); it isn't something a calculator can grade for you.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; Framing Takeoff (D5)</h4>
+  <div class="goal">Enter your own total board-feet for each option (check your work against Appendix D) and the attic area, then check your board-feet-per-square-foot arithmetic.</div>
+  <div class="fieldrow"><label for="s3_bfA">Total board-feet, Option A</label><input type="number" id="s3_bfA" step="0.01"></div>
+  <div class="fieldrow"><label for="s3_bfB">Total board-feet, Option B</label><input type="number" id="s3_bfB" step="0.01"></div>
+  <div class="fieldrow"><label for="s3_area">Enclosed attic area (sq ft)</label><input type="number" id="s3_area" step="0.01"></div>
+  <button onclick="checkTakeoff()">Check</button><span class="fb" id="fb3"></span>
+  <p class="side-note" id="takeoffOut"></p>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+<p>Colton sends his board-feet numbers to his supervisor. She nods, then hands him something else: the shop's labor log from the last hip-roof job they framed, next to the log from the last gable-roof job.</p>
+<p>&ldquo;Board-feet is what the lumber yard bills you,&rdquo; she says. &ldquo;This is what the crew bills you.&rdquo;</p>
+<p>Does the labor number change what Colton should actually recommend?</p>
+<div class="card" id="twistCalcWrap" style="display:none;background:#2b323b;border-color:#444;color:#e8e3d5">
+  <h4 style="margin-top:0;color:#f2ede0">Total-cost calculator</h4>
+  <p class="side-note" style="color:#b9c3d6">Use Appendix C's lumber price, Appendix E's cut-time assumptions (MA1/MA2), and Appendix F's carpenter wage (S3) to estimate material + labor cost for each option. Type your own numbers, then Check.</p>
+  <div class="fieldrow"><label for="s4_matA" style="color:#e8e3d5">Material cost, Option A ($)</label><input type="number" id="s4_matA" step="0.01"></div>
+  <div class="fieldrow"><label for="s4_laborA" style="color:#e8e3d5">Labor cost, Option A ($)</label><input type="number" id="s4_laborA" step="0.01"></div>
+  <div class="fieldrow"><label for="s4_matB" style="color:#e8e3d5">Material cost, Option B ($)</label><input type="number" id="s4_matB" step="0.01"></div>
+  <div class="fieldrow"><label for="s4_laborB" style="color:#e8e3d5">Labor cost, Option B ($)</label><input type="number" id="s4_laborB" step="0.01"></div>
+  <button class="gold" onclick="checkTwistCost()">Check total cost</button><span class="fb" id="fb4"></span>
+  <p class="side-note" id="twistOut" style="color:#b9c3d6"></p>
+</div>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the labor log &mdash; show the total-cost calculator</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+<li>S1 &mdash; mycarpentry.com, "Rafter Span Tables" &mdash; <a href="https://www.mycarpentry.com/rafter-span-tables.html" target="_blank" rel="noopener">mycarpentry.com/rafter-span-tables.html</a></li>
+<li>S2 &mdash; NAHB, "Framing Lumber Prices" (Madison's Lumber Price Index) &mdash; <a href="https://www.nahb.org/news-and-economics/housing-economics/National-Statistics/Framing-Lumber-Prices" target="_blank" rel="noopener">nahb.org</a></li>
+<li>S3 &mdash; U.S. Bureau of Labor Statistics, Occupational Outlook Handbook, "Carpenters" &mdash; <a href="https://www.bls.gov/ooh/construction-and-extraction/carpenters.htm" target="_blank" rel="noopener">bls.gov/ooh</a></li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Roofline Call &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/roofline-call/sensitivity_model.py (case.md sha256: f5d1639d12e792a86746caded4f203f42f178e50ce68d5ab02d6d32e3ed746a6)
+// Every number below is the case's OWN stated design/sourced data (Appendix B/C/E/F) --
+// never a pre-computed verdict. evaluate()/evaluateTwist() derive the comparison live.
+const PARAMS = {
+  width_ft: 24.0,
+  length_ft: 52.0,
+  pitch_rise: 6.0,
+  pitch_run: 12.0,
+  spacing_in: 16.0,
+  lumber_bf_factor: 2 * 8 / 12,   // board-feet per linear foot, 2x8 stock
+  price_per_bf_usd: 0.53615,      // Appendix C / S2
+  simple_cut_min: 4.0,            // Appendix E, MA1
+  compound_mult: 3.0,             // Appendix E, MA2
+  wage_usd_per_hr: 28.51          // Appendix F / S3
+};
+const FLEX = ["simple_cut_min", "compound_mult"]; // the two stated assumptions a Hero may challenge
+
+function geometry(p){
+  const W = p.width_ft, L = p.length_ft;
+  const run = W / 2.0;
+  const rise = run * (p.pitch_rise / p.pitch_run);
+  const commonLen = Math.sqrt(run*run + rise*rise);
+  const spacingFt = p.spacing_in / 12.0;
+  const atticSqft = W * L;
+
+  // Gable
+  const ridgeG = L;
+  const commonsPerSideG = Math.trunc(ridgeG * 12 / p.spacing_in) + 1;
+  const commonTotalG = commonsPerSideG * 2 * commonLen;
+  const lenTotalG = commonTotalG + ridgeG;
+
+  // Hip
+  const ridgeH = L - W;
+  const commonsPerSideH = Math.trunc(ridgeH * 12 / p.spacing_in) + 1;
+  const commonTotalH = commonsPerSideH * 2 * commonLen;
+  const hipRun = run * Math.sqrt(2);
+  const hipLen = Math.sqrt(hipRun*hipRun + rise*rise);
+  const hipsTotal = 4 * hipLen;
+  const unitLen = commonLen / run;
+  const decrement = spacingFt * unitLen;
+  const nJacksPerSide = Math.trunc(run * 12 / p.spacing_in);
+  const jackTotal = decrement * (nJacksPerSide * (nJacksPerSide + 1) / 2) * 4;
+  const lenTotalH = commonTotalH + hipsTotal + jackTotal + ridgeH;
+
+  const bfA = lenTotalG * p.lumber_bf_factor;
+  const bfB = lenTotalH * p.lumber_bf_factor;
+
+  return {
+    attic_sqft: atticSqft,
+    bf_a: bfA, bf_b: bfB,
+    bf_per_sqft_a: bfA / atticSqft, bf_per_sqft_b: bfB / atticSqft,
+    commons_per_side_g: commonsPerSideG,
+    commons_per_side_h: commonsPerSideH,
+    n_hip_members: 4,
+    n_jack_members: nJacksPerSide * 4
+  };
+}
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const g = geometry(p);
+  return {A: -g.bf_per_sqft_a, B: -g.bf_per_sqft_b};
+}
+
+function evaluateTwist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const g = geometry(p);
+  const matA = g.bf_a * p.price_per_bf_usd;
+  const matB = g.bf_b * p.price_per_bf_usd;
+  const simpleCost = p.simple_cut_min / 60.0 * p.wage_usd_per_hr;
+  const compoundCost = simpleCost * p.compound_mult;
+  const laborA = g.commons_per_side_g * 2 * simpleCost;
+  const laborB = g.commons_per_side_h * 2 * simpleCost + g.n_hip_members * compoundCost + g.n_jack_members * compoundCost;
+  const totalA = matA + laborA;
+  const totalB = matB + laborB;
+  return {A: -totalA, B: -totalB, matA, matB, laborA, laborB, totalA, totalB};
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkGeometry(){
+  const run = parseFloat(val('s1_run'));
+  const rise = parseFloat(val('s1_rise'));
+  const plumb = parseFloat(val('s1_plumb'));
+  const level = parseFloat(val('s1_level'));
+  const truePlumb = Math.atan(rise / run) * 180 / Math.PI;
+  const trueLevel = 90 - truePlumb;
+  const ok = near(plumb, truePlumb, 0.3) && near(level, trueLevel, 0.3) && near(plumb + level, 90, 0.05);
+  fb('fb1', ok);
+}
+
+function checkHip(){
+  const corner = parseFloat(val('s2_corner'));
+  const a1 = parseFloat(val('s2_a1'));
+  const a2 = parseFloat(val('s2_a2'));
+  const ok = near(a1 + a2, corner, 0.05) && near(a1, a2, 0.05) && near(a1 + a2, 90, 0.05);
+  fb('fb2', ok);
+}
+
+function checkTakeoff(){
+  const bfA = parseFloat(val('s3_bfA'));
+  const bfB = parseFloat(val('s3_bfB'));
+  const area = parseFloat(val('s3_area'));
+  const g = geometry(PARAMS);
+  const yourA = bfA / area, yourB = bfB / area;
+  const ok = near(yourA, g.bf_per_sqft_a, 0.02) && near(yourB, g.bf_per_sqft_b, 0.02);
+  fb('fb3', ok);
+  const out = document.getElementById('takeoffOut');
+  if(ok){
+    const lo = Math.min(g.bf_per_sqft_a, g.bf_per_sqft_b);
+    const hi = Math.max(g.bf_per_sqft_a, g.bf_per_sqft_b);
+    const winner = g.bf_per_sqft_a < g.bf_per_sqft_b ? 'A' : 'B';
+    const marginPct = 100 * (hi - lo) / hi;
+    out.textContent = 'Your numbers check out. Option ' + winner + ' uses less lumber per square foot of attic space (margin: ' + marginPct.toFixed(2) + '% relative to the higher figure).';
+  } else {
+    out.textContent = 'Not matching yet -- recheck your takeoff against Appendix D.';
+  }
+}
+
+function checkTwistCost(){
+  const matA = parseFloat(val('s4_matA'));
+  const laborA = parseFloat(val('s4_laborA'));
+  const matB = parseFloat(val('s4_matB'));
+  const laborB = parseFloat(val('s4_laborB'));
+  const tw = evaluateTwist(PARAMS);
+  const ok = near(matA, tw.matA, 5) && near(laborA, tw.laborA, 5) && near(matB, tw.matB, 5) && near(laborB, tw.laborB, 5);
+  fb('fb4', ok);
+  const out = document.getElementById('twistOut');
+  if(ok){
+    const totalA = matA + laborA, totalB = matB + laborB;
+    const lo = Math.min(totalA, totalB), hi = Math.max(totalA, totalB);
+    const winner = totalA < totalB ? 'A' : 'B';
+    const marginPct = 100 * (hi - lo) / hi;
+    out.textContent = 'Your total-cost numbers check out. Once labor is priced in on top of material, Option ' + winner + ' is the cheaper total build (margin: ' + marginPct.toFixed(2) + '%). Compare that to Step 3\'s board-feet result -- did the winner change?';
+  } else {
+    out.textContent = 'Not matching yet -- recheck your material cost (Appendix C x board feet) and labor cost (Appendix E cut times x Appendix F wage) for each option.';
+  }
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "roofline-call"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Labeled framing sketch for each option: ridge vertex, a rafter as a ray, one pair of parallel lines, one pair of perpendicular lines"],
+  ["D2", "Birdsmouth plumb-cut and level-cut angles from the stated pitch, verified complementary"],
+  ["D3", "One acute angle and one obtuse angle actually occurring in each option's framing, with vertex and rays named"],
+  ["D4", "For The Hip Wrap: hip rafter bisects the building's 90-degree corner into adjacent, complementary angles"],
+  ["D5", "Full framing takeoff: rafter counts/lengths, total board-feet, board-feet per square foot for each option; state the winner and margin"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Ray": {def: "A part of a line with a start point but no end point -- it goes on forever in one direction.",
+    url: "https://www.mathsisfun.com/definitions/ray.html"},
+  "Vertex": {def: "A point where two or more line segments or edges meet -- a corner.",
+    url: "https://www.mathsisfun.com/definitions/vertex.html"},
+  "Acute Angle": {def: "An angle that measures less than 90 degrees.",
+    url: "https://www.mathsisfun.com/angles.html"},
+  "Obtuse Angle": {def: "An angle that measures more than 90 degrees but less than 180 degrees.",
+    url: "https://www.mathsisfun.com/angles.html"},
+  "Parallel Lines": {def: "Lines that stay the same distance apart forever and never meet.",
+    url: "https://www.mathsisfun.com/geometry/parallel-lines.html"},
+  "Perpendicular Lines": {def: "Two lines that meet at a right angle (90 degrees).",
+    url: "https://www.mathsisfun.com/definitions/perpendicular.html"},
+  "Complementary Angles": {def: "Two angles that add up to 90 degrees (a right angle).",
+    url: "https://www.mathsisfun.com/geometry/complementary-angles.html"},
+  "Adjacent Angles": {def: "Two angles that share a common side and a common vertex, and don't overlap.",
+    url: "https://www.mathsisfun.com/geometry/adjacent-angles.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"}
+};
+const HOWTO = [
+  ["How to multiply decimal numbers", "Decimal"],
+  ["How to divide decimal numbers", "Decimal"],
+  ["How to find the percent of a number", "Percent"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  const apply = document.getElementById('applyTwist').checked;
+  const wrap = document.getElementById('twistCalcWrap');
+  if(wrap) wrap.style.display = apply ? 'block' : 'none';
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

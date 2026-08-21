@@ -68,7 +68,7 @@ Do you:
 
 ---
 
-## Appendix A: The STICH Trial — Real Outcomes at ~5 and ~10 Years
+## Appendix A: The STICH Trial — Real Outcomes at ~5 Years
 
 **Study:** Comparison of Surgical and Medical Treatment for Congestive Heart Failure and Coronary Artery Disease (ClinicalTrials.gov Identifier: **NCT00023595**). **Sponsor:** Duke University. **Collaborator:** National Heart, Lung, and Blood Institute.
 
@@ -77,7 +77,6 @@ The study randomized patients with CAD, reduced heart function, and congestive h
 | Follow-up | MT mortality | CABG mortality |
 |---|---|---|
 | ~5 years (primary report, median follow-up 56 months) | 41% | 36% |
-| ~10 years (extended follow-up, median 9.8 years) | 66.1% | 58.9% |
 
 ---
 
@@ -133,3 +132,19 @@ Percent · Ratio · Slope
 - How to add decimal numbers
 - How to identify the slope of a line given a set of data, or a graph of a line of a set of data, or its linear equation
 - How to compare two or more values
+
+---
+
+<!-- FACILITATOR ONLY -->
+
+## Facilitator-Only: STICH Extended Follow-Up (10-Year)
+
+Not needed for Challenges 1–5 — D1 only asks for the 5-year figures in Appendix A above. This
+section holds the real, sourced 10-year data back from the student-facing read (everything above
+the `<!-- FACILITATOR ONLY -->` marker is what a student sees) so the Twist is an actual reveal
+in discussion, not a repeat of a number already sitting in the packet. See FACILITATOR.md's Twist
+section for when and how to bring it into the room.
+
+**STICHES extension (Velazquez et al., NEJM 2016, DOI 10.1056/NEJMoa1602001, median follow-up 9.8
+years):** MT mortality 66.1%, CABG mortality 58.9% (p=0.02, statistically significant — case.json
+source S2).

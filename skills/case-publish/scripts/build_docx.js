@@ -89,9 +89,9 @@ function mdToParagraphs(md, { stripFacilitator = true } = {}) {
   while (i < lines.length) {
     const line = lines[i];
     if (/^\s*$/.test(line)) { i++; continue; }
-    if (/^#{1,2}\s+/.test(line)) {
-      const level = line.startsWith('## ') ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_1;
-      out.push(new Paragraph({ heading: level, children: inlineRuns(line.replace(/^#{1,2}\s+/, '')), spacing: { before: 240, after: 120 } }));
+    if (/^#{1,3}\s+/.test(line)) {
+      const level = line.startsWith('### ') ? HeadingLevel.HEADING_3 : (line.startsWith('## ') ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_1);
+      out.push(new Paragraph({ heading: level, children: inlineRuns(line.replace(/^#{1,3}\s+/, '')), spacing: { before: 240, after: 120 } }));
       i++; continue;
     }
     if (/^```/.test(line)) {
@@ -124,7 +124,7 @@ function mdToParagraphs(md, { stripFacilitator = true } = {}) {
       while (
         i < lines.length &&
         !/^\s*$/.test(lines[i]) &&
-        !/^#{1,2}\s+/.test(lines[i]) &&
+        !/^#{1,3}\s+/.test(lines[i]) &&
         !/^```/.test(lines[i]) &&
         !/^\|/.test(lines[i].trim()) &&
         !/^>\s?/.test(lines[i]) &&
@@ -147,7 +147,7 @@ function mdToParagraphs(md, { stripFacilitator = true } = {}) {
       while (
         i < lines.length &&
         !/^\s*$/.test(lines[i]) &&
-        !/^#{1,2}\s+/.test(lines[i]) &&
+        !/^#{1,3}\s+/.test(lines[i]) &&
         !/^```/.test(lines[i]) &&
         !/^\|/.test(lines[i].trim()) &&
         !/^>\s?/.test(lines[i]) &&

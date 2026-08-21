@@ -16,6 +16,21 @@ numbers — see `case.json.correction_2026_08_04` for the full account and sourc
 now runs in the opposite direction from the original draft: the real gap *widens* at 10 years and
 only becomes statistically significant there, rather than narrowing.
 
+**Remediation, 2026-08-20:** a Tier 2 gate run found two real defects — see
+`case.json.qa.remediation_note_2026_08_20` and `QA_REPORT.md`'s 2026-08-20 entry for the full
+account. (1) This guide's old "The trap" section named a difficulty (which factor a student
+weighs) rather than a concrete wrong move; a fresh cold-solve found the actual trap — Appendix A is
+headed *mortality*, D1 asks for *survival rate*, and the point gap survives the swap, so a rushed
+Hero can copy mortality numbers into D1 unconverted and get an internally-consistent but backwards
+answer. Rewritten below. (2) `case.md`'s own Appendix A used to print both the 5-year and 10-year
+rows together, so the Twist's "surprise" was already sitting in the packet before Anchor 1's vote.
+`case.md` now shows only the 5-year row before the `<!-- FACILITATOR ONLY -->` marker; the real
+10-year data moved to a facilitator-only section after that marker (case.md is not stripped for a
+student read this way in any other case in this project's corpus yet — this is the first case to
+actually rely on that mechanism for load-bearing content, not just the boilerplate comment). The
+published interactive HTML's Appendix A table was also cut down to the 5-year row to match; the
+10-year figures still appear, but only inside the gated Twist section a student must click through.
+
 ## Intro
 
 Frame the format: this is a real treatment decision for a real kind of patient, built on a real
@@ -67,9 +82,18 @@ calculation together as a room, cold-calling for the SV/EDV division specificall
 Hero who divides the wrong way (EDV/SV instead of SV/EDV) will get a real, visibly wrong (impossibly
 high) Ejection Fraction instead of Paul's real value from Appendix B.
 
+Also cold-call for the mortality-to-survival conversion specifically, the moment the room touches
+Appendix A: D1 asks for *survival rate*, and Appendix A's table is headed *mortality*. A Hero who
+skips converting mortality into survival (survival% is what's left after mortality%) and treats 41%/36% as if they were already the survival rates will
+land on an internally-consistent but backwards 5.0-point gap, with MT (41) reading as the bigger,
+better number instead of CABG (which really wins at 64% vs 59%). See "The trap" below — this is the
+trap, not a side issue.
+
 ## Twist — drop this at ~15 minutes into the discussion
 
-Deliver slowly, with pauses:
+Deliver slowly, with pauses. As of the 2026-08-20 fix, `case.md`'s Appendix A shows only the
+5-year row before the reveal — this is genuinely the first time a student sees the 10-year numbers,
+not a repeat of something already sitting in front of them.
 
 "Paul asks Dr. Hotchkiss one more question: 'What about ten years out, not just five?'"
 
@@ -125,11 +149,23 @@ just make you want to ask Paul more about his own priorities?"
 
 ## The trap
 
-A Hero computes the cost difference, recommends MT on price alone, and never engages with the real
-survival-rate gap the trial actually measured — or the reverse, recommending CABG on survival alone
-without ever mentioning that $94,000 is a real number a real family has to find. The case's actual
-tension is that a cheaper option carries a real, disclosed survival cost — not that one option is
-simply "better."
+The real trap is a label swap, not a weighting choice. Appendix A's table is headed **mortality**
+(41% MT / 36% CABG at 5 years); Challenge D1 asks for **survival rate**. A rushed Hero can copy the
+mortality percentages straight into D1 as if they were already the survival rates, skipping the
+mortality-to-survival conversion entirely. The point gap still comes out to 5.0 either way (41 − 36 =
+64 − 59), so the arithmetic "checks" — but the labels invert: MT's 41% now reads as the bigger
+number and looks like the winner, when the real survival winner is CABG (64% vs 59%, not 41% vs
+36%). This can flip a Hero's entire D5 recommendation while looking internally consistent, and it
+is the single most likely wrong move a fast solver makes on this case. Watch for it specifically
+during the Data Deep Dive, the moment the room converts Appendix A's numbers for D1 — do not let it
+pass uncaught just because the final point-gap number happens to match.
+
+A secondary, softer trap, worth naming if the room clears the first one cleanly: a Hero computes
+the cost difference, recommends MT on price alone, and never engages with the real survival-rate
+gap the trial actually measured — or the reverse, recommending CABG on survival alone without ever
+mentioning that $94,000 is a real number a real family has to find. The case's actual tension is
+that a cheaper option carries a real, disclosed survival cost, not that one option is simply
+"better" — but this is a distant second to the mortality/survival label swap above.
 
 ## Socratic questions
 

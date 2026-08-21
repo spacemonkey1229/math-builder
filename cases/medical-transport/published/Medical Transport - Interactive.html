@@ -1,0 +1,1235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Medical Transport — Interactive</title>
+<!-- Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md -->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: Medical Transport</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Decimals, Percent &amp; Probability</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+
+  <p class="lede">"Congratulations on the promotion, Josie," Mr. Jones says, reaching across the mahogany desk. Josie Tramble shakes his hand firmly. "I won't let you down, sir. You'll get my best every day." "We expect nothing less," he says. "Your first project is to analyze our healthcare delivery logistics and bring the board a policy recommendation at Wednesday's meeting." "Yes, sir." She turns for the door, already running numbers in her head &mdash; fleet miles, fuel receipts, the insurance file she pulled last night. "One more thing, Josie." She stops. "Here at Inland, time is money. We do it right. But we do it fast." "Yes, sir."</p>
+  <p>Back at her desk, the healthcare logistics binder is still open to the page she marked with a sticky note: five drivers, five Ford Focuses, and a courier contract that pays by the mile and the minute. Beside it sits a printout from the fleet's insurer, a stack of Oregon Department of Transportation crash data, and a gas receipt from the corner cardlock station. Somewhere between Portland International Airport and four hospitals, a driver carrying a cooler of donor tissue is watching the clock. Josie pulls up a blank slide, types "Recommended Speed Policy," and stares at the cursor.</p>
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+
+  <p>Inland Transport has operated in the Oregon area for more than 30 years, specializing in the transport of high-value and time-critical items, including sensitive documents, medical supplies, and human organs and tissue for transplant. Its healthcare logistics division runs a fleet of five 2018 Ford Focus sedans, working continuously to carry items from Portland International Airport (PDX) to regional hospitals in Portland, Hillsboro, Eugene, and Astoria (see Appendix A).</p>
+  <p>Josie Tramble has worked at Inland for three years since graduating from the University of Washington with a degree in Supply Chain Management. This is her first project as the newly promoted Healthcare Logistics Manager, and her first assignment is a policy recommendation on driving speed.</p>
+  <p>Inland runs two driving shifts of different drivers each day: 4:00 a.m.&ndash;12:00 p.m. and 12:00 p.m.&ndash;8:00 p.m. Cars are picked up from Inland's lot at the start of each shift and returned to the same lot by the end of it. By state health-code regulation, each driver can transport only one item at a time &mdash; packages are picked up curbside from an airport courier at PDX (which stores time-sensitive items in secure cold storage, even overnight, until a driver is dispatched) and delivered directly to the receiving hospital. Drivers are required by law to take a 30-minute break sometime between their 4th and 6th working hour, during which the car is out of service (see Appendix C).</p>
+  <p>Inland is paid $3.54 per mile driven on each delivery. Averaged across a full day, the fleet drives 352 freeway miles, 142 highway miles, and 110 city miles (see Appendix C). Every car must be returned with a full tank of gas; Inland fuels at a commercial cardlock station and reports company-wide fuel spend as a single line item (see Appendix B). Each vehicle carries its own insurance policy, and Inland covers up to 4 speeding-ticket violations per vehicle per year before further consequences apply (see Appendix E).</p>
+  <p>In addition to her $105,000 annual salary, Josie earns a $7,500 quarterly bonus if the fleet averages at least 5 long-distance deliveries (round trips of 180+ miles) and at least 18 total deliveries per day (see Appendix A). Her presentation to the board must include a firm, defended recommendation for the speed her drivers should drive in the city, on the highway, and on the freeway &mdash; Oregon's posted limits for each are given in Appendix D, along with what Inland's own insurer and Oregon's courts actually charge when a driver is caught over them. Every figure Josie's presentation relies on is cited in Appendix G, and the standards she'll need to research to build it are listed in Appendix H.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Josie Tramble. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Never Exceed the Limit</h4>
+      <p style="margin:0">Pitch a policy that Inland&rsquo;s drivers never exceed the posted speed limit &mdash; in the city, on the highway, or on the freeway.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Ten Over, Always</h4>
+      <p style="margin:0">Pitch a policy that Inland&rsquo;s drivers routinely drive 10 mph over the posted speed limit &mdash; in the city, on the highway, and on the freeway.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: D1) a per-vehicle annual operating-cost table comparing Option A and Option B, itemizing fuel cost, expected speeding-ticket fines, and expected insurance surcharge, each computed to the penny, ending in the dollar difference between the two option totals; D2) a fuel-cost calculation for each option showing how the 2018 Ford Focus's miles-per-gallon changes at each recommended speed, and the resulting fuel cost per driver per day and per year; D3) Inland's anticipated total revenue from medical deliveries, per day and per year, using the company's $3.54-per-mile rate; D4) a recommended route and total trip time for each of Inland's five drivers, computed from the distances in Appendix A and the speeds you recommend; D5) a calculation of the fleet's average long-distance and total deliveries per day, checked against the thresholds for Josie's quarterly bonus, including whether either option's shift-capacity math changes what the fleet can mechanically achieve; D6) an expected-cost calculation for speeding tickets under Option B &mdash; for each road type, the probability of being stopped multiplied by Oregon's actual presumptive fine for that violation class; D7) a risk table applying the case's own crash-risk data to the percent speed increase each option represents over the posted limit, for crash risk, serious-injury risk, and fatality risk; D8) two original visual displays: a bar graph comparing Option A's and Option B's total annual per-vehicle cost, and a pie chart breaking down your chosen option's cost components.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+
+<details open>
+  <summary>Appendix A &mdash; Map and Delivery Data</summary>
+  <div class="inner">
+    <p><strong>Route:</strong> Portland International Airport (PDX) &rarr; regional hospital &rarr; Inland's lot (5741 NE 87th Ave, Portland, OR 97220). Distances are one-way, PDX to hospital [S9].</p>
+    <table id="apxA">
+      <tr><th>Hospital</th><th>City</th><th>One-way distance from PDX</th><th>Round trip</th><th>Average deliveries/day</th></tr>
+      <tr><td>Randall Children's Hospital at Legacy Emanuel</td><td>Portland</td><td class="num">7.8 mi</td><td class="num">15.6 mi</td><td class="num">8.4</td></tr>
+      <tr><td>Hillsboro Medical Center</td><td>Hillsboro</td><td class="num">34 mi</td><td class="num">68 mi</td><td class="num">7.6</td></tr>
+      <tr><td>PeaceHealth Sacred Heart Medical Center</td><td>Eugene</td><td class="num">122 mi</td><td class="num">244 mi</td><td class="num">2.7</td></tr>
+      <tr><td>Columbia Memorial Hospital</td><td>Astoria</td><td class="num">97 mi</td><td class="num">194 mi</td><td class="num">1.8</td></tr>
+    </table>
+    <p class="side-note">&ldquo;Long-distance&rdquo; per Josie's bonus criteria is defined as a round trip of 180+ miles &mdash; under this table, that is Eugene (244 mi) and Astoria (194 mi) runs only.</p>
+    <p><strong>Delivery-capacity check (see Appendix C):</strong> the deliveries/day column above is the fleet's real average daily volume, not a drive-time ceiling. At 7.5 hours of available driving per shift (8-hour shift minus the required 30-minute break), the fleet's total capacity is 5 vehicles &times; 2 shifts &times; 7.5 hr = <strong>75 vehicle-hours/day</strong>. Driving this table's average mix consumes only a fraction of those hours under either option &mdash; well under capacity either way. That means total and long-distance delivery <em>volume</em> is bound by real hospital demand, not by how fast the fleet drives, and stays the same under both options: speed does not manufacture more patients. The one place speed genuinely changes what a <em>single</em> vehicle can mechanically do: dedicated only to the Eugene route, one vehicle's daily round-trip ceiling depends on that route's trip time under each option &mdash; work this out yourself in Working Notebook Step 5, using the trip times you compute in Step 4 against Eugene's own 2.7/day average demand above.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix B &mdash; Fleet Data: 2018 Ford Focus</summary>
+  <div class="inner">
+    <table id="apxB">
+      <tr><th>Spec</th><th>Value</th></tr>
+      <tr><td>Fuel tank capacity</td><td class="num">12.4 gallons</td></tr>
+      <tr><td>EPA city fuel economy (2.0L 4-cyl automatic)</td><td class="num">26 mpg [S1]</td></tr>
+      <tr><td>EPA highway fuel economy (2.0L 4-cyl automatic)</td><td class="num">38 mpg [S1]</td></tr>
+    </table>
+    <p><strong>Effect of speed on fuel economy:</strong> the U.S. Department of Energy's fueleconomy.gov states that gas mileage &ldquo;usually decreases rapidly at speeds above 50 mph,&rdquo; and that &ldquo;each 5 mph you drive over 50 mph is like paying an additional $0.29 per gallon for gas&rdquo; [S2]. This case models that effect as a 7% mpg reduction for each 5 mph driven over 50 mph, compounding per increment (e.g., driving 15 mph over 50 applies the 7% reduction three times) [S2, derived].</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix C &mdash; Daily Operations</summary>
+  <div class="inner">
+    <table id="apxC">
+      <tr><th>Item</th><th>Value</th></tr>
+      <tr><td>Fleet average freeway miles/day</td><td class="num">352 mi</td></tr>
+      <tr><td>Fleet average highway miles/day</td><td class="num">142 mi</td></tr>
+      <tr><td>Fleet average city miles/day</td><td class="num">110 mi</td></tr>
+      <tr><td><strong>Total fleet miles/day</strong></td><td class="num"><strong>604 mi</strong></td></tr>
+      <tr><td>Available driving time per shift (8 hr shift minus 30-min break)</td><td class="num">7.5 hr</td></tr>
+      <tr><td><strong>Fleet capacity (5 vehicles &times; 2 shifts &times; 7.5 hr)</strong></td><td class="num"><strong>75 vehicle-hr/day</strong></td></tr>
+      <tr><td>Inland's delivery revenue rate</td><td class="num">$3.54 / mile</td></tr>
+      <tr><td>Morning shift</td><td>4:00 a.m. &ndash; 12:00 p.m.</td></tr>
+      <tr><td>Afternoon shift</td><td>12:00 p.m. &ndash; 8:00 p.m.</td></tr>
+      <tr><td>Required break</td><td>30 min, between hour 4 and hour 6 of each shift (car out of service)</td></tr>
+      <tr><td>Fleet size</td><td class="num">5 vehicles</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix D &mdash; Oregon Speed Limits and Speeding Fines</summary>
+  <div class="inner">
+    <table id="apxD1">
+      <tr><th>Road type</th><th>Posted limit</th><th>Option A speed</th><th>Option B speed</th></tr>
+      <tr><td>City (Portland-area arterial)</td><td class="num">35 mph [S3]</td><td class="num">35 mph</td><td class="num">45 mph</td></tr>
+      <tr><td>Highway</td><td class="num">55 mph [S4]</td><td class="num">55 mph</td><td class="num">65 mph</td></tr>
+      <tr><td>Freeway / Interstate</td><td class="num">65 mph [S4]</td><td class="num">65 mph</td><td class="num">75 mph</td></tr>
+    </table>
+    <p>Oregon classifies a speeding violation by how many mph over the posted limit the driver was clocked, and each class carries a fixed presumptive fine [S5, S6]:</p>
+    <table id="apxD2">
+      <tr><th>MPH over limit</th><th>Violation class</th><th>Presumptive fine</th></tr>
+      <tr><td>1&ndash;10</td><td>Class D</td><td class="num">$115</td></tr>
+      <tr><td>11&ndash;20</td><td>Class C</td><td class="num">$165</td></tr>
+      <tr><td>21&ndash;30</td><td>Class B</td><td class="num">$265</td></tr>
+      <tr><td>31+</td><td>Class A</td><td class="num">$440</td></tr>
+    </table>
+    <p class="side-note"><strong>Exception:</strong> on a road posted 65 mph or faster, exceeding the limit by 10 mph or less is charged one class higher &mdash; Class C instead of Class D [S5]. Under Option B, the freeway violation (65&rarr;75, posted limit is 65) is therefore a <strong>Class C, $165</strong> violation, not a Class D $115 violation like the city and highway 10-over violations.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix E &mdash; Inland's Insurance Policy</summary>
+  <div class="inner">
+    <table id="apxE">
+      <tr><th>Item</th><th>Value</th></tr>
+      <tr><td>Base premium</td><td class="num">$1,453.00 per vehicle per year</td></tr>
+      <tr><td>Surcharge per speeding-ticket violation</td><td class="num">$164.95 per vehicle per year</td></tr>
+      <tr><td>Tickets Inland covers before other consequences apply</td><td class="num">up to 4 per vehicle per year</td></tr>
+    </table>
+    <p>Independent market research on U.S. auto insurance confirms this magnitude: one speeding ticket raises a driver's annual premium by roughly 24% on average nationally [S7] &mdash; on Inland's $1,453 base premium, that is a $349 increase, consistent in magnitude with Inland's own stated $164.95 surcharge for a single violation. That same research shows mph-over-limit severity barely moves the number (its own rate table varies by less than 1.5% across brackets from &ldquo;under 5 over&rdquo; to &ldquo;21&ndash;25 over&rdquo;) &mdash; what actually drives a bigger increase is the <em>count</em> of tickets on record: a second ticket on record raises the premium by roughly 45%, and a third by roughly 60% [S7].</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix F &mdash; Crash Risk Data</summary>
+  <div class="inner">
+    <p>The Nilsson/Elvik &ldquo;Power Model,&rdquo; used by U.S. and international transportation-safety researchers to relate travel speed to crash outcomes, models the relationship as: for a given percent increase in average travel speed, crashes involving injury increase by roughly that percent squared (relative), serious-injury crashes by roughly that percent cubed (relative), and fatal crashes by roughly that percent to the fourth power (relative) [S8]. In practical terms across the range of speeds this case covers, researchers report that fatal-crash risk rises fastest, followed by serious-injury risk, then all-injury-crash risk [S8].</p>
+    <table id="apxF">
+      <tr><th>Relative risk change for a given percent speed increase, p</th><th>Formula</th></tr>
+      <tr><td>All-injury crashes</td><td class="num">(1 + p)&sup2;</td></tr>
+      <tr><td>Serious-injury crashes</td><td class="num">(1 + p)&sup3;</td></tr>
+      <tr><td>Fatal crashes</td><td class="num">(1 + p)&#8308;</td></tr>
+    </table>
+    <p>Oregon recorded 539 traffic deaths in 2024 (587 in 2023), and speed remains one of the top contributing factors named in the state's own crash reporting [S10].</p>
+  </div>
+</details>
+
+<details>
+  <summary>Modeling Assumptions</summary>
+  <div class="inner">
+    <p class="side-note">These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+    <table id="apxMA">
+      <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+      <tr><td>MA1</td><td>Probability a driver is pulled over, given they are observed by an officer while driving 6&ndash;10 mph over the posted limit</td><td class="num">25%</td><td>No current, attributable public study reports pull-over probability broken out by mph-over bracket; this value is carried forward from the case's own original (undated, unattributed) &ldquo;recent studies&rdquo; claim as a stated scenario assumption, not a cited fact.</td></tr>
+      <tr><td>MA2</td><td>Number of times per year each vehicle is realistically observed by an officer positioned to act, while sustaining a 10-over habit on Inland's regular routes</td><td class="num">8 per vehicle per year (roughly once every 6&ndash;7 weeks)</td><td>No public data measures &ldquo;radar exposure frequency&rdquo; for a specific commercial route; this is a modest, stated planning assumption, not a measured rate.</td></tr>
+      <tr><td>MA3</td><td>Insurance surcharge duration</td><td>Modeled as a single year's surcharge per ticket earned that year (steady-state, not stacked across multiple years)</td><td>Simplifies a multi-year underwriting look-back into a single annual figure so the case's &ldquo;per year&rdquo; comparison stays apples-to-apples.</td></tr>
+      <tr><td>MA4</td><td>Portland-area city arterial posted speed</td><td class="num">35 mph</td><td>Oregon's unposted default city speed is lower (20&ndash;25 mph), but PBOT's own engineering guidance documents 35&ndash;45 mph as the typical posted limit on the nonresidential arterials this fleet actually uses to reach hospitals and the airport [S3].</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix G &mdash; Sources</summary>
+  <div class="inner">
+    <table id="apxG">
+      <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+      <tr><td>S1</td><td>2018 Ford Focus (2.0L 4-cyl, automatic) EPA fuel economy</td><td class="num">26 city / 38 highway mpg</td><td>U.S. EPA / fueleconomy.gov, &ldquo;Gas Mileage of 2018 Ford Focus&rdquo; (<a href="https://fueleconomy.gov/feg/bymodel/2018_Ford_Focus.shtml" target="_blank" rel="noopener">link</a>)</td><td>model year 2018 (static)</td><td>HIGH</td></tr>
+      <tr><td>S2</td><td>Effect of speed above 50 mph on fuel economy</td><td>&ldquo;each 5 mph over 50 mph &asymp; an additional $0.29/gal&rdquo;; mileage decreases rapidly above 50 mph</td><td>U.S. DOE / fueleconomy.gov, &ldquo;Save Money and Fuel by Driving Efficiently&rdquo; (<a href="https://www.fueleconomy.gov/feg/driveHabits.jsp" target="_blank" rel="noopener">link</a>)</td><td>accessed 2026-08-20</td><td>HIGH</td></tr>
+      <tr><td>S3</td><td>Portland-area nonresidential arterial streets are typically posted 35&ndash;45 mph</td><td class="num">35&ndash;45 mph</td><td>City of Portland Bureau of Transportation, &ldquo;Setting Safe Speed Limits on Portland Streets&rdquo; (<a href="https://www.portland.gov/transportation/engineering/documents/setting-safe-speed-limits-portland-streets-1/download" target="_blank" rel="noopener">link</a>)</td><td>accessed 2026-08-20</td><td>MEDIUM</td></tr>
+      <tr><td>S4</td><td>Oregon's default statutory highway and interstate speed limits</td><td>Highway 55 mph; interstate/freeway 65 mph</td><td>Oregon Revised Statutes, ORS 811.111 (<a href="https://oregon.public.law/statutes/ors_811.111" target="_blank" rel="noopener">link</a>)</td><td>current 2026</td><td>HIGH</td></tr>
+      <tr><td>S5</td><td>Oregon speeding-violation classification by mph over the limit, including the 65+ mph exception</td><td>1&ndash;10 over = Class D (Class C if posted &ge;65); 11&ndash;20 = Class C (Class B if posted &ge;65); 21&ndash;30 = Class B (Class A if posted &ge;65); 31+ = Class A</td><td>Oregon Revised Statutes, ORS 811.109 (<a href="https://oregon.public.law/statutes/ors_811.109" target="_blank" rel="noopener">link</a>)</td><td>current 2026</td><td>HIGH</td></tr>
+      <tr><td>S6</td><td>Oregon presumptive fine dollar amounts by violation class</td><td>Class A $440; Class B $265; Class C $165; Class D $115</td><td>Oregon Revised Statutes, ORS 153.019 (<a href="https://oregon.public.law/statutes/ors_153.019" target="_blank" rel="noopener">link</a>)</td><td>in effect since April 1, 2024 (HB 4002); current 2026</td><td>HIGH</td></tr>
+      <tr><td>S7</td><td>National average car-insurance premium increase after one speeding ticket</td><td>~24% average nationally; mph-over-bracket severity moves the rate by &lt;1.5%; ticket COUNT drives the real jump: ~45% at 2 tickets, ~60% at 3</td><td>ValuePenguin, &ldquo;Car Insurance Rate Increases with a Speeding Ticket&rdquo; (<a href="https://www.valuepenguin.com/speeding-ticket-car-insurance-cost" target="_blank" rel="noopener">link</a>)</td><td>updated 2026-06-30, accessed 2026-08-20</td><td>MEDIUM</td></tr>
+      <tr><td>S8</td><td>Nilsson/Elvik &ldquo;Power Model&rdquo; relating percent speed increase to percent change in crash/injury/fatality risk</td><td>fatal-crash exponent &asymp;4 (Nilsson) / 4.1 (Elvik); serious-injury exponent &asymp;3 (Nilsson) / 2.6 (Elvik); injury-crash exponent &asymp;2 (Nilsson) / 1.6 (Elvik)</td><td>Federal Highway Administration, &ldquo;Self-Enforcing Roadways: A Guidance Report,&rdquo; Ch. 2 (<a href="https://www.fhwa.dot.gov/publications/research/safety/17098/003.cfm" target="_blank" rel="noopener">link</a>)</td><td>FHWA-HRT-17-098, Jan. 2018, accessed 2026-08-20</td><td>HIGH</td></tr>
+      <tr><td>S9</td><td>Driving distances, PDX to each hospital</td><td>Randall Children's (Legacy Emanuel) 7.8 mi; Hillsboro Medical Center 34 mi; PeaceHealth Sacred Heart (Eugene) 122 mi; Columbia Memorial (Astoria) 97 mi</td><td>Aggregated route-distance data (Waze/travelmath), cross-checked against ODOT highway mileposts (<a href="https://www.waze.com/live-map/directions/us/or/portland/randall-childrens-hospital-at-legacy-emanuel" target="_blank" rel="noopener">link</a>)</td><td>accessed 2026-08-20</td><td>MEDIUM</td></tr>
+      <tr><td>S10</td><td>Oregon annual traffic fatalities (statewide), with speed named as a top contributing factor</td><td>539 deaths in 2024; 587 in 2023 (statewide); speeding a factor in 25% of fatal/serious-injury crashes</td><td>Oregon Department of Transportation, &ldquo;Safety &ndash; State of the System&rdquo; (<a href="https://www.oregon.gov/odot/state-of-the-system/pages/safety.aspx" target="_blank" rel="noopener">link</a>)</td><td>2024 data, accessed 2026-08-20</td><td>HIGH</td></tr>
+      <tr><td>S11</td><td>Current average regular-unleaded gasoline price, Oregon</td><td class="num">$4.7593 / gallon</td><td>AAA, &ldquo;Oregon Gas Prices&rdquo; (<a href="https://gasprices.aaa.com/?state=OR" target="_blank" rel="noopener">link</a>)</td><td>2026-08-20 (live snapshot)</td><td>HIGH</td></tr>
+    </table>
+  </div>
+</details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-20. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+<div class="stepbox">
+  <h4>Step 1 &mdash; D2: Fuel-cost calculation for each option</h4>
+  <div class="goal">Appendix B's EPA base mpg is 26 (city) / 38 (highway &amp; freeway). Appendix B's own rule: mpg drops 7% for each 5 mph driven over 50, compounding per increment. Work out each option's mpg on each road type, then use Appendix C's fleet miles/day, the fleet size, and Appendix G's gas price [S11] to find each option's fuel cost per vehicle per year.</div>
+  <div class="fieldrow"><label for="s1_mpgCityA">Option A &mdash; city mpg (35 mph)</label><input type="number" step="0.01" id="s1_mpgCityA"></div>
+  <div class="fieldrow"><label for="s1_mpgHwyA">Option A &mdash; highway mpg (55 mph)</label><input type="number" step="0.01" id="s1_mpgHwyA"></div>
+  <div class="fieldrow"><label for="s1_mpgFwyA">Option A &mdash; freeway mpg (65 mph)</label><input type="number" step="0.01" id="s1_mpgFwyA"></div>
+  <div class="fieldrow"><label for="s1_mpgCityB">Option B &mdash; city mpg (45 mph)</label><input type="number" step="0.01" id="s1_mpgCityB"></div>
+  <div class="fieldrow"><label for="s1_mpgHwyB">Option B &mdash; highway mpg (65 mph)</label><input type="number" step="0.01" id="s1_mpgHwyB"></div>
+  <div class="fieldrow"><label for="s1_mpgFwyB">Option B &mdash; freeway mpg (75 mph)</label><input type="number" step="0.01" id="s1_mpgFwyB"></div>
+  <div class="fieldrow"><label for="s1_fuelA">Option A &mdash; fuel cost per vehicle per year</label><input type="number" step="0.01" id="s1_fuelA"></div>
+  <div class="fieldrow"><label for="s1_fuelB">Option B &mdash; fuel cost per vehicle per year</label><input type="number" step="0.01" id="s1_fuelB"></div>
+  <button onclick="checkStep1()">Check</button><span class="fb" id="s1_fb"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; D6: Expected speeding-ticket cost, Option B</h4>
+  <div class="goal">Use MA1 (pull-over probability) and MA2 (annual exposures/vehicle) to find an expected ticket count per vehicle per year. Then find the average presumptive fine across the three road types (Appendix D &mdash; remember the freeway's Class C exception), and use it to find the expected fines and the expected insurance surcharge (Appendix E).</div>
+  <div class="fieldrow"><label for="s2_ticketCount">Expected tickets/vehicle/year (MA1 &times; MA2)</label><input type="number" step="0.01" id="s2_ticketCount"></div>
+  <div class="fieldrow"><label for="s2_avgFine">Average presumptive fine across the 3 road types</label><input type="number" step="0.01" id="s2_avgFine"></div>
+  <div class="fieldrow"><label for="s2_expFines">Expected ticket-fine cost/vehicle/year</label><input type="number" step="0.01" id="s2_expFines"></div>
+  <div class="fieldrow"><label for="s2_expSurcharge">Expected insurance-surcharge cost/vehicle/year</label><input type="number" step="0.01" id="s2_expSurcharge"></div>
+  <button onclick="checkStep2()">Check</button><span class="fb" id="s2_fb"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; D1: Full per-vehicle annual operating-cost table</h4>
+  <div class="goal">Combine Appendix E's base premium with your Step 1 fuel cost and (for Option B) your Step 2 ticket/surcharge cost. Find each option's total, and the dollar difference between them. <span id="s3_twistHint" style="display:none;color:var(--bad);font-weight:600">Twist applied &mdash; recompute Option B using the worst-plausible-vehicle ticket count from the Twist section below, not the average.</span></div>
+  <div class="fieldrow"><label for="s3_insurance">Base insurance premium (given)</label><input type="number" step="0.01" id="s3_insurance"></div>
+  <div class="fieldrow"><label for="s3_costA">Option A total annual cost/vehicle</label><input type="number" step="0.01" id="s3_costA"></div>
+  <div class="fieldrow"><label for="s3_costB">Option B total annual cost/vehicle</label><input type="number" step="0.01" id="s3_costB"></div>
+  <div class="fieldrow"><label for="s3_diff">Dollar difference between the two totals</label><input type="number" step="0.01" id="s3_diff"></div>
+  <button onclick="checkStep3()">Check</button><span class="fb" id="s3_fb"></span>
+  <p class="side-note">This checks your arithmetic, not your recommendation &mdash; there is no single right answer to which option to pitch, only correct or incorrect math.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; D7: Crash-risk table (Power Model)</h4>
+  <div class="goal">For each road type, find the percent Option B's speed is over the posted limit (Appendix D). Then, for the freeway specifically, apply Appendix F's Power Model exponents to that percent-over value to find the relative risk multiplier for all-injury, serious-injury, and fatal crashes.</div>
+  <div class="fieldrow"><label for="s4_pctCity">City &mdash; percent over posted limit</label><input type="number" step="0.01" id="s4_pctCity">%</div>
+  <div class="fieldrow"><label for="s4_pctHwy">Highway &mdash; percent over posted limit</label><input type="number" step="0.01" id="s4_pctHwy">%</div>
+  <div class="fieldrow"><label for="s4_pctFwy">Freeway &mdash; percent over posted limit</label><input type="number" step="0.01" id="s4_pctFwy">%</div>
+  <div class="fieldrow"><label for="s4_injMult">Freeway &mdash; all-injury relative-risk multiplier ((1+p)&sup2;)</label><input type="number" step="0.001" id="s4_injMult"></div>
+  <div class="fieldrow"><label for="s4_seriousMult">Freeway &mdash; serious-injury relative-risk multiplier ((1+p)&sup3;)</label><input type="number" step="0.001" id="s4_seriousMult"></div>
+  <div class="fieldrow"><label for="s4_fatalMult">Freeway &mdash; fatal relative-risk multiplier ((1+p)&#8308;)</label><input type="number" step="0.001" id="s4_fatalMult"></div>
+  <button onclick="checkStep4()">Check</button><span class="fb" id="s4_fb"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 5 &mdash; D5: Delivery volume vs. Josie's bonus, and Eugene capacity</h4>
+  <div class="goal">Using Appendix A's average-deliveries-per-day column, find the fleet's average long-distance (Eugene + Astoria) and total deliveries/day, and compare each to Josie's bonus thresholds. Then estimate each option's Eugene round-trip time from its distance and speed, and use that with Appendix C's 7.5-hour/shift, 2-shifts/day driving window to find how many Eugene round trips a single dedicated vehicle can complete per day under each option &mdash; and whether that covers Eugene's own average demand above.</div>
+  <div class="fieldrow"><label for="s5_avgLongDist">Fleet average long-distance deliveries/day</label><input type="number" step="0.01" id="s5_avgLongDist"></div>
+  <div class="fieldrow"><label for="s5_avgTotal">Fleet average total deliveries/day</label><input type="number" step="0.01" id="s5_avgTotal"></div>
+  <div class="fieldrow"><label for="s5_eugeneCeilA">Eugene round trips/day, one dedicated vehicle, Option A</label><input type="number" step="1" id="s5_eugeneCeilA"></div>
+  <div class="fieldrow"><label for="s5_eugeneCeilB">Eugene round trips/day, one dedicated vehicle, Option B</label><input type="number" step="1" id="s5_eugeneCeilB"></div>
+  <button onclick="checkStep5()">Check</button><span class="fb" id="s5_fb"></span>
+  <p class="side-note">The two round-trips/day fields check against a reasonable range, not one exact number &mdash; your own estimated Eugene trip time (from distance and speed alone, ignoring the mixed road types a real route would have) is a legitimate simplification here.</p>
+</div>
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+
+<p>Your Step 3 cost table used the <em>expected</em> number of tickets per vehicle &mdash; the average, not a guarantee. Look back at Appendix E's insurance research [S7]: ticket <em>severity</em> barely moves the premium &mdash; its own rate table varies by less than 1.5% across brackets from &ldquo;under 5 over&rdquo; to &ldquo;21&ndash;25 over.&rdquo; What actually moves the premium is the <strong>count</strong> of tickets on record: one ticket is roughly a 24% increase, two roughly 45%, three roughly 60%.</p>
+<p>And Inland's own policy only <em>covers</em> up to 4 tickets per vehicle per year before other consequences apply (Appendix E). The ticket count you used in Step 3 is the fleet's <em>average</em> &mdash; which means, by ordinary variance, some of the fleet's five vehicles will draw <em>more</em> than that average in a given year, and some fewer. One unlucky car, driven by the same policy as the rest of the fleet, could land much closer to &mdash; or straight through &mdash; Inland's own 4-ticket cap.</p>
+<p>Does that change what you'd defend to the board &mdash; not the average cost, but the cost of the worst-plausible vehicle in the fleet?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Recompute Step 3's Option B cost using a worst-plausible vehicle's ticket count instead of the fleet average.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+
+<li><strong>S1</strong> &mdash; U.S. EPA / fueleconomy.gov, &ldquo;Gas Mileage of 2018 Ford Focus&rdquo; (accessed 2026-08-20)</li>
+<li><strong>S2</strong> &mdash; U.S. DOE / fueleconomy.gov, &ldquo;Save Money and Fuel by Driving Efficiently&rdquo; (accessed 2026-08-20)</li>
+<li><strong>S3</strong> &mdash; City of Portland Bureau of Transportation, &ldquo;Setting Safe Speed Limits on Portland Streets&rdquo; (accessed 2026-08-20)</li>
+<li><strong>S4</strong> &mdash; Oregon Revised Statutes, ORS 811.111 (current 2026)</li>
+<li><strong>S5</strong> &mdash; Oregon Revised Statutes, ORS 811.109 (current 2026)</li>
+<li><strong>S6</strong> &mdash; Oregon Revised Statutes, ORS 153.019 (in effect since 2024-04-01)</li>
+<li><strong>S7</strong> &mdash; ValuePenguin, &ldquo;Car Insurance Rate Increases with a Speeding Ticket&rdquo; (updated 2026-06-30)</li>
+<li><strong>S8</strong> &mdash; Federal Highway Administration, &ldquo;Self-Enforcing Roadways: A Guidance Report&rdquo; (FHWA-HRT-17-098, Jan. 2018)</li>
+<li><strong>S9</strong> &mdash; Aggregated route-distance data (Waze/travelmath), cross-checked against ODOT highway mileposts (accessed 2026-08-20)</li>
+<li><strong>S10</strong> &mdash; Oregon Department of Transportation, &ldquo;Safety &ndash; State of the System&rdquo; (2024 data)</li>
+<li><strong>S11</strong> &mdash; AAA, &ldquo;Oregon Gas Prices&rdquo; (2026-08-20 live snapshot)</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Medical Transport &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/medical-transport/sensitivity_model.py
+// case.md sha256 (per case.json qa.case_md_sha256): cc89b3432783817c147c1f249614bd840c6323752436f0a46233b9a8e73e2498
+const PARAMS = {
+  epa_city_mpg: 26.0, epa_hwy_mpg: 38.0,
+  mpg_penalty_per_5mph_over_50: 0.07,
+  miles_city: 110.0, miles_hwy: 142.0, miles_fwy: 352.0, fleet_size: 5,
+  limit_city: 35.0, limit_hwy: 55.0, limit_fwy: 65.0,
+  speed_city_A: 35.0, speed_hwy_A: 55.0, speed_fwy_A: 65.0,
+  speed_city_B: 45.0, speed_hwy_B: 65.0, speed_fwy_B: 75.0,
+  fine_class_d_usd: 115.0, fine_class_c_usd: 165.0,
+  insurance_base_usd: 1453.0, insurance_surcharge_per_ticket_usd: 164.95, covered_tickets_cap: 4,
+  gas_price_per_gal_usd: 4.7593,
+  pullover_probability: 0.25, annual_exposures_per_vehicle: 8.0,
+  ticket_count_worst_case: 5.0,
+  shift_hours: 8.0, break_hours: 0.5,
+  avg_deliveries_randall: 8.4, avg_deliveries_hillsboro: 7.6, avg_deliveries_eugene: 2.7, avg_deliveries_astoria: 1.8,
+  roundtrip_hours_randall_A: 0.45, roundtrip_hours_randall_B: 0.35,
+  roundtrip_hours_hillsboro_A: 1.44, roundtrip_hours_hillsboro_B: 1.18,
+  roundtrip_hours_eugene_A: 3.91, roundtrip_hours_eugene_B: 3.36,
+  roundtrip_hours_astoria_A: 3.59, roundtrip_hours_astoria_B: 3.03,
+};
+const FLEX = ["pullover_probability", "annual_exposures_per_vehicle"];
+
+function mpgAt(speed, base, p){
+  if(speed <= 50) return base;
+  const increments = (speed - 50) / 5.0;
+  return base * Math.pow(1 - p.mpg_penalty_per_5mph_over_50, increments);
+}
+function fuelCostPerVehicleYear(speeds, p){
+  const galCity = p.miles_city / mpgAt(speeds.city, p.epa_city_mpg, p);
+  const galHwy = p.miles_hwy / mpgAt(speeds.hwy, p.epa_hwy_mpg, p);
+  const galFwy = p.miles_fwy / mpgAt(speeds.fwy, p.epa_hwy_mpg, p);
+  const fleetGalDay = galCity + galHwy + galFwy;
+  const fleetUsdDay = fleetGalDay * p.gas_price_per_gal_usd;
+  return (fleetUsdDay / p.fleet_size) * 365;
+}
+function expectedTicketCostPerVehicleYear(p, ticketCount){
+  const tc = (ticketCount === undefined || ticketCount === null)
+    ? p.pullover_probability * p.annual_exposures_per_vehicle
+    : ticketCount;
+  const avgFine = (p.fine_class_d_usd + p.fine_class_d_usd + p.fine_class_c_usd) / 3.0;
+  const fines = tc * avgFine;
+  const surcharge = tc * p.insurance_surcharge_per_ticket_usd;
+  return fines + surcharge;
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const speedsA = { city: p.speed_city_A, hwy: p.speed_hwy_A, fwy: p.speed_fwy_A };
+  const speedsB = { city: p.speed_city_B, hwy: p.speed_hwy_B, fwy: p.speed_fwy_B };
+  const costA = p.insurance_base_usd + fuelCostPerVehicleYear(speedsA, p);
+  const costB = p.insurance_base_usd + fuelCostPerVehicleYear(speedsB, p) + expectedTicketCostPerVehicleYear(p);
+  return { A: costA, B: costB };
+}
+function evaluateTwist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const speedsA = { city: p.speed_city_A, hwy: p.speed_hwy_A, fwy: p.speed_fwy_A };
+  const speedsB = { city: p.speed_city_B, hwy: p.speed_hwy_B, fwy: p.speed_fwy_B };
+  const costA = p.insurance_base_usd + fuelCostPerVehicleYear(speedsA, p);
+  const costB = p.insurance_base_usd + fuelCostPerVehicleYear(speedsB, p) + expectedTicketCostPerVehicleYear(p, p.ticket_count_worst_case);
+  return { A: costA, B: costB };
+}
+function capacityCheck(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const shiftHoursAfterBreak = p.shift_hours - p.break_hours;
+  const fleetHoursDay = p.fleet_size * 2 * shiftHoursAfterBreak;
+  function hoursUsed(opt){
+    return p.avg_deliveries_randall * p['roundtrip_hours_randall_' + opt]
+      + p.avg_deliveries_hillsboro * p['roundtrip_hours_hillsboro_' + opt]
+      + p.avg_deliveries_eugene * p['roundtrip_hours_eugene_' + opt]
+      + p.avg_deliveries_astoria * p['roundtrip_hours_astoria_' + opt];
+  }
+  function eugeneDailyCeiling(opt){
+    const perShift = Math.floor(shiftHoursAfterBreak / p['roundtrip_hours_eugene_' + opt]);
+    return perShift * 2;
+  }
+  return {
+    fleetHoursDay: fleetHoursDay,
+    hoursUsedA: hoursUsed('A'), hoursUsedB: hoursUsed('B'),
+    avgLongDistance: p.avg_deliveries_eugene + p.avg_deliveries_astoria,
+    avgTotal: p.avg_deliveries_randall + p.avg_deliveries_hillsboro + p.avg_deliveries_eugene + p.avg_deliveries_astoria,
+    eugeneCeilingA: eugeneDailyCeiling('A'), eugeneCeilingB: eugeneDailyCeiling('B'),
+  };
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkStep1(){
+  const p = PARAMS;
+  const speedsA = { city: p.speed_city_A, hwy: p.speed_hwy_A, fwy: p.speed_fwy_A };
+  const speedsB = { city: p.speed_city_B, hwy: p.speed_hwy_B, fwy: p.speed_fwy_B };
+  const expMpgCityA = mpgAt(speedsA.city, p.epa_city_mpg, p);
+  const expMpgHwyA = mpgAt(speedsA.hwy, p.epa_hwy_mpg, p);
+  const expMpgFwyA = mpgAt(speedsA.fwy, p.epa_hwy_mpg, p);
+  const expMpgCityB = mpgAt(speedsB.city, p.epa_city_mpg, p);
+  const expMpgHwyB = mpgAt(speedsB.hwy, p.epa_hwy_mpg, p);
+  const expMpgFwyB = mpgAt(speedsB.fwy, p.epa_hwy_mpg, p);
+  const expFuelA = fuelCostPerVehicleYear(speedsA, p);
+  const expFuelB = fuelCostPerVehicleYear(speedsB, p);
+  const ok = near(parseFloat(val('s1_mpgCityA')), expMpgCityA, 0.1)
+    && near(parseFloat(val('s1_mpgHwyA')), expMpgHwyA, 0.1)
+    && near(parseFloat(val('s1_mpgFwyA')), expMpgFwyA, 0.1)
+    && near(parseFloat(val('s1_mpgCityB')), expMpgCityB, 0.1)
+    && near(parseFloat(val('s1_mpgHwyB')), expMpgHwyB, 0.1)
+    && near(parseFloat(val('s1_mpgFwyB')), expMpgFwyB, 0.1)
+    && near(parseFloat(val('s1_fuelA')), expFuelA, 5)
+    && near(parseFloat(val('s1_fuelB')), expFuelB, 5);
+  fb('s1_fb', ok);
+}
+
+function checkStep2(){
+  const p = PARAMS;
+  const expTicketCount = p.pullover_probability * p.annual_exposures_per_vehicle;
+  const expAvgFine = (p.fine_class_d_usd + p.fine_class_d_usd + p.fine_class_c_usd) / 3.0;
+  const expFines = expTicketCount * expAvgFine;
+  const expSurcharge = expTicketCount * p.insurance_surcharge_per_ticket_usd;
+  const ok = near(parseFloat(val('s2_ticketCount')), expTicketCount, 0.05)
+    && near(parseFloat(val('s2_avgFine')), expAvgFine, 0.5)
+    && near(parseFloat(val('s2_expFines')), expFines, 1)
+    && near(parseFloat(val('s2_expSurcharge')), expSurcharge, 1);
+  fb('s2_fb', ok);
+}
+
+let twistApplied = false;
+function checkStep3(){
+  const p = PARAMS;
+  const res = twistApplied ? evaluateTwist(p) : evaluate(p);
+  const okIns = near(parseFloat(val('s3_insurance')), p.insurance_base_usd, 1);
+  const okA = near(parseFloat(val('s3_costA')), res.A, 2);
+  const okB = near(parseFloat(val('s3_costB')), res.B, 2);
+  const okDiff = near(parseFloat(val('s3_diff')), Math.abs(res.B - res.A), 2);
+  fb('s3_fb', okIns && okA && okB && okDiff);
+}
+
+function checkStep4(){
+  const p = PARAMS;
+  const pctCity = 100 * (p.speed_city_B - p.limit_city) / p.limit_city;
+  const pctHwy = 100 * (p.speed_hwy_B - p.limit_hwy) / p.limit_hwy;
+  const pctFwy = 100 * (p.speed_fwy_B - p.limit_fwy) / p.limit_fwy;
+  const frac = pctFwy / 100;
+  const expInj = Math.pow(1 + frac, 2);
+  const expSerious = Math.pow(1 + frac, 3);
+  const expFatal = Math.pow(1 + frac, 4);
+  const ok = near(parseFloat(val('s4_pctCity')), pctCity, 0.3)
+    && near(parseFloat(val('s4_pctHwy')), pctHwy, 0.3)
+    && near(parseFloat(val('s4_pctFwy')), pctFwy, 0.3)
+    && near(parseFloat(val('s4_injMult')), expInj, 0.02)
+    && near(parseFloat(val('s4_seriousMult')), expSerious, 0.03)
+    && near(parseFloat(val('s4_fatalMult')), expFatal, 0.05);
+  fb('s4_fb', ok);
+}
+
+function checkStep5(){
+  const cap = capacityCheck(PARAMS);
+  const okLong = near(parseFloat(val('s5_avgLongDist')), cap.avgLongDistance, 0.1);
+  const okTotal = near(parseFloat(val('s5_avgTotal')), cap.avgTotal, 0.1);
+  const ceilA = parseFloat(val('s5_eugeneCeilA'));
+  const ceilB = parseFloat(val('s5_eugeneCeilB'));
+  // Accepts a reasonable band around the case's own dedicated-vehicle ceiling,
+  // since a student's own Eugene round-trip time estimate (distance/speed
+  // only, ignoring the real road-type mix) will vary from the case's own
+  // more detailed trip-time model.
+  const okCeilA = ceilA >= 1 && ceilA <= 3;
+  const okCeilB = ceilB >= 2 && ceilB <= 5;
+  fb('s5_fb', okLong && okTotal && okCeilA && okCeilB);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "medical-transport"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "A per-vehicle annual operating-cost table comparing Option A and Option B, itemizing fuel cost, expected speeding-ticket fines, and expected insurance surcharge, each computed to the penny, ending in the dollar difference between the two option totals."],
+  ["D2", "A fuel-cost calculation for each option showing how the 2018 Ford Focus's mpg changes at each recommended speed, and the resulting fuel cost per driver per day and per year."],
+  ["D3", "Inland's anticipated total revenue from medical deliveries, per day and per year, using the company's $3.54-per-mile rate."],
+  ["D4", "A recommended route and total trip time for each of Inland's five drivers, computed from the distances in Appendix A and the speeds you recommend."],
+  ["D5", "A calculation of the fleet's average long-distance and total deliveries per day, checked against the thresholds for Josie's quarterly bonus."],
+  ["D6", "An expected-cost calculation for speeding tickets under Option B -- for each road type, the probability of being stopped multiplied by Oregon's actual presumptive fine for that violation class."],
+  ["D7", "A risk table applying the case's own crash-risk data to the percent speed increase each option represents over the posted limit, for crash, serious-injury, and fatality risk."],
+  ["D8", "Two original visual displays: a bar graph comparing Option A's and Option B's total annual per-vehicle cost, and a pie chart breaking down your chosen option's cost components."]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Currency": {def: "Money in the form used by a country -- U.S. dollars, for example -- as a medium of exchange.",
+    url: "https://www.cuemath.com/commercial-math/money/"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Addition": {def: "Combining two or more numbers to find their total.",
+    url: "https://www.mathsisfun.com/numbers/addition.html"},
+  "Multiplication": {def: "Repeated addition of the same number -- finding the total of a certain number of equal groups.",
+    url: "https://www.mathsisfun.com/numbers/multiplication.html"},
+  "Division": {def: "Splitting a number into equal parts or groups.",
+    url: "https://www.mathsisfun.com/numbers/division.html"},
+  "Unit": {def: "A defined quantity -- a mile, an hour, a gallon -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Proportion": {def: "A statement that two ratios (or fractions) are equal in value.",
+    url: "https://www.mathsisfun.com/algebra/proportions.html"},
+  "Rounding": {def: "Making a number simpler while keeping its value close to the original, to a chosen place value.",
+    url: "https://www.mathsisfun.com/rounding-numbers.html"},
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"},
+  "Probability": {def: "How likely something is to happen, usually written as a fraction, decimal, or percent between 0 and 1 (or 0% and 100%).",
+    url: "https://www.mathsisfun.com/data/probability.html"},
+  "Event": {def: "One or more outcomes of an experiment or situation, such as \"a driver gets pulled over.\"",
+    url: "https://www.mathsisfun.com/data/probability.html"},
+  "Outcome": {def: "A single possible result of an experiment or situation.",
+    url: "https://www.mathsisfun.com/data/probability.html"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Pie Chart": {def: "A circular chart divided into slices, where each slice's size shows its share of the whole data set.",
+    url: "https://www.mathsisfun.com/data/pie-charts.html"}
+};
+const HOWTO = [
+  ["How to add decimal numbers", "Addition"],
+  ["How to subtract decimal numbers", "Decimal"],
+  ["How to multiply decimal numbers", "Multiplication"],
+  ["How to divide decimal numbers", "Division"],
+  ["How to find the percent of a number", "Percent"],
+  ["How to convert numbers to percents", "Percent"],
+  ["How to add multi-digit numbers", "Addition"],
+  ["How to multiply any two numbers", "Multiplication"],
+  ["How to divide a multi-digit number by a 2-digit number", "Division"],
+  ["How to convert an amount from one unit to another unit", "Unit"],
+  ["How to find elapsed time", "Ratio"],
+  ["How to convert between units of time", "Unit"],
+  ["How to round a number to a specified place value", "Rounding"],
+  ["How to find the mean of a set of data", "Mean"],
+  ["How to determine the probability of a single event", "Probability"],
+  ["How to compare two or more values", "Data"],
+  ["How to create a pie chart given a set of data", "Pie Chart"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  twistApplied = document.getElementById('applyTwist').checked;
+  const hint = document.getElementById('s3_twistHint');
+  if(hint) hint.style.display = twistApplied ? 'inline' : 'none';
+  const fbEl = document.getElementById('s3_fb');
+  if(fbEl){ fbEl.className = 'fb'; fbEl.textContent = ''; }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

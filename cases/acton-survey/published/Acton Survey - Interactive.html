@@ -1,0 +1,1224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Acton Survey — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  placeholder tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+    .campus-note{font-family:var(--sans);font-size:.78rem;color:var(--sub)}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+    <symbol id="icon-phone" viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h2l2 5-2 1a11 11 0 0 0 6 6l1-2 5 2v2c0 1-1 2-2 2C10 19 4 13 4 5z"/></symbol>
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Acton Survey</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Sampling &amp; Probability</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+  <p class="lede">The phone rings at 4:47, right in the middle of studio clean-up, and Xander already knows who it is before he picks up. Jeff's Texas drawl fills the room before Xander's even said hello.</p>
+  <p>&ldquo;Got the spreadsheet in front of you, son?&rdquo;</p>
+  <p>Xander pulls it up &mdash; a wall of ID numbers scrolling past his cursor, campus names he half-recognizes and a few he's never heard of, ages from four to eighteen. Somewhere in this list is every learner at every Acton campus big enough to matter.</p>
+  <p>&ldquo;Laura and I are stepping back soon,&rdquo; Jeff says. &ldquo;Before we go, I want one thing settled the right way &mdash; a real mascot, chosen by real data, not a hunch. You're the one building the survey.&rdquo;</p>
+  <p>Xander scrolls further. Campus after campus. Some with a couple hundred learners. Some with barely a dozen. All of them expecting a call.</p>
+  <p>&ldquo;You know the clock we're on,&rdquo; Jeff says. &ldquo;Whatever method you pick, it has to actually fit &mdash; every last call of it.&rdquo;</p>
+  <p>Xander's cursor hovers over two columns he's already sketched out on a legal pad beside the laptop: one labeled <em>Simple</em>, one labeled <em>Fair</em>. He hasn't circled either one yet.</p>
+  <p>&ldquo;Well?&rdquo; Jeff says. &ldquo;Which way you calling this?&rdquo;</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+  <p>Laura and Jeff Sandefer founded the first Acton Academy and have spent years building out the wider Acton network &mdash; dozens of independently run campuses worldwide, each using the same learner-driven model but each free to call its learners by its own nickname: Eagles at one campus, Heroes at another, Explorers, Champions, Stars. With their retirement three months away, Jeff and Laura want to settle a question that's been informally debated for years: should every Acton campus share one common learner mascot?</p>
+  <p>Rather than guess, Jeff wants a real, statistically defensible survey. Because he wants every age of learner to have a voice, he has decided the survey will be conducted by personal phone call &mdash; Jeff will call each campus's guide, and the guide will put the learner on the line. Two questions will be asked of every learner reached: whether the network should adopt one common mascot, and, if so, what that mascot should be. Every one of these calls, guide coordination and learner interview alike, runs <strong>15 to 20 minutes</strong> (see Appendix A).</p>
+  <p>It is not possible, and Jeff and Xander agree it is not necessary, to call every learner at every campus. Some Acton campuses are brand new with only a handful of learners; others are long established with well over a hundred. Jeff and Xander have restricted the survey to campuses with at least two studios &mdash; fifty campuses network-wide, a real, complete 2021 roster of <strong>1,420 learners</strong> total (see Appendix A). Jeff and Xander have agreed the survey will interview a sample of <strong>142 learners &mdash; exactly 10% of the population</strong> &mdash; enough real breadth to speak for the network without blowing past his three-month window.</p>
+  <p>Xander Morgan, Jeff's right-hand for anything statistical, has been asked to design how those 142 learners get chosen. He has narrowed the real options down to two. Every single call in this survey &mdash; coordinating with a campus guide and interviewing a learner alike &mdash; is placed personally by Jeff himself, one call at a time; nothing here can be split across a team (see Appendix A). That makes total personal call-time, and whether it fits Jeff's three-month runway, a real constraint, not a decorative one (see Appendix D).</p>
+  <p>The fifty campuses vary enormously in size &mdash; from a dozen learners to well over a hundred and sixty (see Appendix B). Xander must decide whether that size difference is something his sampling method needs to correct for, or something he can safely leave to chance.</p>
+  <p>All figures in this case are sourced or explicitly stated as scenario assumptions (see Appendices E and F). The vocabulary and &ldquo;how to&hellip;&rdquo; skills this case will ask you to research are listed in Appendix G &mdash; that is where Challenge 1 sends you.</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Xander Morgan. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Simple Random Sample</h4>
+      <p style="margin:0">The simplest method to administer: one flat draw of 1,420 IDs, no per-campus quotas to track, while Jeff places every 15&ndash;20-minute call himself, one at a time.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Stratified Sample</h4>
+      <p style="margin:0">More calls and coordination required, but it corrects for wildly uneven campus sizes so small and large campuses are proportionally represented.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include D1&ndash;D6: a population-and-sample description; a condensed 50-campus roster table; a Simple Random Sample risk analysis (per-campus shutout probability for at least three campuses, plus a network-wide estimate); a Stratified Sample allocation table reconciled to exactly 142; a total call-time comparison for each option checked against Jeff's 3-month runway; and two original visual displays of the data.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+  <details open>
+    <summary>Appendix A &mdash; The Survey Rules</summary>
+    <div class="inner">
+      <ul>
+        <li>Every call &mdash; guide coordination or learner interview &mdash; runs <strong>15&ndash;20 minutes</strong>.</li>
+        <li><strong>1,420 learners</strong> total, real 2021 roster, across the <strong>50</strong> eligible Acton campuses (each with at least two studios) [S1].</li>
+        <li>Target sample size: <strong>142 learners (10% of the population)</strong>.</li>
+        <li><strong>Jeff makes every call himself, one at a time</strong> &mdash; nothing in this survey can be parallelized across a team.</li>
+        <li>Deadline: <strong>3 months</strong> from today.</li>
+      </ul>
+      <p class="side-note">Full underlying 1,420-row roster (ID number, gender, age, campus) is the original internal Journey Tracker export the case is built from; Appendix B is its campus-level summary.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Campus Roster Summary (2021, all 50 eligible campuses)</summary>
+    <div class="inner">
+      <p>Source: &ldquo;2021 Learners At Campuses With At Least Two Studios: ID Numbers, Gender, Age and Location,&rdquo; the real internal Journey Tracker export this case is built from (1,420 rows, one per learner) [S1]. Every row is a real, complete count, not a sample or an estimate.</p>
+      <div style="max-height:420px;overflow-y:auto;border:1px solid var(--line);border-radius:8px">
+      <table id="apxBTable">
+        <thead><tr><th>#</th><th>Campus (as recorded in the 2021 roster)</th><th class="num">Learners (N<sub>i</sub>)</th><th class="num">% of population</th><th class="num">Stratified allocation (n<sub>i</sub>)</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Acton Academy (Main Campus) — Austin, Texas</td><td class="num">168</td><td class="num">11.83%</td><td class="num">17</td></tr>
+          <tr><td>2</td><td>Heroes Academy — Boise, Idaho</td><td class="num">168</td><td class="num">11.83%</td><td class="num">17</td></tr>
+          <tr><td>3</td><td>The Humanist Academy (Dallas/Fort Worth Area) — Irving, Texas</td><td class="num">168</td><td class="num">11.83%</td><td class="num">17</td></tr>
+          <tr><td>4</td><td>Acton Academy West Austin — Austin, Texas</td><td class="num">108</td><td class="num">7.61%</td><td class="num">11</td></tr>
+          <tr><td>5</td><td>Wonder — Wichita, Kansas</td><td class="num">60</td><td class="num">4.23%</td><td class="num">6</td></tr>
+          <tr><td>6</td><td>Acton Academy Honduras — Tegucigalpa, Honduras</td><td class="num">60</td><td class="num">4.23%</td><td class="num">6</td></tr>
+          <tr><td>7</td><td>Journey Academy — Grand Rapids, Michigan</td><td class="num">60</td><td class="num">4.23%</td><td class="num">6</td></tr>
+          <tr><td>8</td><td>Acton Academy Guatemala — Guatemala City, Guatemala</td><td class="num">60</td><td class="num">4.23%</td><td class="num">6</td></tr>
+          <tr><td>9</td><td>Acton Woodlands — Houston, Texas</td><td class="num">28</td><td class="num">1.97%</td><td class="num">3</td></tr>
+          <tr><td>10</td><td>Acton Academy San Juan — Gauynabo, Puerto Rico</td><td class="num">24</td><td class="num">1.69%</td><td class="num">3</td></tr>
+          <tr><td>11</td><td>Acton Academy Kingwood — Kingwood, Texas</td><td class="num">24</td><td class="num">1.69%</td><td class="num">3</td></tr>
+          <tr><td>12</td><td>Acton Academy Hampton Roads — Virginia Beach, Virginia</td><td class="num">24</td><td class="num">1.69%</td><td class="num">3</td></tr>
+          <tr><td>13</td><td>Lighthouse International: An Acton Academy (near St Charles) — Cottleville, Missouri</td><td class="num">24</td><td class="num">1.69%</td><td class="num">3</td></tr>
+          <tr><td>14</td><td>Acton Academy Miami South — Miami, Florida</td><td class="num">12</td><td class="num">0.85%</td><td class="num">2</td></tr>
+          <tr><td>15</td><td>The Wilder School: An Acton Academy (North Boston Area) — Winchester, Massachusetts</td><td class="num">12</td><td class="num">0.85%</td><td class="num">2</td></tr>
+          <tr><td>16</td><td>Altus21: An Acton Academy — Ploiesti, Romania</td><td class="num">12</td><td class="num">0.85%</td><td class="num">2</td></tr>
+          <tr><td>17</td><td>Invictus: An Acton Academy — Leander, Texas</td><td class="num">12</td><td class="num">0.85%</td><td class="num">2</td></tr>
+          <tr><td>18</td><td>Slope School 2 — Holladay, Utah</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>19</td><td>Lexicon School — Guildford, United Kingdom</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>20</td><td>Acton Academy Port St. Lucie — Port St. Lucie, Florida</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>21</td><td>Acton Academy Morristown — Morristown, New Jersey</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>22</td><td>Greenfields Academy — Chicago, Illinois</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>23</td><td>Ascend: An Acton Academy — Milford, Pennsylvania</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>24</td><td>Arts Thereafter: An Acton Academy — Saint Cloud, Florida</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>25</td><td>Acton Academy Palatine — Chicago, Illinois</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>26</td><td>Threefold Schoolhouse: An Acton Academy — Harrisburg, Pennsylvania</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>27</td><td>Acton Academy of Whatcom County — Bellingham, Washington</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>28</td><td>Acton Academy Washington DC — Washington, District of Columbia</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>29</td><td>The School of Life: An Acton Academy — Montreal, Quebec</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>30</td><td>Vine Academy (North Dallas/Fort Worth) — Grapevine, Texas</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>31</td><td>Acton Academy Fort Worth — Fort Worth, Texas</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>32</td><td>Acton Academy Toronto — Toronto, Ontario</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>33</td><td>Odyssey An Acton Academy — Carrollton, Georgia</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>34</td><td>Summit School: An Acton Academy — Waco, Texas</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>35</td><td>Revel Academy — Ottawa, Ontario</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>36</td><td>Acton Academy Islamabad — Islamabad, Pakistan</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>37</td><td>Acton Academy East Bay — Livermore, California</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>38</td><td>Acton Academy Placer County — Placer County, California</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>39</td><td>Acton Academy Taipei — Taipei, Taiwan</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>40</td><td>Volcano Academy — Antigua, Guatemala</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>41</td><td>Acton Academy Tyler — Tyler, Texas</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>42</td><td>Acton Academy Praha, Prague, Czech Republic — Prague, Czech Republic</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>43</td><td>Acton Academy Red Rock — Las Vegas (Red Rock area), Nevada</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>44</td><td>Acton Academy Orange County — Orange County, California</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>45</td><td>Acton Academy Aljezur — Aljezur, Portugal</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>46</td><td>Little River Academy — Knoxville, Tennessee</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>47</td><td>Acton Academy São Paulo - Morumbi — Sao Paulo, Brazil</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>48</td><td>Acton Academy Sea Cliff — Sea Cliff, New York</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>49</td><td>The Forest School — Atlanta (Pinewood), Georgia</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+          <tr><td>50</td><td>Acton Academy Ilhabela — Ilhabela, Brazil</td><td class="num">12</td><td class="num">0.85%</td><td class="num">1</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="side-note">Sum check: the 50 campuses' learner counts total 1,420. The Stratified allocation column's 50 values total exactly 142 (see Appendix C for how the rounding was reconciled).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Computing Each Method</summary>
+    <div class="inner">
+      <h3>Option A, Simple Random Sample &mdash; probability a campus is shut out entirely</h3>
+      <p>Drawing 142 learners at random from all 1,420, without regard to which campus anyone belongs to, is a hypergeometric sampling problem: the chance that zero of a given campus's N<sub>i</sub> learners land in the sample of n&nbsp;=&nbsp;142 drawn from the full population of N&nbsp;=&nbsp;1,420 is:</p>
+      <blockquote>P(zero from campus i) = C(N &minus; N<sub>i</sub>, n) / C(N, n)</blockquote>
+      <p>This is the <span class="gterm-placeholder" data-term="Combination">hypergeometric distribution</span> &mdash; the correct probability model any time you're drawing a fixed-size sample from a finite population without putting anything back, which is exactly what a phone survey does (you don't call the same learner twice) [S2].</p>
+      <p>Summing that probability across all fifty campuses gives the expected number of campuses that receive zero calls under Option A &mdash; a real number, not a worst case, because it is the average outcome over every possible random draw.</p>
+      <h3>Option B, Stratified Sample &mdash; proportional allocation</h3>
+      <blockquote>n<sub>i</sub> = round(142 &times; N<sub>i</sub> / 1,420)</blockquote>
+      <p>applied to every campus. Because 142 does not divide evenly across fifty campuses of different sizes, rounding every campus's raw share independently does not sum back to exactly 142 &mdash; the largest-remainder method (also called Hamilton's method, first used to apportion the real U.S. House of Representatives) [S3] fixes this: round every campus down first, then hand the leftover seats, one at a time, to whichever campuses had the largest rounded-off remainder, until the total reaches 142 exactly.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Jeff's Call-Time Budget</summary>
+    <div class="inner">
+      <table id="apxDTable">
+        <thead><tr><th>Call type</th><th>Who it's with</th><th>Length</th></tr></thead>
+        <tbody>
+          <tr><td>Learner interview</td><td>The learner (via their guide)</td><td>15&ndash;20 min (this case uses 17.5 min, the midpoint &mdash; MA2, Appendix E)</td></tr>
+          <tr><td>Guide coordination call</td><td>The campus guide, to schedule that campus's block of learner calls</td><td>15 min (MA1, Appendix E)</td></tr>
+        </tbody>
+      </table>
+      <ul>
+        <li>Every campus a method actually reaches needs exactly one guide-coordination call, regardless of how many of that campus's learners end up interviewed.</li>
+        <li>Option B reaches all 50 campuses by construction (Appendix C) &mdash; 50 guide-coordination calls, guaranteed.</li>
+        <li>Option A reaches only however many campuses happen to have at least one learner drawn into the random sample &mdash; use your Appendix C(A) expected-shutout figure to estimate how many campuses that is, on average.</li>
+        <li>Learner-interview time is identical either way: 142 interviews &times; 17.5 minutes.</li>
+        <li>Total call time = learner-interview time + guide-coordination time, converted to hours, checked against Jeff's 3-month runway.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author, each with a real basis. A Hero may challenge any of them in discussion &mdash; that is a legitimate move.</blockquote>
+      <table id="apxETable">
+        <thead><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr></thead>
+        <tbody>
+          <tr><td>MA1</td><td>Guide-coordination call length</td><td>15 min</td><td>No public figure exists for an internal school-scheduling call of this kind. This case uses the low end of the case's own real, stated 15&ndash;20 minute learner-call bracket (Appendix A), since a coordination call has no interview content &mdash; it is purely logistics &mdash; and is realistically shorter than a full learner interview.</td><td>The answer is sensitive to this value.</td></tr>
+          <tr><td>MA2</td><td>Learner-interview call length used for arithmetic</td><td>17.5 min (the midpoint of the case's own real 15&ndash;20 minute range, Appendix A)</td><td>The case states a real range, not a single number; the case author picked the midpoint as a representative planning figure rather than either endpoint.</td><td>The answer is sensitive to this value.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxFTable">
+        <thead><tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr></thead>
+        <tbody>
+          <tr><td>S1</td><td>Real 2021 Acton network learner roster (ID, gender, age, campus), 1,420 learners across 50 eligible campuses</td><td>1,420 learners, 50 campuses</td><td>&ldquo;2021 Learners At Campuses With At Least Two Studios: ID Numbers, Gender, Age and Location,&rdquo; original internal Journey Tracker export</td><td>2021 (historical)</td><td>HIGH</td></tr>
+          <tr><td>S2</td><td>Hypergeometric distribution &mdash; probability model for sampling a fixed-size subset without replacement from a finite population</td><td>P(X=k) = C(K,k)&middot;C(N&minus;K,n&minus;k) / C(N,n)</td><td>Rachel Webb (Portland State University), <em>Mostly Harmless Statistics</em>, &sect;5.5, Statistics LibreTexts</td><td>accessed 2026-08-20</td><td>HIGH</td></tr>
+          <tr><td>S3</td><td>Largest-remainder / Hamilton apportionment method</td><td>procedure, not a single numeric value</td><td>&ldquo;Section 7.12: Apportionment &ndash; Hamilton's Method,&rdquo; Mathematics LibreTexts (Orange Coast College)</td><td>accessed 2026-08-20</td><td>HIGH</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-20. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Population and sample</h4>
+    <div class="goal">Goal: state the total population, the target sample size, and what percent of the population that sample represents.</div>
+    <div class="fieldrow"><label for="d1_pop">Total population (Appendix B, sum of N<sub>i</sub>)</label><input type="number" id="d1_pop"></div>
+    <div class="fieldrow"><label for="d1_n">Target sample size</label><input type="number" id="d1_n"></div>
+    <div class="fieldrow"><label for="d1_pct">Percent of population (e.g. 10 for 10%)</label><input type="number" id="d1_pct" step="0.01"><span id="d1_fb" class="fb"></span></div>
+    <button onclick="checkD1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D3: Simple Random Sample risk analysis</h4>
+    <div class="goal">Goal: pick at least three campuses of different sizes from Appendix B and compute the probability that a simple random sample of 142 contains zero learners from that campus.</div>
+    <p class="side-note">Formula: P(zero from campus) = C(N&minus;N<sub>i</sub>, n) / C(N, n), with N&nbsp;=&nbsp;1,420 and n&nbsp;=&nbsp;142.</p>
+    <div class="fieldrow"><label for="d3_n1">Campus 1 &mdash; learners (N<sub>i</sub>)</label><input type="number" id="d3_n1"><label for="d3_p1">Your P(zero), as %</label><input type="number" id="d3_p1" step="0.01"><span id="d3_fb1" class="fb"></span></div>
+    <div class="fieldrow"><label for="d3_n2">Campus 2 &mdash; learners (N<sub>i</sub>)</label><input type="number" id="d3_n2"><label for="d3_p2">Your P(zero), as %</label><input type="number" id="d3_p2" step="0.01"><span id="d3_fb2" class="fb"></span></div>
+    <div class="fieldrow"><label for="d3_n3">Campus 3 &mdash; learners (N<sub>i</sub>)</label><input type="number" id="d3_n3"><label for="d3_p3">Your P(zero), as %</label><input type="number" id="d3_p3" step="0.01"><span id="d3_fb3" class="fb"></span></div>
+    <button onclick="checkD3()">Check</button>
+    <div class="fieldrow"><label for="d3_shutout">Your network-wide shutout estimate (# of 50 campuses)</label><input type="number" id="d3_shutout" step="0.1"></div>
+    <p class="side-note">This last one isn't graded here &mdash; it's your own estimate from the campuses above. Compare notes with a partner who picked different campuses.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D5: Total call-time comparison</h4>
+    <div class="goal">Goal: total Jeff's personal call time, in hours, for each option, using Appendix D's call lengths.</div>
+    <div id="twistStatusNote" class="side-note">Twist not applied &mdash; this step checks against the base 15-minute coordination-call assumption (MA1).</div>
+    <div class="fieldrow"><label>Campuses reached under Option A (your D3 estimate)</label><input type="number" id="d5_reachedA" step="0.1"></div>
+    <table style="margin-top:10px">
+      <thead><tr><th></th><th class="num">Option A</th><th class="num">Option B</th></tr></thead>
+      <tbody>
+        <tr><td>Learner-interview minutes</td><td class="num"><input type="number" id="d5_learnA" step="0.1"></td><td class="num"><input type="number" id="d5_learnB" step="0.1"></td></tr>
+        <tr><td>Guide-coordination minutes</td><td class="num"><input type="number" id="d5_coordA" step="0.1"></td><td class="num"><input type="number" id="d5_coordB" step="0.1"></td></tr>
+        <tr><td>Total hours</td><td class="num"><input type="number" id="d5_hoursA" step="0.01"></td><td class="num"><input type="number" id="d5_hoursB" step="0.01"></td></tr>
+      </tbody>
+    </table>
+    <div class="fieldrow"><span id="d5_fb" class="fb"></span></div>
+    <button onclick="checkD5()">Check</button>
+    <p class="toolnote">This calculator checks your arithmetic. It will not tell you which option to recommend &mdash; that's your pitch to write.</p>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p>&ldquo;Jeff just called back. He says: &lsquo;Forget the campus count for a second &mdash; turns out every guide wants to talk shop before they hand the phone over, so coordination calls are running at the full 20 minutes the range allows, not the 15 you assumed.&rsquo; You now have 60 seconds. Does your total call-time comparison still favor the same option &mdash; or did it just flip?&rdquo;</p>
+      <p>This stays inside Appendix A's own stated 15&ndash;20-minute-per-call range &mdash; it just moves MA1 from the bottom of that range to the top.</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist to Step 3's check (coordination calls at 20 min instead of 15)</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+      <li>[S1] "2021 Learners At Campuses With At Least Two Studios: ID Numbers, Gender, Age and Location," original internal Journey Tracker export (2021, historical)</li>
+      <li>[S2] Rachel Webb (Portland State University), <em>Mostly Harmless Statistics</em>, &sect;5.5 "Hypergeometric Distribution," Statistics LibreTexts (accessed 2026-08-20)</li>
+      <li>[S3] "Section 7.12: Apportionment &ndash; Hamilton's Method," Mathematics LibreTexts, Orange Coast College (accessed 2026-08-20)</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Acton Survey &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+/* Campus data verbatim from case.md Appendix B (case.json case_md_sha256:
+   0e62f64d69f321ebe8617f16e9bb31061dbc103d50056af95fc61fb3f1ea7517).
+   Ported from cases/acton-survey/sensitivity_model.py -- CAMPUS_SIZES/PARAMS/
+   FLEX/evaluate()/evaluate_twist() below are the JS port of that file's own
+   names, per templates/INTERACTIVE_HTML_CONTRACT.md section 2. */
+const CAMPUSES = [
+  {name:"Acton Academy (Main Campus) — Austin, Texas", n:168},
+  {name:"Heroes Academy — Boise, Idaho", n:168},
+  {name:"The Humanist Academy (Dallas/Fort Worth Area) — Irving, Texas", n:168},
+  {name:"Acton Academy West Austin — Austin, Texas", n:108},
+  {name:"Wonder — Wichita, Kansas", n:60},
+  {name:"Acton Academy Honduras — Tegucigalpa, Honduras", n:60},
+  {name:"Journey Academy — Grand Rapids, Michigan", n:60},
+  {name:"Acton Academy Guatemala — Guatemala City, Guatemala", n:60},
+  {name:"Acton Woodlands — Houston, Texas", n:28},
+  {name:"Acton Academy San Juan — Gauynabo, Puerto Rico", n:24},
+  {name:"Acton Academy Kingwood — Kingwood, Texas", n:24},
+  {name:"Acton Academy Hampton Roads — Virginia Beach, Virginia", n:24},
+  {name:"Lighthouse International: An Acton Academy (near St Charles) — Cottleville, Missouri", n:24},
+  {name:"Acton Academy Miami South — Miami, Florida", n:12},
+  {name:"The Wilder School: An Acton Academy (North Boston Area) — Winchester, Massachusetts", n:12},
+  {name:"Altus21: An Acton Academy — Ploiesti, Romania", n:12},
+  {name:"Invictus: An Acton Academy — Leander, Texas", n:12},
+  {name:"Slope School 2 — Holladay, Utah", n:12},
+  {name:"Lexicon School — Guildford, United Kingdom", n:12},
+  {name:"Acton Academy Port St. Lucie — Port St. Lucie, Florida", n:12},
+  {name:"Acton Academy Morristown — Morristown, New Jersey", n:12},
+  {name:"Greenfields Academy — Chicago, Illinois", n:12},
+  {name:"Ascend: An Acton Academy — Milford, Pennsylvania", n:12},
+  {name:"Arts Thereafter: An Acton Academy — Saint Cloud, Florida", n:12},
+  {name:"Acton Academy Palatine — Chicago, Illinois", n:12},
+  {name:"Threefold Schoolhouse: An Acton Academy — Harrisburg, Pennsylvania", n:12},
+  {name:"Acton Academy of Whatcom County — Bellingham, Washington", n:12},
+  {name:"Acton Academy Washington DC — Washington, District of Columbia", n:12},
+  {name:"The School of Life: An Acton Academy — Montreal, Quebec", n:12},
+  {name:"Vine Academy (North Dallas/Fort Worth) — Grapevine, Texas", n:12},
+  {name:"Acton Academy Fort Worth — Fort Worth, Texas", n:12},
+  {name:"Acton Academy Toronto — Toronto, Ontario", n:12},
+  {name:"Odyssey An Acton Academy — Carrollton, Georgia", n:12},
+  {name:"Summit School: An Acton Academy — Waco, Texas", n:12},
+  {name:"Revel Academy — Ottawa, Ontario", n:12},
+  {name:"Acton Academy Islamabad — Islamabad, Pakistan", n:12},
+  {name:"Acton Academy East Bay — Livermore, California", n:12},
+  {name:"Acton Academy Placer County — Placer County, California", n:12},
+  {name:"Acton Academy Taipei — Taipei, Taiwan", n:12},
+  {name:"Volcano Academy — Antigua, Guatemala", n:12},
+  {name:"Acton Academy Tyler — Tyler, Texas", n:12},
+  {name:"Acton Academy Praha, Prague, Czech Republic — Prague, Czech Republic", n:12},
+  {name:"Acton Academy Red Rock — Las Vegas (Red Rock area), Nevada", n:12},
+  {name:"Acton Academy Orange County — Orange County, California", n:12},
+  {name:"Acton Academy Aljezur — Aljezur, Portugal", n:12},
+  {name:"Little River Academy — Knoxville, Tennessee", n:12},
+  {name:"Acton Academy São Paulo - Morumbi — Sao Paulo, Brazil", n:12},
+  {name:"Acton Academy Sea Cliff — Sea Cliff, New York", n:12},
+  {name:"The Forest School — Atlanta (Pinewood), Georgia", n:12},
+  {name:"Acton Academy Ilhabela — Ilhabela, Brazil", n:12}
+];
+const TOTAL_POPULATION = 1420;
+
+const PARAMS = {
+  sample_fraction: 0.10,
+  learner_call_min: 17.5,
+  coordination_call_min: 15.0
+};
+const FLEX = ["coordination_call_min", "learner_call_min", "sample_fraction"];
+
+function sampleSize(p){ return Math.round(p.sample_fraction * TOTAL_POPULATION); }
+
+/* P(zero from campus i) = C(N-Ni,n)/C(N,n), computed as a running product
+   to avoid factorial overflow for N=1420, n=142. */
+function pZeroFromCampus(Ni, N, n){
+  if(N - Ni < n) return 0;
+  let p = 1;
+  for(let k = 0; k < n; k++){ p *= (N - Ni - k) / (N - k); }
+  return p;
+}
+
+function expectedCampusesReached(n){
+  const N = TOTAL_POPULATION;
+  if(n <= 0) return 0;
+  if(n >= N) return CAMPUSES.length;
+  let expectedShutout = 0;
+  CAMPUSES.forEach(c => { expectedShutout += pZeroFromCampus(c.n, N, n); });
+  return CAMPUSES.length - expectedShutout;
+}
+
+function hoursFor(n, campusesReached, p){
+  const learnerMinutes = n * p.learner_call_min;
+  const coordinationMinutes = campusesReached * p.coordination_call_min;
+  return (learnerMinutes + coordinationMinutes) / 60;
+}
+
+function evaluate(params, detourH){
+  detourH = detourH || 0;
+  const p = Object.assign({}, PARAMS, params || {});
+  const n = sampleSize(p);
+  const reachedA = expectedCampusesReached(n);
+  const reachedB = CAMPUSES.length;
+  return { A: hoursFor(n, reachedA, p) + detourH, B: hoursFor(n, reachedB, p) + detourH };
+}
+
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  p.coordination_call_min = 20.0;
+  return evaluate(p);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkD1(){
+  const pop = Number(val('d1_pop'));
+  const n = Number(val('d1_n'));
+  const pct = Number(val('d1_pct'));
+  const okPop = near(pop, TOTAL_POPULATION, 0.5);
+  const okN = near(n, sampleSize(PARAMS), 0.5);
+  const okPct = near(pct, 100 * sampleSize(PARAMS) / TOTAL_POPULATION, 0.2);
+  fb('d1_fb', okPop && okN && okPct, true);
+}
+
+function checkD3(){
+  [1,2,3].forEach(i => {
+    const ni = Number(val('d3_n'+i));
+    const pctInput = Number(val('d3_p'+i));
+    if(!ni){ fb('d3_fb'+i, false); return; }
+    const expected = 100 * pZeroFromCampus(ni, TOTAL_POPULATION, sampleSize(PARAMS));
+    fb('d3_fb'+i, near(pctInput, expected, 0.5));
+  });
+}
+
+function checkD5(){
+  const p = twistApplied ? Object.assign({}, PARAMS, {coordination_call_min: 20.0}) : PARAMS;
+  const n = sampleSize(p);
+  const reachedA = expectedCampusesReached(n);
+  const learnMin = n * p.learner_call_min;
+  const coordA = reachedA * p.coordination_call_min;
+  const coordB = CAMPUSES.length * p.coordination_call_min;
+  const result = twistApplied ? evaluate_twist({}) : evaluate({});
+
+  const okReached = near(Number(val('d5_reachedA')), reachedA, 1);
+  const okLearnA = near(Number(val('d5_learnA')), learnMin, 5);
+  const okLearnB = near(Number(val('d5_learnB')), learnMin, 5);
+  const okCoordA = near(Number(val('d5_coordA')), coordA, 5);
+  const okCoordB = near(Number(val('d5_coordB')), coordB, 5);
+  const okHoursA = near(Number(val('d5_hoursA')), result.A, 0.15);
+  const okHoursB = near(Number(val('d5_hoursB')), result.B, 0.15);
+
+  fb('d5_fb', okReached && okLearnA && okLearnB && okCoordA && okCoordB && okHoursA && okHoursB, true);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "acton-survey"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Population-and-sample description"],
+  ["D2", "Condensed campus roster table"],
+  ["D3", "Simple Random Sample risk analysis"],
+  ["D4", "Stratified Sample allocation table"],
+  ["D5", "Total call-time comparison"],
+  ["D6", "Two original visual displays of the data"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Population": {def: "The whole group being studied -- here, all 1,420 learners across the 50 eligible campuses.",
+    url: "https://www.mathsisfun.com/definitions/population.html"},
+  "Sample": {def: "A selection taken from a larger population, used to find out things about the whole group.",
+    url: "https://www.mathsisfun.com/definitions/sample.html"},
+  "Sample Size": {def: "How many members of the population are actually included in the sample -- 142 in this case.",
+    url: "https://openstax.org/books/introductory-statistics-2e/pages/1-2-data-sampling-and-variation-in-data-and-sampling"},
+  "Random": {def: "Happening by chance -- you cannot predict the next individual outcome with certainty.",
+    url: "https://www.mathsisfun.com/definitions/random.html"},
+  "Simple Random Sampling": {def: "Every possible group of n individuals is equally likely to be chosen as any other group of n.",
+    url: "https://openstax.org/books/introductory-statistics-2e/pages/1-2-data-sampling-and-variation-in-data-and-sampling"},
+  "Stratified Sampling": {def: "Divide the population into groups (strata) and take a proportionate number from each group.",
+    url: "https://openstax.org/books/introductory-statistics-2e/pages/1-2-data-sampling-and-variation-in-data-and-sampling"},
+  "Combination": {def: "A selection of items where order doesn't matter -- the basis of the hypergeometric formula this case uses.",
+    url: "https://www.mathsisfun.com/combinatorics/combinations-permutations.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Proportion": {def: "A statement that two ratios (or fractions) are equal.",
+    url: "https://www.mathsisfun.com/definitions/proportion.html"},
+  "Rounding": {def: "Making a number simpler while keeping its value close to the original.",
+    url: "https://www.mathsisfun.com/rounding-numbers.html"},
+  "Time": {def: "A measured quantity -- hours, minutes -- used here to total up Jeff's call-time budget.",
+    url: "https://www.mathsisfun.com/time.html"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Pie Chart": {def: "A chart that uses \"pie slices\" sized by percent to show how a whole breaks into parts.",
+    url: "https://www.mathsisfun.com/data/pie-charts.html"},
+  "Addition": {def: "Bringing two or more numbers together to make a new total.",
+    url: "https://www.mathsisfun.com/numbers/addition.html"},
+  "Multiplication": {def: "Repeated addition of equal groups -- e.g. 142 interviews times 17.5 minutes each.",
+    url: "https://www.mathsisfun.com/numbers/multiplication.html"}
+};
+const HOWTO = [
+  ["how to find the percent of a number", "Percent"],
+  ["how to convert numbers to percents", "Percent"],
+  ["how to find a missing amount in a proportion", "Proportion"],
+  ["how to round a number to a specified place value", "Rounding"],
+  ["how to convert between units of time", "Time"],
+  ["how to add multi-digit numbers", "Addition"],
+  ["how to multiply any two numbers", "Multiplication"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+let twistApplied = false;
+function onTwistToggle(){
+  twistApplied = document.getElementById('applyTwist').checked;
+  const note = document.getElementById('twistStatusNote');
+  if(note){
+    note.textContent = twistApplied
+      ? 'Twist applied \u2014 Step 3 now checks against a 20-minute coordination call (still inside the 15\u201320 min range, Appendix A).'
+      : 'Twist not applied \u2014 this step checks against the base 15-minute coordination-call assumption (MA1).';
+  }
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

@@ -122,10 +122,27 @@ raise a new problem neither option actually solves?"
 
 ## The trap
 
-A Hero computes the per-participant charge, finds Option A cheaper, and stops — never checking
-either option's maximum capacity against Karen's own stated growth pattern. The case's real tension
-is that the cheaper option today has less room for the trend Karen herself has already lived
-through four years running. Watch for a pitch that reports one number and calls the case closed.
+**Trap 1 — capacity blindness.** A Hero computes the per-participant charge, finds Option A
+cheaper, and stops — misses either option's maximum capacity entirely and never notices Karen's own
+stated growth pattern makes that number matter. The case's real tension is that the cheaper option
+today has less room for the trend Karen herself has already lived through four years running.
+Watch for a pitch that reports one number and calls the case closed.
+
+**Trap 2 — the D5 break-even/rounding trap.** A Hero sets up `12759 + 26.30x = 110x` correctly,
+solves for x, but then **misjudges what the exact answer means for the 100-150 planning range.**
+The exact solution is x = 152.44. A Hero who does not round UP (152.44 people means 153 whole
+attendees, not 152, and definitely not "150-ish, close enough") will falsely believe an in-range
+attendance number clears the board's $110 target — because 152.44, and even the rounded 153,
+*looks* like it's sitting comfortably inside "100-150," when 153 actually **exceeds** Karen's own
+150-person ceiling. A Hero can also independently fool themselves the other direction: assuming
+that some higher attendance still "within the 100-150 range" brings Option A under $110 — false;
+even at attendance = 150 exactly (the top of the stated range), Option A is still $111.36, above
+target (see `derived.option_a_per_participant_at_150`). The trap is believing Option A can hit
+$110 *and* stay within Karen's stated range simultaneously — it cannot; the true break-even (153)
+sits one whole attendee above the ceiling (150). A Hero who skips the rounding-up step, or who
+never checks the break-even number against the 150 ceiling at all, will confidently report a false
+"yes, Option A can hit the target" and never notice the contradiction. Cold-call for both: (a) the
+rounding-up step itself, and (b) whether 153 fits inside 100-150.
 
 ## Socratic questions
 
@@ -134,6 +151,7 @@ through four years running. Watch for a pitch that reports one number and calls 
 3. If Karen could only afford Option A, what would you actually recommend she do about the 160-registration surge?
 4. The case fixes the planning attendance at 140 — how would the per-participant charge change if it were 100 instead? 150? (Real answer at 150: $111.36 — still above the board's $110 target.)
 5. Marketing's ad worked exactly as intended — more registrations. Whose job is it to have planned for that possibility, marketing's or Karen's?
+6. D5's exact answer is 152.44 attendees. If a Hero rounds that down to 152, or just eyeballs it as "about 150, so basically in range," what real conclusion do they end up believing that isn't actually true? Walk through why rounding UP to 153, and then checking 153 against the 150 ceiling, changes the answer.
 
 ## Close
 
