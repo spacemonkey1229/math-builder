@@ -64,10 +64,10 @@ Do you:
 
 Stats as of the end of the 2020-21 season (each player's 18th and 15th real season respectively) — see Appendix E, Assumption 5.
 
-| Player | Seasons | Games Played | 2 Pt Made | 2 Pt Att. | 3 Pt Made | 3 Pt Att. | FT Made | FT Att. | Assists | Rebounds |
-|---|---|---|---|---|---|---|---|---|---|---|
-| LeBron James | 18 | 1,310 | 10,924 | 19,866 | 1,979 | 5,738 | 7,582 | 10,337 | 9,696 | 9,751 |
-| Michael Jordan | 15 | 1,072 | 11,611 | 22,759 | 581 | 1,778 | 7,327 | 8,772 | 5,633 | 6,672 |
+| Player | Seasons | Games Played | 2 Pt Made | 2 Pt Att. | 3 Pt Made | 3 Pt Att. | FT Made | FT Att. | Assists | Rebounds | Blocks |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| LeBron James | 18 | 1,310 | 10,924 | 19,866 | 1,979 | 5,738 | 7,582 | 10,337 | 9,696 | 9,751 | 982 |
+| Michael Jordan | 15 | 1,072 | 11,611 | 22,759 | 581 | 1,778 | 7,327 | 8,772 | 5,633 | 6,672 | 893 |
 
 ---
 
@@ -75,10 +75,10 @@ Stats as of the end of the 2020-21 season (each player's 18th and 15th real seas
 
 Stats as of the end of the 2020-21 playoffs — see Appendix E, Assumption 5.
 
-| Player | Playoff Seasons | Games Played | 2 Pt Made | 2 Pt Att. | 3 Pt Made | 3 Pt Att. | FT Made | FT Att. | Assists | Rebounds |
-|---|---|---|---|---|---|---|---|---|---|---|
-| LeBron James | 15 | 266 | 2,296 | 4,218 | 435 | 1,284 | 1,748 | 2,364 | 1,921 | 2,392 |
-| Michael Jordan | 13 | 179 | 2,041 | 4,052 | 150 | 444 | 1,466 | 1,766 | 1,022 | 1,151 |
+| Player | Playoff Seasons | Games Played | 2 Pt Made | 2 Pt Att. | 3 Pt Made | 3 Pt Att. | FT Made | FT Att. | Assists | Rebounds | Blocks |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| LeBron James | 15 | 266 | 2,296 | 4,218 | 435 | 1,284 | 1,748 | 2,364 | 1,921 | 2,392 | 253 |
+| Michael Jordan | 13 | 179 | 2,041 | 4,052 | 150 | 444 | 1,466 | 1,766 | 1,022 | 1,151 | 158 |
 
 ---
 
@@ -150,7 +150,7 @@ Stats as of the end of the 2020-21 season — see Appendix E, Assumption 5.
 
 **Assumption 3 — Career year, not calendar season.** Appendix C indexes each season by "Career Year" (Year 1 = each player's rookie season) rather than the actual calendar season, so that Jordan's real mid-career retirement and both players' real career lengths don't misalign the comparison.
 
-**Assumption 4 — Playoff totals are reconstructed from per-game data.** The original source only records real playoff stats as a per-game average for each season, not a season total. Appendix B's playoff totals are each season's real per-game average multiplied by that season's real games played, summed across all seasons, and rounded to the nearest whole make/attempt/assist/rebound — a close estimate of the true career playoff total, not the exact box-score sum.
+**Assumption 4 — Playoff totals are reconstructed from per-game data.** The original source only records real playoff stats as a per-game average for each season, not a season total. Appendix B's playoff totals are each season's real per-game average multiplied by that season's real games played, summed across all seasons, and rounded to the nearest whole make/attempt/assist/rebound/block — a close estimate of the true career playoff total, not the exact box-score sum. LeBron's playoff Blocks total (253) carries the widest estimate margin of any figure in Appendix B: blocks are a low-count stat where per-series rounding (each series' real average is itself only published to one decimal) compounds over 48 real playoff series, so the true total could plausibly be a few blocks higher or lower. Jordan's playoff Blocks total (158) is a directly reported career sum, not a reconstruction, and carries no such margin.
 
 **Assumption 5 — A fixed real cutoff date, not "current" stats.** LeBron James is still an active player, so any real career statistic of his is a moving target. This case freezes every one of his numbers (Appendix A, B, C, D) at the real end of his 18th season, the 2020-21 season — not at whatever his stats happen to be on the day you read this. Jordan's career is complete, so his numbers are simply his real final career totals throughout.
 

@@ -136,3 +136,21 @@ P1, P2, P4, P5, P6 were not re-run mechanically this session — none of their i
 
 **TIER2_PASS reached.** All six probes now PASS: P1 PASS, P2 PASS, P3 PASS (this run), P4 PASS,
 P5 PASS, P6 PASS. `qa.state` promoted to `TIER2_PASS` below.
+
+## case-readiness fix — 2026-08-22 (new_coverage collision, pre-existing, unrelated to Tier 2)
+A final verification sweep (ahead of case-publish) found `tier1_structural.py`'s T1-10 newly
+flagging a BLOCKER: `new_coverage[]` claimed a skill (`advanced-operations-how-to-solve-a-multi-
+step-equation-with-a-variable-on-both-sides`) already covered by a different published case
+(`Fast Food`, per `readmodel/standards_spine.json`, committed state, not something changed this
+session). This predates today's Tier 2 work and was not caught by the 2026-08-19/08-20 gate runs.
+
+Checked all 10 of this case's other `standards[]` entries against the spine — every one is already
+covered by multiple other cases (most already list Archery Camp itself alongside them); none is a
+genuinely uncovered skill this case could honestly claim instead. `new_coverage[]` set to `[]` and
+a `reinforcement_note` added recording exactly what was checked, per the same carve-out this
+project's `SKILL.md` already documents for the Curves Turn/Optimal Can case (2026-08-17): two
+independently-designed cases landing on the same natural skill is a real, honest zero, not padding.
+
+`tier1_structural.py --case archery-camp`: 0 blockers, 4 gaps (all pre-existing/accepted classes).
+This does not change the `TIER2_PASS` verdict above — Tier 2's own probes are unaffected by a
+standards-coverage bookkeeping fix.

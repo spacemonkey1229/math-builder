@@ -36,3 +36,29 @@ NOT RUN.
 **Overall: TIER1_PASS confirmed. Tier 2 run in full — P1/P2/P4/P5/P6 PASS, P3 FAIL. The case does not reach TIER2_PASS** (SKILL.md: "Never mark TIER2_PASS with a probe recorded as NOT RUN" and, by the same logic, not with a probe recorded FAIL — 0 FAIL is required).
 
 **The defect to hand back to `case-write`/`case-research` (not fixed here, per "Never fix the case"):** FACILITATOR.md's Trap section and its five Socratic questions cover only the "stops at 2 lines, ignores the 3rd-line plan" wrong path. A second, independently-plausible wrong path exists and is unaddressed: correctly solving D3's system (x=1) and reporting that raw x-value as the break-even *line count* instead of converting to total lines (x+2=3). Recommended fix for `case-write` to consider: either (a) add a line to the Trap section / a Socratic question naming this x-vs-total-lines conversion explicitly, or (b) if D1's existing parenthetical ("a 3-line plan is 1 additional line past the flat-rate pair, not 3") is judged sufficient mitigation, that judgment call should be recorded in FACILITATOR.md rather than left implicit, so a future QA pass doesn't re-flag it as unaddressed.
+
+## case-readiness re-verification — 2026-08-22
+**State:** TIER1_PASS → TIER2_PASS   **Verdict:** TIER2_PASS
+
+Applied the P3 fix direction from the 2026-08-19 run: `FACILITATOR.md`'s Trap section expanded to
+name the x-vs-total-lines break-even confusion as a second, explicit trap (D3 solves for x=1, the
+"lines beyond the first 2" variable, and a hurried Hero can report the raw 1 instead of converting
+back to 3 total lines).
+
+### Tier 1 re-run
+`tier1_structural.py --case phone-plan`: 17/19 PASS, 2 GAP (T1-14/T1-18, accepted classes — guide-only
+derived numbers, CSS/SVG decorative decimals), 0 blockers. `case_md_sha256` unchanged (`case.md` not
+touched — guide-only fix).
+
+### P3 re-verification
+A second genuinely fresh subagent, given only `/tmp/coldsolve-phone-plan/PACKET.md` and scoped to
+D3's break-even challenge specifically, independently solved the system (x=1) and named the exact
+same wrong path as the most plausible trap: reporting "break-even = 1 line" instead of converting
+back to 3 total lines — before reading FACILITATOR.md. Read against the guide afterward: exact
+match, no divergence.
+
+**Result:** P3 FAIL → **PASS**. All six Tier 2 probes now PASS with zero FAIL. `case.json.qa`
+updated: `state: TIER2_PASS`, `verdict: PASS`, `run_on: 2026-08-22`, `tier2.P3: PASS`.
+
+**Files changed:** `cases/phone-plan/FACILITATOR.md` (Trap section only), `cases/phone-plan/case.json`
+(`qa` block only). `case.md` not touched.

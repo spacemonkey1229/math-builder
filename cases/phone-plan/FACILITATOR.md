@@ -110,11 +110,23 @@ and didn't change your mind, what's your argument for ignoring $150?"
 
 ## The trap
 
-A Hero computes the 2-line monthly cost, finds Carrier T cheaper, and stops — never checking what
-happens at 3 lines even though the case's own Background states the family's 1-year plan explicitly.
-The real tension is that "cheaper today" and "cheaper for the plan you've already stated" are
-different questions with different answers here. Watch for a pitch that reports one line count and
-calls the case closed.
+Two independent traps live in this case — watch for both.
+
+**Trap 1 — stops at 2 lines.** A Hero computes the 2-line monthly cost, finds Carrier T cheaper,
+and stops — never checking what happens at 3 lines even though the case's own Background states
+the family's 1-year plan explicitly. The real tension is that "cheaper today" and "cheaper for the
+plan you've already stated" are different questions with different answers here. Watch for a pitch
+that reports one line count and calls the case closed.
+
+**Trap 2 — reports the wrong number of lines at break-even.** D3 asks a Hero to solve the two
+carriers' cost equations as a system and find the break-even point. D1's own equation form is
+"(rate per additional line)(lines beyond the first 2) + (flat rate for the first 2 lines)" — so the
+system solves for *x = lines beyond the first 2*, not total lines. The correct solve gives x = 1,
+and a Hero who reports **"the break-even is 1 line"** instead of converting back to **3 total
+lines** has done the algebra right and answered the question wrong. D1's text does carry a
+parenthetical warning aimed at exactly this ("a 3-line plan is 1 additional line past the flat-rate
+pair, not 3"), but a hurried Hero skimming past that line is entirely plausible — watch for a
+"break-even = 1" answer and ask what "1" is counting.
 
 ## Socratic questions
 

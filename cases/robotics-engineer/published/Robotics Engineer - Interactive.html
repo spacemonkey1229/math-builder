@@ -409,7 +409,7 @@
   <div class="stepbox locked" id="step4">
     <h4>Step 4 &mdash; Recompute after the explosion (unlocks after the Twist)</h4>
     <div id="step4lock">Locked. Reveal the Twist below and check "apply the twist" to unlock this step.</div>
-    <div class="goal">The direct A-to-B path is now blocked. Ultron must detour via Site C's position instead. Recompute total time for both orders.</div>
+    <div class="goal">The direct C-to-B path is now blocked. A real 15-meter detour applies whenever that leg is used. Recompute total time for both orders.</div>
     <div class="fieldrow"><label>C&rarr;A&rarr;B time after twist (min)</label><input type="number" step="0.01" id="twistAGuess">
       <button onclick="checkTwist()">Check both</button><span class="fb" id="twistAFb"></span>
     </div>
@@ -432,7 +432,7 @@
     <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
     <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
     <div id="twistNarrative">
-      <p>Ultron has just started moving. A secondary explosion sends debris flying across the site &mdash; the direct path between Sites A and B is now blocked. Whichever order you chose, that leg of the trip just got longer. Ultron has to route back through Site C's position to get around it.</p>
+      <p>Ultron has just started moving. A secondary explosion sends debris flying across the site &mdash; the direct path between Site C and Site B is now blocked. A drone resurvey finds a real detour route around the debris field: 15 extra meters, whenever that leg is used.</p>
       <div class="chk" style="background:#2b323b;border-color:#444">
         <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
         <label for="applyTwist" style="color:#e8e3d5">Unlock Step 4 and recompute for real</label>
@@ -475,11 +475,13 @@ function routeTime(order){ // order: 'AB' means C->A->B, 'BA' means C->B->A
 function integrityB(minutesToReachB){
   return 93 - 1.2*(minutesToReachB/60);
 }
-function detourABviaC(){ return dist(SITES.A,SITES.C)+dist(SITES.C,SITES.B); }
 function twistRouteTime(order){
-  const detour = detourABviaC();
-  if(order==='AB') return (dist(SITES.C,SITES.A)+detour)/SPEED_M_PER_HR*60;
-  return (dist(SITES.C,SITES.B)+detour)/SPEED_M_PER_HR*60;
+  // secondary explosion blocks the direct C-B corridor; a real surveyed detour
+  // adds 15 m to that leg specifically. Route C->A->B never touches the C-B
+  // leg at all, so it is completely unaffected -- only C->B->A is penalized.
+  const CB_DETOUR_EXTRA_M = 15.0;
+  if(order==='AB') return (dist(SITES.C,SITES.A)+dist(SITES.A,SITES.B))/SPEED_M_PER_HR*60;
+  return ((dist(SITES.C,SITES.B)+CB_DETOUR_EXTRA_M)+dist(SITES.B,SITES.A))/SPEED_M_PER_HR*60;
 }
 
 /* ================================================================

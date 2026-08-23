@@ -89,8 +89,17 @@ stats that mattered in the regular season still matter the same way in the playo
 (34.49% vs. 32.68%) and after (33.88% vs. 33.78%). That is itself worth putting to the room: "The
 twist changes the numbers but not the winner on this one metric — does a twist have to flip an
 answer to be worth taking seriously, or is confirming a real conclusion under new data still a real
-result?" Don't manufacture drama the real numbers don't support; the honest tension here is in the
-*other* stats the twist touches (free-throw%, rebounding), not in a reversal that isn't there.
+result?" Don't manufacture drama the real numbers don't support.
+
+**But one real stat DOES flip, and it's worth naming after the room has sat with the non-flip
+above.** Appendix A/B's Blocks column: Jordan leads the regular-season rate (0.83/gm vs. LeBron's
+0.75/gm) — a real, if modest, edge for a guard/wing not known as a shot-blocker. In the playoffs,
+LeBron leads instead (0.95/gm vs. Jordan's 0.88/gm). A Hero who cited Jordan's regular-season block
+rate as part of an all-around, plays-winning-defense argument has a real, concrete reason to
+reconsider that specific claim under playoff data — this is the genuine reversal the twist was
+built to test, even though it isn't on the case's own graded metric. Ask: "We just found a real
+example where playoffs DO flip a stat, right next to four where they don't — what does that tell
+you about which comparisons are actually stable and which ones you got lucky on?"
 
 Do not hand over a "correct" answer — this is a real, ongoing debate with reasonable people landing
 on both sides.

@@ -36,3 +36,35 @@ Neither finding is fixed here — per "Never fix the case," both are named and h
   a note that Challenge 3/D1 only uses the 5-year row and the 10-year row is facilitator material),
   or (b) accept that the twist is not a withheld-information reveal at all and redesign the twist
   moment around something the case document does not already disclose in full.
+
+## case-readiness re-verification — 2026-08-22
+**State:** TIER1_PASS → TIER2_PASS   **Verdict:** TIER2_PASS
+
+The P3/P4 fixes named as "not applied" above (case-write direction) were found already implemented
+in the live files — FACILITATOR.md's trap section rewritten to name the mortality/survival label
+inversion, and case.md restructured with a `<!-- FACILITATOR ONLY -->` marker gating the 10-year
+STICH data out of the student-facing read — but never re-verified through Tier 2 or recorded here.
+This entry closes that gap.
+
+### Tier 1 re-run
+`tier1_structural.py --case cardiology`: 18/19 PASS, 1 GAP (T1-18, CSS/SVG decorative decimals —
+accepted class), 0 blockers. `case.md` changed (10-year data moved below the FACILITATOR ONLY
+marker); `case_md_sha256` updated accordingly.
+
+### Tier 2 re-verification
+
+| probe | 2026-08-19 | 2026-08-22 |
+|---|---|---|
+| P1 cold solve | PASS | **PASS (re-confirmed)** — genuinely fresh subagent, packet-only, reached B with correct arithmetic; explicitly asked whether any 10-year/longer data was visible anywhere in the packet — answered no, none found. Confirms the FACILITATOR ONLY gate holds under an adversarial read. |
+| P2 both-sides | PASS | PASS (unchanged, not re-run — trap/twist fix does not touch either argument's numbers) |
+| P3 trap | FAIL | **PASS** — a second genuinely fresh subagent, packet-only, independently named the exact mortality/survival label-swap trap (41%/36% copied into D1 unconverted, gap surviving arithmetic-check at 5.0 points either way) before reading the guide. Read against FACILITATOR.md afterward: exact match, no divergence — the guide's rewritten trap is the one that would actually catch a room. |
+| P4 twist | FAIL | **PASS** — a third fresh subagent confirmed (a) the twist has real bite: survival gap widens 5.0→7.2 points AND the significance story flips (p=0.12 at 5yr → p=0.02 at 10yr, a room that hedged on "not proven yet" now has real grounds to reconsider); (b) the 10-year figures ("Facilitator-Only: STICH Extended Follow-Up") sit strictly after the FACILITATOR ONLY marker — confirmed by direct file inspection, not just the cold-solve's negative report; (c) no unstated convention — D1 explicitly scopes to 5-year data, nothing under the stated Challenge instructions surfaces the 10-year row. |
+| P5 sensitivity | PASS | PASS (unchanged, not re-run) |
+| P6 data decay | PASS | PASS (unchanged, not re-run) |
+
+All six Tier 2 probes now PASS with zero FAIL. `case.json.qa` updated: `state: TIER2_PASS`,
+`verdict: PASS`, `run_on: 2026-08-22`, `tier2.P3`/`tier2.P4` set to `PASS`.
+
+**Files changed this pass:** none (`cases/cardiology/case.json` `qa` block only — the FACILITATOR.md
+and case.md edits themselves were already in place from 2026-08-20, this pass only re-verified and
+recorded them).

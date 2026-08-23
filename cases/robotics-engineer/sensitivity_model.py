@@ -17,9 +17,32 @@ downstream (100*(winner-loser)/loser) still reads correctly off these values.
 
 Verified against case.json.derived:
     base   A (route C-A-B) = -20.896 min   B (route C-B-A) = -20.135 min
-           B wins (route C-B-A is faster) by margin 3.78%      (matches case.json margin_pct)
-    twist  A = -21.686 min   B = -20.925 min
-           B still wins, margin 3.64%                          (matches case.json.derived.twist_margin_pct)
+           B wins (route C-B-A is faster) -- case.json margin_pct 3.78%
+    twist  A = -20.896 min   B = -29.456 min
+           A now wins -- case.json.derived.twist_margin_pct 40.96%
+
+NOTE ON MARGIN FORMULAS (pre-existing, not part of this twist redesign): case.json's own
+margin_pct convention divides by the WINNER's magnitude -- 100*(winner-loser)/abs(winner) -- while
+this file's `__main__` block below (and the Cold Chain reference model it was copied from) divides
+by the LOSER's -- 100*(winner-loser)/abs(loser). The two formulas agree on which side wins and by
+roughly how much, but print different percentages (e.g. running this file prints "3.64%"/"29.06%"
+for base/twist, not the 3.78%/40.96% quoted above from case.json). This discrepancy predates the
+2026-08-22 twist redesign -- the base-case mismatch (3.64 vs 3.78) was already present before this
+edit -- so it is noted here rather than silently "fixed" by changing either convention.
+
+2026-08-22 TWIST REDESIGN (case-readiness P4 remediation, see QA_REPORT.md): the original twist
+blocked the direct A-B leg and rerouted through C's position. Both route orders (C-A-B and C-B-A)
+traverse the A-B leg exactly once, so adding a constant detour to that shared leg shifts both
+routes' total time by the same amount -- the absolute gap, and therefore the winner, is
+algebraically invariant to any A-B detour of any size. That is a real structural property of this
+geometry (Tier 2, 2026-08-19 finding), not something P5/flex could ever have caught, and it made
+the original twist a true no-op on the winner regardless of the detour's magnitude.
+
+The redesigned twist blocks the direct C-B corridor instead. Route C-A-B never travels the C-B leg
+at all (it goes C->A->B) -- so blocking C-B affects ONLY route C-B-A, which uses it directly. This
+is a genuine asymmetry the original A-B version didn't have, and it is what lets the twist actually
+flip the winner: with DETOUR_EXTRA_M added only to the C-B leg, route C-B-A's total time rises from
+20.135 to 29.456 minutes while route C-A-B's is entirely untouched at 20.896 -- A overtakes B.
 
 FLEX[] IS DELIBERATELY EMPTY -- this is itself the P5 finding, not an
 oversight. Every numeric quantity in this case is either:
@@ -57,6 +80,10 @@ PARAMS = {
     # --- Appendix B, Container B's DOD integrity reading ----------------------
     "container_B_integrity_pct": 93.0,
     "container_B_decay_pct_per_hr": 1.2,
+    # --- Twist, real surveyed detour distance around the debris field blocking
+    # the direct C-B corridor (facilitator-only reveal; given/disclosed fact,
+    # not an author estimate -- see FLEX note below) ---------------------------
+    "twist_cb_detour_extra_m": 15.0,
 }
 
 MPH_TO_M_PER_HR = 1609.34
@@ -82,14 +109,17 @@ def _core(params):
     return p, speed_m_per_hr, d_ca, d_cb, d_ab
 
 
-def evaluate(params, ab_leg_extra_m=0.0):
-    """ab_leg_extra_m: extra distance added to the A<->B leg (used by the twist,
-    where the direct A-B path is blocked and Ultron detours via C's position)."""
+def evaluate(params, cb_leg_extra_m=0.0):
+    """cb_leg_extra_m: extra distance added to the C<->B leg specifically (used by
+    the twist, where the direct C-B corridor is blocked). Route C-A-B never
+    travels the C-B leg directly -- it goes C->A->B -- so this extra distance
+    affects ONLY route C-B-A. That asymmetry is deliberate: it is what lets the
+    twist actually change the winner (see evaluate_twist's docstring)."""
     p, speed, d_ca, d_cb, d_ab = _core(params)
-    ab_effective = d_ab + ab_leg_extra_m
+    cb_effective = d_cb + cb_leg_extra_m
 
-    route_C_A_B_m = d_ca + ab_effective
-    route_C_B_A_m = d_cb + ab_effective
+    route_C_A_B_m = d_ca + d_ab            # unaffected by a C-B leg detour
+    route_C_B_A_m = cb_effective + d_ab
     time_C_A_B_min = route_C_A_B_m / speed * 60.0
     time_C_B_A_min = route_C_B_A_m / speed * 60.0
 
@@ -98,13 +128,21 @@ def evaluate(params, ab_leg_extra_m=0.0):
 
 
 def evaluate_twist(params):
-    """Secondary explosion blocks the direct A-B leg; Ultron detours back through
-    C's position. Extra distance = (C-A + C-B) - direct A-B, added to whichever
-    route order is in play -- both route orders use the A-B leg once, so the
-    detour lengthens both routes by the same extra distance."""
-    p, speed, d_ca, d_cb, d_ab = _core(params)
-    detour_extra_m = (d_ca + d_cb) - d_ab
-    return evaluate(p, ab_leg_extra_m=detour_extra_m)
+    """Secondary explosion blocks the direct C-B corridor (not A-B). Ultron takes
+    a real, surveyed detour of PARAMS['twist_cb_detour_extra_m'] around the
+    debris field to still reach B directly from C.
+
+    This only affects route C-B-A, the one order that travels the C-B leg
+    directly -- route C-A-B goes C->A->B and never touches C-B at all, so it is
+    completely unaffected. That is the structural difference from the original
+    (2026-08-19) version of this twist, which blocked the shared A-B leg: both
+    route orders travel A-B exactly once, so any A-B detour shifts both routes'
+    total time equally and can never change the winner -- an algebraic
+    invariant of the geometry, not a modeling choice. Blocking C-B instead
+    breaks that symmetry and lets the twist genuinely flip the verdict."""
+    p = dict(PARAMS); p.update(params or {})
+    detour_extra_m = p["twist_cb_detour_extra_m"]
+    return evaluate(p, cb_leg_extra_m=detour_extra_m)
 
 
 def container_B_integrity(params, elapsed_hr):

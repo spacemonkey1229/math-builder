@@ -119,11 +119,23 @@ make you want more information before finalizing?"
 
 ## The trap
 
-A Hero computes the dramatic cost difference, recommends NuStorage on price alone, and never
-engages with the fact that the deciding body is a safety regulator, not a cost-minimizing business.
-The case's real tension is that the numbers point hard one way (cost) while the commission's actual
-job points toward a different, closer number (safety). Watch for a pitch that treats "cheaper" as
-automatically "better" for this particular decision-maker.
+Two independent traps live in this case — watch for both.
+
+**Trap 1 — cost-over-safety.** A Hero computes the dramatic cost difference, recommends NuStorage
+on price alone, and never engages with the fact that the deciding body is a safety regulator, not a
+cost-minimizing business. The case's real tension is that the numbers point hard one way (cost)
+while the commission's actual job points toward a different, closer number (safety). Watch for a
+pitch that treats "cheaper" as automatically "better" for this particular decision-maker.
+
+**Trap 2 — the wrong rounding direction on D2's container count.** Assumption 1 (rods-per-container)
+and Assumption 2 (facility max capacity) both round *down* — the case states this twice, training a
+"this case rounds down" reflex. D2's own question — how many containers are needed to hold *all*
+250,000 rods — is the reverse operation: it needs the *ceiling*, not the floor, because a partial
+container of leftover rods still needs a whole container. A Hero who applies the rounding-down
+reflex here (e.g. flooring 250,000 ÷ 916 rods/barrel = 272.9 to 272 barrels, instead of ceiling to
+273) silently understates both companies' order cost and D6's lining total — and the resulting
+number (272 vs. the correct 273) is close enough that nothing downstream looks obviously wrong.
+Watch for a barrel/crate count that is exactly one below what full ceiling-division gives.
 
 ## Socratic questions
 

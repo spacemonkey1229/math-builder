@@ -25,3 +25,28 @@ BLOCKER (0) / GAP (1, above) / POLISH (1, T1-07 separator-run label parsing note
 
 ### Tier 3 — human dry-run
 NOT RUN
+
+## case-publish run — 2026-08-22
+Built the missing packet artifacts: `Baseball Lineup - Facilitator Guide.docx` and
+`Baseball Lineup - Data.xlsx` (student-facing `Case Study.docx`/`Interactive.html` already existed
+and were spot-checked, not rebuilt — no `FACILITATOR ONLY`/trap leak found in the Case Study docx).
+`MANIFEST.json` written. `tier1_structural.py --case baseball-lineup` re-run after the build:
+**0 BLOCKER, 2 GAP, 1 POLISH.**
+
+- **T1-18 GAP** — pre-existing, unchanged (30→29 decorative CSS/SVG decimals in the interactive
+  HTML outside case.md/case.json's number universe; same accepted false-positive class documented
+  for Cold Chain in `INTERACTIVE_HTML_CONTRACT.md`).
+- **T1-15 GAP (new)** — `[45.0]` in the new Facilitator Guide docx has no match in case.md/case.json.
+  This is the "45-Minute Run of Show" heading/schedule (0:00–45:00), reproduced verbatim from
+  FACILITATOR.md's own "45-minute Socratic plan" table. `T1-14`'s check on FACILITATOR.md itself
+  already has a regex that strips `\d+\s*-?\s*minute` facilitation-timing idioms before flagging
+  orphan numbers, precisely because session-duration figures are guide-only scheduling metadata,
+  not case data, and are expected to have no home in case.md/case.json. `T1-15`'s docx-continuity
+  sweep has no equivalent strip, so it flags the same legitimate class of number that T1-14 already
+  forgives. Not real drift — no case.md/case.json edit would remove it without deleting the run-of-show
+  schedule itself. Accepted as a GAP, same disposition as T1-18's.
+- **T1-15 staleness check: clean.** Facilitator Guide docx was built after the current case.md/
+  FACILITATOR.md, no CONTINUITY STALE blocker.
+
+No BLOCKERs. Packet is publish-ready per `case-publish` SKILL.md step 1; read-model promotion
+(step 2) and Drive push (step 3) were not run in this pass — build-only per the requesting task.

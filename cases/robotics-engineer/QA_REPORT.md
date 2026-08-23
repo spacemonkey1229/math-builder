@@ -60,3 +60,69 @@ NOT RUN. (Note: a prior real learner, ben-okafor, completed a full assign→subm
 discuss→complete cycle on this case per `student_work/ben-okafor/robotics-engineer/` — but per this
 skill's own instruction that history was not used as evidence for this gate, and it is not a filed
 `RUN_REPORT.md` in the required format regardless. No `cases/robotics-engineer/runs/RUN_*.md` exists.)
+
+## case-readiness re-verification — 2026-08-22
+**State:** TIER1_PASS → TIER2_PASS   **Verdict:** TIER2_PASS
+
+The 2026-08-19 P4 FAIL was a real structural defect, not a modeling estimate: the original twist
+blocked the A-B leg, which BOTH route orders (C-A-B and C-B-A) traverse exactly once — any detour
+added there shifts both routes' total time by the same amount, so the winner is algebraically
+invariant to detour size, no matter how large. This was fixed as a genuine twist redesign (case
+content, not a guide-only patch), per "Never fix the case" this is disclosed as a content change,
+not hidden as a guide reinterpretation.
+
+### The redesign
+The twist now blocks the direct **C-B corridor** instead of A-B. Route C-A-B never travels the C-B
+leg at all (it goes C→A→B); only route C-B-A uses it directly. A disclosed 15m detour around the
+debris field, applied only to that leg, is therefore asymmetric between the two orders — the
+structural property the original design lacked.
+
+**New numbers:** base unchanged (A 20.896 min, B 20.135 min, B wins by 3.78%). Twist: A unchanged
+at 20.896 min (never touches C-B); B rises to 29.456 min (10.817+15+21.587=47.404m). **A now wins**,
+margin 40.96% — a genuine reversal, not a magnitude change.
+
+**Files changed:** `sensitivity_model.py` (`evaluate()`/`evaluate_twist()` rewritten around the C-B
+leg; `PARAMS.twist_cb_detour_extra_m` added), `case.json.derived` (twist_* fields updated, obsolete
+A-B-detour fields removed), `FACILITATOR.md` (Twist section rewritten; Immediate recommit, Deep
+conflict thread 3, Socratic Q4, and Close all updated — each previously described the twist as a
+non-flip and needed to change), published `Robotics Engineer - Interactive.html` (twist narrative
+text and the `twistRouteTime()`/`detourABviaC()` JS functions rewritten to match the new mechanism).
+`case.md` was not touched — the twist is facilitator-only, never printed in the student-facing case
+document.
+
+### P4 re-verification
+A fresh, independent subagent — given the case.md, the rewritten `sensitivity_model.py`, and the
+rewritten `FACILITATOR.md` — hand-verified the coordinate geometry and arithmetic from scratch
+(reproducing d(C,A)=12.042m, d(C,B)=10.817m, d(A,B)=21.587m and the full before/after route times
+independently), confirmed the flip is a genuine structural consequence of the redesign (route C-A-B
+is mathematically immune to a C-B-only detour) rather than an asserted result, confirmed no unstated
+convention is needed for a natural reader to reach the same numbers, and confirmed FACILITATOR.md's
+Twist/Immediate-recommit/Deep-conflict/Socratic/Close sections are now internally consistent with a
+flipping twist (no leftover language implying the old non-flip outcome).
+
+**Flagged by the same pass, fixed:** the sensitivity_model.py docstring claimed its printed output
+"matches case.json margin_pct" — false as written, because `case.json`'s margin formula divides by
+the winner's magnitude while the file's own `__main__` diagnostic block (copied from the Cold Chain
+reference model) divides by the loser's, a pre-existing mismatch predating this redesign (it also
+affected the base-case numbers before today). Docstring corrected to state both conventions
+explicitly rather than claim a false equivalence; not treated as a P4 defect since it's a comment
+accuracy issue, not a wrong verdict.
+
+### Tier 1 re-run
+`tier1_structural.py --case robotics-engineer`: 0 blockers, 2 GAP (accepted classes — one guide-only
+derived number, CSS/SVG decorative decimals). No leak, no staleness (case.md untouched; published
+Interactive HTML re-saved to match the new twist calculator).
+
+### Result
+
+| probe | 2026-08-19 | 2026-08-22 |
+|---|---|---|
+| P1 cold solve | PASS | PASS (unchanged, not re-run) |
+| P2 both-sides | PASS | PASS (unchanged, not re-run) |
+| P3 trap | PASS (qualified) | PASS (qualified) (unchanged, not re-run) |
+| P4 twist | FAIL | **PASS** — twist redesigned around the C-B leg; genuinely flips the winner; independently re-verified |
+| P5 sensitivity | PASS (trivial) | PASS (trivial) (unchanged, not re-run) |
+| P6 data decay | PASS | PASS (unchanged, not re-run) |
+
+All six Tier 2 probes now PASS with zero FAIL. `case.json.qa` updated: `state: TIER2_PASS`,
+`verdict: PASS`, `run_on: 2026-08-22`, `tier2.P4: PASS`.

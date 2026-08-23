@@ -70,33 +70,37 @@ come out longer than the sum of the other two? It shouldn't — real coordinates
 triangle unless the points are collinear — but this is a real, disclosed sanity check a robotics
 engineer would actually run before trusting a drone survey enough to route a valuable robot through
 a hazardous debris field. The margin is real and worth naming: C-A plus C-B (22.858 m) beats the
-direct A-B distance (21.587 m) by only 1.271 m. Hold onto that number — it resurfaces almost
-immediately.
+direct A-B distance (21.587 m) by only 1.271 m — a real margin, though it's this case's C-B leg
+specifically, not this triangle-inequality gap, that the Twist below actually turns on.
 
 ## Twist — drop this at ~15 minutes into the discussion
 
 Deliver slowly, with pauses:
 
 "Ultron has just started moving. A secondary explosion sends debris flying across the site — the
-direct path between Sites A and B is now blocked. Whichever order you chose, that leg of the trip
-just got longer. Ultron has to route back through Site C's position to get around it."
+direct path between Site C and Site B is now blocked. A drone resurvey finds a real detour route
+around the debris field: 15 extra meters, whenever that leg is used."
 
-**Facilitator-only: what the numbers actually do (`case.json.derived`).** The direct A-to-B leg
-(21.587 m) becomes a detour through C (22.858 m) — a real, computed 1.271 m longer, for *either*
-route order equally. That 1.271 m is the exact same number D6's triangle-inequality margin already
-surfaced — ask the room to notice this if they don't on their own: "the detour distance isn't a new
-number, it's one you already found." Recomputed: C→A→B rises to 21.686 minutes, C→B→A rises to 20.925 minutes.
-**The twist does not flip the verdict — C→B→A is still faster, and the margin barely moves (3.78%
-to 3.64%).** This was computed honestly from the real detour distance, not picked to force a
-reversal. The room's real argument should be whether a twist that doesn't change the answer was
-still worth dropping — ask directly: "if the order didn't change, what was the point of that twist?"
-(A good answer: it tests whether a Hero's model was built to *recompute*, not just to state a
-one-time answer — the same distinction Anchor 3's "if we go through this process" is testing for.)
+**Facilitator-only: what the numbers actually do (`case.json.derived`).** This is deliberately a
+*different* leg from the case's own triangle-inequality moment (D6 cold-calls the C-A/C-B/A-B
+triangle; the twist blocks C-B specifically, not A-B) — and that choice matters mechanically, not
+just narratively. Route C→A→B never travels the C-B leg at all; it goes C→A→B directly, so it is
+completely unaffected by a C-B blockage. Route C→B→A travels C-B directly, so its C-B leg goes
+from 10.817 m to 25.817 m (+15 m), and its total time rises from 20.135 to 29.456 minutes.
+**The twist flips the verdict — C→A→B (unchanged at 20.896 minutes) is now faster than C→B→A
+(29.456 minutes), a reversal from B to A, margin swinging from 3.78% to 40.96%.** Ask the room
+directly, before revealing which order flips: "does blocking a road that only ONE of your two
+route orders actually uses affect both orders equally, or could it matter which order you picked
+after all?" A Hero who assumed (from the A-B version of this kind of twist, or from Anchor 3's
+"whichever order you chose" framing) that any blocked leg affects both orders the same way has a
+real, concrete moment to be wrong here — the C-B leg is not symmetric between the two orders the
+way the shared A-B leg is.
 
 ## Immediate recommit
 
-Re-vote immediately. Ask by name: "Did anyone's answer actually change? If not, why not — was your
-original reasoning already robust to this, or did you just get lucky?"
+Re-vote immediately. Ask by name: "Did the C-B detour change your recommended order? If you chose
+C-B-A originally, does a 15-meter detour on just that leg actually flip your vote, or do you want
+to see the exact numbers first?"
 
 ## Deep conflict — three threads (20-30 min)
 
@@ -106,8 +110,10 @@ original reasoning already robust to this, or did you just get lucky?"
 2. **Whose call is this?** Spencer isn't DOD — he doesn't know why Container A's feed cut out, or
    what's actually inside either container. Should a missing data point from an agency that won't
    explain itself carry real weight in his decision?
-3. **What the twist actually tested.** If a Hero's route order survived the explosion unchanged,
-   was their original analysis right, or just not sensitive enough to notice a real change?
+3. **What the twist actually tested.** The C-B detour flips the faster order from C-B-A to C-A-B —
+   a real reversal, not a wash. Does a Hero whose recommendation flips on a single blocked road have
+   a fragile original analysis, or is correctly recomputing when new information arrives exactly
+   what a robotics engineer's model is supposed to do?
 
 ## 45-minute Socratic plan
 
@@ -116,8 +122,8 @@ original reasoning already robust to this, or did you just get lucky?"
 | 0:00–3:00 | Launch — show the unlabeled map, cold-call for a gut read, no distances yet |
 | 3:00–10:00 | Position defense — *"Convince us your order is faster, not just different"* |
 | 10:00–15:00 | Pressure-test the models — *"Whose total-time number is doing the most work?"* |
-| **15:00** | **DROP THE TWIST** — the explosion and the blocked A-B path, delivered slowly |
-| 15:00–20:00 | Immediate recommit — did anyone's answer actually change, and why |
+| **15:00** | **DROP THE TWIST** — the explosion and the blocked C-B path, delivered slowly |
+| 15:00–20:00 | Immediate recommit — did the C-B detour flip anyone's order, and why |
 | 20:00–30:00 | Threaded deep conflict (known-small vs. unknown risk; whose call; what the twist tested) |
 | 30:00–45:00 | Close, re-vote, reflection, lessons learned |
 
@@ -134,15 +140,15 @@ number and calls the case closed without ever mentioning Container A's missing d
 1. Your total-time numbers say C-B-A is 3.78% faster — how would you explain to Spencer's boss why a 3.78% edge is worth building a whole recommendation on?
 2. Container A has no integrity reading at all — is "we don't know" a reason to go there first, or a reason it's impossible to justify going there first?
 3. If Ultron's rough-terrain speed were actually twice as fast as stated, would the margin between the two orders grow, shrink, or stay the same percentage — and why?
-4. The explosion twist made both routes slower by close to the same amount — what would a twist have to do differently to actually flip your recommendation?
+4. The explosion twist only slowed down ONE of the two route orders (C-B-A), not both — why does blocking a single leg affect the two orders so differently, and would a twist on the A-B leg instead have done the same thing?
 5. Spencer trusts DOD's integrity readings for B and C but has no way to verify them — should a number you can't independently check carry the same weight as one you can?
 
 ## Close
 
 **VOTE AGAIN.** "Did we ask the right question at the start?" "What math was new to you tonight, and
-how did you actually attack it?" Compare the closing vote to Anchor 1's — a room that didn't move at
-all after the twist is worth asking about directly: did the twist not land, or did the room already
-understand it wouldn't change the order?
+how did you actually attack it?" Compare the closing vote to Anchor 1's — the correct order genuinely
+flips after the twist (C-B-A to C-A-B), so a room that didn't move is worth asking about directly:
+did they not trust the new numbers, or did they miss that the detour only hits one of the two orders?
 
 ## Lessons Learned
 
@@ -152,8 +158,8 @@ understand it wouldn't change the order?
   actually got stuck.
 - Whether Heroes engaged with Container A's missing-data argument on their own, or needed Anchor 2's
   prompt to surface it.
-- Whether the explosion twist's "doesn't flip the verdict" result felt like a letdown or a genuine
-  lesson about model robustness.
+- Whether Heroes correctly recomputed and voted C-A-B after the twist, or defended their original
+  C-B-A pick out of anchoring rather than recomputed arithmetic.
 
 ## Standards Touched On
 

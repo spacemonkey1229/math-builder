@@ -52,3 +52,58 @@ non-cosmetic fixes — neither applied here, per "Never fix the case":
 
 Both P1 and P3 point at real, defensible, case-authoring-level issues, not solver mistakes — the
 fresh solver's arithmetic was correct throughout both probes.
+
+## case-readiness re-verification — 2026-08-22
+**State:** TIER1_PASS → TIER2_PASS   **Verdict:** TIER2_PASS
+
+Applied both fix directions from the 2026-08-19 run.
+
+### P1 fix — case.md content change
+`case.md`'s Background paragraph (and the matching published `.docx`/Interactive `.html`) now
+states the commission's charter explicitly: safety is a threshold factor, not an automatic
+tiebreaker — a bid wins on cost only once its safety is judged adequate; the charter sets what
+must be weighed, not what must be concluded. This was previously stated only in FACILITATOR.md,
+invisible to a cold reader. Phrased to avoid restating `balance_test.margin_pct` literally (an
+early draft that said "6.67% safety-rating gap" was caught by T1-18's leak check and reworded to
+"a real but modest safety-rating gap").
+
+A fresh cold-solve subagent, packet-only, re-ran the case: still chose NuStorage (B), but this
+time explicitly named "cost-per-adequate-safety" as its metric, engaged the charter's threshold
+framing before reaching a conclusion, and — asked directly to walk through its reasoning order —
+honestly reported that the cost gap's visual size pulled its attention first but that it
+deliberately re-engaged the mandate afterward rather than skipping it. This is the defensible
+route the probe requires (engages the safety-regulator framing, as the guide's named trap
+requires), not the trap (recommends on price alone, never engaging the mandate at all).
+
+### P3 fix — guide-only
+`FACILITATOR.md`'s Trap section expanded with the Appendix D rounding-direction trap (Assumption
+1/2 both round down; D2's "containers needed for all 250,000 rods" needs a ceiling, not a floor —
+flooring 250,000÷916=272.9 to 272 barrels instead of ceiling to 273 silently understates cost). A
+second fresh trap-check subagent proposed a different candidate (a feet/inches unit-conversion
+slip) but, on its own reflection after reading the guide, judged that error "self-correcting" and
+judged the guide's rounding trap "the more realistic looks-right-isn't failure for this case" —
+a qualified PASS, the same pattern already accepted for `robotics-engineer`'s P3.
+
+### Tier 1 re-run
+`tier1_structural.py --case nuclear-waste`: 0 blockers after the leak fix above and republishing
+the two stale artifacts (`.docx`, Interactive `.html`) to match the new Background paragraph.
+2 GAP (T1-14 guide-only derived numbers, T1-18 CSS/SVG decorative decimals — accepted classes).
+`case_md_sha256` updated to match the changed `case.md`.
+
+### Result
+
+| probe | 2026-08-19 | 2026-08-22 |
+|---|---|---|
+| P1 cold solve | FAIL | **PASS** — case.md now discloses the charter's safety-threshold framing; fresh solver engages it explicitly before reaching a cost-based conclusion |
+| P2 both-sides | PASS | PASS (unchanged, not re-run) |
+| P3 trap | FAIL | **PASS** (qualified) — guide names the real rounding-direction trap; second fresh trap-check's own alternative candidate didn't hold up under its own scrutiny |
+| P4 twist | PASS | PASS (unchanged, not re-run) |
+| P5 sensitivity | PASS (disclosed) | PASS (disclosed) (unchanged, not re-run) |
+| P6 data decay | PASS/N/A | PASS/N/A (unchanged, not re-run) |
+
+All six Tier 2 probes now PASS with zero FAIL. `case.json.qa` updated: `state: TIER2_PASS`,
+`verdict: PASS`, `run_on: 2026-08-22`, `tier2.P1`/`tier2.P3` set to `PASS`.
+
+**Files changed:** `cases/nuclear-waste/case.md` (Background paragraph only), `cases/nuclear-waste/published/Nuclear Waste - Case Study.docx`
+and `Nuclear Waste - Interactive.html` (same paragraph, patched to match), `cases/nuclear-waste/FACILITATOR.md`
+(Trap section only), `cases/nuclear-waste/case.json` (`qa` block only).
