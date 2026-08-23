@@ -32,6 +32,14 @@ RM = ROOT / "readmodel"
 OUT = ROOT / "app" / "dashboard.html"
 OUT_STUDENT = ROOT / "app" / "student.html"
 
+# source/ is gitignored (140MB+ of raw authoring material, not needed for a
+# deploy) so it never reaches Vercel. Links into it are rewritten to point at
+# a Google Drive mirror instead -- see app/source_drive_links.json, keyed by
+# path relative to source/. Built by hand once; regenerate it if source/
+# gains files that aren't in the mirror yet.
+_DRIVE_LINKS_PATH = ROOT / "app" / "source_drive_links.json"
+DRIVE_LINKS: dict = json.loads(_DRIVE_LINKS_PATH.read_text()) if _DRIVE_LINKS_PATH.exists() else {}
+
 TODAY = date.today()
 
 SOURCES = [
@@ -109,9 +117,15 @@ def reconcile(corpus_cases, matrix_cols):
 # --------------------------------------------------------------------------
 # asset links
 #
-# Every asset in corpus_index.json is a real file on disk. The dashboard lives
-# at app/dashboard.html, so a link to source/Y1/... has to be "../source/Y1/...".
-# From file:// a relative <a href> hands the file to the OS handler.
+# Every asset in corpus_index.json is a real file on disk. Locally, the
+# dashboard lives at app/dashboard.html, so a link to source/Y1/... has to be
+# "../source/Y1/..." -- from file:// a relative <a href> hands the file to
+# the OS handler. But source/ is gitignored and never ships to Vercel, so
+# that relative link 404s on the deployed site. For anything under source/,
+# we instead emit the file's Google Drive mirror URL (DRIVE_LINKS, keyed by
+# path relative to source/) -- an absolute URL that works everywhere,
+# deployed or local. Falls back to the old relative path if a file hasn't
+# been mirrored to Drive yet.
 #
 # Every path segment is percent-encoded individually with safe="" so that
 # spaces, apostrophes, commas, parentheses, ampersands and the U+2019 curly
@@ -128,6 +142,10 @@ LINKS: list = []          # every link record emitted this build (verification h
 
 def href_for(rel: str) -> str:
     """rel is POSIX-relative to the project root; the page sits one level down."""
+    if rel.startswith("source/"):
+        drive_url = DRIVE_LINKS.get(rel[len("source/"):])
+        if drive_url:
+            return drive_url
     return "../" + "/".join(quote(seg, safe="") for seg in rel.split("/") if seg not in ("", "."))
 
 
@@ -3918,6 +3936,16 @@ def verify(quiet=False):
     resolved, broken, mismatched = 0, [], []
     for l in hrefs:
         if l["href"] is None:
+            continue
+        if l["href"].startswith("http"):
+            # source/ asset rewritten to its Google Drive mirror (href_for) --
+            # not a filesystem path, so "resolved" means the mapping in
+            # source_drive_links.json actually produced this exact URL.
+            drive_rel = l["rel"][len("source/"):] if l["rel"].startswith("source/") else None
+            if drive_rel is not None and DRIVE_LINKS.get(drive_rel) == l["href"]:
+                resolved += 1
+            else:
+                broken.append(l["href"])
             continue
         p = (OUT.parent / unquote(l["href"])).resolve()
         if p.exists():
