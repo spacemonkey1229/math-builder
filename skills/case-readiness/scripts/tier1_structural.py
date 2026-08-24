@@ -32,6 +32,7 @@ CHECK REGISTER  (name them by id in the QA report)
   T1-17  cohort-size bands declared                        MCS-25      [NEW]
   T1-18  interactive HTML present, fresh, leak-free         MCS-37      [NEW]
   T1-19  hover+hyperlink glossary, verified domains         MCS-39      [NEW]
+  T1-20  visual asset present, image sources cited          advisory    [NEW]
 """
 import argparse, json, os, re, sys, hashlib, unicodedata
 
@@ -742,6 +743,36 @@ def run(project, cid):
                                        f"A self-checking calculator must derive its own arithmetic "
                                        f"live and never print the case's balance_test verdict as a "
                                        f"static literal a fresh reader could just read off the page.")
+                # Working Notebook placeholder leak (found 2026-08-21, A Coach's Dilemma D1/D3/D4:
+                # every single numeric input in the notebook had placeholder="e.g. <the exact
+                # graded target>" -- confirmed against checkD1..checkD4's own near()/=== comparisons.
+                # "e.g. 39.7" reads to a student as a worked example, not a format hint, and in
+                # every case audited so far it WAS the literal value the Check button compares
+                # against -- so this is a hard, generic, zero-config rule: a Working Notebook
+                # <input type="number"> placeholder may describe FORMAT only (units, decimal
+                # places, "a whole number") and must never contain a digit. Scoped to
+                # <section id="notebook"> so it cannot misfire on an unrelated numeric input
+                # elsewhere in the shared interactive shell.
+                nb_m = re.search(r'(?is)<section[^>]+id=["\']notebook["\'].*?</section>', txt)
+                if nb_m:
+                    ph_leaks = []
+                    for im in re.finditer(r'<input\b[^>]*\btype=["\']number["\'][^>]*>', nb_m.group(0)):
+                        tag = im.group(0)
+                        pm = re.search(r'placeholder=["\']([^"\']*)["\']', tag)
+                        # A digit glued to a letter (D2, MA3, S1) is a structural cross-reference
+                        # label, not a numeric worked example -- exclude it so a formula hint like
+                        # "D2 + MA2 + MA3" doesn't false-positive. A bare digit/decimal is real.
+                        if pm and re.search(r'(?<![A-Za-z])\d+(?:\.\d+)?(?![A-Za-z])', pm.group(1)):
+                            idm = re.search(r'id=["\']([^"\']*)["\']', tag)
+                            ph_leaks.append(f"#{idm.group(1) if idm else '?'} placeholder={pm.group(1)!r}")
+                    if ph_leaks:
+                        R.blocker('T1-18', f"MCS-37 — Working Notebook input placeholder(s) in {fn} "
+                                           f"contain a numeric example: {ph_leaks}. A placeholder "
+                                           f"must describe format only (e.g. 'as a percent', 'a "
+                                           f"whole number') -- a numeric example reads as a worked "
+                                           f"answer, and reliably IS the exact value the Check "
+                                           f"button grades against. Replace every digit in these "
+                                           f"placeholders with a format hint.")
                 # Everything outside <script>...</script> (prose, labels, table cells) should
                 # still resolve against the case's own universe of numbers, same drift check
                 # every other published packet gets under T1-15. HTML comments are excluded
@@ -749,7 +780,35 @@ def run(project, cid):
                 # like "MCS-37"/"MCS-39"/"T1-19" produced false-positive orphan-number flags
                 # on every case using the shared interactive shell, since those numbers are
                 # never rendered to a student and can never be "the answer read off the page".
-                script_stripped = re.sub(r'(?is)<script.*?</script>|<!--.*?-->', ' ', txt)
+                # <style>...</style> is excluded the same way (fixed 2026-08-22): the shared
+                # interactive shell's CSS (line-heights, stroke-widths, border-radii) and its
+                # inline <svg><symbol> icon defs are never rendered to a student as text either,
+                # and every case using the shared shell was false-positiving on the identical
+                # ~15-30 boilerplate numbers (1.55, 2.4, 17.5, ...). Numeric HTML entities
+                # (&#8321; = subscript "1") and hex color literals (#122943) are stripped for
+                # the same reason -- they are markup, not a number a student reads off the page.
+                # <svg>...</svg> (icon/logo geometry -- viewBox, path coordinates,
+                # stroke-width, circle radii) is graphics, not text a student reads, and
+                # step="0.01" on a numeric <input> is an increment control, not displayed
+                # content -- both stripped for the same "never rendered as a number to read"
+                # reason as <script>/<style>/comments above.
+                script_stripped = re.sub(r'(?is)<script.*?</script>|<style.*?</style>|'
+                                          r'<svg.*?</svg>|<!--.*?-->', ' ', txt)
+                script_stripped = re.sub(r'&#\d+;', ' ', script_stripped)
+                script_stripped = re.sub(r'#[0-9a-fA-F]{3,8}\b', ' ', script_stripped)
+                script_stripped = re.sub(r'\bstep=["\'][^"\']*["\']', ' ', script_stripped)
+                # canvas pixel dimensions (width="620" height="320") are layout, not data.
+                script_stripped = re.sub(r'<canvas\b[^>]*>', ' ', script_stripped)
+                # an inline style="..." attribute (font-weight:700, margin-top:10px) is CSS,
+                # same exclusion rationale as the <style> tag itself.
+                script_stripped = re.sub(r'\bstyle=["\'][^"\']*["\']', ' ', script_stripped)
+                # a<sub>11</sub> is a rendered subscript variable label (a11, x1, C_A) --
+                # unwrap so it re-glues to the preceding letter and NUM_RE's own word-boundary
+                # rule (which already excludes a digit glued to a letter, same as the Working
+                # Notebook placeholder check above) correctly treats it as a label, not a
+                # number to verify against case.md/case.json.
+                script_stripped = re.sub(r'([A-Za-z])<su[bp]>(\d+)</su[bp]>', r'\1\2',
+                                          script_stripped)
                 dnums = numbers_in(script_stripped)
                 missing = sorted({v for v in dnums if not in_universe(v, universe)})
                 if missing:
@@ -816,6 +875,54 @@ def run(project, cid):
         R.ok('T1-19')
     else:
         R.polish('T1-19', "no published/ directory yet — MCS-39 has nothing to check")
+
+    # ---- T1-20 visual asset present, image sources cited (advisory) ---------
+    # Not a SPEC requirement -- no case has ever been blocked or gapped for being
+    # text-only, and this check never blocks or gaps either. But a case that is
+    # nothing but prose and tables is a weaker artifact than one that also shows
+    # the data: a chart, map, diagram, or photo often lands the dilemma faster
+    # than another paragraph. Where a visual IS present and pulls from an
+    # external domain, treat it like any other real-world figure under SPEC §5
+    # -- if it's read as depicting real data, it should trace to a sources[]
+    # entry with a link a reviewer can actually follow (MCS-21: no URL from
+    # memory), not just appear uncited.
+    if os.path.isdir(pub):
+        html_files = [fn for fn in os.listdir(pub) if fn.lower().endswith('.html')]
+        cited_domains = set()
+        for s in c.get('sources', []):
+            m = re.match(r'https?://(?:www\.)?([^/]+)', s.get('url') or '')
+            if m:
+                cited_domains.add(m.group(1).lower())
+        found_any, uncited = False, []
+        for fn in html_files:
+            txt = open(os.path.join(pub, fn), encoding='utf-8', errors='ignore').read()
+            body_only = re.sub(r'(?is)<script.*?</script>|<style.*?</style>', ' ', txt)
+            imgs = re.findall(r'<img\b[^>]*\bsrc=["\']([^"\']+)["\']', body_only)
+            chart_signals = re.findall(
+                r'(?is)<(?:canvas|svg)\b[^>]*\b(?:id|class|aria-label)=["\'][^"\']*'
+                r'(?:chart|graph|diagram|map|plot|visualiz)[^"\']*["\']', body_only)
+            if imgs or chart_signals:
+                found_any = True
+            for src in imgs:
+                if src.startswith('http'):
+                    m = re.match(r'https?://(?:www\.)?([^/]+)', src)
+                    dom = m.group(1).lower() if m else None
+                    if dom and dom not in cited_domains:
+                        uncited.append(src)
+        if uncited:
+            R.polish('T1-20', f"{len(uncited)} image(s) in published HTML pull from a domain not "
+                              f"present in sources[] (e.g. {uncited[:3]}) — if any depicts real "
+                              f"data (a photo, a chart, a map), cite it in sources[] like any other "
+                              f"real-world figure (SPEC §5), with a link a reviewer can follow.")
+        if not found_any:
+            R.polish('T1-20', "no image, chart, diagram, or map found in published/ HTML — not "
+                              "required, but a visual (a map of the region, a photo of the "
+                              "scenario, a chart of the cited data) often makes a case land faster "
+                              "than another paragraph of prose. Consider whether one would help "
+                              "here; if added and it encodes real data, cite its source with a link.")
+        R.ok('T1-20')
+    else:
+        R.polish('T1-20', "no published/ directory yet — T1-20 has nothing to check")
 
     return R, h
 

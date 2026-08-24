@@ -83,6 +83,31 @@ MUTATIONS = [
      [r"T1-18.*MCS-37.*leaks the answer"],
      "narrowing the leak-check to avoid the CSS/prose false-positive above must not also blind "
      "it to an actual literal answer printed in the page"),
+
+    ("Working Notebook input placeholder states the exact graded answer", 'cardiology',
+     lambda p: {**p, 'html': (p['html'] or '').replace(
+         '<label>Your Ejection Fraction (%)</label><input type="number" id="efGuess" step="0.01">',
+         '<label>Your Ejection Fraction (%)</label>'
+         '<input type="number" id="efGuess" step="0.01" placeholder="e.g. 32.5">',
+         1)},
+     True,
+     [r"T1-18.*MCS-37.*Working Notebook input placeholder.*efGuess"],
+     "A Coach's Dilemma shipped with every numeric Working Notebook placeholder set to "
+     "'e.g. <the exact value checkD1..checkD4 grades against>' — a student could read the answer "
+     "off the DOM without doing any arithmetic (2026-08-21). A placeholder inside "
+     "<section id=\"notebook\"> may describe format only; any digit in it is now a BLOCKER."),
+
+    ("formula-reference placeholder like 'D2 + MA2 + MA3' (must NOT block)", 'cardiology',
+     lambda p: {**p, 'html': (p['html'] or '').replace(
+         '<label>Your Ejection Fraction (%)</label><input type="number" id="efGuess" step="0.01">',
+         '<label>Your Ejection Fraction (%)</label>'
+         '<input type="number" id="efGuess" step="0.01" placeholder="D2 + MA2 + MA3">',
+         1)},
+     False,
+     [r"T1-18.*MCS-37.*Working Notebook input placeholder"],
+     "the digit-in-placeholder rule must not fire on a digit glued to a letter (D2, MA2, MA3) — "
+     "that's a cross-reference to another step's label, not a numeric worked example, and A "
+     "Coach's Dilemma's own D3 total field legitimately uses this placeholder style"),
 ]
 
 

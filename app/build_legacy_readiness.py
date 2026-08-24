@@ -144,6 +144,14 @@ def main():
         return s.replace("_s", "'s")
     tagged_titles = set(spine.get("cases", []))
     tagged_titles_norm = {norm_apos(t) for t in tagged_titles}
+    # corpus_index.json titles are folder-derived; standards_spine.json was tagged
+    # against the case doc's own title, which sometimes differs from the folder
+    # name. "Stock Market" (folder: source/Y3/Additional/Stock Market) is the case
+    # whose case_doc is literally titled "Case Study: Investment Portfolio" and was
+    # tagged in the spine under that name (74 skills, confirmed 2026-08-22) --
+    # without this alias the case reads as untagged even though it is genuinely,
+    # extensively tagged, just under its other name.
+    TITLE_ALIASES = {"Stock Market": "Investment Portfolio"}
 
     legacy = [c for c in ci["cases"] if c["status"] == "legacy"]
     rows = []
@@ -151,9 +159,12 @@ def main():
     for c in legacy:
         base = os.path.join(ROOT, c["path"])
         case_files = c["assets"].get("case_doc") or []
+        title_variants = {c["title"], norm_apos(c["title"])}
+        if c["title"] in TITLE_ALIASES:
+            title_variants.add(TITLE_ALIASES[c["title"]])
         row = {"title": c["title"], "path": c["path"], "has_guide": c["has_guide"],
                "has_socratic_plan": c["has_socratic_plan"],
-               "standards_tagged": c["title"] in tagged_titles or norm_apos(c["title"]) in tagged_titles_norm}
+               "standards_tagged": bool(title_variants & (tagged_titles | tagged_titles_norm))}
         if not case_files:
             row["case_doc_error"] = "no case_doc asset recorded"
             rows.append(row)

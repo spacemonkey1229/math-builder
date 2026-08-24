@@ -1,6 +1,6 @@
 ---
 name: case-readiness
-description: "The publish gate for CASE QUALITY. Run a math case study up a three-tier readiness ladder before it can be published or verified. Use when the user says \"QA the case\", \"run the gate\", \"is this case ready\", \"check the Fermenter case\", \"review the case study against the spec\", \"can we publish this\", \"run the probes\", \"cold-solve this case\", \"is the twist sound\", \"has this been dry-run yet\", or after case-research reports all placeholders closed. TIER 1 is nineteen mechanical structural checks against SPEC.md plus continuity checks that the Guide Notes, the workbook, the published interactive HTML and its math glossary all still agree with case.md. TIER 2 is six simulated-play probes: cold solve, both-sides solve, trap check, twist integrity, assumption sensitivity at plus/minus 50 percent, and data decay on every cited URL. TIER 3 is a human dry-run with real learners, filed as a RUN_REPORT. Emits DRAFT / TIER1_PASS / TIER2_PASS / PUBLISHED / VERIFIED to cases/<id>/QA_REPORT.md. This skill CANNOT publish and CANNOT fix. It only gates. Supersedes case-qa."
+description: "The publish gate for CASE QUALITY. Run a math case study up a three-tier readiness ladder before it can be published or verified. Use when the user says \"QA the case\", \"run the gate\", \"is this case ready\", \"check the Fermenter case\", \"review the case study against the spec\", \"can we publish this\", \"run the probes\", \"cold-solve this case\", \"is the twist sound\", \"has this been dry-run yet\", or after case-research reports all placeholders closed. TIER 1 is twenty mechanical structural checks against SPEC.md plus continuity checks that the Guide Notes, the workbook, the published interactive HTML and its math glossary all still agree with case.md. TIER 2 is six simulated-play probes: cold solve, both-sides solve, trap check, twist integrity, assumption sensitivity at plus/minus 50 percent, and data decay on every cited URL. TIER 3 is a human dry-run with real learners, filed as a RUN_REPORT. Emits DRAFT / TIER1_PASS / TIER2_PASS / PUBLISHED / VERIFIED to cases/<id>/QA_REPORT.md. This skill CANNOT publish and CANNOT fix. It only gates. Supersedes case-qa."
 ---
 
 # case-readiness — the three-tier gate
@@ -77,7 +77,7 @@ python3 skills/case-readiness/scripts/tier1_structural.py --case <id>
 python3 skills/case-readiness/scripts/tier1_structural.py --case <id> --json /tmp/t1.json
 ```
 
-Exit 0 = `TIER1_PASS`. Exit 1 = `BLOCKED`. Nineteen checks:
+Exit 0 = `TIER1_PASS`. Exit 1 = `BLOCKED`. Twenty checks:
 
 | id | Check | Authority |
 |---|---|---|
@@ -100,6 +100,7 @@ Exit 0 = `TIER1_PASS`. Exit 1 = `BLOCKED`. Nineteen checks:
 | T1-17 | cohort-size bands declared | MCS-25 |
 | T1-18 | interactive HTML present, fresh, leak-free | MCS-37 |
 | T1-19 | hover+hyperlink math glossary, verified domains | MCS-39 |
+| T1-20 | visual asset present (chart/map/diagram/photo); image sources cited | advisory, never blocks |
 
 ## The three defects this fixes
 
@@ -165,6 +166,32 @@ round margin (e.g. `5.0`) false-positived against CSS pixel values, SVG path coo
 ordinary phrases like "5-year" or "Year 5". Narrowed to exclude `<style>`/`<svg>` blocks and, for
 `margin_pct` specifically, require the match to actually be stated as a percent/points figure
 nearby — verified the narrower check still catches a genuine literal leak.
+
+## A third defect found in later use (2026-08-21)
+
+A Coach's Dilemma passed Tier 1 clean and shipped with every single numeric input in its Working
+Notebook carrying `placeholder="e.g. <the exact graded target>"` — confirmed against the case's own
+`checkD1()`..`checkD4()` JS: `d1ft`'s placeholder was `39.7`, and `checkD1` compares the student's
+entry to `round(PARAMS.jordan_season_ft_pct * 100, 1)`, which **is** 39.7. Same story for all seven
+numeric fields across D1/D2/D3/D4. A student never had to do the arithmetic; the "worked example"
+placeholder text was the answer key, sitting in the DOM. The same pass also found the answer
+pre-stated a second and third way: Appendix D's MA2 row gave "Value used" as the already-multiplied
+`≈ 0.07 points per sequence` instead of the raw 10.4%-rebound-rate input D3 asks the student to
+combine, and MA4 similarly gave both the raw `+8.0 pts/100` assumption *and* the pre-added
+`1.204 points per possession with the backup in` — D4's own second answer.
+
+T1-18 now also fails any `<input type="number">` inside `<section id="notebook">` whose
+`placeholder` contains a digit — a hard, generic, zero-config rule: a Working Notebook placeholder
+may describe **format** only (units, decimal places, "a whole number"), never a numeric worked
+example, because in every case audited so far the numeric example reliably **was** the literal
+value the Check button grades against. The MA2/MA4 pattern (an appendix's "Value used" column
+silently pre-computing the product/sum a later Working Notebook step is supposed to derive) is not
+yet a mechanical check — it requires knowing which appendix figures are graded targets versus
+genuinely given data, which the current `case.json` schema doesn't distinguish. Authors and
+reviewers should manually check, per appendix table cell: *does this number already contain a
+combination (product, sum, ratio) of two or more OTHER numbers also given in this case, where
+that same combination is one of the Working Notebook's own graded steps?* If yes, state only the
+inputs, not the result.
 
 ## The continuity checks (new)
 

@@ -1,6 +1,6 @@
 # Roadmap — Math Builder
 
-**Last refreshed: 2026-08-19, against live scripts, not carried-forward numbers.**
+**Last refreshed: 2026-08-24, against live scripts, not carried-forward numbers.**
 For the full reasoning behind any line below — why a number moved, what broke, what was fixed —
 see **[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md)**, the complete narrative log. This file is just
 the status page: what's done, what's not, what's next.
@@ -11,37 +11,34 @@ the status page: what's done, what's not, what's next.
 
 | # | What | Why it's first |
 |---|---|---|
-| 1 | **Decide what to do about 10 mis-published cases** ([below](#-known-issue-10-cases-are-published-but-shouldnt-be)) | They're currently handed to real students without meeting this project's own quality bar |
-| 2 | **Run the first real case with a real learner** (Track A3) | The single blocking fact — 0 cases have ever been run with a real learner. Everything else is still a machine claim until this happens |
-| 3 | **Move `the-multiplier-recruit` and `the-reserve-asymptote` through the readiness gate** | Already fully written, just sitting unpromoted — the fastest possible progress on Track B |
-| 4 | **Write the two remaining Pre-Calculus cases** (Polar/Parametric, Trig Identities) | Finishes Pre-Calculus completely — zero gaps left in that subject |
-| 5 | **Write the Geometry "Roofline Call" case** | Biggest remaining Geometry gap with a case concept already scoped for it |
+| 1 | **Run the first real case with a real learner** (Track A3) | The single blocking fact — 0 cases have ever been run with a real learner, out of 80 now published. Everything else is still a machine claim until this happens |
+| 2 | **Write the two remaining Pre-Calculus cases** (Polar/Parametric, Trig Identities) | Finishes Pre-Calculus completely — zero gaps left in that subject |
+| 3 | **Move the 7 drafting-stage cases through research → readiness → publish** (`alert-curve`, `bioreactor-bid`, `compute-lease`, `cooling-curve`, `downbeat-split`, `enclosure-call`, `placement-test`) | Already scoped and written, just sitting in the pipeline — the fastest remaining progress |
+| 4 | **Finish `fret-board`'s research stage** (already has a `RESEARCH_LOG.md` started) | Closest case to clearing the gate after the drafting batch above |
+| 5 | **Push `app/student-moksh-atit.html` to the live site** | Currently local-only; his first assigned month can't actually be used until this ships |
 
 ---
 
 ## What's actually ready to use right now
 
 **Moksh Atit is set up and has his first month assigned** — 5 cases toward Badge 1, all genuinely
-quality-checked (not from the flagged batch below): Phone Plans → Family Trip → Key Length →
-Field Watch → Apron Order. His page: `app/student-moksh-atit.html`. Not yet pushed to the live
-site — still local only.
+quality-checked: Phone Plans → Family Trip → Key Length → Field Watch → Apron Order. His page:
+`app/student-moksh-atit.html`. Not yet pushed to the live site — still local only.
 
-**39 cases** are genuinely ready to hand to any learner (passed every quality check this project
-requires). **10 more are currently live but shouldn't be** — see the flagged issue below.
+**80 cases** are genuinely ready to hand to any learner (passed every quality check this project
+requires, live re-scan via `app/build_pipeline.py`). The previously-flagged batch of 10
+mis-published cases (`archery-camp`, `baseball-lineup`, `cardiology`, `catering`, `house-plans`,
+`lebron-vs-michael`, `nuclear-waste`, `phone-plan`, `rent-vs-own`, `robotics-engineer`) has since
+been remediated — each now carries a recorded `TIER2_PASS` with all six Tier 2 probes passing; see
+their individual `QA_REPORT.md` files for the per-case fix log. `the-multiplier-recruit`,
+`the-reserve-asymptote`, and `roofline-call` have also cleared the gate and published since the
+last refresh.
 
----
-
-## ⛔ Known issue: 10 cases are "published" but shouldn't be
-
-These 10 skipped a required quality check (a "what if our numbers are wrong by 50%?" stress test)
-but got marked ready anyway. They're currently assignable to a real student today.
-
-`archery-camp` · `baseball-lineup` · `cardiology` · `catering` · `house-plans` ·
-`lebron-vs-michael` · `nuclear-waste` · `phone-plan` · `rent-vs-own` · `robotics-engineer`
-
-**Needs a decision:** pull them back from "ready" until they pass the check (`scripts/
-apply_publish_gate.py --confirm` does this), or explicitly decide the bar doesn't apply here.
-Either way, someone should decide — right now it's just silently wrong.
+**7 cases are in drafting**, written but not yet researched: `alert-curve`, `bioreactor-bid`,
+`compute-lease`, `cooling-curve`, `downbeat-split`, `enclosure-call`, `placement-test`.
+**1 case (`fret-board`) is in research** — sourcing has started (`RESEARCH_LOG.md` exists).
+**9 concepts remain unwritten**, including the two remaining Pre-Calculus gaps below and a fresh
+career/industry-gap batch (`CONCEPTS_pim-sector-gaps_2026-08-24.md`).
 
 ---
 
@@ -54,11 +51,11 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 | Item | Status | What's left |
 |---|---|---|
 | Fix the flagship case (Cold Chain) | ✅ Done | — |
-| Require a "stress test" before any case ships | ✅ Enforced by a script | 10 cases slipped through anyway — see the flagged issue above |
-| **Run the first case with real students** | ⛔ **Not started — the #1 blocker** | Pick any of the 39 clean cases, run it, fill in the results |
+| Require a "stress test" before any case ships | ✅ Enforced by a script | 10 cases slipped through once; all 10 since remediated to TIER2_PASS |
+| **Run the first case with real students** | ⛔ **Not started — the #1 blocker** | Pick any of the 80 clean cases, run it, fill in the results |
 | Reusable case-page template | ✅ Done | Proven across many cases already |
 | Facilitator "cohort size" guidance | 🔄 Only 1 case has it | Every case with facilitator notes needs its own |
-| Fix the 10 mis-published cases | ⛔ Needs a decision | See flagged issue above |
+| Fix the 10 mis-published cases | ✅ Done | All 10 now carry a recorded `TIER2_PASS` |
 
 ### Coverage — does the case library actually teach the whole curriculum?
 
@@ -74,11 +71,11 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 
 | Subject | Topic | Gap | Status |
 |---|---|---|---|
-| Pre-Calc | Matrices | 7 skills | ✅ Case written (`the-multiplier-recruit`) — just needs to clear the gate |
-| Pre-Calc | Intro to Limits | 5 skills | ✅ Case written (`the-reserve-asymptote`) — just needs to clear the gate |
+| Pre-Calc | Matrices | 7 skills | ✅ Published (`the-multiplier-recruit`) |
+| Pre-Calc | Intro to Limits | 5 skills | ✅ Published (`the-reserve-asymptote`) |
 | Pre-Calc | Polar & Parametric | 6 skills | 🔜 Not written yet |
 | Pre-Calc | Trig Identities | 5 skills | 🔜 Not written yet |
-| Geometry | Fundamentals | 7 skills | 🔜 Not written yet ("The Roofline Call") |
+| Geometry | Fundamentals | 7 skills | ✅ Published (`roofline-call`) |
 | Geometry | Quadrilaterals & Polygons | 2 skills | ⏳ Low priority — barely worth its own case now |
 | Geometry | Visual Perceptibility | 2 skills | ⛔ No case concept exists yet at all |
 | Geometry | Surface Area & Volume | 3 skills | ⛔ No case concept exists yet at all |
@@ -129,7 +126,6 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 |---|---|
 | Automated tests for the admin app | ⏳ Open — currently zero |
 | Real per-user login (currently one shared password for everyone) | ⏳ Open |
-| Two files sitting edited-but-uncommitted (`build_dashboard.py` fix, a `00_SESSION.md` note) | ⛔ Needs a decision — commit or discard |
 | A confusing near-duplicate case name needs a human check (`redrawing-lines`) | ⏳ Open |
 
 ---
@@ -138,14 +134,12 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 
 | | |
 |---|---|
-| Cases that are genuinely ready to assign | **39** |
-| Cases currently live but flagged (see above) | **10** |
-| Cases fully written, waiting on final checks | 3 |
+| Cases that are genuinely ready to assign (published, live re-scan) | **80** |
+| Cases in drafting (written, not yet researched) | 7 |
+| Cases in research | 1 |
+| Concepts scoped but not yet written into a case | 9 |
 | Cases ever run with a real student | **0** |
 | Skills in the curriculum map | 437 |
-| Skills with zero case coverage | 73 |
-| Skills covered in Geometry specifically | all but 14 |
-| Skills covered in Pre-Calculus specifically | all but 23 (12 of those already have a written, unpromoted case) |
 
 Full derivations, per-script commands, and the reasoning trail for every one of these numbers are
 in [ROADMAP_HISTORY.md](ROADMAP_HISTORY.md).

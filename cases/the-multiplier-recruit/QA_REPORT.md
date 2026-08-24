@@ -35,3 +35,32 @@ this run, then re-verified via Tier 1.
 `blockers_open: 0`, `gaps_open: 1`, `case_md_sha256` recorded. Per SKILL.md's ladder,
 `case-publish` may now run — Tier 3 (a filed human `RUN_REPORT`) remains required before
 `VERIFIED`.
+
+## Structural + UAT remediation — 2026-08-22
+
+Gap cleanup and a real bug fix, `case.md` untouched (this session's `case_md_sha256` still
+matches the 2026-08-19 Tier 2 run above, so that verdict stands without re-running):
+
+- **T1-18 BLOCKER fixed**: the published Interactive HTML's D2 notebook inputs
+  (`#d2_i11`/`i12`/`i21`/`i22`, `#d2_ima11`/`ima12`/`ima21`/`ima22`) had placeholders like
+  `"I11"`/`"m11"` — digit-glued-to-letter labels the T1-18 checker (correctly) reads as a
+  numeric leak. Replaced with position hints (`"top-left"`/`"top-right"`/`"bottom-left"`/
+  `"bottom-right"`). Verified via a live browser UAT pass (served over a local HTTP server, not
+  the file:// preview): `checkD2()` still passes the correct matrix values and rejects wrong
+  ones — the fix only touched placeholder text, not the graded JS.
+- **T1-15/T1-18 GAP cleanup**: `tier1_structural.py`'s continuity sweep was flagging ~20-37
+  shared-template boilerplate numbers per case (CSS line-heights/stroke-widths, inline SVG icon
+  geometry, `<canvas>` pixel dimensions, `<sub>`-wrapped matrix-cell labels like `a<sub>11</sub>`)
+  as orphan case data. Fixed the checker itself (not a per-case waiver) to exclude `<style>`,
+  `<svg>...</svg>`, `step="..."`, `style="..."` attributes, canvas dimensions, and
+  letter-glued `<sub>`/`<sup>` labels from the sweep — this cleared the gap to 0 for this case's
+  HTML. Also added `case.json.derived.facilitator_timed_plan_minute_marks` to resolve the
+  Facilitator Guide docx's timed-plan clock digits (25/30/40/45) against the universe. Regression
+  suite (`selftest_tier1.py`) still passes all 8 defect checks after the checker edit.
+- **Full UAT pass**: exercised all five Working Notebook steps (D1–D5) end-to-end with correct
+  inputs (all pass) and deliberately wrong inputs (all correctly rejected) via the live page,
+  confirmed no console errors, confirmed page renders correctly at scroll-top. No bugs found
+  beyond the placeholder leak above.
+
+Remaining gap (T1-13, Twist is N/A) is unchanged and by design — see 2026-08-19 entry above.
+Tier 1 re-run 2026-08-22: **0 blockers, 1 gap. TIER1_PASS** (confirmed no regression).

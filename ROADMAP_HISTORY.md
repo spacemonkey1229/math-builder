@@ -9,6 +9,43 @@
 
 ---
 
+**v2.13 · 2026-08-24.** Supersedes v2.12. **Delta: re-ran the live build scripts
+(`app/build_pipeline.py`, `app/build_legacy_readiness.py`) rather than carrying forward v2.12's
+numbers, and found the #1 flagged item from v2.12 already resolved.**
+
+**0. The 10-mis-published-cases issue flagged in v2.12 is resolved.** `archery-camp`,
+`baseball-lineup`, `cardiology`, `catering`, `house-plans`, `lebron-vs-michael`, `nuclear-waste`,
+`phone-plan`, `rent-vs-own`, `robotics-engineer` all now carry `qa.state: "TIER2_PASS"` in their
+`case.json`, each with an individual fix recorded in its own `QA_REPORT.md` (e.g. `archery-camp`'s
+report shows a P3 probe re-run plus a `new_coverage[]` collision fix, both dated 2026-08-22). This
+happened in a prior session not narrated here in detail — this entry records the state as found,
+not the work of fixing it.
+
+**1. `the-multiplier-recruit`, `the-reserve-asymptote`, and `roofline-call` have all cleared the
+gate and published** since v2.12 — the three items that were "written, not yet promoted" or "not
+yet written" in the last refresh's Geometry/Pre-Calc gap tracker. Pre-Calc Matrices and Intro to
+Limits, and Geometry Fundamentals, are now closed.
+
+**2. Live re-scan numbers, `2026-08-24`:** `stage_counts` from `readmodel/pipeline_status.json` —
+`promotion: 80` (published), `drafting: 7` (`alert-curve`, `bioreactor-bid`, `compute-lease`,
+`cooling-curve`, `downbeat-split`, `enclosure-call`, `placement-test` — all newly authored this
+session, not previously tracked in this file), `research: 1` (`fret-board`, has a `RESEARCH_LOG.md`
+started), `concepting: 9` (includes a fresh sheet, `CONCEPTS_pim-sector-gaps_2026-08-24.md`, a
+14-item career/industry-gap batch scoped this session but not yet approved into a written case).
+Polar & Parametric and Trig Identities remain unwritten — their concept sheets were touched this
+session (minor edits) but no case directory exists for either yet.
+
+**3. Two housekeeping items from the v2.12 table were stale and are now dropped:** the
+"`build_dashboard.py` fix / `00_SESSION.md` note sitting uncommitted" line — both files were
+committed in `a536a7a` and `5b4742a` respectively, well before this pass; there was nothing left to
+decide.
+
+**Not done in this pass:** the #1 blocker is unchanged — 0 cases have ever run with a real
+learner, and `app/student-moksh-atit.html` is still local-only, not pushed to the live site. Both
+carry forward as the top priorities into v2.13's `ROADMAP.md`.
+
+---
+
 **v2.12 · 2026-08-19.** Supersedes v2.11. **Delta: v2.11 was a numbers-only touch-up and the user
 correctly called it inadequate — it never checked whether the tool producing those numbers was
 telling the truth, and it left the file's own "current state" table nine days stale under a

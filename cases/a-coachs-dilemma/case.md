@@ -89,10 +89,10 @@ All figures below are DeAndre Jordan's and the Clippers' **real, recorded statis
 
 **DeAndre Jordan, free throws**
 
-| Split | Makes | Attempts | FT% |
-|---|---|---|---|
-| 2014-15 regular season | 187 | 471 | 39.7% [S1] |
-| 2015 playoffs, Round 1 vs. San Antonio (7 games) | 28 | 73 | 38.4% [S2] |
+| Split | Makes | Attempts |
+|---|---|---|
+| 2014-15 regular season | 187 [S1] | 471 [S1] |
+| 2015 playoffs, Round 1 vs. San Antonio (7 games) | 28 [S2] | 73 [S2] |
 
 **Los Angeles Clippers, team offense, 2014-15 regular season**
 
@@ -101,7 +101,7 @@ All figures below are DeAndre Jordan's and the Clippers' **real, recorded statis
 | Offensive Rating (points scored per 100 possessions) | 112.4 [S3] |
 | Pace (possessions per 48 minutes) | 94.7 [S3] |
 
-Offensive Rating converts directly to points per possession by dividing by 100: 112.4 per 100 possessions is 1.124 points on an average Clippers possession.
+Offensive Rating is points scored per 100 possessions — it converts directly to points per possession by dividing by 100, the same unit conversion used everywhere else in Appendix F's "how to divide decimal numbers."
 
 DeAndre Jordan attempted only 4 three-pointers all season (making 1) and made 71.3% of his real 2-point shots that season [S1] — a real, large gap between how well he scores near the basket and how well he shoots free throws, which is exactly what makes Hack-a-Jordan a real strategy other coaches used, not a made-up gimmick for this case.
 
@@ -123,10 +123,10 @@ DeAndre Jordan attempted only 4 three-pointers all season (making 1) and made 71
 
 | # | Assumption | Value used | Basis |
 |---|---|---|---|
-| MA1 | Jordan's real free-throw percentage (Appendix B) is used as his single-attempt make probability for both attempts of an intentional foul. | 39.7% per attempt | A real, standard simplifying convention — it does not account for game-to-game variance, defensive intensity, or fatigue, all of which real coaches also weigh. Real single-game variance is exactly what a case like this cannot predict in advance. |
-| MA2 | Extra expected points from a live-ball offensive rebound after Jordan misses his second free throw, valued at the Clippers' own real points-per-possession. | ≈ 0.07 points per intentional-foul sequence | Anchored to the closest real, dated, public estimate found: a missed free throw is offensive-rebounded roughly 10.4% of the time league-wide, versus 24.7% of missed field goals (2015-16 season — the nearest season with a clean public figure; 2014-15's own rate was not found published anywhere fetchable, so this one-season gap is disclosed rather than hidden) [S5]. This case treats a recovered live-ball possession as worth the Clippers' own real season points-per-possession (1.124), since that is the best real estimate of what an average Clippers possession is worth once they have it. |
+| MA1 | Jordan's real free-throw percentage (Appendix B, your D1 answer) is used as his single-attempt make probability for both attempts of an intentional foul. | your D1 FT% | A real, standard simplifying convention — it does not account for game-to-game variance, defensive intensity, or fatigue, all of which real coaches also weigh. Real single-game variance is exactly what a case like this cannot predict in advance. |
+| MA2 | Extra expected points from a live-ball offensive rebound after Jordan misses his second free throw, valued at the Clippers' own real points-per-possession. | 10.4% offensive-rebound rate on a missed free throw, valued at the Clippers' own real points-per-possession (Appendix B) | Anchored to the closest real, dated, public estimate found: a missed free throw is offensive-rebounded roughly 10.4% of the time league-wide, versus 24.7% of missed field goals (2015-16 season — the nearest season with a clean public figure; 2014-15's own rate was not found published anywhere fetchable, so this one-season gap is disclosed rather than hidden) [S5]. This case treats a recovered live-ball possession as worth the Clippers' own real season points-per-possession, since that is the best real estimate of what an average Clippers possession is worth once they have it. Combining this rate, the probability Jordan misses his second free throw, and that possession value is D3's own arithmetic — not stated here. |
 | MA3 | Transition-offense value Houston forfeits on its own next possession by intentionally fouling instead of forcing a live-ball stop. | 0.15 points per intentional-foul sequence | No single, clean, dated primary source specific to the 2014-15 season was found for this exact figure (see RESEARCH_LOG.md). Several independent public analyses from this era put transition offense at roughly 0.15-0.3 points per possession more efficient than half-court offense league-wide; this case uses the conservative low end of that real range rather than an unsupported precise number, and applies it only to Hack-a-Jordan, since fouling stops the clock and forces a dead-ball inbound — Houston never gets the live-ball chance to run. |
-| MA4 | How much the Clippers' effective points-per-possession rises when Houston's primary center is on the bench (foul trouble or disqualified), replaced by a backup. | +8.0 points per 100 possessions (1.204 points per possession with the backup in) | No clean, publicly available on/off defensive-rating split specific to this exact matchup was found (see RESEARCH_LOG.md). This is a stated, disclosed, deliberately modest assumption, reasoned from the well-established real pattern — documented across many NBA lineup studies in general, though not pinned to this specific Rockets-Clippers matchup — that a team's defense measurably worsens when its primary rim-protecting big is replaced by a lesser one. Treat this as a real, open, arguable number, not a hidden fact. |
+| MA4 | How much the Clippers' effective points-per-possession rises when Houston's primary center is on the bench (foul trouble or disqualified), replaced by a backup. | +8.0 points per 100 possessions | No clean, publicly available on/off defensive-rating split specific to this exact matchup was found (see RESEARCH_LOG.md). This is a stated, disclosed, deliberately modest assumption, reasoned from the well-established real pattern — documented across many NBA lineup studies in general, though not pinned to this specific Rockets-Clippers matchup — that a team's defense measurably worsens when its primary rim-protecting big is replaced by a lesser one. Treat this as a real, open, arguable number, not a hidden fact. |
 
 ---
 
@@ -134,8 +134,8 @@ DeAndre Jordan attempted only 4 three-pointers all season (making 1) and made 71
 
 | # | Claim | Value | Source | Date | Confidence |
 |---|---|---|---|---|---|
-| S1 | DeAndre Jordan's 2014-15 real NBA regular-season free-throw and 2-point shooting statistics | 187-471 FT (39.7%); 71.3% 2PT | Basketball-Reference.com — DeAndre Jordan player page, per-game/totals tables | Accessed 2026-08-18 | HIGH |
-| S2 | DeAndre Jordan's real 2015 playoff free-throw statistics, Round 1 vs. San Antonio | 28-73 FT (38.4%), 7 games | Basketball-Reference.com — DeAndre Jordan player page, playoffs table | Accessed 2026-08-18 | HIGH |
+| S1 | DeAndre Jordan's 2014-15 real NBA regular-season free-throw and 2-point shooting statistics | 187-471 FT; 71.3% 2PT | Basketball-Reference.com — DeAndre Jordan player page, per-game/totals tables | Accessed 2026-08-18 | HIGH |
+| S2 | DeAndre Jordan's real 2015 playoff free-throw statistics, Round 1 vs. San Antonio | 28-73 FT, 7 games | Basketball-Reference.com — DeAndre Jordan player page, playoffs table | Accessed 2026-08-18 | HIGH |
 | S3 | Los Angeles Clippers' real 2014-15 team Offensive Rating and Pace | ORtg 112.4, Pace 94.7 | Basketball-Reference.com — 2014-15 Los Angeles Clippers, Team Misc table | Accessed 2026-08-18 | HIGH |
 | S4 | Real NBA rule: a player is disqualified after 6 personal fouls in a 48-minute game; a real NBA rule: an intentional non-shooting foul sends the fouled player to the line for two free throws (no one-and-one) | 6-foul disqualification; two free throws per intentional foul | Wikipedia, "Personal foul (basketball)," cross-checked against multiple independent NBA-rules explainer sources, all in agreement on the 6-foul figure (a long-standing, uncontroversial rule) | Accessed 2026-08-18 | HIGH |
 | S5 | Real, dated league-wide estimate of the offensive-rebound rate on a missed free throw vs. a missed field goal | 10.4% (missed FT) vs. 24.7% (missed FG), 2015-16 NBA season | Fansided.com, "Offensive Rebounds and Three Pointers" (2016-01-06) | Accessed 2026-08-18 | MEDIUM — a secondary sports-analytics blog reporting its own observed league data without citing a primary NBA.com/Stats page, and the season (2015-16) is one year later than this case's own 2014-15 season; used only to anchor Appendix D's MA2, not as a bare cited fact. |

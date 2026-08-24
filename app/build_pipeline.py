@@ -47,7 +47,7 @@ Usage:
   python3 app/build_pipeline.py
   python3 app/build_pipeline.py --verify   # check without rewriting
 """
-import argparse, glob, json, os, re, subprocess, sys, datetime
+import argparse, glob, json, os, re, subprocess, sys, datetime, unicodedata
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -153,6 +153,9 @@ def next_action_for(stage, cj, tier1, run_report_filed):
             return "Tier 1 could not be run live — check the case manually."
         if tier1["blockers"] > 0:
             return f"Resolve {tier1['blockers']} Tier 1 blocker(s), then re-run case-readiness."
+        qa_state = (cj.get("qa") or {}).get("state")
+        if qa_state == "TIER2_PASS":
+            return "Tier 1 + Tier 2 both clean (qa.state: TIER2_PASS) — ready for case-publish."
         return "Tier 1 clean — build a sensitivity_model.py, then run Tier 2 probes."
     if stage == "promotion":
         return "Run a Tier 3 human dry-run and file a RUN_REPORT to reach VERIFIED."
@@ -183,6 +186,23 @@ def main():
     def norm_apos(s):
         return (s or "").replace("_s", "'s")
 
+    # A folder-derived legacy title is filesystem-safe ASCII; the converted case.json
+    # can carry real accents ("Caribbean Internet Café" vs "Caribbean Internet Cafe").
+    # Found 2026-08-22: this silently duplicated an already-published, TIER2_PASS case
+    # onto the board as "legacy-untouched, drafting stage, MODERATE WORK" because the
+    # exact-match/norm_apos check below never saw the accent as the same title. Strip
+    # diacritics on both sides so a genuinely-converted case doesn't linger stale.
+    def strip_accents(s):
+        return "".join(ch for ch in unicodedata.normalize("NFKD", s or "") if not unicodedata.combining(ch))
+
+    # Same class of bug as the accent case above, different cause: the legacy
+    # folder title ("Stock Market", source/Y3/Additional/Stock Market/) and the
+    # case doc's own title ("Investment Portfolio", used both by case-write's
+    # cases/investment-portfolio/case.json and by the pre-existing
+    # standards_spine.json tagging) are genuinely different strings for the same
+    # case. Mirrors the TITLE_ALIASES fix in build_legacy_readiness.py.
+    LEGACY_TITLE_ALIASES = {"Stock Market": "Investment Portfolio"}
+
     written_titles = set()
     cases_out = []
     for cid in case_dirs:
@@ -205,7 +225,21 @@ def main():
             "next_action": next_action_for(stage, cj, tier1, rr),
         })
 
-    concepts_out = [c for c in concepts_all if c["title"] not in written_titles]
+    # a concept sheet's title and the finished case.json's title sometimes drift
+    # cosmetically -- a dropped leading "The " ("The Roofline Call" vs "Roofline
+    # Call") or a capitalization difference ("Reroute or Wait" vs "Reroute Or
+    # Wait"). Normalize both sides (strip a leading article, casefold) so a
+    # genuinely-written case doesn't linger on the concepting board under a
+    # near-miss spelling of its own title.
+    def norm_title(s):
+        s = (s or "").strip()
+        if s.lower().startswith("the "):
+            s = s[4:]
+        return s.casefold()
+
+    written_titles_norm = {norm_title(t) for t in written_titles}
+    concepts_out = [c for c in concepts_all
+                    if norm_title(c["title"]) not in written_titles_norm]
     concepts_out.sort(key=lambda c: -c["score"])
 
     pipeline_published_ids = {c["id"] for c in cases_out}
@@ -224,7 +258,11 @@ def main():
         lr = json.load(open(lr_path, encoding="utf-8"))
         legacy_source_total = len(lr["cases"])
         for row in lr["cases"]:
-            if row["title"].strip() in written_titles or norm_apos(row["title"].strip()) in written_titles:
+            row_title = row["title"].strip()
+            row_title_aliased = LEGACY_TITLE_ALIASES.get(row_title, row_title)
+            if (row_title in written_titles or norm_apos(row_title) in written_titles
+                    or strip_accents(row_title) in {strip_accents(t) for t in written_titles}
+                    or row_title_aliased in written_titles):
                 # already converted -- a real cases/<id>/case.json exists and is
                 # already in cases_out above with its own live stage/tier1. Do not
                 # also list the pre-conversion legacy row, or the case appears

@@ -33,3 +33,25 @@ during this run, then re-verified via Tier 1 (0 blockers, 0 gaps after the fix).
 `run_on: "2026-08-19"`, `blockers_open: 0`, `gaps_open: 0`, `case_md_sha256` recorded. Per
 SKILL.md's ladder, `case-publish` may now run — Tier 3 (a filed human `RUN_REPORT`) remains
 required before `VERIFIED`.
+
+## Structural + UAT remediation — 2026-08-22
+
+`case.md` untouched this session, so the 2026-08-19 Tier 2 verdict above still stands
+without re-running:
+
+- **T1-15/T1-18 GAP cleanup**: the published Data.xlsx's Work Area age labels (86-89, 101-104)
+  and the Facilitator Guide's timed-plan clock digits weren't resolving against the universe.
+  Documented both as real, checkable figures in `case.json.derived`
+  (`d6_graph_x_axis_ages`, `facilitator_timed_plan_minute_marks`) rather than waived away — they
+  ARE real case data (the D6 graph's stated 85-105 plotting range). Also fixed
+  `tier1_structural.py` itself (not a per-case waiver) to stop flagging shared-template
+  boilerplate (CSS, inline SVG icon geometry, canvas pixel dimensions, `<sub>`-wrapped labels)
+  as orphan case data — cleared this case's Interactive HTML gap from 30 flagged numbers to 0.
+  Regression suite (`selftest_tier1.py`) still passes all 8 defect checks after the checker edit.
+- **Full UAT pass**: exercised all five Working Notebook steps (D1–D5) end-to-end via a live
+  browser session (served over a local HTTP server) with correct inputs (all pass, matching
+  `case.json.derived`'s $347.27/$1000/$652.73/188%/$208.37/$210.41 figures exactly) and
+  deliberately wrong inputs (correctly rejected). No console errors, page renders correctly. No
+  bugs found.
+
+Tier 1 re-run 2026-08-22: **0 blockers, 0 gaps. TIER1_PASS** (confirmed no regression).

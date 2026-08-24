@@ -132,7 +132,14 @@ incentive program size.
 **Sensitivity (SPEC §6).** NONE.
 **Split risk.** NONE — 7 skills, one group.
 
-### C4 — The Fan Formation   ·   score 6.8   ·   tier T2
+### C4 — The Fan Formation — OBSOLETE (was: score 6.8 · tier T2)
+**Status: superseded, do not write.** Pre-Calculus / Polar And Parametric (this concept's entire
+target group, 6/6 skills) was independently closed 2026-08-20 by **`Feedback`**
+(`cases/feedback/`), written from a separate, later concept pass
+(`cases/_concepts/CONCEPTS_polar-parametric_2026-08-19.md`, concept C1) that scored the same
+group and reached the same 6.8 ceiling at HIGH feasibility. Every skill below is now `n=1` in
+`standards_spine.json` — writing this concept as scoped would close zero new coverage. Kept here
+only as a historical record of the concept; removed from the concepting board.
 **Protagonist.** Priya Ondelacy, flight choreography programmer for a commercial drone light-show
 company. She is programming the finale formation for a paid show and has one battery-life budget
 per drone.
@@ -204,7 +211,14 @@ actuarially standard and not framed around any individual; keep it that way in t
 precalc on-ramp and the calculus formalization; do not split it, the precalc half alone under-
 motivates a protagonist and the calculus half alone re-teaches limits from nothing.
 
-### C6 — The Tracker's Angle   ·   score 6.2   ·   tier T2
+### C6 — The Tracker's Angle — OBSOLETE (was: score 6.2 · tier T2)
+**Status: superseded, do not write.** Pre-Calculus / Trigonometric Identities (this concept's
+entire target group, 5/5 skills) was independently closed 2026-08-20 by **`Deluge Gun`**
+(`cases/deluge-gun/`), written from a separate, later concept pass
+(`cases/_concepts/CONCEPTS_trig-identities_2026-08-19.md`) that scored the same group and reached
+the same 6.2 ceiling at HIGH feasibility. Every skill below is now `n=1` in
+`standards_spine.json` — writing this concept as scoped would close zero new coverage. Kept here
+only as a historical record of the concept; removed from the concepting board.
 **Protagonist.** Ysabel Nkemelu, solar installation design engineer at a residential/commercial
 solar contractor, bidding a rooftop-vs-tracker system for a warehouse client.
 **The dilemma.** A.) Install a fixed-tilt array at the site's optimal static angle OR B.) Install

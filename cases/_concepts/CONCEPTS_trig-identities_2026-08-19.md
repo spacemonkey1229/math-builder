@@ -1,5 +1,12 @@
 # Concept sheet — Pre-Calculus / Trigonometric Identities
 
+**STATUS 2026-08-22: CLOSED.** The recommended concept below, C1 (Fire Monitor Nozzle Angle —
+same protagonist Danny Ruiz, same deluge-gun/collapse-zone scenario), was written and shipped
+under the title **`Deluge Gun`** (`cases/deluge-gun/`, TIER2_PASS). The full 5/5-skill target
+group is now `n=1` in `standards_spine.json`. Every concept on this sheet, including the
+unwritten runner-ups (C2–C4), is obsolete — the group has zero remaining coverage to close.
+Kept only as a historical record; nothing here should be written.
+
 **Target:** `Pre-Calculus / Trigonometric Identities` — 5/5 skills at `n == 0` (a total-hole group):
 `pre-calculus-pythagorean-identity` (term), `pre-calculus-inverse-trigonometric-function` (term),
 `pre-calculus-how-to-verify-a-trigonometric-identity` (how-to),
@@ -47,7 +54,7 @@ it's HIGH.
 
 ---
 
-### C1 — Fire Monitor Nozzle Angle   ·   score 6.2   ·   tier T4
+### C1 — Fire Monitor Nozzle Angle — WRITTEN as "Deluge Gun" (was: score 6.2 · tier T4)
 **Protagonist.** Danny Ruiz, apparatus operator (the firefighter who runs the truck's roof-mounted
 deluge gun / master-stream monitor) for a mid-size municipal fire department. Personally at
 stake: the crew inside the collapse zone is counting on him to land water on the seat of the
@@ -187,7 +194,7 @@ a worse ratio than C1.
 
 ---
 
-### C4 — Solar Array Tilt Solve   ·   score 5.0   ·   tier T3
+### C4 — Solar Array Tilt Solve — OBSOLETE, group closed by "Deluge Gun" (was: score 5.0 · tier T3)
 **Protagonist.** Elena Cho, site engineer for a community solar cooperative, choosing a
 fixed panel tilt angle for a new array.
 

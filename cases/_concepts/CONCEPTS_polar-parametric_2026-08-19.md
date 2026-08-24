@@ -1,5 +1,10 @@
 # Concepts — Pre-Calculus / Polar And Parametric (2026-08-19)
 
+**STATUS 2026-08-22: CLOSED.** C1 (Feedback) was written and shipped as `cases/feedback/`
+(TIER2_PASS). The full 6/6-skill target group is now `n=1` in `standards_spine.json`. The
+runner-ups below (C2–C4) are obsolete — the group has zero remaining coverage to close. Kept
+only as a historical record; nothing here should be written.
+
 **Target.** `Pre-Calculus / Polar And Parametric` — 6/6 skills at `n == 0` (a total hole, and the
 entire group closes with one well-built case): `Polar Coordinate`, `Parametric Equation`,
 `Parameter` (terms); `How to convert a point between rectangular and polar coordinates`,
@@ -86,7 +91,7 @@ note only for ordinary "the show could get shut down" stage-fright-adjacent tens
 mild and not flagged.
 **Split risk.** None — 6 skills, matches the group exactly, no inflation.
 
-### C2 — Drift Line   ·   score 4.08   ·   tier T4
+### C2 — Drift Line — OBSOLETE, group closed by "Feedback" (was: score 4.08 · tier T4)
 **Protagonist.** A Coast Guard sector watchstander deciding how to respond to a disabled,
 drifting vessel reported near a charted shoal.
 **The dilemma.** A.) Dispatch the duty tow vessel immediately on a direct interception heading OR
@@ -111,7 +116,7 @@ scenario. Framed as *protection* (buffer time before hazard) rather than casualt
 SPEC §6, but still merits the one-line note.
 **Split risk.** None.
 
-### C3 — Night Signal   ·   score 4.08   ·   tier T4
+### C3 — Night Signal — OBSOLETE, group closed by "Feedback" (was: score 4.08 · tier T4)
 **Protagonist.** A broadcast engineer recommending which of two candidate directional AM antenna
 configurations a station licenses to extend nighttime coverage to a satellite town without
 violating FCC nighttime interference-protection rules.
@@ -135,7 +140,7 @@ risk (SPEC's own warning against a concept that "claims skills the case doesn't 
 **Split risk.** Real risk this becomes two weaker half-cases (a strong polar case, a weak,
 tacked-on parametric case) rather than one case that forces both — flagged, not fatal.
 
-### C4 — Full Circle   ·   score 4.08   ·   tier T3
+### C4 — Full Circle — OBSOLETE, group closed by "Feedback" (was: score 4.08 · tier T3)
 **Protagonist.** A traveling-carnival ride mechanic choosing between two rotating swing-ride
 configurations for a summer route.
 **The dilemma.** A.) Configuration 1 — shorter chains, faster rotation OR B.) Configuration 2 —

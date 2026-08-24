@@ -600,3 +600,64 @@ regeneration via `resync_artifacts.py`, before publish).
 
 **Next step:** Return to `case-write`/`case-research` for blockers 1-4 above, then re-run Tier 1 +
 Tier 2 in full. Do not run `case-publish` — `qa.state` is not `TIER2_PASS`.
+
+---
+
+## Manual remediation — 2026-08-21 (current NBA/Priya Shah content)
+
+**Not a full case-readiness run.** Triggered by a user reading the published Interactive HTML and
+noticing Appendix E looked like it was doing the student's arithmetic. Investigation found the
+leak was real but not in Appendix E itself — it was in three other places, all fixed in this pass:
+
+1. **Working Notebook placeholders (worst instance).** Every numeric `<input>` across D1-D4 had
+   `placeholder="e.g. <the exact value checkD1()`..`checkD4() grades against>"` — confirmed by
+   reading the grading JS. A student could read the entire answer key off the DOM without doing
+   any arithmetic. Fixed: every placeholder now describes format only (units/decimal places), no
+   digits. This is now a Tier 1 BLOCKER corpus-wide — see `skills/case-readiness/SKILL.md`'s "A
+   third defect found in later use (2026-08-21)" and `tier1_structural.py` T1-18.
+2. **Appendix B** stated Jordan's FT% (39.7%, 38.4%) directly next to the raw makes/attempts —
+   the exact computation Challenge 3's D1 asks the student to perform. Fixed: table now shows
+   makes/attempts only. Same fix applied to Appendix E's S1/S2 `value` cells, and the Appendix B
+   side-note that spelled out `112.4 / 100 = 1.124` (D1's second target) was reworded to state the
+   *method* (divide by 100) without the specific result.
+3. **Appendix D** (Modeling Assumptions) leaked D3 and D4 answers a second and third way: MA1
+   restated Jordan's FT% as a bare 39.7% (redundant with D1); MA2's "Value used" column gave the
+   already-multiplied `≈ 0.07 points per sequence` instead of the raw 10.4% rebound rate D3 asks
+   the student to combine; MA4 gave both the raw `+8.0 pts/100` assumption *and* the pre-added
+   `1.204 points per possession with the backup in`, which is D4's second answer. All three now
+   state only the raw inputs the case actually owes the student, not the combination.
+
+Fixed in `case.md` (student-facing source of record) and `published/A Coach's Dilemma -
+Interactive.html` (mirrored, since it is hand-maintained separately from case.md and T1-15/T1-18
+check them for agreement). `case.json`'s internal `derived{}` ledger and `FACILITATOR.md` were
+**not** touched — those are facilitator/pipeline-internal, never shown to a student, and remain
+the accurate answer key.
+
+**Verified:** every one of D1/D2/D3/D4's graded numeric targets (39.7, 38.4, 1.124, 0.794, 0.0705,
+1.204) no longer appears anywhere in case.md or in the published HTML outside `<script>`.
+
+### Tier 1 structural — run 2026-08-21, after the fix
+
+```
+python3 skills/case-readiness/scripts/tier1_structural.py --case a-coachs-dilemma
+checks run: 19   PASS 15 · GAP 2 · FAIL 2
+```
+
+- **BLOCKER — T1-15** (×3): `published/*.docx`, `published/*.xlsx`, `published/MANIFEST.json` are
+  stale relative to this pass's case.md edit. **Pre-existing pipeline hygiene, not a new
+  leak** — this remediation only touched case.md and the Interactive HTML; the docx/xlsx packets
+  need `case-publish` to regenerate them before this case can re-clear Tier 1.
+- **BLOCKER — T1-16**: QA hash in `case.json` is stale (expected — case.md changed). Re-run the
+  full gate and record the new hash once T1-15's regeneration is done.
+- **GAP — T1-10**: pre-existing reinforcement-carve-out GAP, unrelated to this pass.
+- **GAP — T1-15 / T1-18**: a handful of orphan numbers in the xlsx/docx/HTML not traced to
+  case.md/case.json — pre-existing, unrelated to this pass, not re-investigated here.
+
+**Tier 2 has never been run against this case's current NBA content** (the six probes on file
+above all describe the *retired* NCAA content). `qa.state` should not be advanced past `DRAFT` in
+`case.json` until a real Tier 1 clean pass (after `case-publish` regenerates the stale artifacts)
+and a full Tier 2 run happen.
+
+**Next step:** run `case-publish` to regenerate `published/*.docx`/`*.xlsx`/`MANIFEST.json` from
+the current case.md, re-run Tier 1 to confirm 0 BLOCKERs, then run Tier 2's six probes before this
+case is eligible for `TIER2_PASS`.
