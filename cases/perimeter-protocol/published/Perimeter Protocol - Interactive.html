@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Perimeter Protocol — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 2 L20 5 V11 C20 17 16.5 20.5 12 22 C7.5 20.5 4 17 4 11 V5 Z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M11 20V4"/><path d="M18 20v-7"/></symbol>
+  <symbol id="icon-mail" viewBox="0 0 24 24"><path d="M3 5h18v14H3z"/><path d="M3 6l9 7 9-7"/></symbol>
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Perimeter Protocol</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Logic &amp; Truth Tables</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+  <p class="lede">The change ticket has been open on Marcus Webb's second monitor for forty minutes, cursor blinking in the approval field, while his first monitor scrolls a live feed of blocked and allowed traffic hitting the hospital network's edge firewall.</p>
+  <p>It's Friday, 4:50 p.m. Whatever rule set he approves in the next few minutes goes live at the start of the deployment window tonight and holds through the weekend &mdash; the network security team runs a skeleton crew until Monday, and nobody is rewriting firewall logic from a phone at 2 a.m.</p>
+  <p>Two configuration files sit open in two tabs. Both were built by the same engineer, tested against the same log data, and both do exactly what they claim. One tab casts a wider net &mdash; it flags more of the traffic that actually turns out to be dangerous, but it also flags more of the traffic that's just a vendor's badly-behaved integration pinging the wrong port. The other tab is tighter &mdash; quieter alerts, a cleaner queue for whoever's on call, but real risk gets a little more room to slip through underneath it.</p>
+  <p>Marcus's badge is still clipped to his lanyard from the walk back from the vending machine. Somewhere down the hall, the clinical systems the firewall protects are still logging patient encounters. He pulls both tabs into view side by side and rests his hand on the mouse.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+  <p>Marcus Webb is a Security Operations Analyst on the IT security desk of a regional hospital network. He is responsible for recommending the edge-firewall rule logic that screens inbound traffic to the network's clinical and administrative systems, and for the false-positive load that recommendation places on the analyst rotation that has to review it (see Appendix A).</p>
+  <p>Every inbound request the firewall inspects is evaluated against two yes/no conditions:</p>
+  <ul>
+    <li><strong>p</strong> &mdash; the source IP address matches an entry on a CISA Known Exploited Vulnerabilities (KEV)-linked watchlist (see Appendix B).</li>
+    <li><strong>q</strong> &mdash; the request targets a network port with a known, currently unpatched vulnerability.</li>
+  </ul>
+  <p>Marcus has two fully-built, fully-tested rule sets in front of him, and the deployment window opens tonight (see Appendix A):</p>
+  <div class="card">
+    <p><strong>Rule Set A &mdash; "Broad Net."</strong> Block the request if p OR q &mdash; the source IP is on the watchlist, or the port is unpatched, or both. This is a disjunction: it blocks every request Rule Set B blocks, plus more. It catches more real threats. It also flags more legitimate traffic, because plenty of harmless traffic trips exactly one of the two conditions without being dangerous at all.</p>
+    <p style="margin:0"><strong>Rule Set B &mdash; "Narrow Gate."</strong> Block the request only if p AND q &mdash; the source IP must be on the watchlist and the port must be unpatched, both at once. This is a conjunction: it blocks a request only when every condition is true. It generates far fewer false alarms for the weekend's skeleton crew to chase down. It also lets through any request that trips only one of the two conditions.</p>
+  </div>
+  <p>The security desk runs on a two-person weekend skeleton crew, with a fixed total of <strong>20 analyst-hours</strong> available to triage every blocked-and-flagged alert before Monday's full-staff handoff (see Appendix A; this figure is a stated Modeling Assumption &mdash; see Modeling Assumptions below). Each false positive an analyst has to review costs real time pulled from that fixed pool &mdash; time that isn't available for anything else that comes up over the weekend (see Appendix D). Every request the firewall sees over the deployment weekend is logged in a sampled traffic set Marcus is working from (see Appendix C).</p>
+  <p>Appendix A gives Marcus's role and the weekend staffing constraint. Appendix B gives the real-world grounding for the watchlist condition, p. Appendix C is the sampled traffic Marcus has to classify under both rule sets. Appendix D is what a single false positive costs the weekend crew. Appendix E lays out the conditional statement both rule sets are built on. Appendix F lists every source. Appendix G is where Challenge 1 sends you.</p>
+  <p>He has to approve one rule set before the change window opens.</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Marcus Webb. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Broad Net</h4>
+      <p style="margin:0">Approve Rule Set A &mdash; block on <strong>p OR q</strong> (disjunction): a watchlist hit, or an unpatched-port hit, or both. Catches more real threats, generates more false positives.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Narrow Gate</h4>
+      <p style="margin:0">Approve Rule Set B &mdash; block only on <strong>p AND q</strong> (conjunction): a watchlist hit and an unpatched-port hit, both at once. Generates far fewer false positives, lets more real threats through.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include D1 (two complete truth tables, for Rule Set A's <em>p OR q</em> and Rule Set B's <em>p AND q</em>), D2 (a worked classification table applying both truth tables to the Traffic Sample, Appendix C), D3 (a negation exercise on Rule Set A's block condition), D4 (a converse/inverse/contrapositive analysis of the watchlist conditional in Appendix E), and D5 (a false-positive-cost comparison producing each rule set's true-threats-blocked-per-false-positive ratio and the margin between them).</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+  <details open>
+    <summary>Appendix A &mdash; Marcus's Role and the Weekend Staffing Constraint</summary>
+    <div class="inner">
+      <p>Marcus Webb is a Security Operations Analyst on the IT security desk of a regional hospital network &mdash; a multi-facility system whose edge firewall screens inbound traffic to both clinical data systems and administrative systems. He is responsible for recommending which of two fully-tested rule sets ships to production before the weekend deployment window (see Background).</p>
+      <p>The security desk staffs a two-person weekend skeleton crew from Friday evening's deployment through Monday morning's full-staff handoff, with a fixed total of <strong>20 analyst-hours</strong> available across both analysts combined to triage every alert the firewall generates (Modeling Assumption MA1 &mdash; see Modeling Assumptions below). Alerts beyond that pool queue untouched until Monday morning.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; The CISA Known Exploited Vulnerabilities Watchlist</summary>
+    <div class="inner">
+      <p>Proposition <strong>p</strong> &mdash; "the source IP address matches an entry on a CISA Known Exploited Vulnerabilities (KEV)-linked watchlist" &mdash; is grounded in a real, actively maintained federal catalog. The U.S. Cybersecurity and Infrastructure Security Agency (CISA) publishes the Known Exploited Vulnerabilities catalog, a list of vulnerabilities confirmed to have been exploited in the wild, updated on an ongoing basis. As of <strong>August 21, 2026</strong> (catalog version 2026.08.21), the catalog listed <strong>1,674 entries</strong> [S1]. Security teams commonly build IP/indicator watchlists that flag traffic associated with infrastructure linked to cataloged vulnerabilities &mdash; this is the real-world practice Rule Set A and Rule Set B's condition p represents.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; The Weekend Traffic Sample</summary>
+    <div class="inner">
+      <p>No public per-hospital firewall log exists &mdash; real logs are never published, for the obvious reason that publishing one would hand attackers a map. This table is a <strong>stated Modeling Assumption</strong>: a synthetic, 20-request sample of the deployment weekend's inbound traffic, built by hand so that both propositions (p and q) and a ground-truth threat determination are known for every row. It is not sourced to a real log, the same way <em>Grant Reach</em>'s 9,000-student population is a stated scenario scale rather than a real per-university roster (see Modeling Assumptions below, MA2).</p>
+      <p><strong>Table C-1 &mdash; Weekend Traffic Sample (20 requests)</strong></p>
+      <table id="apxC-table">
+        <tr><th>Req. #</th><th>p &mdash; Watchlist Hit?</th><th>q &mdash; Unpatched-Port Hit?</th><th>Ground Truth: Confirmed Threat?</th><th>Traffic description</th></tr>
+        <tr><td>1</td><td>T</td><td>T</td><td>T</td><td>Known malware C2 IP hitting an unpatched RDP port</td></tr>
+        <tr><td>2</td><td>T</td><td>T</td><td>T</td><td>Watchlisted IP scanning an unpatched VPN appliance port</td></tr>
+        <tr><td>3</td><td>T</td><td>T</td><td>T</td><td>Watchlisted IP exploiting an unpatched file-transfer service</td></tr>
+        <tr><td>4</td><td>T</td><td>T</td><td>T</td><td>Watchlisted IP probing an unpatched legacy print-server port</td></tr>
+        <tr><td>5</td><td>T</td><td>T</td><td>F</td><td>Decommissioned vendor lab server, stale watchlist entry, dev port still open</td></tr>
+        <tr><td>6</td><td>T</td><td>T</td><td>F</td><td>Security researcher's authorized scanner, IP flagged by an outdated feed</td></tr>
+        <tr><td>7</td><td>T</td><td>F</td><td>T</td><td>Watchlisted IP attempting credential stuffing on a patched login portal</td></tr>
+        <tr><td>8</td><td>T</td><td>F</td><td>T</td><td>Watchlisted IP delivering phishing payload via a patched mail relay</td></tr>
+        <tr><td>9</td><td>T</td><td>F</td><td>T</td><td>Watchlisted IP probing a patched imaging-system API</td></tr>
+        <tr><td>10</td><td>T</td><td>F</td><td>F</td><td>Cloud host reused by a prior campaign, now leased to an unrelated SaaS vendor</td></tr>
+        <tr><td>11</td><td>T</td><td>F</td><td>F</td><td>Shared university research-network IP, stale watchlist listing</td></tr>
+        <tr><td>12</td><td>F</td><td>T</td><td>T</td><td>Unlisted IP exploiting an unpatched building-management-system port</td></tr>
+        <tr><td>13</td><td>F</td><td>T</td><td>T</td><td>Unlisted IP exploiting an unpatched lab-equipment integration port</td></tr>
+        <tr><td>14</td><td>F</td><td>T</td><td>T</td><td>Unlisted IP exploiting an unpatched guest-WiFi controller port</td></tr>
+        <tr><td>15</td><td>F</td><td>T</td><td>F</td><td>Vendor clinical-data integration hitting its own not-yet-patched port</td></tr>
+        <tr><td>16</td><td>F</td><td>T</td><td>F</td><td>Internal maintenance scanner hitting an unpatched legacy scheduling port</td></tr>
+        <tr><td>17</td><td>F</td><td>F</td><td>T</td><td>Unlisted IP using a patched-port social-engineering follow-up request</td></tr>
+        <tr><td>18</td><td>F</td><td>F</td><td>F</td><td>Routine patient-portal login</td></tr>
+        <tr><td>19</td><td>F</td><td>F</td><td>F</td><td>Routine insurance-eligibility lookup</td></tr>
+        <tr><td>20</td><td>F</td><td>F</td><td>F</td><td>Routine appointment-reminder API call</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; The Cost of a False Positive</summary>
+    <div class="inner">
+      <p>No single published figure gives a clean, current dollar or time cost for one false-positive security alert &mdash; the two candidate surveys below measure a rate (share of analyst time) and a whole-organization annual total, not a clean per-alert figure. Real published research consistently shows this cost is large and real:</p>
+      <ul>
+        <li>A Ponemon Institute survey conducted with Exabeam found that <strong>25% of a security analyst's time is spent chasing false positives</strong> [S2].</li>
+        <li>An earlier Ponemon Institute survey (sponsored by Damballa), <em>The Cost of Malware Containment</em>, found that organizations spend an average of <strong>$1.3 million per year and roughly 21,000 hours per year</strong> investigating alerts that turn out to be inaccurate or unreliable, out of an average 16,937 alerts received per week (of which only 19% were deemed reliable) [S3].</li>
+      </ul>
+      <p>Neither figure converts cleanly into "cost of one false-positive alert" without an extra assumption this case is not going to smuggle in as though it were measured. This case therefore sets a stated Modeling Assumption &mdash; <strong>15 analyst-minutes per false-positive alert</strong> &mdash; anchored to the real scale these two surveys establish, not a literal transfer of either survey's own number (Modeling Assumption MA3 &mdash; see Modeling Assumptions below).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; The Conditional Statement</summary>
+    <div class="inner">
+      <p>Consider the conditional statement: <strong>"If a source IP is on the CISA KEV-linked watchlist, then it is a genuine threat."</strong> This is the conditional Rule Set A and Rule Set B are both, in different ways, built on top of. Deliverable D4 asks you to work out its converse, inverse, and contrapositive, and to test each one against the Traffic Sample (Appendix C) &mdash; because at least one of those four statements is <em>not</em> reliably true, and a rule set like Rule Set B can quietly depend on assuming it is true anyway.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced to a real hospital network's own logs or staffing roster</strong> &mdash; no public dataset reports a specific hospital's firewall traffic, SOC weekend staffing, or per-alert triage cost. They are stated scenario assumptions, built to be realistic in scale using real published research (Appendices B and D) rather than picked arbitrarily. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+      <table id="apxMA-table">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Weekend skeleton-crew analyst-hour pool</td><td class="num">20 analyst-hours</td><td>Stated scenario constraint: a two-person weekend on-call crew, sized to be realistic for a small hospital-network SOC desk without claiming a specific real organization's staffing.</td><td>The answer is sensitive to this value.</td></tr>
+        <tr><td>MA2</td><td>Weekend traffic sample (Table C-1)</td><td>20 requests, hand-built with p, q, and ground-truth-threat flags on every row</td><td>No public per-hospital firewall log exists, and none should be published even if one did. Built by hand so the mix of watchlist-only, unpatched-port-only, both, and neither traffic &mdash; and the share of each that is a genuine threat &mdash; is internally consistent and gradable.</td><td>The answer is sensitive to this value.</td></tr>
+        <tr><td>MA3</td><td>Average analyst time to triage one false-positive alert</td><td class="num">15 minutes</td><td>No clean per-alert figure is published. Anchored to two real Ponemon Institute surveys (Appendix D, [S2] [S3]) establishing that false-positive triage consumes a large, real share of analyst time and produces real six- and seven-figure annual costs for a full organization &mdash; not a literal transfer of either survey's own number.</td><td>The answer is sensitive to this value.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxF-table">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Total entries in the CISA Known Exploited Vulnerabilities (KEV) catalog</td><td>1,674 entries, catalog version 2026.08.21</td><td>CISA &mdash; <a href="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json" target="_blank" rel="noopener">Known Exploited Vulnerabilities Catalog JSON feed</a></td><td>released 2026-08-21; accessed 2026-08-24</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Share of a security analyst's time spent chasing false-positive alerts</td><td>25%</td><td>Ponemon Institute, with Exabeam, as reported by <a href="https://www.bitdefender.com/en-us/blog/businessinsights/every-hour-socs-run-15-minutes-are-wasted-on-false-positives" target="_blank" rel="noopener">Bitdefender</a></td><td>August 2019; accessed 2026-08-24</td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Average annual cost and hours organizations spend investigating inaccurate/unreliable security alerts</td><td>$1.3M/yr; ~21,000 hrs/yr; 16,937 weekly alerts, 19% reliable</td><td>Ponemon Institute, sponsored by Damballa, as reported by <a href="https://www.securityweek.com/false-positive-alerts-cost-organizations-13-million-year-report/" target="_blank" rel="noopener">SecurityWeek</a></td><td>2015; accessed 2026-08-24</td><td>MEDIUM</td></tr>
+      </table>
+    </div>
+  </details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-24. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-shield"/></svg> Step 1 &mdash; Two truth tables (D1)</h4>
+    <div class="goal">Build a full truth table for Rule Set A's block condition (p OR q) and Rule Set B's block condition (p AND q). Enter your own T/F output for all four p/q combinations of each.</div>
+    <p class="side-note">Rule Set A &mdash; p OR q</p>
+    <div class="fieldrow"><label>p=T, q=T &rarr;</label><select id="d1_a_tt"><option value="">--</option><option>T</option><option>F</option></select>
+      <label>p=T, q=F &rarr;</label><select id="d1_a_tf"><option value="">--</option><option>T</option><option>F</option></select></div>
+    <div class="fieldrow"><label>p=F, q=T &rarr;</label><select id="d1_a_ft"><option value="">--</option><option>T</option><option>F</option></select>
+      <label>p=F, q=F &rarr;</label><select id="d1_a_ff"><option value="">--</option><option>T</option><option>F</option></select></div>
+    <p class="side-note">Rule Set B &mdash; p AND q</p>
+    <div class="fieldrow"><label>p=T, q=T &rarr;</label><select id="d1_b_tt"><option value="">--</option><option>T</option><option>F</option></select>
+      <label>p=T, q=F &rarr;</label><select id="d1_b_tf"><option value="">--</option><option>T</option><option>F</option></select></div>
+    <div class="fieldrow"><label>p=F, q=T &rarr;</label><select id="d1_b_ft"><option value="">--</option><option>T</option><option>F</option></select>
+      <label>p=F, q=F &rarr;</label><select id="d1_b_ff"><option value="">--</option><option>T</option><option>F</option></select></div>
+    <button onclick="checkD1()">Check</button> <span class="fb" id="fb_d1"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-chart"/></svg> Step 2 &mdash; Classification totals (D2)</h4>
+    <div class="goal">Apply your D1 truth tables to every request in Appendix C. Enter your totals: how many true threats does each rule set block, and how many false positives does each generate?</div>
+    <div class="fieldrow"><label>Rule Set A &mdash; true threats blocked</label><input type="number" id="d2_tta"><label>Rule Set A &mdash; false positives</label><input type="number" id="d2_fpa"></div>
+    <div class="fieldrow"><label>Rule Set B &mdash; true threats blocked</label><input type="number" id="d2_ttb"><label>Rule Set B &mdash; false positives</label><input type="number" id="d2_fpb"></div>
+    <button onclick="checkD2()">Check</button> <span class="fb" id="fb_d2"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-shield"/></svg> Step 3 &mdash; Negation exercise (D3)</h4>
+    <div class="goal">Write the negation of p, the negation of q, and the negation of Rule Set A's full block condition (NOT (p OR q)). Then list every request number in the Traffic Sample that satisfies that negation.</div>
+    <div class="fieldrow"><label>Negation of p</label><input type="text" id="d3_notp" style="width:220px"><label>Negation of q</label><input type="text" id="d3_notq" style="width:220px"></div>
+    <div class="fieldrow"><label>Negation of (p OR q)</label><input type="text" id="d3_notpq" style="width:320px"></div>
+    <div class="fieldrow"><label>Request #s satisfying it (comma-separated)</label><input type="text" id="d3_reqs" style="width:220px"></div>
+    <button onclick="checkD3()">Check</button> <span class="fb" id="fb_d3"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-shield"/></svg> Step 4 &mdash; Converse / inverse / contrapositive (D4)</h4>
+    <div class="goal">Take the conditional in Appendix E ("If a source IP is on the watchlist, then it is a genuine threat"). Name which of its converse, inverse, and contrapositive the Traffic Sample shows to be reliably true, and which shows a counterexample &mdash; and which one Rule Set B implicitly relies on.</div>
+    <div class="fieldrow"><label>Which statement does Rule Set B implicitly rely on?</label><select id="d4_relies"><option value="">--</option><option value="converse">Converse</option><option value="inverse">Inverse</option><option value="contrapositive">Contrapositive</option></select></div>
+    <div class="fieldrow"><label>Request #s that counterexample it (comma-separated)</label><input type="text" id="d4_counterex" style="width:220px"></div>
+    <button onclick="checkD4()">Check</button> <span class="fb" id="fb_d4"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-mail"/></svg> Step 5 &mdash; False-positive-cost comparison (D5)</h4>
+    <div class="goal">Using your D2 totals and Appendix D's per-alert triage cost, compute total weekend triage minutes for each rule set and check the fit against the fixed pool (Appendix A). Then compute each rule set's true-threats-blocked-per-false-positive ratio and the margin between them.</div>
+    <div class="fieldrow"><label>Rule Set A total triage minutes</label><input type="number" step="any" id="d5_mina"><label>Rule Set B total triage minutes</label><input type="number" step="any" id="d5_minb"></div>
+    <div class="fieldrow"><label>Rule Set A ratio (threats/FP)</label><input type="number" step="any" id="d5_ratioa"><label>Rule Set B ratio (threats/FP)</label><input type="number" step="any" id="d5_ratiob"></div>
+    <div class="fieldrow"><label>Your computed margin (%)</label><input type="number" step="any" id="d5_margin"></div>
+    <button onclick="checkD5()">Check</button> <span class="fb" id="fb_d5"></span>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p><strong>Look again at how you built D1's two truth tables.</strong> Rule Set A's condition, p OR q, and Rule Set B's condition, p AND q, aren't two independent coin flips &mdash; p AND q can never be true more often than p OR q is, for any traffic at all. That means Rule Set A's raw count of threats blocked is guaranteed to be greater than or equal to Rule Set B's <em>before you ever open Appendix C</em>. It's a fact of the logic, not something the Traffic Sample proved.</p>
+      <p>So if "blocks more threats" were the whole question, there would be nothing to compute &mdash; Rule Set A would win every time, on every possible weekend, by definition. That can't be the actual question the case is asking, or Challenge 3 wouldn't need five deliverables' worth of arithmetic to answer it.</p>
+      <p><strong>Go back to your D5 ratio.</strong> What does comparing true-threats-blocked-per-false-positive actually measure that raw threat count alone does not &mdash; and why might that be the number that should decide Marcus's recommendation?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist: show whether your own D2 counts satisfy the raw-containment guarantee (Rule Set A's true threats blocked &ge; Rule Set B's, and its false positives &ge; Rule Set B's) &mdash; computed live from your own Step 2 entries, not printed for you.</label>
+      </div>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5"></label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+      <li>[S1] Cybersecurity and Infrastructure Security Agency (CISA) &mdash; <a href="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json" target="_blank" rel="noopener">Known Exploited Vulnerabilities Catalog JSON feed</a>, released 2026-08-21.</li>
+      <li>[S2] Ponemon Institute, with Exabeam, as reported by <a href="https://www.bitdefender.com/en-us/blog/businessinsights/every-hour-socs-run-15-minutes-are-wasted-on-false-positives" target="_blank" rel="noopener">Bitdefender</a>, August 2019.</li>
+      <li>[S3] Ponemon Institute, sponsored by Damballa, as reported by <a href="https://www.securityweek.com/false-positive-alerts-cost-organizations-13-million-year-report/" target="_blank" rel="noopener">SecurityWeek</a>, 2015.</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Perimeter Protocol &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+// Source of record: cases/perimeter-protocol/case.json (case_md_sha256 =
+// cd11e760e902a4614a842236c56c0ce2e2416d532f609575d019a77934c6cb58). This is a JS port of
+// cases/perimeter-protocol/sensitivity_model.py's PARAMS/FLEX/evaluate()/evaluate_twist(), kept in
+// sync by hand per templates/INTERACTIVE_HTML_CONTRACT.md section 2. Category counts below are
+// Appendix C's own given Traffic Sample data (raw inputs, not a computed verdict) -- the notebook
+// computes tt_a/fp_a/tt_b/fp_b and the ratio live, in-browser, from these; nothing here prints the
+// verdict as a static literal per MCS-37.
+const PARAMS = {
+  n_pq_true: 4.0,      // p AND q category (Traffic Sample rows 1-6)
+  n_pq_false: 2.0,
+  n_p_notq_true: 3.0,  // p AND NOT q category (rows 7-11)
+  n_p_notq_false: 2.0,
+  n_notp_q_true: 3.0,  // NOT p AND q category (rows 12-16)
+  n_notp_q_false: 2.0,
+  pool_minutes: 1200.0, // MA1: 20 analyst-hours x 60
+  min_per_fp: 15.0,     // MA3
+};
+const FLEX = ["n_pq_true", "n_pq_false", "n_p_notq_true", "n_p_notq_false", "n_notp_q_true", "n_notp_q_false", "pool_minutes", "min_per_fp"];
+
+function evaluate(params) {
+  const p = Object.assign({}, PARAMS, params || {});
+  const tt_a = p.n_pq_true + p.n_p_notq_true + p.n_notp_q_true;
+  const fp_a = p.n_pq_false + p.n_p_notq_false + p.n_notp_q_false;
+  const tt_b = p.n_pq_true;
+  const fp_b = p.n_pq_false;
+  const ratio_a = fp_a ? tt_a / fp_a : Infinity;
+  const ratio_b = fp_b ? tt_b / fp_b : Infinity;
+  return { A: ratio_a, B: ratio_b, tt_a, fp_a, tt_b, fp_b };
+}
+
+function evaluate_twist(params) {
+  // The twist: Rule Set A's raw threats-blocked count is guaranteed >= Rule Set B's by the
+  // OR/AND containment, for ANY nonnegative category counts -- a fact of the logic, not
+  // something the Traffic Sample could ever overturn.
+  const out = evaluate(params);
+  out.raw_containment_holds = (out.tt_a >= out.tt_b) && (out.fp_a >= out.fp_b);
+  return out;
+}
+
+function capacity_fit(params) {
+  const p = Object.assign({}, PARAMS, params || {});
+  const fp_a = p.n_pq_false + p.n_p_notq_false + p.n_notp_q_false;
+  const fp_b = p.n_pq_false;
+  const minutes_a = fp_a * p.min_per_fp;
+  const minutes_b = fp_b * p.min_per_fp;
+  return { minutes_a, minutes_b, fits_a: minutes_a <= p.pool_minutes, fits_b: minutes_b <= p.pool_minutes };
+}
+
+// Traffic Sample (Appendix C) -- given data, used by the D3/D4 checkers below.
+const TRAFFIC = [
+  {n:1,p:'T',q:'T',gt:'T'},{n:2,p:'T',q:'T',gt:'T'},{n:3,p:'T',q:'T',gt:'T'},{n:4,p:'T',q:'T',gt:'T'},
+  {n:5,p:'T',q:'T',gt:'F'},{n:6,p:'T',q:'T',gt:'F'},{n:7,p:'T',q:'F',gt:'T'},{n:8,p:'T',q:'F',gt:'T'},
+  {n:9,p:'T',q:'F',gt:'T'},{n:10,p:'T',q:'F',gt:'F'},{n:11,p:'T',q:'F',gt:'F'},{n:12,p:'F',q:'T',gt:'T'},
+  {n:13,p:'F',q:'T',gt:'T'},{n:14,p:'F',q:'T',gt:'T'},{n:15,p:'F',q:'T',gt:'F'},{n:16,p:'F',q:'T',gt:'F'},
+  {n:17,p:'F',q:'F',gt:'T'},{n:18,p:'F',q:'F',gt:'F'},{n:19,p:'F',q:'F',gt:'F'},{n:20,p:'F',q:'F',gt:'F'},
+];
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+function checkD1() {
+  const a = { tt: val('d1_a_tt'), tf: val('d1_a_tf'), ft: val('d1_a_ft'), ff: val('d1_a_ff') };
+  const b = { tt: val('d1_b_tt'), tf: val('d1_b_tf'), ft: val('d1_b_ft'), ff: val('d1_b_ff') };
+  const okA = a.tt === 'T' && a.tf === 'T' && a.ft === 'T' && a.ff === 'F';
+  const okB = b.tt === 'T' && b.tf === 'F' && b.ft === 'F' && b.ff === 'F';
+  fb('fb_d1', okA && okB, true);
+}
+
+function checkD2() {
+  const e = evaluate({});
+  const userTTA = +val('d2_tta'), userFPA = +val('d2_fpa'), userTTB = +val('d2_ttb'), userFPB = +val('d2_fpb');
+  const ok = near(userTTA, e.tt_a, 0.5) && near(userFPA, e.fp_a, 0.5) && near(userTTB, e.tt_b, 0.5) && near(userFPB, e.fp_b, 0.5);
+  fb('fb_d2', ok, true);
+}
+
+function checkD3() {
+  const notp = val('d3_notp').toString().toLowerCase();
+  const notq = val('d3_notq').toString().toLowerCase();
+  const notpq = val('d3_notpq').toString().toLowerCase();
+  const okNotP = notp.includes('not') && notp.includes('p');
+  const okNotQ = notq.includes('not') && notq.includes('q');
+  // NOT (p OR q) = NOT p AND NOT q (De Morgan's) -- accept either phrasing
+  const okNotPQ = notpq.includes('not') && notpq.includes('p') && notpq.includes('q') && (notpq.includes('and') || notpq.includes('nor'));
+  const reqs = val('d3_reqs').toString().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n)).sort((x,y)=>x-y);
+  const expected = TRAFFIC.filter(t => t.p === 'F' && t.q === 'F').map(t => t.n);
+  const okReqs = reqs.length === expected.length && reqs.every((v,i) => v === expected[i]);
+  fb('fb_d3', okNotP && okNotQ && okNotPQ && okReqs, true);
+}
+
+function checkD4() {
+  const relies = val('d4_relies').toString();
+  // Rule Set B's low false-positive count implicitly assumes the INVERSE ("if not watchlisted,
+  // then not a threat") is safe to rely on -- the inverse is not logically guaranteed by the
+  // original conditional, and rows where p=F but ground truth is a real threat are the counterexample.
+  const okRelies = relies === 'inverse';
+  const reqs = val('d4_counterex').toString().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n)).sort((x,y)=>x-y);
+  const expected = TRAFFIC.filter(t => t.p === 'F' && t.gt === 'T').map(t => t.n);
+  const okReqs = reqs.length === expected.length && reqs.every((v,i) => v === expected[i]);
+  fb('fb_d4', okRelies && okReqs, true);
+}
+
+function checkD5() {
+  const e = evaluate({});
+  const cap = capacity_fit({});
+  const userMinA = +val('d5_mina'), userMinB = +val('d5_minb');
+  const userRatioA = +val('d5_ratioa'), userRatioB = +val('d5_ratiob');
+  const userMargin = +val('d5_margin');
+  const hi = Math.max(e.A, e.B), lo = Math.min(e.A, e.B);
+  const margin = 100 * (hi - lo) / hi;
+  const ok = near(userMinA, cap.minutes_a, 1) && near(userMinB, cap.minutes_b, 1)
+    && near(userRatioA, e.A, 0.05) && near(userRatioB, e.B, 0.05)
+    && near(userMargin, margin, 1);
+  fb('fb_d5', ok, true);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "perimeter-protocol"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Two complete truth tables for Rule Set A (p OR q) and Rule Set B (p AND q)."],
+  ["D2", "A worked classification table applying both truth tables to the Traffic Sample."],
+  ["D3", "A negation exercise on p, q, and Rule Set A's full block condition."],
+  ["D4", "A converse/inverse/contrapositive analysis of the watchlist conditional."],
+  ["D5", "A false-positive-cost comparison producing each rule set's ratio and the margin."],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Logical Statement": {def: "A proposition is a statement which can be classified as true or false -- the basic building block of symbolic logic.",
+    url: "https://www.mathsisfun.com/sets/symbolic-logic.html"},
+  "Conjunction": {def: "The proposition \"p AND q\" -- true only when both p and q are true, false otherwise.",
+    url: "https://www.mathsisfun.com/sets/symbolic-logic.html"},
+  "Disjunction": {def: "The proposition \"p OR q\" -- true if p is true, q is true, or both; false only when both are false.",
+    url: "https://www.mathsisfun.com/sets/symbolic-logic.html"},
+  "Negation": {def: "The negation of p is \"NOT p\" -- the statement that flips p's truth value.",
+    url: "https://www.mathsisfun.com/sets/symbolic-logic.html"},
+  "Conditional Statement": {def: "The implication \"if p then q\" (p&rarr;q) -- false only when p is true and q is false.",
+    url: "https://www.mathsisfun.com/sets/symbolic-logic.html"},
+  "Truth Table": {def: "A table listing every possible combination of true/false inputs to a compound statement, and the resulting output for each.",
+    url: "https://www.mathsisfun.com/sets/symbolic-logic.html"},
+  "Converse": {def: "Swap the hypothesis and conclusion of a conditional: the converse of p&rarr;q is q&rarr;p.",
+    url: "https://www.mathsisfun.com/sets/symbolic-logic.html"},
+  "Inverse": {def: "Negate both parts of a conditional: the inverse of p&rarr;q is NOT p&rarr;NOT q.",
+    url: "https://www.mathsisfun.com/sets/symbolic-logic.html"},
+  "Contrapositive": {def: "Negate and swap: the contrapositive of p&rarr;q is NOT q&rarr;NOT p -- always logically equivalent to the original.",
+    url: "https://www.mathsisfun.com/sets/symbolic-logic.html"},
+};
+const HOWTO = [
+  ["How to construct a truth table for a compound statement", "Truth Table"],
+  ["How to determine the converse, inverse, and contrapositive of a conditional statement", "Contrapositive"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle() {
+  const applied = document.getElementById('applyTwist').checked;
+  const label = document.getElementById('twistToggleLabel');
+  if (!applied) { return; }
+  const userTTA = +val('d2_tta'), userFPA = +val('d2_fpa'), userTTB = +val('d2_ttb'), userFPB = +val('d2_fpb');
+  const holds = (userTTA >= userTTB) && (userFPA >= userFPB);
+  let note = document.getElementById('twistContainmentNote');
+  if (!note) {
+    note = document.createElement('p');
+    note.id = 'twistContainmentNote';
+    note.style.color = '#e8e3d5';
+    note.style.fontStyle = 'italic';
+    document.getElementById('twistNarrative').appendChild(note);
+  }
+  if (!userTTA && !userFPA && !userTTB && !userFPB) {
+    note.textContent = 'Fill in your Step 2 (D2) totals first, then check this box again to see whether they satisfy the containment.';
+  } else {
+    note.textContent = holds
+      ? 'Your own D2 counts satisfy the containment: Rule Set A\'s true threats blocked and false positives are each \u2265 Rule Set B\'s. That\'s expected \u2014 it should always hold for a correct classification.'
+      : 'Your own D2 counts do NOT satisfy the containment yet \u2014 double-check your classification. Rule Set A\'s true threats blocked and false positives should each be \u2265 Rule Set B\'s, since p AND q can never be true more often than p OR q.';
+  }
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>
