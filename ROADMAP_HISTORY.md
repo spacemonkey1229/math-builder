@@ -9,6 +9,49 @@
 
 ---
 
+**v2.14 · 2026-08-24 (same day, second pass).** Supersedes v2.13. **Delta: the user pointed at
+the live deployed site and asked why a case they knew was published (Perimeter Protocol) wasn't
+showing — found a real gap this file's v2.13 refresh missed entirely.**
+
+**0. `app/dashboard.html` is a static build artifact, not generated per-request** — `admin_web/
+app.py`'s `static_html()` route serves it straight off disk (`send_from_directory`), and its own
+comment says so explicitly ("static build output... never written to at runtime"). It is only ever
+refreshed by someone manually running `python3 app/build_dashboard.py` and committing the result.
+**It had not been rebuilt since before Grant Reach, Perimeter Protocol, `the-multiplier-recruit`,
+`the-reserve-asymptote`, or `roofline-call` published** — meaning the live site was missing 4-5
+published cases across several sessions and nobody caught it, because v2.13's refresh (and the
+sessions before it) checked `readmodel/*.json` and `case.json` state, never the actual deployed
+HTML a person looks at. Rebuilt 2026-08-24; verified via `grep -c` that all 4 newly-missing titles
+now appear exactly once in the regenerated file; pushed as commit `d250ecb`; confirmed live on
+Vercel by loading `/cases/perimeter-protocol/published/Perimeter Protocol - Interactive.html`
+(a route that doesn't require the admin passcode) and seeing the real page render.
+
+**1. This is now a tracked process gap, not a one-time fix.** Added to `ROADMAP.md`'s Housekeeping
+table: nothing enforces the `build_dashboard.py` rerun — no CI check, no git hook, no reminder
+inside `case-publish` itself. The page already has a built-in transparency mechanism for exactly
+this (the masthead shows `"built " + DATA.meta.generated_on` once logged in, sourced from
+`build_dashboard.py`'s own `TODAY = date.today()` stamp at build time) — but it only helps if
+someone actually looks at it and compares it to today's date, and it's invisible until you log in
+with the shared passcode, which is why this went unnoticed. No code change made to surface it more
+prominently this pass; flagged as a possible follow-up (e.g. a visible staleness warning banner
+if `generated_on` is more than N days behind the newest `published_on` in `cases_index.json`), not
+implemented.
+
+**2. `build_dashboard.py --verify`'s 3 failing self-checks, found incidentally during the
+rebuild, are now also tracked** (previously undocumented in this file or `ROADMAP.md` despite
+clearly having existed before this session — `legacy_readiness.json`'s `n_legacy_cases` and
+`corpus_index.json` were both unchanged by anything in this pass, confirming the mismatch predates
+it): (1) `legacy_readiness` case count (45, a physical-file count) vs. `corpus_index`'s legacy-
+status count + converted-titles count (expected 84) — likely `corpus_index.json` isn't clearing a
+case's `status: "legacy"` flag when `case-publish` converts it, so converted cases are being
+double-counted against the physical-file total; (2) one zero-coverage cluster, Calculus/
+Derivatives, has no closing domain recorded; (3) legacy cases carry `margin: 0` where the check
+expects `null`. None of the three block a build — `dashboard.html` still generates correctly with
+all 476 asset links resolved — so this is bookkeeping debt, not a live-site defect. Not
+investigated further this pass.
+
+---
+
 **v2.13 · 2026-08-24.** Supersedes v2.12. **Delta: re-ran the live build scripts
 (`app/build_pipeline.py`, `app/build_legacy_readiness.py`) rather than carrying forward v2.12's
 numbers, and found the #1 flagged item from v2.12 already resolved.**

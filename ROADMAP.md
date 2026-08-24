@@ -1,6 +1,6 @@
 # Roadmap — Math Builder
 
-**Last refreshed: 2026-08-24, against live scripts, not carried-forward numbers.**
+**Last refreshed: 2026-08-24 (v2.14), against live scripts, not carried-forward numbers.**
 For the full reasoning behind any line below — why a number moved, what broke, what was fixed —
 see **[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md)**, the complete narrative log. This file is just
 the status page: what's done, what's not, what's next.
@@ -127,6 +127,8 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 | Automated tests for the admin app | ⏳ Open — currently zero |
 | Real per-user login (currently one shared password for everyone) | ⏳ Open |
 | A confusing near-duplicate case name needs a human check (`redrawing-lines`) | ⏳ Open |
+| **`app/dashboard.html` is a static build artifact — goes stale after every `case-publish` unless someone manually reruns `python3 app/build_dashboard.py`** | ⚠️ **Process gap, not automated** | Rebuilt 2026-08-24 (had been stale since before Grant Reach/Perimeter Protocol published, meaning the live dashboard was missing 4 published cases for several sessions with nobody noticing). The page's own masthead shows `built <date>` once logged in — check that date against today before trusting what's on screen. No CI/git-hook enforces the rebuild yet; it's still a manual step someone has to remember after every publish |
+| `build_dashboard.py --verify`'s 3 failing self-checks | ⏳ Open, not investigated | Confirmed pre-existing (found 2026-08-24, unrelated to that day's rebuild): (1) `legacy_readiness` case count vs. `corpus_index` legacy count mismatch (45 vs. expected 84 — corpus_index likely isn't clearing a case's `legacy` status flag on conversion), (2) one zero-coverage cluster (Calculus/Derivatives) with no closing domain recorded, (3) legacy cases carrying `margin: 0` instead of `null`. None block a valid `dashboard.html` build; none investigated further yet |
 
 ---
 
@@ -140,6 +142,7 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 | Concepts scoped but not yet written into a case | 9 |
 | Cases ever run with a real student | **0** |
 | Skills in the curriculum map | 437 |
+| `app/dashboard.html` last rebuilt | **2026-08-24** — must be rerun (`python3 app/build_dashboard.py`) after every future `case-publish`, or the live site keeps serving stale data even though the underlying case files are correct |
 
 Full derivations, per-script commands, and the reasoning trail for every one of these numbers are
 in [ROADMAP_HISTORY.md](ROADMAP_HISTORY.md).
