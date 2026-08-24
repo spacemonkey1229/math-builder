@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Grant Reach — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  .venn-svg{display:block;margin:12px auto}
+  .venn-svg text{font-family:var(--sans)}
+  .ma-box{background:#fff;border:1px dashed var(--gold);border-radius:8px;padding:12px 16px;margin:14px 0;font-family:var(--sans);font-size:.86rem}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></symbol>
+  <symbol id="icon-mail" viewBox="0 0 24 24"><path d="M3 6h18v13H3z"/><path d="M3 7l9 6 9-6"/></symbol>
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Grant Reach</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Sets &amp; Venn Diagrams</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">The printer in the corner of Deja Whitfield's office has been running since 7 a.m., and it still isn't done.</p>
+  <p>She pulls the newest stack anyway, taps it square, and checks the top sheet against the spreadsheet glowing on her second monitor. Reminder packet. FAFSA renewal deadline. GPA verification deadline. Same two dates, printed in bold, on every single page. Outside her cracked door she can hear the financial aid lobby filling up &mdash; it's March, and every March the same thing happens: a wave of students who were fully funded last spring show up in April having quietly lost it all, because a form nobody reminded them about slipped past a deadline nobody reminded them about.</p>
+  <p>Her director stopped by twenty minutes ago with the number that's still sitting on Deja's desk: this year's mailing budget, final, not one dollar more. Deja has two lists open in two tabs. One is long. One is short. The long one costs money the office doesn't have much of. The short one is free &mdash; literally free, funded by a state allowance that covers exactly the students it's built for and not one more.</p>
+  <p>She minimizes the spreadsheet. On her desk are two mail-house order forms, both filled out, both ready to submit. She has to pick one before the print job even finishes.</p>
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  <p>Deja Whitfield is the Financial Aid Outreach Coordinator at Cascade State University, a mid-size public university in California. Her job is to make sure continuing students who currently receive need-based grant aid actually complete the paperwork to keep it &mdash; a federal FAFSA renewal and, for state-grant recipients, an annual GPA verification with the California Student Aid Commission (CSAC). Students who miss either deadline don't get an extension; they lose the aid for the following term (see Appendix A).</p>
+  <p>Cascade State's aid-renewal population this cycle is <strong>9,000 continuing undergraduates</strong> &mdash; the students Deja's office is responsible for screening this cycle for federal Pell Grant and/or state Cal Grant eligibility (see Appendix A). Some of these students are eligible for the Pell Grant only, some for the state's Cal Grant only, some for both, and some for neither &mdash; Deja's office tracks all four groups because the two programs use different eligibility rules: Pell Grant eligibility is based on a federal need calculation with no single income cutoff, while California's Cal Grant program publishes a flat family-income ceiling that varies by household size (see Appendix A). A student can clear one gate, both, or neither.</p>
+  <p>Every student who gets a printed reminder packet in the mail is measurably more likely to complete their renewal on time than a student who gets nothing (see Appendix D). Deja's office has budget for exactly one mailing decision this cycle:</p>
+  <div class="card">
+    <p><strong>Order A &mdash; The Full Reach:</strong> Mail a reminder packet to every student in the union of Pell-eligible and state-grant-eligible students &mdash; everyone eligible for at least one of the two programs. This is the larger list. There is no state funding mechanism that covers a merged list like this one; every piece is billed to Cascade State's own outreach budget, at the university's commercial mail rate (see Appendix C).</p>
+    <p style="margin:0"><strong>Order B &mdash; The Shared Only:</strong> Mail a reminder packet only to the intersection &mdash; students who are eligible for both programs at once. CSAC provides participating campuses a small administrative mailing allowance specifically for this shared-eligibility group, and it fully covers the cost. Order B spends zero dollars of Cascade State's own budget. Every student who is Pell-eligible only, or state-eligible only, receives no packet under this order.</p>
+  </div>
+  <p>Cascade State's total discretionary outreach mailing budget for the year &mdash; covering this mailing and everything else Deja's office sends &mdash; is $1,600 (see Appendix A).</p>
+  <p>Appendix A defines the two eligibility sets and the population counts Deja is working from. Appendix B gives the Venn diagram groundwork. Appendix C is the university's actual commercial mail rate table. Appendix D is what's known &mdash; and what has to be assumed &mdash; about how much a mailed reminder actually moves a student's odds of renewing on time. Appendix E gives the dollar value of the aid itself, for context. Appendix F lists every source. Appendix G is where Challenge 1 sends you.</p>
+  <p>She has to submit one order.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Deja Whitfield. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Full Reach</h4>
+      <p style="margin:0">Submit Order A &mdash; mail every student in the union of Pell-eligible and state-grant-eligible, funded entirely by the university's own budget.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Shared Only</h4>
+      <p style="margin:0">Submit Order B &mdash; mail only the intersection, funded entirely by the state's allowance, at zero cost to the university.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include D1 (a labeled Venn diagram of the Pell-eligible and state-grant-eligible sets), D2 (a worked union-and-intersection calculation), D3 (a subset-and-empty-set argument), D4 (a renewal-count projection table by region), D5 (a total-cost table for both orders), and D6 (a one-paragraph comparison of total renewals and the percentage margin).</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Eligibility Sets and the Renewal Population</summary>
+    <div class="inner">
+      <p>Cascade State's aid-renewal population is fixed at <strong>9,000 continuing undergraduates</strong> for this case (a stated scenario scale &mdash; no public roster of a real university's dual-eligibility population exists; see Modeling Assumptions below).</p>
+      <p><strong>Federal Pell Grant eligibility.</strong> Nationwide, <strong>32.4% of undergraduates</strong> were awarded a Pell Grant in AY2023-24 [S1]. Pell eligibility is computed from a federal need formula (the Student Aid Index), not a single income cutoff &mdash; a student's family size, assets, and number of household members in college all factor in, which is why Pell eligibility and a flat state income ceiling don't sort students the same way.</p>
+      <p><strong>California Cal Grant eligibility.</strong> California's Cal Grant program publishes flat income ceilings by household size and grant type (see Table A-1). For a household of four, the 2025-26 ceiling is <strong>$135,900</strong> for Cal Grant A/C and <strong>$71,500</strong> for Cal Grant B [S3] &mdash; both well below the range where most Pell awards phase out, which is why a large majority of Cal-Grant-eligible students are also Pell-eligible, but not all of them (asset limits, dependency status, and household-size adjustments differ between the two programs).</p>
+      <p><strong>Table A-1 &mdash; 2025-26 Cal Grant Income Ceilings by Household Size [S3]</strong></p>
+      <table id="apxA-table">
+        <tr><th>Household size</th><th>Cal Grant A &amp; C</th><th>Cal Grant B</th></tr>
+        <tr><td>2</td><td class="num">$122,100</td><td class="num">$57,000</td></tr>
+        <tr><td>3</td><td class="num">$125,100</td><td class="num">$64,200</td></tr>
+        <tr><td>4</td><td class="num">$135,900</td><td class="num">$71,500</td></tr>
+        <tr><td>5</td><td class="num">$145,700</td><td class="num">$79,900</td></tr>
+        <tr><td>6 or more</td><td class="num">$157,100</td><td class="num">$86,300</td></tr>
+      </table>
+      <blockquote>These figures are not sourced to a real per-university roster &mdash; no public dataset reports how many students at any specific university are Pell-eligible only, state-eligible only, or both. They are stated scenario assumptions, built from real statewide and national rates so the case's population is realistic rather than arbitrary. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+      <p><strong>Modeling Assumptions</strong></p>
+      <table id="apxA-ma-table">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Size of Cascade State's aid-renewal population</td><td class="num">9,000 students</td><td>Stated scenario scale, chosen to keep the arithmetic in easy multi-step reach for the challenges.</td><td>Not sensitive &mdash; scales mailed and renewal counts proportionally.</td></tr>
+        <tr><td>MA2</td><td>Share of the population that is state-grant-eligible</td><td class="num">18.6%</td><td>Anchored to California's actual statewide ratio: 453,000 Cal Grant recipients in AY2024-25 [S4] against 2,440,631 total California undergraduates [S5].</td><td>Sensitive.</td></tr>
+        <tr><td>MA3</td><td>Share of state-eligible students who are also Pell-eligible (the overlap)</td><td class="num">80%</td><td>Qualitative: Table A-1's Cal Grant B ceiling sits well inside the income range where most families still qualify for at least a partial Pell award.</td><td>Sensitive.</td></tr>
+        <tr><td>MA4</td><td>On-time renewal rate, <strong>no</strong> mailed reminder</td><td class="num">55%</td><td>No public study measures a full-cycle "no contact" baseline; set within the range implied by real reminder-effect research (Appendix D).</td><td>Sensitive.</td></tr>
+        <tr><td>MA5</td><td>On-time renewal rate, <strong>with</strong> a mailed reminder</td><td class="num">70%</td><td>Set as a 15-point lift over MA4, informed by the direction/scale of a real RCT (Appendix D, [S8]) &mdash; not a literal transfer of its own numbers.</td><td>Sensitive.</td></tr>
+        <tr><td>MA6</td><td>Discretionary outreach mailing budget, whole year</td><td class="num">$1,600</td><td>Stated scenario constraint, sized so Order A is affordable but consumes nearly all of it.</td><td>Sensitive.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Venn Diagram Groundwork</summary>
+    <div class="inner">
+      <p>Applying Appendix A and the Modeling Assumptions above:</p>
+      <table id="apxB-table">
+        <tr><th>Region</th><th>Set expression</th><th>Count</th></tr>
+        <tr><td>Pell-eligible only</td><td>Pell &minus; State</td><td class="num">1,580</td></tr>
+        <tr><td>State-eligible only</td><td>State &minus; Pell</td><td class="num">334</td></tr>
+        <tr><td>Both (the intersection)</td><td>Pell &cap; State</td><td class="num">1,336</td></tr>
+        <tr><td><strong>Union (either or both)</strong></td><td><strong>Pell &cup; State</strong></td><td class="num"><strong>3,250</strong></td></tr>
+        <tr><td>Neither</td><td>outside Pell &cup; State</td><td class="num">5,750</td></tr>
+      </table>
+      <svg class="venn-svg" width="360" height="220" viewBox="0 0 360 220" aria-label="Venn diagram of Pell-eligible and State-eligible sets">
+        <circle cx="150" cy="110" r="90" fill="#1a3a5c33" stroke="#1a3a5c" stroke-width="2"/>
+        <circle cx="230" cy="110" r="90" fill="#c9a22733" stroke="#c9a227" stroke-width="2"/>
+        <text x="95" y="60" font-size="13" fill="#1a3a5c" font-weight="700">Pell-eligible</text>
+        <text x="245" y="60" font-size="13" fill="#8a6c10" font-weight="700">State-eligible</text>
+        <text x="105" y="115" font-size="16" text-anchor="middle">1,580</text>
+        <text x="190" y="115" font-size="16" text-anchor="middle">1,336</text>
+        <text x="275" y="115" font-size="16" text-anchor="middle">334</text>
+        <text x="180" y="205" font-size="12" text-anchor="middle" fill="#5b6472">Neither: 5,750 (outside both circles)</text>
+      </svg>
+      <p class="side-note">Check: |Pell| = 1,580 + 1,336 = 2,916 (matches 32.4% of 9,000 [S1]). |State| = 334 + 1,336 = 1,670 (matches MA2). |Pell &cup; State| = |Pell| + |State| &minus; |Pell &cap; State| = 2,916 + 1,670 &minus; 1,336 = 3,250.</p>
+      <p>The 5,750 students in "Neither" hold no Pell Grant and no Cal Grant this year, so they have no aid to renew &mdash; they are outside both orders' mailing lists and outside every renewal-count and cost calculation in Deliverables D4&ndash;D6, which apply only to the 3,250-student union. Screened out, not ignored: they are the reason Deja's office screens 9,000 students to reach the 3,250 who actually need this mailing.</p>
+      <p>A blank, unlabeled two-circle Venn diagram template for D1 is available at: <a href="https://www.canva.com/graphs/venn-diagrams/" target="_blank" rel="noopener">canva.com/graphs/venn-diagrams</a> (if unavailable, any hand-drawn two-circle diagram with the four regions above satisfies the deliverable).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Cascade State's Commercial Mail Rate</summary>
+    <div class="inner">
+      <p>Cascade State's mail house bills at USPS commercial Marketing Mail letter rates. USPS publishes three automation presort tiers, which reward a mailer for pre-sorting by ZIP code &mdash; the deeper the sort, the cheaper the piece (see Table C-1). Cascade State's outreach list is not pre-sorted by carrier route, so its mail house bills at the <strong>Mixed AADC</strong> tier.</p>
+      <table id="apxC-table">
+        <tr><th>Presort tier</th><th>Price per piece</th></tr>
+        <tr><td>5-Digit (most sorted)</td><td class="num">$0.395</td></tr>
+        <tr><td>3-Digit / SCF</td><td class="num">$0.435</td></tr>
+        <tr><td>Mixed AADC (least sorted)</td><td class="num"><strong>$0.467</strong></td></tr>
+      </table>
+      <p class="side-note">Table C-1: USPS Commercial Marketing Mail Letters, Automation Presort, per piece (3.5 oz. or less), effective July 12, 2026 [S7].</p>
+      <p>Order A mails to the full union (3,250 students): 3,250 &times; $0.467 = <strong>$1,517.75</strong>, all from Cascade State's own budget (Appendix A, MA6).</p>
+      <p>Order B mails to the intersection only (1,336 students), but this mailing is billed against CSAC's administrative allowance, not Cascade State's budget &mdash; <strong>$0.00</strong> to the university.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; What a Reminder Is Worth</summary>
+    <div class="inner">
+      <p>No public study measures the effect of a physical mailed reminder on financial-aid renewal specifically. The closest available real evidence is a 2017 randomized controlled trial run by the U.S. General Services Administration's Office of Evaluation Sciences, in partnership with Federal Student Aid, on <strong>emailed</strong> FAFSA reminders to continuing students: reminder emails raised the share of targeted students who submitted a FAFSA-related action within 20 days from <strong>4.34% to 7.77%</strong> &mdash; a 79% relative increase &mdash; and reminders that specifically mentioned the Pell Grant were the most effective version tested [S8].</p>
+      <p>That study measured a short post-nudge window for a different channel (email, not mail) and a different action (initial submission, not full-cycle renewal), so its exact percentages cannot be dropped into this case as though they were Cascade State's own numbers. What it does establish, with real experimental evidence, is that a reminder &mdash; even a low-cost, low-effort one &mdash; produces a large, statistically real increase in on-time completion, and that Pell-specific messaging is not wasted effort. Modeling Assumptions MA4 and MA5 (Appendix A) use that direction and rough scale, not its literal figures.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; What a Renewal Is Worth</summary>
+    <div class="inner">
+      <p>For context, not for the required calculations: the average Pell Grant award nationwide was <strong>$5,300</strong> in AY2023-24 [S2]. A first-year Cal Grant B recipient's Access Award is <strong>$1,648</strong> in 2025-26, with the program separately covering tuition and fees starting in the second year [S6]. A student who is eligible for both programs and misses the renewal deadline is not out a few dollars of postage &mdash; they are out thousands of dollars of aid for the following term.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxF-table">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Share of U.S. undergraduates awarded a Pell Grant</td><td>32.4%</td><td>U.S. Dept. of Education, as reported by <a href="https://educationdata.org/pell-grant-statistics" target="_blank" rel="noopener">EducationData.org</a></td><td>AY2023-24</td><td>MEDIUM</td></tr>
+        <tr><td>S2</td><td>Average Pell Grant award</td><td>$5,300</td><td>U.S. Dept. of Education, as reported by <a href="https://educationdata.org/pell-grant-statistics" target="_blank" rel="noopener">EducationData.org</a></td><td>AY2023-24</td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>2025-26 Cal Grant income ceilings (Table A-1)</td><td>see table</td><td>California Student Aid Commission &mdash; <a href="https://www.csac.ca.gov/sites/default/files/2024-07/2025-26_new_applicants_and_renewing_recipients.pdf" target="_blank" rel="noopener">Income Ceilings PDF</a></td><td>2025-26</td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Statewide Cal Grant recipients</td><td>453,000</td><td>California LAO &mdash; <a href="https://lao.ca.gov/Publications/Report/5127" target="_blank" rel="noopener">2026-27 Budget: CSAC</a></td><td>AY2024-25</td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>Total California undergraduate enrollment</td><td>2,440,631</td><td>Aggregated NCES/CA data, as reported by <a href="https://www.univstats.com/states/california/student-population/" target="_blank" rel="noopener">UnivStats</a></td><td>AY2024-25</td><td>MEDIUM</td></tr>
+        <tr><td>S6</td><td>Cal Grant B Access Award, first-year</td><td>$1,648</td><td>CSAC, secondary summary &mdash; <a href="https://www.csac.ca.gov/post/what-are-cal-grant-award-amounts" target="_blank" rel="noopener">Cal Grant Award Amounts</a></td><td>2025-26</td><td>MEDIUM</td></tr>
+        <tr><td>S7</td><td>USPS commercial Marketing Mail presort pricing (Table C-1)</td><td>see table</td><td>USPS &mdash; <a href="https://pe.usps.com/text/dmm300/notice123.htm" target="_blank" rel="noopener">Notice 123 Price List</a></td><td>eff. 2026-07-12</td><td>HIGH</td></tr>
+        <tr><td>S8</td><td>FAFSA renewal reminder email RCT effect</td><td>4.34% &rarr; 7.77%</td><td>GSA Office of Evaluation Sciences &mdash; <a href="https://oes.gsa.gov/projects/increasing-fafsa-renewal-rates/" target="_blank" rel="noopener">Increasing FAFSA Renewal Rates</a></td><td>2017</td><td>HIGH</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-23. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-chart"/></svg> Step 1 &mdash; Venn diagram and union check (D1/D2)</h4>
+    <div class="goal">Draw your own labeled Venn diagram from Appendix A/B (D1), then enter your four region counts and confirm the union formula |Pell &cup; State| = |Pell| + |State| &minus; |Pell &cap; State| holds (D2).</div>
+    <div class="fieldrow"><label>Pell-only count</label><input type="number" id="d1_pellonly"><label>State-only count</label><input type="number" id="d1_stateonly"></div>
+    <div class="fieldrow"><label>Intersection count</label><input type="number" id="d1_inter"><label>Neither count</label><input type="number" id="d1_neither"></div>
+    <div class="fieldrow"><label>Your computed union</label><input type="number" id="d2_union"></div>
+    <button onclick="checkD1D2()">Check</button> <span class="fb" id="fb_d1d2"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-chart"/></svg> Step 2 &mdash; Subset and empty-set argument (D3)</h4>
+    <div class="goal">Using set notation, name which student group is the empty set under Order A, and which is the non-empty set under Order B. Type the plain-English name of each group (e.g. "Pell-only and state-only students").</div>
+    <div class="fieldrow"><label>Empty set under Order A</label><input type="text" id="d3_a" style="width:260px"></div>
+    <div class="fieldrow"><label>Non-empty set under Order B (that A also covers)</label><input type="text" id="d3_b" style="width:260px"></div>
+    <button onclick="checkD3()">Check</button> <span class="fb" id="fb_d3"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-mail"/></svg> Step 3 &mdash; Renewal-count projection by region (D4)</h4>
+    <div class="goal">Using Appendix D's mailed/unmailed renewal rates (Modeling Assumptions MA4/MA5), project on-time renewals for each region under each order. Order A mails every region at the with-reminder rate; Order B mails only the intersection at the with-reminder rate and leaves the other two regions at the no-reminder rate.</div>
+    <div class="sliderow"><span>MA4 &mdash; no-reminder rate</span><input type="range" id="d4_ma4" min="20" max="90" step="1" value="55" oninput="document.getElementById('d4_ma4val').textContent=this.value+'%'"><span class="val" id="d4_ma4val">55%</span></div>
+    <div class="sliderow"><span>MA5 &mdash; with-reminder rate</span><input type="range" id="d4_ma5" min="20" max="90" step="1" value="70" oninput="document.getElementById('d4_ma5val').textContent=this.value+'%'"><span class="val" id="d4_ma5val">70%</span></div>
+    <div class="fieldrow"><label>Order A total renewals</label><input type="number" step="any" id="d4_a"><label>Order B total renewals</label><input type="number" step="any" id="d4_b"></div>
+    <button onclick="checkD4()">Check</button> <span class="fb" id="fb_d4"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-mail"/></svg> Step 4 &mdash; Cost table and margin (D5/D6)</h4>
+    <div class="goal">Using Appendix C's mail rate, compute each order's total university cost and dollars-per-renewal (D5). Then compute the percentage margin between the two orders' total renewals (D6): (A &minus; B) / A.</div>
+    <div class="fieldrow"><label>Order A total cost ($)</label><input type="number" step="any" id="d5_costa"><label>Order B total cost ($)</label><input type="number" step="any" id="d5_costb"></div>
+    <div class="fieldrow"><label>Your computed margin (%)</label><input type="number" step="any" id="d6_margin"></div>
+    <button onclick="checkD5D6()">Check</button> <span class="fb" id="fb_d5d6"></span>
+  </div>
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p><strong>Look again at Order B's $0.00 university cost.</strong> That number is real &mdash; the state's administrative allowance genuinely covers every piece of Order B's mailing, dollar for dollar. But $0.00 university spending is not the same claim as "nothing is lost." Every student who is Pell-eligible only, or state-eligible only, gets no packet under Order B &mdash; and Appendix D's own real evidence says a mailed reminder measurably moves a student's odds of renewing on time.</p>
+      <p>Run your own Step 3 (D4) and Step 4 (D5/D6) numbers again with that in mind. How many real students, in your own projection, do not renew on time under Order B who would have under Order A &mdash; and what is each of those students walking away from, per Appendix E?</p>
+      <p><strong>Does $0.00 still read as an unambiguous win once you've counted the students, not just the dollars?</strong></p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist: recompute Step 4's margin using total on-time renewals achieved (not university dollars spent) as the metric &mdash; the well-defined comparison for both orders.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] U.S. Dept. of Education Pell Grant data, as reported by EducationData.org &mdash; <a href="https://educationdata.org/pell-grant-statistics" target="_blank" rel="noopener">Pell Grant Statistics</a>, AY2023-24.</li>
+      <li>[S2] U.S. Dept. of Education, as reported by EducationData.org &mdash; <a href="https://educationdata.org/pell-grant-statistics" target="_blank" rel="noopener">Pell Grant Statistics</a>, AY2023-24.</li>
+      <li>[S3] California Student Aid Commission &mdash; <a href="https://www.csac.ca.gov/sites/default/files/2024-07/2025-26_new_applicants_and_renewing_recipients.pdf" target="_blank" rel="noopener">2025-26 Cal Grant Program Income Ceilings</a>, 2025-26 award year.</li>
+      <li>[S4] California Legislative Analyst's Office &mdash; <a href="https://lao.ca.gov/Publications/Report/5127" target="_blank" rel="noopener">The 2026-27 Budget: California Student Aid Commission</a>, AY2024-25.</li>
+      <li>[S5] Aggregated NCES/CA state enrollment data, as reported by UnivStats &mdash; <a href="https://www.univstats.com/states/california/student-population/" target="_blank" rel="noopener">Enrollment Statistics at California Colleges</a>, AY2024-25.</li>
+      <li>[S6] California Student Aid Commission, secondary summary &mdash; <a href="https://www.csac.ca.gov/post/what-are-cal-grant-award-amounts" target="_blank" rel="noopener">What are the Cal Grant Award Amounts</a>, 2025-26 award year.</li>
+      <li>[S7] United States Postal Service &mdash; <a href="https://pe.usps.com/text/dmm300/notice123.htm" target="_blank" rel="noopener">Notice 123 Price List</a>, effective 2026-07-12.</li>
+      <li>[S8] U.S. GSA Office of Evaluation Sciences, with Federal Student Aid &mdash; <a href="https://oes.gsa.gov/projects/increasing-fafsa-renewal-rates/" target="_blank" rel="noopener">Increasing FAFSA Renewal Rates</a>, 2017.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Grant Reach &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+// Source of record: cases/grant-reach/case.json (sha256 recorded in case.json.qa.case_md_sha256 =
+// e33fcfac335cafd0b258dbcf0a2a4fd4723cb3fe0723286555af669c601c1bc7). This is a JS port of
+// cases/grant-reach/sensitivity_model.py's PARAMS/FLEX/evaluate(), kept in sync by hand per
+// templates/INTERACTIVE_HTML_CONTRACT.md section 2. Region counts below are Appendix B's own given
+// data (not a computed verdict) -- pell_share [S1] is cited national data, not a chosen assumption.
+const PARAMS = {
+  // Region counts are Appendix B's own given data (not a computed verdict) -- these are the exact
+  // figures printed in case.md, kept fixed here rather than re-derived from pell_share/state_share/
+  // overlap_share, which drift slightly from these due to a documented rounding gap between MA2's
+  // displayed 18.6% and the unrounded 453,000/2,440,631 = 18.56% it comes from (see QA_REPORT.md's
+  // P4 rounding note -- non-blocking, since Appendix B hands students the exact counts directly
+  // rather than asking them to reconstruct from the rounded percentage).
+  pell_only: 1580,             // Appendix B
+  state_only: 334,             // Appendix B
+  intersection: 1336,          // Appendix B
+  rate_no_reminder: 0.55,      // MA4
+  rate_with_reminder: 0.70,    // MA5
+};
+const FLEX = ["rate_no_reminder", "rate_with_reminder"]; // the two dials this notebook's Step 3 lets a student flex
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const union = p.pell_only + p.state_only + p.intersection;
+  const A = union * p.rate_with_reminder;
+  const B = p.intersection * p.rate_with_reminder + (p.pell_only + p.state_only) * p.rate_no_reminder;
+  return {A: A, B: B, pellOnly: p.pell_only, stateOnly: p.state_only, intersection: p.intersection, union: union};
+}
+function evaluate_twist(params){
+  // The twist doesn't change the arithmetic model -- it changes which metric a reader treats as
+  // decisive (total renewals vs. university dollars). evaluate() already returns both orders'
+  // total-renewals figures; the twist just asks the reader to look at them instead of at $0.00.
+  return evaluate(params);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+function checkD1D2(){
+  const pellOnly = +val('d1_pellonly'), stateOnly = +val('d1_stateonly'), inter = +val('d1_inter'), neither = +val('d1_neither');
+  const userUnion = +val('d2_union');
+  const e = evaluate({});
+  const okRegions = near(pellOnly, e.pellOnly, 1) && near(stateOnly, e.stateOnly, 1) && near(inter, e.intersection, 1) && near(neither, 9000 - e.union, 1);
+  const okUnion = near(userUnion, pellOnly + stateOnly + inter, 0.5);
+  fb('fb_d1d2', okRegions && okUnion, true);
+}
+function checkD3(){
+  // Accepts a plain-language description; this checks recognition of the two correct groups, not exact wording.
+  const a = val('d3_a').toString().toLowerCase();
+  const b = val('d3_b').toString().toLowerCase();
+  const okA = a.includes('neither') || a.includes('outside'); // Order A's empty set: students outside the union
+  const okB = b.includes('pell') && b.includes('state'); // Order B's non-empty set: pell-only + state-only, still covered by A
+  fb('fb_d3', okA && okB, true);
+}
+function checkD4(){
+  const ma4 = (+val('d4_ma4')) / 100, ma5 = (+val('d4_ma5')) / 100;
+  const e = evaluate({rate_no_reminder: ma4, rate_with_reminder: ma5});
+  const userA = +val('d4_a'), userB = +val('d4_b');
+  fb('fb_d4', near(userA, e.A, 1) && near(userB, e.B, 1), true);
+}
+function checkD5D6(){
+  const rate = 0.467; // Appendix C, Mixed AADC tier [S7]
+  const e = evaluate({});
+  const costA = e.union * rate, costB = 0;
+  const userCostA = +val('d5_costa'), userCostB = +val('d5_costb');
+  const margin = 100 * (e.A - e.B) / e.A;
+  const userMargin = +val('d6_margin');
+  fb('fb_d5d6', near(userCostA, costA, 1) && near(userCostB, costB, 0.5) && near(userMargin, margin, 0.5), true);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "grant-reach"; // short slug -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "A labeled Venn diagram of the Pell-eligible and state-grant-eligible sets, all four regions."],
+  ["D2", "A worked union-and-intersection calculation, cross-checked against D1."],
+  ["D3", "A subset-and-empty-set argument for Order A and Order B."],
+  ["D4", "A renewal-count projection table for both orders, by region."],
+  ["D5", "A total-cost table for both orders, including $0.00 where honest."],
+  ["D6", "A one-paragraph comparison of total renewals and the percentage margin."],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Set": {def: "A well-defined collection of distinct objects, considered as an object in its own right.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Subset": {def: "A set every one of whose elements is also a member of some larger set.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Empty Set": {def: "The set with no elements at all -- also called the null set.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Union": {def: "The set of every element that appears in at least one of two or more sets, written A ∪ B.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Intersection": {def: "The set of every element that appears in ALL of two or more sets at once, written A ∩ B.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Venn Diagram": {def: "A diagram using overlapping circles to show how sets relate -- shared regions are the intersection, everything inside either circle is the union.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+};
+const HOWTO = [
+  ["How to find the union and intersection of two sets", "Union"],
+  ["How to represent a set relationship using a Venn diagram", "Venn Diagram"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const label = document.getElementById('twistToggleLabel');
+  if(applied){
+    const e = evaluate({});
+    const gap = Math.round(e.A - e.B);
+    alert("Twist applied: your own Step 3/4 numbers show a real gap of about " + gap +
+      " student" + (gap === 1 ? "" : "s") + " between the two orders' total renewals -- go back to " +
+      "Step 4 and Deliverable D6 and decide whether that changes your recommendation.");
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

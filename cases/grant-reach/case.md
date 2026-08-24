@@ -20,7 +20,7 @@ She minimizes the spreadsheet. On her desk are two mail-house order forms, both 
 
 Deja Whitfield is the Financial Aid Outreach Coordinator at Cascade State University, a mid-size public university in California. Her job is to make sure continuing students who currently receive need-based grant aid actually complete the paperwork to keep it — a federal FAFSA renewal and, for state-grant recipients, an annual GPA verification with the California Student Aid Commission (CSAC). Students who miss either deadline don't get an extension; they lose the aid for the following term (SEE APPENDIX A).
 
-Cascade State's aid-renewal population this cycle is **9,000 continuing undergraduates** who received either a federal Pell Grant, a state Cal Grant, or both, in the current academic year (SEE APPENDIX A). Some of these students are eligible for the Pell Grant only, some for the state's Cal Grant only, and some for both — Deja's office tracks all three groups separately because the two programs use different eligibility rules: Pell Grant eligibility is based on a federal need calculation with no single income cutoff, while California's Cal Grant program publishes a flat family-income ceiling that varies by household size (SEE APPENDIX A). A student can clear one gate and not the other.
+Cascade State's aid-renewal population this cycle is **9,000 continuing undergraduates** — the students Deja's office is responsible for screening this cycle for federal Pell Grant and/or state Cal Grant eligibility (SEE APPENDIX A). Some of these students are eligible for the Pell Grant only, some for the state's Cal Grant only, some for both, and some for neither — Deja's office tracks all four groups because the two programs use different eligibility rules: Pell Grant eligibility is based on a federal need calculation with no single income cutoff, while California's Cal Grant program publishes a flat family-income ceiling that varies by household size (SEE APPENDIX A). A student can clear one gate, both, or neither.
 
 Every student who gets a printed reminder packet in the mail is measurably more likely to complete their renewal on time than a student who gets nothing (SEE APPENDIX D). Deja's office has budget for exactly one mailing decision this cycle:
 
@@ -117,6 +117,8 @@ Applying Appendix A and the Modeling Assumptions above:
 | Neither | outside Pell ∪ State | 5,750 |
 
 Check: |Pell| = 1,580 + 1,336 = 2,916 (matches 32.4% of 9,000 [S1]). |State| = 334 + 1,336 = 1,670 (matches MA2). |Pell ∪ State| = |Pell| + |State| − |Pell ∩ State| = 2,916 + 1,670 − 1,336 = 3,250.
+
+The 5,750 students in "Neither" hold no Pell Grant and no Cal Grant this year, so they have no aid to renew — they are outside both orders' mailing lists and outside every renewal-count and cost calculation in Deliverables D4–D6, which apply only to the 3,250-student union. Screened out, not ignored: they are the reason Deja's office screens 9,000 students to reach the 3,250 who actually need this mailing.
 
 A blank, unlabeled two-circle Venn diagram template for D1 is available at: https://www.canva.com/graphs/venn-diagrams/ (if this link is unavailable, any hand-drawn two-circle diagram with the four regions above satisfies the deliverable — the data above is what's load-bearing, not the specific tool).
 
