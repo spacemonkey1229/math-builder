@@ -67,6 +67,19 @@ _MIGRATIONS = (
     )""",
     "CREATE UNIQUE INDEX IF NOT EXISTS ratings_learner_case_uq ON ratings(learner_id, case_id)",
     "CREATE INDEX IF NOT EXISTS ratings_case_idx ON ratings(case_id)",
+    """CREATE TABLE IF NOT EXISTS class_submissions (
+        id            text PRIMARY KEY,
+        case_id       text NOT NULL,
+        group_label   text NOT NULL,
+        student_name  text NOT NULL,
+        answer_text   text,
+        photo_path    text,
+        submitted_on  timestamptz NOT NULL DEFAULT now(),
+        reviewed_on   timestamptz,
+        reviewed_by   text,
+        review_note   text
+    )""",
+    "CREATE INDEX IF NOT EXISTS class_submissions_case_idx ON class_submissions(case_id)",
 )
 
 
@@ -328,6 +341,58 @@ class PostgresStore:
         if not row:
             raise ApiError(404, f"submitted file not found: {path}")
         return bytes(row[0])
+
+    def get_submitted_file(self, path):
+        """Public wrapper on _fetch_submitted_file for the class-review photo
+        route -- returns None instead of raising when the row is missing, so
+        a stale/bad photo_path 404s cleanly rather than crashing the review
+        page."""
+        try:
+            return self._fetch_submitted_file(path)
+        except TypeError:
+            return None
+
+    # ------------------------------------------------- class submissions ---
+    # Direct INSERT/UPDATE/SELECT, not the load-whole-doc/delete+reinsert
+    # pattern the four MUTABLE_DOCS use above -- a live class has several
+    # students submitting within the same minute or two, and delete+reinsert
+    # of the *entire* history on every single submit would be needless
+    # cross-student write contention for no benefit here.
+    def add_class_submission(self, row):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO class_submissions (id, case_id, group_label, student_name, answer_text,
+                                                        photo_path)
+                       VALUES (%s,%s,%s,%s,%s,%s)""",
+                    (row['id'], row['case_id'], row['group_label'], row['student_name'],
+                     row.get('answer_text'), row.get('photo_path')))
+            conn.commit()
+
+    def list_class_submissions(self, case_id=None):
+        with self._conn() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                if case_id:
+                    cur.execute("""SELECT * FROM class_submissions WHERE case_id = %s
+                                   ORDER BY submitted_on DESC""", (case_id,))
+                else:
+                    cur.execute("SELECT * FROM class_submissions ORDER BY submitted_on DESC")
+                rows = cur.fetchall()
+        for r in rows:
+            r['submitted_on'] = r['submitted_on'].isoformat() if r['submitted_on'] else None
+            r['reviewed_on'] = r['reviewed_on'].isoformat() if r['reviewed_on'] else None
+        return rows
+
+    def review_class_submission(self, submission_id, review_note, reviewed_by):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """UPDATE class_submissions SET reviewed_on = now(), reviewed_by = %s, review_note = %s
+                       WHERE id = %s""",
+                    (reviewed_by, review_note, submission_id))
+                if cur.rowcount == 0:
+                    raise ApiError(404, f"class submission {submission_id} not found")
+            conn.commit()
 
     # --------------------------------------------------- scoring bridge ----
     @contextlib.contextmanager

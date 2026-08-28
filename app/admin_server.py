@@ -27,6 +27,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import admin_core
 from admin_html import render_admin_html
+from class_html import render_class_case_html, render_class_review_html
 from store_local import LocalFileStore
 
 STORE = None  # set in main()
@@ -148,6 +149,40 @@ class Handler(BaseHTTPRequestHandler):
             if path is None:
                 return self._json(404, {"error": "not found"})
             return self._serve_html_file(path, "not found")
+        m = re.match(r'^/class/([a-z0-9][a-z0-9-]*)$', urllib.parse.unquote(p.path))
+        if m:
+            try:
+                case = admin_core.get_case_brief(m.group(1))
+            except admin_core.ApiError as e:
+                return self._json(e.code, {"error": e.msg})
+            body = render_class_case_html(case).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
+        if p.path == '/class-review':
+            qs = urllib.parse.parse_qs(p.query)
+            case_id = (qs.get('case_id') or [None])[0]
+            rows = admin_core.do_list_class_submissions(STORE, case_id)
+            body = render_class_review_html(rows, case_id).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
+        m = re.match(r'^/class-photo/(.+)$', urllib.parse.unquote(p.path))
+        if m:
+            data = STORE.get_submitted_file(m.group(1))
+            if data is None:
+                return self._json(404, {"error": "not found"})
+            import mimetypes
+            ctype = mimetypes.guess_type(m.group(1))[0] or 'application/octet-stream'
+            self.send_response(200)
+            self.send_header('Content-Type', ctype)
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            return self.wfile.write(data)
         if p.path == '/api/state':
             try:
                 return self._json(200, admin_core.build_state(STORE))
@@ -187,6 +222,20 @@ class Handler(BaseHTTPRequestHandler):
                 fields, files = admin_core.parse_multipart(raw, ct)
                 path = admin_core.do_upload(STORE, fields, files)
                 return self._json(200, {"ok": True, "path": path})
+
+            if p.path == '/api/class-submit':
+                ct = self.headers.get('Content-Type', '')
+                length = int(self.headers.get('Content-Length', 0) or 0)
+                raw = self.rfile.read(length)
+                fields, files = admin_core.parse_multipart(raw, ct)
+                photo_file = None
+                if files:
+                    _, filename, data = files[0]
+                    photo_file = (filename, data)
+                sid = admin_core.do_class_submit(STORE, fields.get('case_id'), None,
+                                                  fields.get('student_name'), fields.get('answer_text'),
+                                                  photo_file)
+                return self._json(200, {"ok": True, "id": sid})
 
             if p.path == '/api/learners/bulk-csv':
                 ct = self.headers.get('Content-Type', '')
@@ -257,6 +306,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"ok": True, "report": out})
             elif p.path == '/api/badge/award':
                 admin_core.do_award_badge(STORE, b['learner_id'], b['badge_index'], b.get('awarded_by'))
+                self._json(200, {"ok": True})
+            elif p.path == '/api/class-review':
+                admin_core.do_review_class_submission(STORE, b['submission_id'], b.get('review_note'), 'guide')
                 self._json(200, {"ok": True})
             else:
                 self._json(404, {"error": "not found"})

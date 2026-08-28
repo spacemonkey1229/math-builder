@@ -1047,3 +1047,64 @@ CSV_TEMPLATE = (
     "Avery N.,MS-Adventure,2026-fall-adventure,active,,build confidence with ratios\n"
     "Jordan P.,Launchpad,2026-fall-lp,active,,explore engineering careers\n"
 )
+
+
+# ---------------------------------------------------- weekly class cases ---
+# A deliberately separate, lighter-weight lane from the roster/assignment/
+# submission machinery above: one shared link per case, a walk-up student
+# types their name and goes through the case, no pre-registered learner id
+# or passcode. Built for a live, facilitator-run weekly session with a small
+# group (2-8 students) discussed together afterward -- not the self-directed,
+# multi-week C1-C7 research-capstone flow the rest of this file supports.
+def get_case_brief(case_id):
+    """Public info for the /class/<case_id> landing page: title, the
+    dilemma's framing, and its published Interactive.html filename if one
+    exists. Reads cases_index.json directly off disk (bundled, read-only
+    content in both local and hosted modes -- see store docstrings) rather
+    than through store.load(), since this page has to work before any store
+    is even relevant (it's unauthenticated)."""
+    idx_path = os.path.join(os.path.dirname(_CASES_DIR), 'readmodel', 'cases_index.json')
+    with open(idx_path, encoding='utf-8') as f:
+        idx = json.load(f)
+    case = next((c for c in idx['cases'] if c['id'] == case_id and c['status'] in ('published', 'legacy')), None)
+    if not case:
+        raise ApiError(404, f"case {case_id} not found or not published")
+    filename, exists = _case_interactive_info(case_id, case['title'])
+    return {
+        "id": case['id'], "title": case['title'], "primary_metric": case.get('primary_metric'),
+        "options": case.get('options', {}),
+        "interactive_path": f"/cases/{case_id}/published/{filename}" if exists else None,
+    }
+
+
+def do_class_submit(store, case_id, group_label, student_name, answer_text, photo_file):
+    """photo_file is (filename, bytes) or None. Looks the case up first so a
+    bad/typo'd case_id in a hand-typed link fails clearly instead of writing
+    an orphaned submission."""
+    case = get_case_brief(case_id)  # raises ApiError(404) if unknown
+    student_name = (student_name or "").strip()
+    if not student_name:
+        raise ApiError(400, "name is required")
+    answer_text = (answer_text or "").strip()
+    if not answer_text and not photo_file:
+        raise ApiError(400, "submit an answer, a photo, or both")
+    sid = f"class__{case_id}__{slugify(student_name) or 'student'}__{datetime.datetime.now().strftime('%Y%m%dT%H%M%S%f')}"
+    photo_path = None
+    if photo_file:
+        filename, data = photo_file
+        safe_name = re.sub(r'[^A-Za-z0-9 ._-]', '_', filename) or 'photo.jpg'
+        photo_path = f"class_work/{case_id}/{sid}__{safe_name}"
+        store.write_submitted_file(photo_path, f"class:{slugify(student_name)}", case_id, data)
+    store.add_class_submission({
+        "id": sid, "case_id": case_id, "group_label": (group_label or case['title']).strip(),
+        "student_name": student_name, "answer_text": answer_text or None, "photo_path": photo_path,
+    })
+    return sid
+
+
+def do_list_class_submissions(store, case_id=None):
+    return store.list_class_submissions(case_id)
+
+
+def do_review_class_submission(store, submission_id, review_note, reviewed_by):
+    store.review_class_submission(submission_id, review_note, reviewed_by)

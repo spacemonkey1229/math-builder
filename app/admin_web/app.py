@@ -146,6 +146,7 @@ def student_logout():
 
 
 _STUDENT_API_RE = re.compile(r'^/api/student/')
+_CLASS_CASE_RE = re.compile(r'^/class/[a-z0-9][a-z0-9-]*$')
 
 
 @app.before_request
@@ -159,6 +160,15 @@ def require_auth():
     if request.path in ('/login', '/logout', '/student-login', '/student-logout') \
             or _STUDENT_FILE_RE.match(request.path) \
             or request.path.startswith('/static') or request.path.startswith('/cases/'):
+        return
+    # The weekly-class landing page (/class/<case_id>) and its submit endpoint
+    # are the one other unauthenticated surface: a walk-up student has no
+    # admin login and no pre-registered passcode, by design (see
+    # admin_core.py's "weekly class cases" section). /class-review and
+    # /class-photo/... (the facilitator's view of what came in) are NOT
+    # exempted here -- those stay behind the admin passcode like everything
+    # else, since they show every student's name and work.
+    if _CLASS_CASE_RE.match(request.path) or request.path == '/api/class-submit':
         return
     # The live student portal (/student + /api/student/*) has its own, separate
     # per-learner passcode session -- never the admin one. A learner never gets
@@ -493,3 +503,60 @@ def api_student_rate():
     b = request.get_json(force=True) or {}
     rid = admin_core.do_rate_case(get_store(), session['student_id'], b['case_id'], b.get('stars'), b.get('note'))
     return {"ok": True, "id": rid}
+
+
+# --------------------------------------------------------- weekly class ----
+# See admin_core.py's "weekly class cases" section for why this is a
+# separate, simpler lane from the roster/assignment/rubric flow above: one
+# link per case, a walk-up student types their name, no login. HTML lives in
+# class_html.py, shared with app/admin_server.py's local route for the same
+# page (same reuse pattern as admin_html.py/student_portal_html.py).
+import html as _html
+
+from class_html import render_class_case_html, render_class_review_html
+
+
+@app.route('/class/<case_id>')
+def class_case_page(case_id):
+    try:
+        case = admin_core.get_case_brief(case_id)
+    except admin_core.ApiError as e:
+        return f"<p>{_html.escape(e.msg)}</p>", e.code
+    return render_class_case_html(case)
+
+
+@app.route('/api/class-submit', methods=['POST'])
+@json_api
+def api_class_submit():
+    case_id = request.form.get('case_id', '')
+    student_name = request.form.get('student_name', '')
+    answer_text = request.form.get('answer_text', '')
+    f = request.files.get('photo')
+    photo_file = (f.filename, f.read()) if f and f.filename else None
+    sid = admin_core.do_class_submit(get_store(), case_id, None, student_name, answer_text, photo_file)
+    return {"ok": True, "id": sid}
+
+
+@app.route('/class-review')
+def class_review_page():
+    case_id = request.args.get('case_id') or None
+    rows = admin_core.do_list_class_submissions(get_store(), case_id)
+    return render_class_review_html(rows, case_id)
+
+
+@app.route('/api/class-review', methods=['POST'])
+@json_api
+def api_class_review():
+    b = request.get_json(force=True) or {}
+    admin_core.do_review_class_submission(get_store(), b['submission_id'], b.get('review_note'), 'guide')
+    return {"ok": True}
+
+
+@app.route('/class-photo/<path:rel_path>')
+def class_photo(rel_path):
+    data = get_store().get_submitted_file(rel_path)
+    if data is None:
+        return jsonify({"error": "not found"}), 404
+    import mimetypes
+    ctype = mimetypes.guess_type(rel_path)[0] or 'application/octet-stream'
+    return Response(data, mimetype=ctype)

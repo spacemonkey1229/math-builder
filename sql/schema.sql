@@ -162,3 +162,24 @@ CREATE TABLE IF NOT EXISTS submitted_files (
   content_type text,
   uploaded_on  timestamptz NOT NULL DEFAULT now()
 );
+
+-- A separate, deliberately simpler lane for live weekly-class sessions: one
+-- shared link per case, a walk-up student types their name and submits an
+-- answer, no pre-registered learner/passcode and none of the C1-C7
+-- independent-study rubric in submissions/scores above -- that machinery is
+-- for a self-directed multi-week research capstone, not a 45-60 min
+-- facilitated case discussion with a small live group. photo_path, when set,
+-- points at a row in submitted_files (case_id-scoped path under class_work/).
+CREATE TABLE IF NOT EXISTS class_submissions (
+  id            text PRIMARY KEY,
+  case_id       text NOT NULL,
+  group_label   text NOT NULL,
+  student_name  text NOT NULL,
+  answer_text   text,
+  photo_path    text,
+  submitted_on  timestamptz NOT NULL DEFAULT now(),
+  reviewed_on   timestamptz,
+  reviewed_by   text,
+  review_note   text
+);
+CREATE INDEX IF NOT EXISTS class_submissions_case_idx ON class_submissions(case_id);
