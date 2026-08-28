@@ -80,6 +80,7 @@ _MIGRATIONS = (
         review_note   text
     )""",
     "CREATE INDEX IF NOT EXISTS class_submissions_case_idx ON class_submissions(case_id)",
+    "ALTER TABLE class_submissions ADD COLUMN IF NOT EXISTS pdf_path text",
 )
 
 
@@ -363,10 +364,10 @@ class PostgresStore:
             with conn.cursor() as cur:
                 cur.execute(
                     """INSERT INTO class_submissions (id, case_id, group_label, student_name, answer_text,
-                                                        photo_path)
-                       VALUES (%s,%s,%s,%s,%s,%s)""",
+                                                        pdf_path, photo_path)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s)""",
                     (row['id'], row['case_id'], row['group_label'], row['student_name'],
-                     row.get('answer_text'), row.get('photo_path')))
+                     row.get('answer_text'), row.get('pdf_path'), row.get('photo_path')))
             conn.commit()
 
     def list_class_submissions(self, case_id=None):

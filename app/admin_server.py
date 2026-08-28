@@ -228,13 +228,10 @@ class Handler(BaseHTTPRequestHandler):
                 length = int(self.headers.get('Content-Length', 0) or 0)
                 raw = self.rfile.read(length)
                 fields, files = admin_core.parse_multipart(raw, ct)
-                photo_file = None
-                if files:
-                    _, filename, data = files[0]
-                    photo_file = (filename, data)
+                by_name = {name: (filename, data) for name, filename, data in files}
                 sid = admin_core.do_class_submit(STORE, fields.get('case_id'), None,
                                                   fields.get('student_name'), fields.get('answer_text'),
-                                                  photo_file)
+                                                  by_name.get('photo'), by_name.get('pdf'))
                 return self._json(200, {"ok": True, "id": sid})
 
             if p.path == '/api/learners/bulk-csv':

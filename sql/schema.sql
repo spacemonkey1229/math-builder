@@ -170,12 +170,19 @@ CREATE TABLE IF NOT EXISTS submitted_files (
 -- for a self-directed multi-week research capstone, not a 45-60 min
 -- facilitated case discussion with a small live group. photo_path, when set,
 -- points at a row in submitted_files (case_id-scoped path under class_work/).
+-- pdf_path is the expected main artifact: the case's own "Submit" toolbar
+-- button (exportSubmissionPacket() in every case's Interactive.html) packages
+-- the student's filled-in Working Notebook + deliverables checklist into a
+-- print-to-PDF document, which the student then uploads here. photo_path
+-- stays for optional extra scratch-work photos; answer_text is a free-text
+-- fallback for when print-to-PDF doesn't work on a given device.
 CREATE TABLE IF NOT EXISTS class_submissions (
   id            text PRIMARY KEY,
   case_id       text NOT NULL,
   group_label   text NOT NULL,
   student_name  text NOT NULL,
   answer_text   text,
+  pdf_path      text,
   photo_path    text,
   submitted_on  timestamptz NOT NULL DEFAULT now(),
   reviewed_on   timestamptz,
@@ -183,3 +190,6 @@ CREATE TABLE IF NOT EXISTS class_submissions (
   review_note   text
 );
 CREATE INDEX IF NOT EXISTS class_submissions_case_idx ON class_submissions(case_id);
+-- Added after this table's first deploy -- see store_postgres.py's _MIGRATIONS
+-- for the idempotent ALTER that reaches an already-live database.
+ALTER TABLE class_submissions ADD COLUMN IF NOT EXISTS pdf_path text;

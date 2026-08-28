@@ -531,9 +531,11 @@ def api_class_submit():
     case_id = request.form.get('case_id', '')
     student_name = request.form.get('student_name', '')
     answer_text = request.form.get('answer_text', '')
-    f = request.files.get('photo')
-    photo_file = (f.filename, f.read()) if f and f.filename else None
-    sid = admin_core.do_class_submit(get_store(), case_id, None, student_name, answer_text, photo_file)
+    pf = request.files.get('photo')
+    photo_file = (pf.filename, pf.read()) if pf and pf.filename else None
+    df = request.files.get('pdf')
+    pdf_file = (df.filename, df.read()) if df and df.filename else None
+    sid = admin_core.do_class_submit(get_store(), case_id, None, student_name, answer_text, photo_file, pdf_file)
     return {"ok": True, "id": sid}
 
 

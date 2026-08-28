@@ -1077,27 +1077,40 @@ def get_case_brief(case_id):
     }
 
 
-def do_class_submit(store, case_id, group_label, student_name, answer_text, photo_file):
-    """photo_file is (filename, bytes) or None. Looks the case up first so a
-    bad/typo'd case_id in a hand-typed link fails clearly instead of writing
-    an orphaned submission."""
+def _save_class_file(store, case_id, sid, student_name, kind, file_tuple, default_name):
+    """file_tuple is (filename, bytes) or None. kind ('pdf'/'photo') just
+    keeps the two uploads from colliding in student_work/... paths."""
+    if not file_tuple:
+        return None
+    filename, data = file_tuple
+    safe_name = re.sub(r'[^A-Za-z0-9 ._-]', '_', filename) or default_name
+    path = f"class_work/{case_id}/{sid}__{kind}__{safe_name}"
+    store.write_submitted_file(path, f"class:{slugify(student_name)}", case_id, data)
+    return path
+
+
+def do_class_submit(store, case_id, group_label, student_name, answer_text, photo_file, pdf_file=None):
+    """photo_file/pdf_file are each (filename, bytes) or None. pdf_file is the
+    expected main artifact -- the case's own "Submit" toolbar button packages
+    the student's filled-in notebook into a print-to-PDF document -- but
+    nothing here hard-requires it: a device where print-to-PDF misbehaves
+    mid-class shouldn't block a student from submitting *something*. Looks
+    the case up first so a bad/typo'd case_id in a hand-typed link fails
+    clearly instead of writing an orphaned submission."""
     case = get_case_brief(case_id)  # raises ApiError(404) if unknown
     student_name = (student_name or "").strip()
     if not student_name:
         raise ApiError(400, "name is required")
     answer_text = (answer_text or "").strip()
-    if not answer_text and not photo_file:
-        raise ApiError(400, "submit an answer, a photo, or both")
+    if not answer_text and not photo_file and not pdf_file:
+        raise ApiError(400, "submit your PDF, a photo, a note, or some combination")
     sid = f"class__{case_id}__{slugify(student_name) or 'student'}__{datetime.datetime.now().strftime('%Y%m%dT%H%M%S%f')}"
-    photo_path = None
-    if photo_file:
-        filename, data = photo_file
-        safe_name = re.sub(r'[^A-Za-z0-9 ._-]', '_', filename) or 'photo.jpg'
-        photo_path = f"class_work/{case_id}/{sid}__{safe_name}"
-        store.write_submitted_file(photo_path, f"class:{slugify(student_name)}", case_id, data)
+    pdf_path = _save_class_file(store, case_id, sid, student_name, 'pdf', pdf_file, 'submission.pdf')
+    photo_path = _save_class_file(store, case_id, sid, student_name, 'photo', photo_file, 'photo.jpg')
     store.add_class_submission({
         "id": sid, "case_id": case_id, "group_label": (group_label or case['title']).strip(),
-        "student_name": student_name, "answer_text": answer_text or None, "photo_path": photo_path,
+        "student_name": student_name, "answer_text": answer_text or None,
+        "pdf_path": pdf_path, "photo_path": photo_path,
     })
     return sid
 
