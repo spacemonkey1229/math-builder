@@ -556,6 +556,14 @@ def api_class_review():
 
 @app.route('/class-photo/<path:rel_path>')
 def class_photo(rel_path):
+    # Same Vercel WSGI quirk documented on case_interactive_html() above:
+    # PATH_INFO arrives still percent-encoded (e.g. a filename with spaces
+    # stays "%20"), which violates the WSGI spec, so Werkzeug's normal
+    # auto-decode never runs and rel_path shows up literally containing
+    # "%20" instead of a space -- a guaranteed DB lookup miss. Decoding
+    # defensively here is a no-op on an already-decoded string (local dev),
+    # so it's safe regardless of which WSGI server is in front.
+    rel_path = unquote(rel_path)
     data = get_store().get_submitted_file(rel_path)
     if data is None:
         return jsonify({"error": "not found"}), 404

@@ -347,10 +347,13 @@ class PostgresStore:
         """Public wrapper on _fetch_submitted_file for the class-review photo
         route -- returns None instead of raising when the row is missing, so
         a stale/bad photo_path 404s cleanly rather than crashing the review
-        page."""
+        page. _fetch_submitted_file raises ApiError(404), not a plain
+        lookup-miss exception -- catching the wrong one here previously let
+        that ApiError escape uncaught up through the undecorated class_photo
+        route (no @json_api there), producing a raw 500 instead of a 404."""
         try:
             return self._fetch_submitted_file(path)
-        except TypeError:
+        except ApiError:
             return None
 
     # ------------------------------------------------- class submissions ---
