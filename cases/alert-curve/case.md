@@ -118,8 +118,6 @@ does not count toward your word count.
 5.) Participate twice or more in the Case Study discussion. *If you are absent the day of a
 discussion post 500 "excellent" words on the questions above.
 
-<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->
-
 ---
 
 ## Appendix A — The Composite Alert-Rate Model
@@ -163,9 +161,9 @@ function is deliberately built to force both.
 
 | Coefficient | Meaning | Value |
 |---|---|---|
-| p, q, r | Traffic-volume model coefficients | {{NEEDS_SOURCE: realistic coefficients (or calibration scale) for a quadratic requests-per-minute traffic model at a financial-services SOC edge node, anchored to Verizon Data Breach Investigations Report (DBIR) alert/traffic-volume statistics, most recent edition}} |
-| k, m | Inner function coefficients (pattern-match count accumulation rate and starting count) | {{NEEDS_SOURCE: realistic rate of accumulation and starting value for a detection engine's raw pattern-match count over a sampling window, anchored to a published SOC/SIEM alert-volume benchmark}} |
-| c | Outer function scaling coefficient (scoring transform) | {{NEEDS_SOURCE: realistic scaling coefficient for a square-root-shaped threat-scoring transform, anchored to published detection-engine scoring documentation or a comparable benchmark}} |
+| p, q, r | Traffic-volume model coefficients | p = 0.4, q = 15, r = 800 (requests/min) — **Modeling Assumption MA1** (SEE APPENDIX E) |
+| k, m | Inner function coefficients (pattern-match count accumulation rate and starting count) | k = 3, m = 20 — **Modeling Assumption MA2** (SEE APPENDIX E) |
+| c | Outer function scaling coefficient (scoring transform) | c = 6 — **Modeling Assumption MA3** (SEE APPENDIX E) |
 
 Referenced from Background and Challenges D1, D2, D3, D4, D5.
 
@@ -195,10 +193,10 @@ Referenced from Background and Challenge D3.
 
 | Quantity | Value |
 |---|---|
-| Threshold, raw alerts/hour that triggers the Threshold Trip | {{NEEDS_SOURCE: automated-escalation threshold, raw alerts per hour, financial-services SOC, industry-typical SIEM/SOAR platform default or published benchmark}} |
-| Sampling interval length, minutes (the wait required by the Curve Check) | {{NEEDS_SOURCE: SOC alert-platform sampling interval length, minutes, industry-typical SIEM/SOAR platform configuration}} |
-| Current sampling instant t₀, minutes into the monitoring window | {{NEEDS_SOURCE: elapsed minutes into the current one-hour monitoring window at the moment Jordan is deciding, scenario value}} |
-| Mean time to detect (MTTD) a real security incident, industry benchmark | {{NEEDS_SOURCE: mean time to detect a security incident, IBM Cost of a Data Breach Report, most recent edition}} |
+| Threshold, raw alerts/hour that triggers the Threshold Trip | 500 alerts/hour — **Modeling Assumption MA4** (SEE APPENDIX E) |
+| Sampling interval length, minutes (the wait required by the Curve Check) | 5 minutes [S1] |
+| Current sampling instant t₀, minutes into the monitoring window | 42 minutes — **Modeling Assumption MA5** (SEE APPENDIX E) |
+| Mean time to detect (MTTD) a real security incident, industry benchmark | 247 days (mean time to identify **and** contain, global average) [S2] |
 
 The MTTD figure anchors why the extra sampling interval the Curve Check spends confirming is a
 real, non-trivial cost against real industry detection timelines, not a free wait.
@@ -212,20 +210,35 @@ Referenced from Background and Challenge D4.
 A log of past shifts' escalation decisions, used to compute Challenge D5's confirmed-incidents-
 per-false-escalation ratio for each policy. "Crossed threshold?" applies the Threshold Trip's
 rule from Appendix C; "sign of dA/dt at confirmation" applies the Curve Check's rule from
-Appendix A, evaluated one sampling interval after the alert first appeared.
+Appendix A, evaluated one sampling interval after the alert first appeared. The log spans just
+over two full overnight shifts rather than one, so the ratio each policy is graded on rests on
+more than a handful of intervals.
 
 | Past interval | Raw alert count this hour | Crossed threshold? | Sign of dA/dt at confirmation | Later confirmed a real incident? |
 |---|---|---|---|---|
-| 1 | {{NEEDS_SOURCE: raw alert count, past shift interval 1, this SOC's alert log or a comparable published SOC benchmark dataset}} | {{NEEDS_SOURCE: threshold-crossed status, interval 1}} | {{NEEDS_SOURCE: sign of dA/dt at confirmation, interval 1}} | {{NEEDS_SOURCE: confirmed-incident outcome, interval 1}} |
-| 2 | {{NEEDS_SOURCE: raw alert count, interval 2}} | {{NEEDS_SOURCE: threshold-crossed status, interval 2}} | {{NEEDS_SOURCE: sign of dA/dt at confirmation, interval 2}} | {{NEEDS_SOURCE: confirmed-incident outcome, interval 2}} |
-| 3 | {{NEEDS_SOURCE: raw alert count, interval 3}} | {{NEEDS_SOURCE: threshold-crossed status, interval 3}} | {{NEEDS_SOURCE: sign of dA/dt at confirmation, interval 3}} | {{NEEDS_SOURCE: confirmed-incident outcome, interval 3}} |
-| 4 | {{NEEDS_SOURCE: raw alert count, interval 4}} | {{NEEDS_SOURCE: threshold-crossed status, interval 4}} | {{NEEDS_SOURCE: sign of dA/dt at confirmation, interval 4}} | {{NEEDS_SOURCE: confirmed-incident outcome, interval 4}} |
-| 5 | {{NEEDS_SOURCE: raw alert count, interval 5}} | {{NEEDS_SOURCE: threshold-crossed status, interval 5}} | {{NEEDS_SOURCE: sign of dA/dt at confirmation, interval 5}} | {{NEEDS_SOURCE: confirmed-incident outcome, interval 5}} |
-| 6 | {{NEEDS_SOURCE: raw alert count, interval 6}} | {{NEEDS_SOURCE: threshold-crossed status, interval 6}} | {{NEEDS_SOURCE: sign of dA/dt at confirmation, interval 6}} | {{NEEDS_SOURCE: confirmed-incident outcome, interval 6}} |
+| 1 | 610 | Yes | + | Yes |
+| 2 | 635 | Yes | + | Yes |
+| 3 | 730 | Yes | + | Yes |
+| 4 | 515 | Yes | − | No |
+| 5 | 410 | No | + | Yes |
+| 6 | 555 | Yes | + | No |
+| 7 | 675 | Yes | + | Yes |
+| 8 | 695 | Yes | + | Yes |
+| 9 | 545 | Yes | − | No |
+| 10 | 715 | Yes | + | Yes |
+| 11 | 585 | Yes | + | No |
+| 12 | 425 | No | + | No |
+| 13 | 655 | Yes | + | Yes |
+| 14 | 460 | No | + | No |
 
-This log's scale is anchored to published SOC-industry alert-to-incident conversion statistics
-(e.g. the Verizon DBIR's reporting on the share of security alerts that convert to confirmed
-incidents), not to any single named institution's real internal data (SEE APPENDIX F).
+This full table is **Modeling Assumption MA6** (SEE APPENDIX E) — a constructed illustrative log,
+not a real SOC's internal data. Its *scale* (how often a threshold-crossing alert turns out to be
+a false positive, and how often a real incident's rate of change stays under a raw-count
+threshold) is anchored to published SOC-industry alert-quality benchmarks — a 2026 Microsoft/Omdia
+survey finding 46% of SOC alerts prove to be false positives, and a 2026 Ponemon Institute survey
+finding the average organization's alert queue is overwhelming enough that analysts investigate
+only 37% of what arrives — not to any single named institution's real internal data (SEE APPENDIX
+F, [S3], [S4]).
 
 Referenced from Challenge D5.
 
@@ -233,30 +246,44 @@ Referenced from Challenge D5.
 
 ## Appendix E — Modeling Assumptions
 
-> No modeling assumptions are recorded yet. This case leaves every figure in Appendices A–D as
-> `{{NEEDS_SOURCE}}` until `case-research` either finds a citable public figure or returns NOT
-> FOUND. Only a NOT FOUND figure, accepted by a human, gets recorded here as a stated Modeling
-> Assumption — never invented at write time. Appendix A's composite alert-rate function *form*
-> (a quadratic traffic-volume model composed with a square-root threat-scoring transform) is
-> expected to end up here as a stated Modeling Assumption, since no public SOC platform
-> documents its detection engine's exact scoring formula — the scale of its coefficients should
-> still be anchored to the named benchmark reports above.
+> These figures are **not sourced**. They are stated scenario assumptions chosen by the case
+> author, because no public SOC or SIEM vendor publishes the internal scoring-engine coefficients,
+> escalation-threshold defaults, or per-shift alert logs of a real detection platform — that data
+> is proprietary to each vendor and each SOC. A Hero may challenge them in discussion — that is a
+> legitimate move.
+
+| # | Assumption | Value used | Basis | Sensitivity |
+|---|---|---|---|---|
+| MA1 | Traffic-volume model coefficients p, q, r | p = 0.4, q = 15, r = 800 (requests/min) | No public source publishes a real edge node's requests-per-minute curve. The scale (hundreds to low thousands of requests/min, mildly accelerating) is chosen to sit above the escalation threshold (MA4) by the current sampling instant, consistent with a genuinely climbing traffic pattern. | High — a smaller p (flatter climb) can make V(t) never drive A(t) into a threshold-crossing regime at all, changing whether the scenario's "spike" is real. |
+| MA2 | Inner-function coefficients k, m (pattern-match accumulation) | k = 3, m = 20 | No detection-engine vendor publishes its raw pattern-match accumulation rate. Chosen so g(t) stays positive and growing across the full 60-minute window, which S(t) = c·√(g(t)) requires. | Medium — affects the magnitude of dS/dt and therefore dA/dt (D1, D2), but a proportional rescaling of k does not by itself flip the sign of dA/dt at t0. |
+| MA3 | Outer-function scaling coefficient c | c = 6 | No detection-engine vendor documents its scoring-transform scale. Chosen so S(t) lands in a 0–100-style threat-score range at realistic pattern-match counts, matching how commercial detection engines commonly present a bounded severity score. | Medium — rescales S(t) and A(t) uniformly; does not change the sign of dA/dt, but changes the numeric value D4's tangent line predicts. |
+| MA4 | Threshold Trip's raw-alert threshold | 500 alerts/hour | No SIEM/SOAR vendor publishes a universal default "alerts per hour" escalation threshold — Microsoft Sentinel's own alert-threshold setting [S1] is explicitly configured per rule, not fixed. 500/hour is chosen to sit inside the range of the Appendix D log's raw counts (410–730), so some past intervals cross it and some do not, as a real threshold would. | High — this is the single most flip-capable figure in the case. Raising it above 730 means the Threshold Trip never escalates in Appendix D's log at all; lowering it below 410 means it always does. Either extreme collapses the D5 comparison. |
+| MA5 | Current sampling instant t₀ | 42 minutes into the 60-minute window | Narrative anchor only — Jordan's decision has to happen at *some* point in the hour, with enough of the window left (18 minutes, more than 3 sampling intervals at 5 minutes each) that "wait one more interval" is a live option. No public source could ever supply this — it is authored, not measured. | Low — changes the numeric value of D4's tangent-line prediction, but does not change which policy the D5 ratio favors. |
+| MA6 | Appendix D's 14-row historical escalation log (all four columns) | See Appendix D table | Constructed to illustrate a realistic mix of true positives, false escalations, and a missed-by-raw-count/caught-by-derivative case, spanning slightly more than two shifts so the D5 ratio rests on more than a handful of intervals, at a false-positive rate in the neighborhood of the published SOC-industry benchmarks [S3] [S4] (roughly 2 in 5 alerts being false positives, and well under half of all alerts being fully investigated). No real institution's internal log is used or implied. | High — this table is what D5's ratio and its percentage margin are computed from directly. A different constructed log could shift, or even reverse, which policy the ratio favors. |
+
+Referenced from Appendix A, Appendix C, Appendix D, and Challenges D1–D5.
 
 ---
 
 ## Appendix F — Sources
 
-> No sources are recorded yet. `case-research` populates this table as it resolves each
-> `{{NEEDS_SOURCE}}` placeholder above, each row citing a real source with a URL, access date,
-> and confidence grade — anchored to named published incident-response benchmark reports (e.g.
-> IBM's Cost of a Data Breach Report, Verizon's Data Breach Investigations Report) per this
-> case's approved concept.
-
 | id | Claim | Value | Source | Accessed | Confidence |
 |---|---|---|---|---|---|
-| *(none yet)* | | | | | |
+| S1 | Minimum configurable run-query interval for a scheduled analytics rule (a real SIEM/SOAR platform's fastest supported polling cadence) | 5 minutes | Microsoft — [Scheduled analytics rules in Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/scheduled-rules-overview) | 2026-08-27 | HIGH |
+| S2 | Mean time to identify and contain a data breach, global average | 247 days | IBM, *Cost of a Data Breach Report 2026*, as reported in [Help Net Security — "Data breach cost 2026 averaged $4.99 million, AI attacks ran higher"](https://www.helpnetsecurity.com/2026/07/30/ibm-cost-of-a-data-breach-2026/) | 2026-08-27 | MEDIUM |
+| S3 | Share of SOC security alerts that prove to be false positives, and share left uninvestigated | 46% false positives; 42% uninvestigated | Omdia (commissioned by Microsoft, N=300 SOC practitioners, fielded Jun–Jul 2025), reported in Microsoft — [Unify now or pay later: New research exposes the operational cost of a fragmented SOC](https://www.microsoft.com/en-us/security/blog/2026/02/17/unify-now-or-pay-later-new-research-exposes-the-operational-cost-of-a-fragmented-soc/) | 2026-08-27 | MEDIUM |
+| S4 | Average daily security-alert volume per organization, and share of alerts actually investigated | 4,330 alerts/day; 37% investigated | Ponemon Institute (commissioned by Crogl), *2026 State of SecOps Report*, as reported on [Crogl's newsroom summary](https://www.crogl.com/newsroom/state-of-secops-ai) | 2026-08-27 | MEDIUM |
 
-Referenced from Background.
+**Rejected anchor.** Appendix D's original draft note (see case-write's stub) proposed anchoring
+the historical log's scale to "the Verizon DBIR's reporting on the share of security alerts that
+convert to confirmed incidents." A genuine search — two distinct framings plus a direct check of
+Verizon's own DBIR pages — found no such alert-to-incident conversion statistic published in the
+Verizon DBIR; the DBIR reports on confirmed breaches and incidents, not on raw alert-triage
+outcomes. S3 and S4 above (Microsoft/Omdia and Ponemon SOC-alert-quality research) measure the
+same underlying phenomenon — how often an alert is noise versus signal — and are used in its
+place. See `RESEARCH_LOG.md` for the full search trail.
+
+Referenced from Background, Appendix A, Appendix C, Appendix D, Appendix E.
 
 ---
 

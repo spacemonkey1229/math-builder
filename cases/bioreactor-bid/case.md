@@ -46,17 +46,19 @@ process team has supplied standard growth-kinetics data describing how fast nutr
 the batch and how fast the culture takes it up over the run (SEE APPENDIX A) — the batch's net
 cumulative yield is the surplus that accumulates between those two rates over the full run.
 
-The run is bound by several hard limits. The batch must run for
-{{NEEDS_SOURCE: target production batch duration for this cell-culture run, in days}}, after
+The run is bound by several hard limits. The batch must run for 5 days [MA3], after
 which the culture is harvested regardless of vessel. Each vessel must be operated at a target fill
-level of {{NEEDS_SOURCE: target working fill level as a percent of nominal vessel capacity, for
-this cell-culture process}} of its nominal capacity — cell-culture vessels are never run to the
+level of 75% (Column Bid) [S5] / 45% (Wave Bid) [S5] of its nominal capacity — cell-culture vessels are never run to the
 brim, to leave headspace for gas exchange and foam. The client's program requires a minimum total
-yield of {{NEEDS_SOURCE: client's contractual minimum total viable product yield per production
-run, in liters}} of viable product from this run to meet its downstream purification schedule, and
+yield of 25 L [MA4] of viable product from this run to meet its downstream purification schedule, and
 the CRO's program budget caps total vessel and validation spend at
-{{NEEDS_SOURCE: CRO program budget cap for vessel purchase and validation, USD, this production
-line}} (SEE APPENDIX D). Wei's recommendation has to clear all three at once.
+$50,000 [MA5] (SEE APPENDIX D). Wei's recommendation has to clear all three at once.
+
+Getting there requires two calculus techniques Wei hasn't used since a college methods course —
+finding the area between two curves and finding the volume of a solid of revolution by the disk
+method (SEE APPENDIX F).
+
+All figures in this case are sourced or stated as modeling assumptions in (SEE APPENDIX E).
 
 ## Dilemma
 
@@ -97,73 +99,105 @@ does not count toward your word count.
 5.) Participate twice or more in the Case Study discussion. *If you are absent the day of a
 discussion post 500 "excellent" words on the questions above.
 
-<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->
-
-## Appendices
-
-### Appendix A — Batch Growth Kinetics: Feed Rate and Uptake Rate
+## Appendix A — Batch Growth Kinetics: Feed Rate and Uptake Rate
 
 The client's process team supplied the following nutrient feed-rate and metabolic uptake-rate
-data for the batch, sourced from standard Monod-kinetics-style growth curves reported in
-peer-reviewed bioprocess literature for this cell line. Both curves are given per liter of
-working volume so they apply to either vessel once you know its working volume (SEE APPENDIX B
-and APPENDIX C).
+data for the batch. No public dataset reports day-by-day feed/uptake rates in these units for this
+case's (unnamed) cell line, so the table below is a stated modeling assumption shaped like the
+qualitative pattern of a real fed-batch Monod-kinetics run — feed held roughly steady while uptake
+rises to meet it — rather than a citation to a specific published curve (SEE APPENDIX E, MA6).
+Both curves are given per liter of working volume so they apply to either vessel once you know its
+working volume (SEE APPENDIX B and APPENDIX C).
 
 | Batch time (day) | Feed rate (g/L/day) | Uptake rate (g/L/day) |
 |---|---|---|
-| 0 | {{NEEDS_SOURCE: feed rate at day 0, g/L/day, published Monod-kinetics growth curve for this cell line}} | {{NEEDS_SOURCE: uptake rate at day 0, g/L/day, same source}} |
-| 1 | {{NEEDS_SOURCE: feed rate at day 1, g/L/day}} | {{NEEDS_SOURCE: uptake rate at day 1, g/L/day}} |
-| 2 | {{NEEDS_SOURCE: feed rate at day 2, g/L/day}} | {{NEEDS_SOURCE: uptake rate at day 2, g/L/day}} |
-| 3 | {{NEEDS_SOURCE: feed rate at day 3, g/L/day}} | {{NEEDS_SOURCE: uptake rate at day 3, g/L/day}} |
-| 4 | {{NEEDS_SOURCE: feed rate at day 4, g/L/day}} | {{NEEDS_SOURCE: uptake rate at day 4, g/L/day}} |
-| 5 | {{NEEDS_SOURCE: feed rate at day 5, g/L/day}} | {{NEEDS_SOURCE: uptake rate at day 5, g/L/day}} |
+| 0 | 8 [MA6] | 2 [MA6] |
+| 1 | 10 [MA6] | 4 [MA6] |
+| 2 | 12 [MA6] | 7 [MA6] |
+| 3 | 13 [MA6] | 9 [MA6] |
+| 4 | 13 [MA6] | 11 [MA6] |
+| 5 | 12 [MA6] | 12 [MA6] |
 
 Conversion factor from net accumulated grams per liter to liters of viable product per liter of
-working volume: {{NEEDS_SOURCE: product-mass-to-volume conversion factor for this cell line's
-viable product, liters of product per gram of net accumulated biomass, published process
-literature}}.
+working volume: 0.05 L per g [MA6].
 
-### Appendix B — Column Bid Vessel Spec Sheet (Stirred-Tank Bioreactor)
+## Appendix B — Column Bid Vessel Spec Sheet (Stirred-Tank Bioreactor)
 
 | | Column Bid |
 |---|---|
 | Vessel shape | Right circular cylinder |
-| Nominal capacity (L) | {{NEEDS_SOURCE: nominal capacity, standard cylindrical stirred-tank bioreactor, manufacturer spec sheet}} |
-| Internal diameter (cm) | {{NEEDS_SOURCE: internal diameter, same vessel}} |
-| Straight-side height (cm) | {{NEEDS_SOURCE: straight-side height, same vessel}} |
-| Vessel purchase cost (USD) | {{NEEDS_SOURCE: vessel purchase cost, standard stirred-tank bioreactor at this scale, vendor spec/quote}} |
-| Validation cost (USD) | {{NEEDS_SOURCE: validation cost, stirred-tank bioreactor at this scale, CDMO industry benchmark}} |
+| Nominal capacity (L) | 50 L [S1] |
+| Internal diameter (cm) | 30.5 cm [S1] (derived) |
+| Straight-side height (cm) | 68.6 cm [S1] (derived) |
+| Vessel purchase cost (USD) | $28,864 [S2] |
+| Validation cost (USD) | $15,000 [MA1] |
 
-### Appendix C — Wave Bid Vessel Spec Sheet and Bag Cross-Sectional Profile
+*Derivation of internal diameter and straight-side height [S1]: the XDR-50 datasheet reports a
+50 L maximum working volume and an aspect ratio H/D = 2.25:1. Solving V = π(D/2)²H with H = 2.25D
+gives D³ = 50,000 cm³ ÷ (0.5625π) ≈ 28,297 cm³, so D ≈ 30.5 cm and H = 2.25D ≈ 68.6 cm.*
+
+## Appendix C — Wave Bid Vessel Spec Sheet and Bag Cross-Sectional Profile
 
 The wave/rocking bag does not fill as a cylinder. Its cross-sectional radius changes with fill
-height as the flexible bag bulges under the rocking motion. The vendor datasheet reports the
-bag's radius profile r(h) at measured heights above the base:
+height as the flexible bag bulges under the rocking motion. No manufacturer publishes a
+bag radius-vs-height profile for a rocking-motion bag (SEE APPENDIX E, MA7) — the profile below is
+a stated modeling assumption built on the bag's nominal working volume, not a vendor measurement:
 
 | Height above base, h (cm) | Bag cross-sectional radius, r(h) (cm) |
 |---|---|
-| 0 | {{NEEDS_SOURCE: bag radius at base, wave/rocking bioreactor bag profile, vendor datasheet (Sartorius or Cytiva)}} |
-| {{NEEDS_SOURCE: height step 1, cm}} | {{NEEDS_SOURCE: radius at height step 1, cm}} |
-| {{NEEDS_SOURCE: height step 2, cm}} | {{NEEDS_SOURCE: radius at height step 2, cm}} |
-| {{NEEDS_SOURCE: height step 3, cm}} | {{NEEDS_SOURCE: radius at height step 3, cm}} |
-| {{NEEDS_SOURCE: height at target fill level, cm}} | {{NEEDS_SOURCE: radius at target fill level, cm}} |
+| 0 | 0 cm [MA7] |
+| 6 cm [MA7] | 10 cm [MA7] |
+| 12 cm [MA7] | 16 cm [MA7] |
+| 18 cm [MA7] | 19 cm [MA7] |
+| 24 cm [MA7] | 20 cm [MA7] |
 
 | | Wave Bid |
 |---|---|
 | Vessel shape | Rocking bag, non-cylindrical solid of revolution |
-| Nominal capacity (L) | {{NEEDS_SOURCE: nominal capacity, wave/rocking bioreactor bag, vendor datasheet}} |
-| Vessel (single-use bag system) purchase cost (USD) | {{NEEDS_SOURCE: vessel/bag system purchase cost, wave/rocking bioreactor at this scale, vendor quote}} |
-| Validation cost (USD) | {{NEEDS_SOURCE: validation cost, wave/rocking bioreactor at this scale, CDMO industry benchmark}} |
+| Nominal capacity (L) | 50 L [S3] |
+| Vessel (single-use bag system) purchase cost (USD) | $8,000 [S4] |
+| Validation cost (USD) | $10,000 [MA2] |
 
-### Appendix D — Program Cost Context
+## Appendix D — Program Cost Context
 
 CDMO per-run vessel and validation costs vary by facility and are not independently published per
 contract. This appendix anchors the cost figures in Appendices B and C to a named industry
 pricing-benchmark source rather than a specific, unpublishable client contract:
-{{NEEDS_SOURCE: name and year of CDMO industry cost-benchmark survey used to anchor vessel and
-validation cost figures, e.g. a BioPlan Associates biomanufacturing benchmarking report}}.
+BioPlan Associates, *22nd Annual Report and Survey of Biopharmaceutical Manufacturing Capacity
+and Production* (April 2025) [S6]. Note: the exact per-vessel validation dollar figures in
+Appendices B and C are not drawn from this report's paywalled data tables — see Modeling
+Assumptions MA1–MA2 below.
 
-### Appendix E — "How To…" Math Questions To Research
+## Modeling Assumptions
+
+> These figures are **not sourced**. They are stated scenario assumptions chosen by the case
+> author because no public source exists for a specific, unpublishable client contract or for a
+> proprietary bag geometry. A Hero may challenge them in discussion — that is a legitimate move.
+
+| # | Assumption | Value used | Basis | Sensitivity |
+|---|---|---|---|---|
+| MA1 | Column Bid validation cost | $15,000 | No public per-vessel validation-cost benchmark exists for a 50 L single-use stirred-tank system; the named industry benchmark (BioPlan Associates, SEE APPENDIX D [S6]) tracks this trend but its dollar tables are subscription-gated. The case fixes a representative commissioning/validation cost. | Raising or lowering MA1 changes each vessel's total cost and therefore its yield-per-dollar figure — the D4 comparison is sensitive to this value. |
+| MA2 | Wave Bid validation cost | $10,000 | Single-use bag systems are reported to reduce CIP/SIP validation burden vs. reusable stirred tanks (qualitative finding) [S8], but no quantitative benchmark is public. The case sets a lower stated value reflecting that qualitative direction. | Same kind of sensitivity as MA1 — moves the Wave Bid's total cost and its D4 figure. |
+| MA3 | Batch duration | 5 days | Forced by Appendix A's table (6 rows, days 0–5). Real fed-batch mAb runs are typically 10–14 days [S7]; 5 days is a deliberately compressed pedagogical timeline, not a sourced client duration. | Does not change the dilemma directly — it only bounds the Appendix A table's domain. |
+| MA4 | Client's minimum total viable product yield | 25 L | No public source exists for a specific client's contractual minimum. Set so the constraint is genuinely load-bearing against at least one vessel's computed working volume, not decorative. | The dilemma is highly sensitive to exactly where this floor is set — moving it can change which vessel's working volume clears it, and whether the recommendation ends up decided by dollar-efficiency or by this floor instead. |
+| MA5 | CRO program budget cap | $50,000 | No public source for a specific program's capex/validation ceiling. Set comfortably above both options' total costs so budget is not the binding constraint. | Not binding at the stated value. Lowering it enough would eliminate one option regardless of the yield floor. |
+| MA6 | Appendix A feed-rate/uptake-rate table (12 values) and product-mass-to-volume conversion factor (0.05 L/g) | See Appendix A | No public day-by-day feed/uptake dataset in g/L/day exists for this (unnamed) cell line. Published CHO fed-batch metabolic-rate data exists but only in cell-count- or cell-volume-normalized units (e.g., µmol · 10⁶ cells⁻¹ · day⁻¹ — see RESEARCH_LOG.md), which would require additional unsourced conversions to reach g/L/day. The case authors a table shaped like the qualitative pattern of real Monod-style kinetics. | This table's area (net yield per liter) applies identically to both vessels' totals, so by itself it does not favor one option — but its absolute scale determines whether the MA4 yield floor binds at all. |
+| MA7 | Appendix C bag radius profile r(h) (5 height/radius pairs) | See Appendix C | No manufacturer publishes a cross-sectional radius-vs-height profile for a rocking-motion bag; Sartorius's own Flexsafe RM datasheet [S3] offers only bag *volume* sizes, and custom bag geometry is stated as "engineered to order" (proprietary). The case authors a physically plausible increasing-bulge profile. | Directly sets the Wave Bid's working volume — the load-bearing quantity for D2–D4 and for the MA4 yield-floor check. A flatter or taller profile could change whether the Wave Bid clears that floor and reopen the dilemma. |
+
+## Appendix E — Sources
+
+| # | Claim | Value | Source | Date | Confidence |
+|---|---|---|---|---|---|
+| S1 | Column Bid nominal capacity; aspect ratio (H/D) used to derive internal diameter and straight-side height | 50 L; H/D = 2.25:1 → D ≈ 30.5 cm, H ≈ 68.6 cm | Cytiva — [Xcellerex XDR-50 to XDR-2000 Cell Culture Bioreactor Systems datasheet](https://cdn.cytivalifesciences.com/api/public/content/digi-23694-pdf), Table 1 | 2026 (current edition) | HIGH (capacity, direct); MEDIUM (diameter/height, derived from a published ratio) |
+| S2 | Column Bid vessel purchase cost | $28,864 | REUZEit — [Xcellerex/Cytiva XDR-50 Bioreactor Single-Use Stirred-Tank 50L Capacity listing](https://reuzeit.com/product/3374976) | 2026-08 | MEDIUM (used-equipment marketplace asking price, not manufacturer new-unit list price — new pricing is quote-gated, confirmed via Sartorius/Cytiva eShop) |
+| S3 | Wave Bid nominal capacity | 50 L (Flexsafe RM 50 L bag, same scale as Column Bid for comparability) | Sartorius — [Biostat RM Rocking Motion Bioreactor Powered by Biobrain, Product Datasheet](https://www.sartorius.com/download/1136966/biostat-rm-rocking-motion-datasheet-en-b-sartorius-pdf-data.pdf), Flexsafe RM Bags ordering table | 2026-02 (last modified per datasheet) | HIGH |
+| S4 | Wave Bid vessel (rocker + bag system) purchase cost | $8,000 | EquipNet — [Sartorius Biostat RM 20-50 Basic Wave Style Bioreactor with Control Tower listing](https://www.equipnet.com/sartorius-biostat-rm-20-50-basic-wave-style-b-listid-961288/) | 2026-08 | MEDIUM (used-equipment marketplace asking price for the capital rocker system; does not include per-batch Flexsafe bag consumable cost, which is a separate recurring line item — new pricing is quote-gated) |
+| S5 | Target working fill level, stirred-tank vs. wave/rocking bioreactor | 70–80% (stirred-tank) / 40–50% (wave-mixed); case uses 75% / 45% | [Bioreactor Size: How to Calculate the Volume You Need](https://bioprocesstools.com/blog/bioreactor-sizing-guide/), bioprocesstools.com | 2026-08 (accessed) | MEDIUM (industry engineering resource, not a primary vendor/regulatory publication; undated page) |
+| S6 | Name and year of CDMO industry cost-benchmark survey (anchors the cost figures in Appendices B and C rather than an unpublishable client contract) | BioPlan Associates, *22nd Annual Report and Survey of Biopharmaceutical Manufacturing Capacity and Production* | [BioPlan Associates — 22nd Annual Report](https://www.bioplanassociates.com/22nd/) | Published 2025-04 | HIGH (named, dated, primary publisher's own page; report content itself is paywalled — see MA1/MA2) |
+| S7 | Typical fed-batch mAb production run duration (basis for MA3, not a substituted value) | 10–14 days | [Exploring the limits of conventional small-scale CHO fed-batch for accelerated on demand monoclonal antibody production](https://link.springer.com/article/10.1007/s00449-021-02657-w), *Bioprocess and Biosystems Engineering* | 2021 | HIGH (peer-reviewed) |
+| S8 | Single-use bag systems reduce CIP/SIP validation burden vs. reusable stirred tanks (qualitative basis for MA2, not a dollar figure) | — (qualitative) | [The Total Cost of Ownership: Evaluating Single-Use Bioprocessing Systems](https://www.labmanager.com/the-total-cost-of-ownership-evaluating-single-use-bioprocessing-systems-35480), Lab Manager | 2026-08 (accessed) | MEDIUM (trade publication, qualitative claim only) |
+
+## Appendix F — "How To…" Math Questions To Research
 
 **Vocabulary terms**
 
@@ -174,3 +208,7 @@ validation cost figures, e.g. a BioPlan Associates biomanufacturing benchmarking
 
 - How to find the volume of a solid of revolution using the disk method
 - How to find the area between two curves
+
+---
+
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Fret Board — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md
+  (Math Builder A7, DOCTRINE_LEDGER MCS-37/MCS-39). Case data below is copied verbatim
+  from cases/fret-board/case.md / case.json (case_md_sha256:
+  49798749577b3cb65f67ac2135d5b0a6c45dfdb1812750e354ca16514914d353, as of 2026-08-27).
+
+  HARD LINE (MCS-37): this file never prints case.json's balance_test verdict (which
+  option wins the total-shop-time comparison, or margin_pct=4.2) as a static literal.
+  The Working Notebook computes each method's total shop time live, from the case's own
+  raw inputs (seconds per fret, shared shop minutes, fret count) -- the calculator never
+  hands the Hero the recommendation.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC: fret-table styling */
+  .fret-table td.n{font-weight:700;color:var(--navy)}
+  .fret-table input[type=number]{width:96px}
+  .gcf-row input[type=number]{width:80px}
+  .gcf-slash{font-weight:700;color:var(--sub);padding:0 4px}
+  .worklog{font-family:var(--sans);font-size:.8rem;color:var(--sub);margin-top:8px}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-fret" viewBox="0 0 24 24"><path d="M3 4v16"/><path d="M8 4v16"/><path d="M13 4v16"/><path d="M18 4v16"/><path d="M2 12h20"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Fret Board</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">GCF &middot; Exponents &middot; Ratios</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Yuki Tanaka runs a strip of masking tape down the guitar neck clamped in the workshop vise, marking where the first fret line has to land. Sawdust hangs in the light from the shop's one window, and somewhere behind her a radio is playing too quietly to make out the words. This is her first solo fret job &mdash; no one checking her marks before the saw touches wood.</p>
+  <p>The client is due back for the instrument before the week is out. Yuki's mentor left two sticky notes on the bench this morning before heading to a supplier meeting across town: one with a string of decimals under the header &ldquo;exact,&rdquo; the other with a short column of simple fractions under &ldquo;shop method.&rdquo; Both get you a playable neck. Only one of them is what she was actually taught to check her work against.</p>
+  <p>She sets her calculator down next to the fret rule and the calipers, glances at the clock, and picks up the pencil.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Yuki Tanaka is an apprentice at a small custom-guitar workshop that builds and repairs fretted instruments to order. She has assisted on fret jobs for two years but has never marked and cut a fingerboard on her own for a paying client. The shop's owner has told her plainly: a fret placed wrong enough to throw the instrument out of tune is not a small fix. Pulling a fret, filling the slot, and re-cutting it costs roughly a week of unpaid rework on top of whatever else is on her bench (see Appendix F).</p>
+  <p>Every fret on a guitar neck marks the point where the string, stopped short by a metal bar, produces one semitone higher in pitch than the fret before it. Modern instruments are built to equal temperament: twelve equally-spaced semitones per octave, where doubling the vibrating string length drops the pitch by exactly one octave (see Appendix A). Two methods exist for finding where those twelve fret lines actually go on the neck:</p>
+  <div class="card">
+    <p><strong>Option A &mdash; The Precision Method.</strong> Compute each fret's distance from the nut using the exact twelfth-root-of-two ratio that defines equal temperament, carried to four decimal places at every fret (see Appendix B).</p>
+    <p style="margin-bottom:0"><strong>Option B &mdash; The Rule of Eighteen.</strong> Use the traditional luthier's shortcut passed down in the shop: divide the remaining string length by a fixed whole-number divisor at each fret, a method generations of luthiers used before calculators were sitting on every bench (see Appendix C).</p>
+  </div>
+  <p>The shop's scale length, fret count, and Yuki's client deadline are fixed constraints, not choices (see Appendix F). Both methods finish comfortably inside that same five-day deadline, but they do not cost the shop the same number of minutes &mdash; computing each fret's Precision Method position by hand takes a little longer than the Rule of Eighteen's simpler running division, though that gap is small next to the time every job spends, regardless of method, cutting, installing, and dressing the frets once they're marked (see Appendix F). What also differs is how far each method's fret positions drift from true equal temperament, and whether that drift stays inside what a professional's ear &mdash; and a client's tuner &mdash; will accept (see Appendix D). Fret-position drift can also be read as a string-length ratio problem: reducing the open-to-fretted length ratio at each fret shows which frets, if any, land on the kind of simple whole-number ratio a musician's ear recognizes as a clean interval (see Appendix E). Every sourced or derived figure in this case is documented, with its source and confidence, in Appendix G; the handful of figures with no public source are stated openly as Modeling Assumptions rather than invented.</p>
+  <p>The vocabulary and the &ldquo;how to&hellip;&rdquo; skills this case will ask of you are listed in Appendix H &mdash; that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Yuki Tanaka. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Precision Method</h4>
+      <p style="margin:0">Mark every fret using the exact twelfth-root-of-two ratio, calculated to four decimal places at each fret.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Rule of Eighteen</h4>
+      <p style="margin:0">Mark every fret using the traditional whole-number-divisor shortcut passed down in the shop.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include a fret-position table for each method (D1, D2), a cents-of-deviation conversion at fret 12 (D3), a GCF string-length-ratio table for frets 1&ndash;5 (D4), and a recommendation weighing total shop time against intonation tolerance and re-fret cost (D5).</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; Equal Temperament, Defined</summary>
+    <div class="inner">
+      <p>The modern Western fretted instrument is built on equal temperament: one octave (a 2:1 ratio of vibrating string length) is divided into twelve equal semitone steps, geometrically rather than in equal-sized pieces. Moving up one fret always multiplies the remaining vibrating string length by the same constant ratio.</p>
+      <table id="tblA">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Ratio defining one octave (12 semitones)</td><td class="num">2 : 1</td></tr>
+        <tr><td>Number of equal semitone steps per octave</td><td class="num">12</td></tr>
+        <tr><td>Per-fret length ratio (constant multiplier applied 12 times to reach 2:1)</td><td class="num">1.059463 [S1]</td></tr>
+      </table>
+      <p class="side-note">Referenced from Background and forces the exponent math behind Challenge D1.</p>
+    </div>
+  </details>
+
+  <details id="apx-b">
+    <summary>Appendix B &mdash; Fret Position Table, Precision Method (Option A)</summary>
+    <div class="inner">
+      <p>The distance of fret <em>n</em> from the nut, for a string of scale length <em>L</em>: <code>distance(n) = L &times; [1 &minus; (1/2)^(n/12)]</code></p>
+      <table id="tblB1">
+        <tr><th>Input</th><th>Value</th></tr>
+        <tr><td>Scale length, <em>L</em> (see Appendix F)</td><td class="num">25.5000 in [S4]</td></tr>
+        <tr><td>Twelfth-root-of-two constant</td><td class="num">1.0595 [S1]</td></tr>
+      </table>
+      <table id="tblB">
+        <tr><th>Fret <em>n</em></th><th>Distance from nut (in), Precision Method</th></tr>
+        <tr><td class="n">1</td><td class="num">1.4312</td></tr>
+        <tr><td class="n">2</td><td class="num">2.7821</td></tr>
+        <tr><td class="n">3</td><td class="num">4.0571</td></tr>
+        <tr><td class="n">4</td><td class="num">5.2606</td></tr>
+        <tr><td class="n">5</td><td class="num">6.3966</td></tr>
+        <tr><td class="n">6</td><td class="num">7.4688</td></tr>
+        <tr><td class="n">7</td><td class="num">8.4808</td></tr>
+        <tr><td class="n">8</td><td class="num">9.4360</td></tr>
+        <tr><td class="n">9</td><td class="num">10.3376</td></tr>
+        <tr><td class="n">10</td><td class="num">11.1886</td></tr>
+        <tr><td class="n">11</td><td class="num">11.9918</td></tr>
+        <tr><td class="n">12</td><td class="num">12.7500</td></tr>
+      </table>
+      <p class="side-note">Derived [S1]+[S4]: distance(n) = 25.5000 &times; [1 &minus; (1/2)^(n/12)], evaluated at each n. Fret 12 lands at exactly half the scale length, as required by the 2:1 octave <span data-term="Ratio" class="gterm-placeholder"></span>. Referenced from Background and Challenge D1. You'll re-derive this whole table yourself in the Working Notebook below.</p>
+    </div>
+  </details>
+
+  <details id="apx-c">
+    <summary>Appendix C &mdash; Fret Position Table, Rule of Eighteen (Option B)</summary>
+    <div class="inner">
+      <p>The traditional shop shortcut: at each fret, divide the string length that remains (from the previous fret to the bridge) by a fixed whole-number divisor to find the distance to the next fret. <code>fret spacing(n) = remaining length after fret (n&minus;1) &divide; divisor</code></p>
+      <table id="tblC1">
+        <tr><th>Input</th><th>Value</th></tr>
+        <tr><td>Rule-of-Eighteen divisor (the traditional shop constant)</td><td class="num">18 [S3]</td></tr>
+        <tr><td>Scale length, <em>L</em></td><td class="num">same as Appendix B</td></tr>
+      </table>
+      <table id="tblC">
+        <tr><th>Fret <em>n</em></th><th>Distance from nut (in), Rule of Eighteen</th></tr>
+        <tr><td class="n">1</td><td class="num">1.4167</td></tr>
+        <tr><td class="n">2</td><td class="num">2.7546</td></tr>
+        <tr><td class="n">3</td><td class="num">4.0183</td></tr>
+        <tr><td class="n">4</td><td class="num">5.2117</td></tr>
+        <tr><td class="n">5</td><td class="num">6.3388</td></tr>
+        <tr><td class="n">6</td><td class="num">7.4033</td></tr>
+        <tr><td class="n">7</td><td class="num">8.4087</td></tr>
+        <tr><td class="n">8</td><td class="num">9.3582</td></tr>
+        <tr><td class="n">9</td><td class="num">10.2550</td></tr>
+        <tr><td class="n">10</td><td class="num">11.1019</td></tr>
+        <tr><td class="n">11</td><td class="num">11.9018</td></tr>
+        <tr><td class="n">12</td><td class="num">12.6573</td></tr>
+      </table>
+      <p class="side-note">Derived [S3]+[S4]: at each fret, spacing = (L &minus; previous distance) &divide; 18, applied iteratively from the nut. This is the historical whole-number "rule of 18," distinct from the more accurate 17.817154 divisor some modern shops use instead [S2]. Referenced from Background and Challenge D2.</p>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; Cents of Deviation and Intonation Tolerance</summary>
+    <div class="inner">
+      <p>Musicians measure pitch difference in cents: 1200 cents to an octave, 100 cents to one equal-tempered semitone. <code>cents = 3986.3 &times; log10(ratio)</code>, where ratio is the true equal-tempered string length (or frequency) divided by the approximated one.</p>
+      <table id="tblD">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>12th-fret length, Precision Method (Appendix B)</td><td class="num">12.7500 in</td></tr>
+        <tr><td>12th-fret length, Rule of Eighteen (Appendix C)</td><td class="num">12.6573 in</td></tr>
+        <tr><td>Acceptable intonation tolerance a professional luthier targets, in cents</td><td class="num">5 cents &mdash; stated Modeling Assumption (MA1)</td></tr>
+      </table>
+      <p class="side-note">The ratio that matters is the ratio of the two methods' <em>remaining</em> (bridge-side) string lengths at fret 12, since pitch is set by the vibrating length. You'll work this conversion yourself in the Working Notebook (Step 3) rather than read the result off this page.</p>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; GCF String-Length-Ratio Table</summary>
+    <div class="inner">
+      <p>For each fret, the ratio of the open string's full length to the fretted (shortened) string length can be simplified using the <span class="gterm-placeholder" data-term="Greatest Common Factor"></span>. Lengths are expressed in ten-thousandths of an inch (the Appendix B distances &times; 10,000) so both terms of every ratio are whole numbers a GCF can be taken of.</p>
+      <table id="tblE">
+        <tr><th>Fret <em>n</em></th><th>Open : fretted length (unreduced, ten-thousandths in)</th><th>Simplified ratio</th></tr>
+        <tr><td class="n">1</td><td class="num">255000 : 240688</td><td class="num">31875 : 30086</td></tr>
+        <tr><td class="n">2</td><td class="num">255000 : 227179</td><td class="num">already lowest terms &mdash; GCF is 1</td></tr>
+        <tr><td class="n">3</td><td class="num">255000 : 214429</td><td class="num">already lowest terms &mdash; GCF is 1</td></tr>
+        <tr><td class="n">4</td><td class="num">255000 : 202394</td><td class="num">127500 : 101197</td></tr>
+        <tr><td class="n">5</td><td class="num">255000 : 191034</td><td class="num">42500 : 31839</td></tr>
+        <tr><td class="n">12 (given, for contrast)</td><td class="num">255000 : 127500</td><td class="num">2 : 1 (GCF is 127500)</td></tr>
+      </table>
+      <p class="side-note">None of frets 1 through 5 reduce to a simple whole-number ratio. Fret 12 &mdash; the octave &mdash; is the one point on the neck where equal temperament is exactly a simple ratio, by construction (see Appendix A). Referenced from Challenge D4; you'll reduce frets 1&ndash;5 yourself in the Working Notebook.</p>
+    </div>
+  </details>
+
+  <details id="apx-f">
+    <summary>Appendix F &mdash; Shop Build Spec and Constraints</summary>
+    <div class="inner">
+      <table id="tblF">
+        <tr><th>Constraint</th><th>Value</th></tr>
+        <tr><td>Instrument type / scale length family for this build</td><td class="num">Fender-style, 25.5000 in scale length [S4]</td></tr>
+        <tr><td>Number of frets on this neck</td><td class="num">22 &mdash; stated Modeling Assumption (MA2)</td></tr>
+        <tr><td>Client deadline (days from today)</td><td class="num">5 days &mdash; stated Modeling Assumption (MA3)</td></tr>
+        <tr><td>Cost of a re-fret if a method's drift is unacceptable</td><td class="num">roughly a week of unpaid rework</td></tr>
+        <tr><td>Estimated calculation time per fret, Precision Method</td><td class="num">20 seconds &mdash; stated Modeling Assumption (MA4)</td></tr>
+        <tr><td>Estimated calculation time per fret, Rule of Eighteen</td><td class="num">14 seconds &mdash; stated Modeling Assumption (MA5)</td></tr>
+        <tr><td>Shared shop time to cut, install, and dress all 22 frets once marked (same for both methods)</td><td class="num">45 minutes &mdash; stated Modeling Assumption (MA6)</td></tr>
+      </table>
+      <p class="side-note">Total shop time = shared cutting/installing/dressing time (MA6) + (per-fret calculation time &times; 22 frets). You'll compute both methods' totals yourself in Working Notebook Step 5 &mdash; this appendix gives you the raw inputs, not the totals.</p>
+    </div>
+  </details>
+
+  <details id="apx-g">
+    <summary>Appendix G &mdash; Sources</summary>
+    <div class="inner">
+      <table id="tblG">
+        <tr><th>#</th><th>Claim</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Fret-distance formula and the twelfth-root-of-two constant</td><td><a href="https://www.liutaiomottola.com/formulae/fret.htm" target="_blank" rel="noopener">Liutaio Mottola &mdash; Calculating Fret Positions</a></td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Modern 17.817154 fret-spacing divisor some shops use instead</td><td><a href="https://www.stewmac.com/video-and-ideas/online-resources/learn-about-guitar-and-instrument-fretting-and-fretwork/fret-scale-rule-instructions/" target="_blank" rel="noopener">StewMac &mdash; Fret Scale Rule Instructions</a></td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>Traditional rule-of-18's exact divisor and flat-trending drift</td><td><a href="https://www.liutaiomottola.com/PrevPubs/RuleOf18/RuleOf18.htm" target="_blank" rel="noopener">Liutaio Mottola &mdash; Was the Rule of 18 Good Enough?</a></td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Named standard scale lengths and typical fret-count range</td><td><a href="https://www.stewmac.com/video-and-ideas/online-resources/learn-about-guitar-and-instrument-fretting-and-fretwork/scale-length-explained/" target="_blank" rel="noopener">StewMac &mdash; Guitar Scale Length Explained</a></td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>Professional repair-shop time-costing context for MA6</td><td><a href="https://www.stewmac.com/video-and-ideas/online-resources/reference/guitar-repair-money-talk-estimate-hours-not-dollars/" target="_blank" rel="noopener">StewMac &mdash; Guitar repair money talk</a></td><td>MEDIUM</td></tr>
+      </table>
+      <p class="side-note">All computed fret-position, cents-of-deviation, and GCF-ratio figures in Appendices B, C, D, and E are derived from S1/S3 (governing formulas) and S4 (scale length), not independently sourced numbers.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-27. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Precision Method fret positions (D1)</h4>
+    <div class="goal">Compute distance(n) = L &times; [1 &minus; (1/2)^(n/12)] for frets 1&ndash;12, to four decimal places. L = 25.5000 in.</div>
+    <table class="fret-table" id="precTable"></table>
+    <button onclick="checkPrecision()">Check All</button>
+    <span class="fb" id="precSummary"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Rule of Eighteen fret positions (D2)</h4>
+    <div class="goal">At each fret, spacing = (L &minus; previous distance) &divide; 18, applied iteratively from the nut. Same frets 1&ndash;12.</div>
+    <table class="fret-table" id="r18Table"></table>
+    <button onclick="checkRuleOf18()">Check All</button>
+    <span class="fb" id="r18Summary"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Cents of deviation at fret 12 (D3)</h4>
+    <div class="goal">Use your own fret-12 answers from Steps 1 &amp; 2 (or fill them in below) to find the remaining string length each method leaves at fret 12, then convert the ratio of those two lengths to cents: cents = 3986.3 &times; log10(ratio).</div>
+    <div class="fieldrow"><label for="prec12b">Precision Method, fret 12 distance (in)</label><input type="number" step="0.0001" id="prec12b"></div>
+    <div class="fieldrow"><label for="r18_12b">Rule of Eighteen, fret 12 distance (in)</label><input type="number" step="0.0001" id="r18_12b"></div>
+    <div class="fieldrow"><label for="centsInput">Your cents-of-deviation answer</label><input type="number" step="0.01" id="centsInput"><button onclick="checkCents()">Check</button><span class="fb" id="centsFb"></span></div>
+    <div class="worklog" id="centsWork"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; GCF string-length-ratio table, frets 1&ndash;5 (D4)</h4>
+    <div class="goal">Reduce each fret's open : fretted length ratio (ten-thousandths of an inch) to lowest terms using the greatest common factor.</div>
+    <table id="gcfTable"></table>
+    <button onclick="checkGCF()">Check All</button>
+    <span class="fb" id="gcfSummary"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; Total shop time and recommendation (D5)</h4>
+    <div class="goal">Total shop time = shared cut/install/dress time + (per-fret calculation time &times; 22 frets). Drag the sliders to explore how the shared time and each method's per-fret speed change the totals &mdash; the tool computes both totals live; it does not tell you which one wins.</div>
+    <div class="sliderow"><label for="slSharedMin" style="min-width:220px;font-family:var(--sans)">Shared cut/install/dress time (min)</label><input type="range" id="slSharedMin" step="1" oninput="onFlexChange()"><span class="val" id="slSharedMinVal"></span></div>
+    <div class="sliderow"><label for="slSecA" style="min-width:220px;font-family:var(--sans)">Precision Method, sec/fret</label><input type="range" id="slSecA" step="1" oninput="onFlexChange()"><span class="val" id="slSecAVal"></span></div>
+    <div class="sliderow"><label for="slSecB" style="min-width:220px;font-family:var(--sans)">Rule of Eighteen, sec/fret</label><input type="range" id="slSecB" step="1" oninput="onFlexChange()"><span class="val" id="slSecBVal"></span></div>
+    <table id="tblLive">
+      <tr><th>Method</th><th>Live total shop time (min), at current sliders</th></tr>
+      <tr><td>A &mdash; Precision Method</td><td class="num" id="liveTotalA">&mdash;</td></tr>
+      <tr><td>B &mdash; Rule of Eighteen</td><td class="num" id="liveTotalB">&mdash;</td></tr>
+    </table>
+    <div class="fieldrow"><label for="myTotalA">Your computed total, Option A (min)</label><input type="number" step="0.01" id="myTotalA"></div>
+    <div class="fieldrow"><label for="myTotalB">Your computed total, Option B (min)</label><input type="number" step="0.01" id="myTotalB"><button onclick="checkTotals()">Check</button><span class="fb" id="totalsFb"></span></div>
+    <p class="side-note">The calculator will confirm whether <em>your own arithmetic</em> matches the live totals at the current slider settings &mdash; it still won't tell you which option to recommend, or compare that gap against Appendix D's intonation tolerance and Appendix F's re-fret cost for you. That comparison is Challenge D5, and it's yours to make.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-fret"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>It's day three. Yuki has now marked and cut two other necks using the Precision Method while she waited on glue to cure on this one, and something has changed: she's not fumbling the fractional-exponent keystrokes anymore. What used to take her a slow, careful 20 seconds a fret now takes her about half that &mdash; she's found a rhythm on the calculator, punching in n/12 without hunting for the right button.</p>
+      <p>Nothing about the shop's build spec changed. The scale length is still 25.5000 in, the neck still needs 22 frets, and the shared cutting/installing/dressing time is still whatever it is. What changed is Yuki herself &mdash; the "cost" of the Precision Method's extra arithmetic was never a fixed law of nature, it was how fast <em>this apprentice, on this day</em> could work through it.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist: Yuki's Precision Method calculation time is now half of Step 5's slider value for Option A</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>Liutaio Mottola &mdash; <a href="https://www.liutaiomottola.com/formulae/fret.htm" target="_blank" rel="noopener">Calculating Fret Positions</a> (S1)</li>
+      <li>StewMac &mdash; <a href="https://www.stewmac.com/video-and-ideas/online-resources/learn-about-guitar-and-instrument-fretting-and-fretwork/fret-scale-rule-instructions/" target="_blank" rel="noopener">Fret Scale Rule Instructions</a> (S2)</li>
+      <li>Liutaio Mottola &mdash; <a href="https://www.liutaiomottola.com/PrevPubs/RuleOf18/RuleOf18.htm" target="_blank" rel="noopener">Was the Rule of 18 Good Enough?</a> (S3)</li>
+      <li>StewMac &mdash; <a href="https://www.stewmac.com/video-and-ideas/online-resources/learn-about-guitar-and-instrument-fretting-and-fretwork/scale-length-explained/" target="_blank" rel="noopener">Guitar Scale Length Explained</a> (S4)</li>
+      <li>StewMac &mdash; <a href="https://www.stewmac.com/video-and-ideas/online-resources/reference/guitar-repair-money-talk-estimate-hours-not-dollars/" target="_blank" rel="noopener">Guitar repair money talk: estimate hours, not dollars</a> (S5)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Fret Board &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/fret-board/case.md
+   and case.json (case_md_sha256: 49798749577b3cb65f67ac2135d5b0a6c45dfdb1812750e354ca16514914d353).
+   PARAMS/FLEX/evaluate()/evaluate_twist() port cases/fret-board's own
+   total-shop-time model (case.json.derived.shop_time_primary_metric) — the
+   Working Notebook's Step 5 checker below calls into these rather than
+   re-deriving the tally inline, per templates/INTERACTIVE_HTML_CONTRACT.md §2.
+
+   NOTE on "higher is better": this case's primary metric is total shop
+   TIME (Appendix F) — LOWER is better here, the reverse of the contract's
+   generic Cold Chain example. evaluate() just returns each option's raw
+   total; the notebook's own Step 5 UI never states which number "wins" —
+   it only confirms whether the Hero's own arithmetic matches the live
+   total, per MCS-37.
+   ================================================================ */
+const PARAMS = {
+  L: 25.5,                 // scale length, inches [S4]
+  fretCount: 22,            // MA2
+  calcSecA: 20,              // MA4 — Precision Method, seconds/fret
+  calcSecB: 14,              // MA5 — Rule of Eighteen, seconds/fret
+  sharedMin: 45,             // MA6 — shared cut/install/dress minutes
+  toleranceCents: 5          // MA1
+};
+const FLEX = ["calcSecA", "calcSecB", "sharedMin"];
+
+function evaluate(params, detourH = 0){
+  const calcMinA = params.calcSecA * params.fretCount / 60;
+  const calcMinB = params.calcSecB * params.fretCount / 60;
+  const totalA = params.sharedMin + calcMinA + detourH * 60;
+  const totalB = params.sharedMin + calcMinB + detourH * 60;
+  return {A: totalA, B: totalB};
+}
+function evaluate_twist(params){
+  // Twist narrative: practice halves Yuki's own Precision-Method calc time.
+  return evaluate(Object.assign({}, params, {calcSecA: params.calcSecA * 0.5}));
+}
+
+/* Fret-position formulas, ported from case.md's own worked formulas. */
+function precisionDistance(n, params){ return params.L * (1 - Math.pow(0.5, n / 12)); }
+function ruleOf18Distances(params){
+  let remaining = params.L, dist = 0; const out = [];
+  for(let n = 1; n <= 12; n++){
+    const spacing = remaining / 18;
+    dist += spacing; remaining -= spacing;
+    out.push(dist);
+  }
+  return out;
+}
+function gcdInt(a, b){ a = Math.round(Math.abs(a)); b = Math.round(Math.abs(b)); while(b){ [a, b] = [b, a % b]; } return a; }
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook build + check functions.
+   ================================================================ */
+function buildPrecTable(){
+  const t = document.getElementById('precTable');
+  let html = '<tr><th>Fret <em>n</em></th><th>Your distance (in)</th><th></th></tr>';
+  for(let n = 1; n <= 12; n++){
+    html += `<tr><td class="n">${n}</td><td><input type="number" step="0.0001" id="prec${n}"></td><td class="fb" id="precFb${n}"></td></tr>`;
+  }
+  t.innerHTML = html;
+}
+function checkPrecision(){
+  let okCount = 0;
+  for(let n = 1; n <= 12; n++){
+    const expected = round(precisionDistance(n, PARAMS), 4);
+    const userVal = parseFloat(val('prec' + n));
+    const ok = near(userVal, expected, 0.001);
+    if(ok) okCount++;
+    const el = document.getElementById('precFb' + n);
+    el.className = 'fb ' + (ok ? 'ok' : 'bad');
+    el.textContent = ok ? '✓' : 'try again';
+  }
+  const summary = document.getElementById('precSummary');
+  summary.className = 'fb ' + (okCount === 12 ? 'ok' : 'bad');
+  summary.textContent = okCount + ' / 12 correct';
+  // Carry fret-12 forward for Step 3's convenience field.
+  const p12 = document.getElementById('prec12');
+  if(p12 && p12.value) document.getElementById('prec12b').value = p12.value;
+}
+function buildR18Table(){
+  const t = document.getElementById('r18Table');
+  let html = '<tr><th>Fret <em>n</em></th><th>Your distance (in)</th><th></th></tr>';
+  for(let n = 1; n <= 12; n++){
+    html += `<tr><td class="n">${n}</td><td><input type="number" step="0.0001" id="r18_${n}"></td><td class="fb" id="r18Fb${n}"></td></tr>`;
+  }
+  t.innerHTML = html;
+}
+function checkRuleOf18(){
+  const expectedArr = ruleOf18Distances(PARAMS);
+  let okCount = 0;
+  for(let n = 1; n <= 12; n++){
+    const expected = round(expectedArr[n-1], 4);
+    const userVal = parseFloat(val('r18_' + n));
+    const ok = near(userVal, expected, 0.001);
+    if(ok) okCount++;
+    const el = document.getElementById('r18Fb' + n);
+    el.className = 'fb ' + (ok ? 'ok' : 'bad');
+    el.textContent = ok ? '✓' : 'try again';
+  }
+  const summary = document.getElementById('r18Summary');
+  summary.className = 'fb ' + (okCount === 12 ? 'ok' : 'bad');
+  summary.textContent = okCount + ' / 12 correct';
+  const r18_12 = document.getElementById('r18_12');
+  if(r18_12 && r18_12.value) document.getElementById('r18_12b').value = r18_12.value;
+}
+function checkCents(){
+  let distA = parseFloat(val('prec12b'));
+  let distB = parseFloat(val('r18_12b'));
+  if(!distA) distA = round(precisionDistance(12, PARAMS), 4);
+  if(!distB) distB = round(ruleOf18Distances(PARAMS)[11], 4);
+  const remA = PARAMS.L - distA, remB = PARAMS.L - distB;
+  const ratio = remA / remB;
+  const expectedCents = 3986.3 * Math.log10(ratio);
+  const userCents = parseFloat(val('centsInput'));
+  const ok = near(userCents, expectedCents, 0.5);
+  fb('centsFb', ok);
+  document.getElementById('centsWork').textContent =
+    `Remaining, Precision Method: ${round(remA,4)} in · Remaining, Rule of Eighteen: ${round(remB,4)} in · ratio: ${round(ratio,5)}`;
+}
+function buildGCFTable(){
+  const t = document.getElementById('gcfTable');
+  let html = '<tr><th>Fret <em>n</em></th><th>Unreduced (ten-thousandths in)</th><th>Your simplified ratio</th><th></th></tr>';
+  for(let n = 1; n <= 5; n++){
+    const fretTT = Math.round((PARAMS.L - precisionDistance(n, PARAMS)) * 10000);
+    html += `<tr class="gcf-row"><td class="n">${n}</td><td class="num">255000 : ${fretTT}</td>`
+      + `<td><input type="number" id="gcfNum${n}"><span class="gcf-slash">:</span><input type="number" id="gcfDen${n}"></td>`
+      + `<td class="fb" id="gcfFb${n}"></td></tr>`;
+  }
+  t.innerHTML = html;
+}
+function checkGCF(){
+  let okCount = 0;
+  for(let n = 1; n <= 5; n++){
+    const openTT = 255000;
+    const fretTT = Math.round((PARAMS.L - precisionDistance(n, PARAMS)) * 10000);
+    const g = gcdInt(openTT, fretTT);
+    const expNum = openTT / g, expDen = fretTT / g;
+    const userNum = parseFloat(val('gcfNum' + n));
+    const userDen = parseFloat(val('gcfDen' + n));
+    const ok = userNum === expNum && userDen === expDen;
+    if(ok) okCount++;
+    const el = document.getElementById('gcfFb' + n);
+    el.className = 'fb ' + (ok ? 'ok' : 'bad');
+    el.textContent = ok ? '✓' : 'try again';
+  }
+  const summary = document.getElementById('gcfSummary');
+  summary.className = 'fb ' + (okCount === 5 ? 'ok' : 'bad');
+  summary.textContent = okCount + ' / 5 correct';
+}
+
+function buildSliders(){
+  // Slider bounds are derived from PARAMS at runtime (roughly half to
+  // double each dial), not typed as literals in the markup or here.
+  const bounds = {
+    slSharedMin: PARAMS.sharedMin,
+    slSecA: PARAMS.calcSecA,
+    slSecB: PARAMS.calcSecB
+  };
+  Object.keys(bounds).forEach(id => {
+    const base = bounds[id];
+    const el = document.getElementById(id);
+    el.min = Math.max(1, Math.round(base / 2));
+    el.max = Math.round(base * 2);
+    el.value = base;
+  });
+}
+function currentFlexParams(){
+  return Object.assign({}, PARAMS, {
+    sharedMin: parseFloat(document.getElementById('slSharedMin').value),
+    calcSecA: parseFloat(document.getElementById('slSecA').value),
+    calcSecB: parseFloat(document.getElementById('slSecB').value)
+  });
+}
+function refreshLiveTotals(){
+  const params = currentFlexParams();
+  const twistOn = document.getElementById('applyTwist') && document.getElementById('applyTwist').checked;
+  const result = twistOn ? evaluate_twist(params) : evaluate(params);
+  document.getElementById('liveTotalA').textContent = round(result.A, 2);
+  document.getElementById('liveTotalB').textContent = round(result.B, 2);
+}
+function onFlexChange(){
+  document.getElementById('slSharedMinVal').textContent = document.getElementById('slSharedMin').value;
+  document.getElementById('slSecAVal').textContent = document.getElementById('slSecA').value;
+  document.getElementById('slSecBVal').textContent = document.getElementById('slSecB').value;
+  refreshLiveTotals();
+}
+function checkTotals(){
+  const params = currentFlexParams();
+  const twistOn = document.getElementById('applyTwist') && document.getElementById('applyTwist').checked;
+  const result = twistOn ? evaluate_twist(params) : evaluate(params);
+  const userA = parseFloat(val('myTotalA'));
+  const userB = parseFloat(val('myTotalB'));
+  const ok = near(userA, result.A, 0.05) && near(userB, result.B, 0.05);
+  fb('totalsFb', ok);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "fret-board";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "A fret-position table, Precision Method (frets 1-12)"],
+  ["D2", "A fret-position table, Rule of Eighteen (frets 1-12)"],
+  ["D3", "A cents-of-deviation conversion at fret 12"],
+  ["D4", "A GCF string-length-ratio table (frets 1-5)"],
+  ["D5", "A recommendation comparing total shop time, intonation tolerance, and re-fret cost"],
+  ["C1", "Research link answering a How To... question (Appendix H)"],
+  ["C2", "250+ word pitch, using the C1 resource, with an original visual"],
+  ["C4", "Appendix of original thinking/evidence"],
+  ["C5", "Case discussion participation (2+ posts, or 500 words if absent)"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). First 5 terms reused verbatim
+   from templates/INTERACTIVE_HTML_CONTRACT.md's verified starter
+   glossary (khanacademy.org, verified 2026-08-01). Remaining 4 terms
+   are case-specific (GCF, Factor, Exponent, Equivalent Ratio) and were
+   freshly fetched and confirmed live on khanacademy.org, 2026-08-27,
+   this session (see build notes).
+   ================================================================ */
+const GLOSSARY = {
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Measurement": {def: "Assigning a number to a physical quantity -- length, time, mass -- using a chosen unit.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Distance": {def: "How far apart two points or places are.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Greatest Common Factor": {def: "The largest whole number that divides evenly into two or more given numbers.",
+    url: "https://www.khanacademy.org/math/grade-6-math-tx/x3931b57772b927b3:equivalent-expressions/x3931b57772b927b3:greatest-common-factor/a/greatest-common-factor-review"},
+  "Factor": {def: "A whole number that divides evenly into another number, with no remainder.",
+    url: "https://www.khanacademy.org/math/grade-6-math-tx/x3931b57772b927b3:equivalent-expressions/x3931b57772b927b3:greatest-common-factor/a/greatest-common-factor-review"},
+  "Exponent": {def: "The small raised number telling you how many times to multiply the base by itself, e.g. the 3 in 4^3.",
+    url: "https://www.khanacademy.org/math/grade-6-math-tx/x3931b57772b927b3:order-operations-exponents/x3931b57772b927b3:exponents/a/introduction-to-exponents"},
+  "Equivalent Ratio": {def: "Two ratios that describe the same comparison, even though their numbers look different, e.g. 1:2 and 3:6.",
+    url: "https://www.khanacademy.org/math/grade-6-math-tx/x3931b57772b927b3:proportional-reasoning-ratios-rates/x3931b57772b927b3:equivalent-ratios/e/understand-equivalent-ratios"}
+};
+const HOWTO = [
+  ["how to find the greatest common factor of a set of numbers", "Greatest Common Factor"],
+  ["how to evaluate an exponential expression", "Exponent"],
+  ["how to find equivalent ratios", "Equivalent Ratio"],
+  ["how to compare two or more values", "Ratio"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* Resolve the hand-placed .gterm-placeholder spans left in the Appendix
+   prose above (Appendix B's "ratio" mention, Appendix E's "greatest
+   common factor" mention) into real gterm anchors, before the auto-linker
+   runs, so those two occurrences are the deliberately-chosen spot rather
+   than whatever the auto-linker would pick as the "first mention." */
+document.querySelectorAll('.gterm-placeholder[data-term]').forEach(ph => {
+  const term = ph.dataset.term;
+  const span = document.createElement('span');
+  span.innerHTML = gtermHTML(term, term.toLowerCase());
+  ph.replaceWith(span.firstChild);
+});
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  refreshLiveTotals();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+
+/* Build the Working Notebook's per-fret tables and prime the live totals. */
+buildPrecTable();
+buildR18Table();
+buildGCFTable();
+buildSliders();
+onFlexChange();
+</script>
+</body>
+</html>

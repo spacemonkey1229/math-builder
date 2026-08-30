@@ -49,8 +49,9 @@ first-year production volume** — materials plus mold tooling plus shipping, co
 shape's actual surface area and each shape's actual packing efficiency in a shipping container
 (SEE APPENDICES A, B and C). The client has stated a target production volume for the first year
 of manufacturing (SEE APPENDIX A); every dollar figure in this case is scaled against that same
-volume. Every sourced and assumed figure in this case is listed in **APPENDIX C**, and the
-vocabulary and "how to…" skills this case will ask of you are listed in **APPENDIX D** — that is
+volume. Every sourced and assumed figure in this case is listed in **APPENDIX D** and the
+**Modeling Assumptions** section, and the
+vocabulary and "how to…" skills this case will ask of you are listed in **APPENDIX E** — that is
 where Challenge 1 sends you.
 
 ## Dilemma
@@ -98,27 +99,27 @@ discussion post 500 "excellent" words on the questions above.
 | | Project Horn (cone frustum) | Project Orb (sphere) |
 |---|---|---|
 | Shape | Cone frustum | Sphere |
-| Base radius | {{NEEDS_SOURCE: Project Horn cone-frustum base radius, inches, from the studio's foam-model spec}} | — |
-| Top (crown) radius | {{NEEDS_SOURCE: Project Horn cone-frustum top radius, inches, from the studio's foam-model spec}} | — |
-| Overall height / radius | {{NEEDS_SOURCE: Project Horn cone-frustum overall height, inches}} | {{NEEDS_SOURCE: Project Orb sphere radius, inches, from the studio's foam-model spec}} |
-| Slant height | {{NEEDS_SOURCE: Project Horn cone-frustum slant height, inches, derived from base radius, top radius, and height}} | — |
-| Client's stated target first-year production volume (units, both options) | {{NEEDS_SOURCE: client's stated target first-year production volume, units}} | {{NEEDS_SOURCE: client's stated target first-year production volume, units}} |
+| Base radius | 3.5 in [MA1] | — |
+| Top (crown) radius | 2.0 in [MA1] | — |
+| Overall height / radius | 6.0 in [MA1] | 3.5 in [MA1] |
+| Slant height | 6.19 in [MA1] | — |
+| Client's stated target first-year production volume (units, both options) | 250,000 units [MA2] | 250,000 units [MA2] |
 
 ## Appendix B — Material and Manufacturing Cost Data
 
 | | Project Horn | Project Orb |
 |---|---|---|
-| Enclosure shell material | {{NEEDS_SOURCE: injection-molded enclosure shell material, e.g. ABS or polycarbonate blend, per studio's foam-model spec}} | {{NEEDS_SOURCE: injection-molded enclosure shell material, per studio's foam-model spec}} |
-| Material cost | {{NEEDS_SOURCE: injection-molding shell material cost, USD per square inch of shell surface, current}} | {{NEEDS_SOURCE: injection-molding shell material cost, USD per square inch of shell surface, current}} |
-| Mold tooling cost | {{NEEDS_SOURCE: injection-molding tooling cost benchmark, tapered/complex-geometry mold, USD, published DFM cost-guide range}} | {{NEEDS_SOURCE: injection-molding tooling cost benchmark, simple/spherical-geometry mold, USD, published DFM cost-guide range}} |
+| Enclosure shell material | PC/ABS blend [MA3] | PC/ABS blend [MA3] |
+| Material cost | $0.0031 per sq in [S6] | $0.0031 per sq in [S6] |
+| Mold tooling cost | $58,000 [MA6] | $32,000 [MA6] |
 
 ## Appendix C — Shipping and Packing Data
 
 | | Value |
 |---|---|
-| Standard shipping container internal volume used in this case | {{NEEDS_SOURCE: standard ocean freight shipping container internal volume, cubic feet, published container spec sheet}} |
-| Ocean freight cost per container | {{NEEDS_SOURCE: ocean freight per-container spot rate, USD, published freight index such as the Freightos Baltic Index, current}} |
-| Project Horn packing efficiency (fraction of container volume actually filled by nested units) | {{NEEDS_SOURCE: cone-frustum-shaped carton nesting/packing efficiency, percent of container volume utilized, published DFM or packaging-engineering source}} |
+| Standard shipping container internal volume used in this case | 2,683 cu ft [S1] |
+| Ocean freight cost per container | $3,570.80 [S2] |
+| Project Horn packing efficiency (fraction of container volume actually filled by nested units) | 80% [MA4] |
 | Project Orb packing efficiency (fraction of container volume actually filled by nested units) | **≈74.05%** — the Kepler conjecture's proven maximum density for packing equal spheres, the best any arrangement of spheres can do, proved by Thomas Hales; used here as the ceiling on Project Orb's real packing efficiency |
 
 **Why the sphere's packing number needs no separate citation.** Unlike the tapered mold cost or
@@ -128,7 +129,40 @@ proved as the Kepler conjecture. Project Orb's real packing efficiency in an act
 container, with real cardboard dividers and real handling clearance, can only be at or below this
 ceiling, never above it.
 
-## Appendix D — "How To…" Math Questions To Research
+## Modeling Assumptions
+
+> These figures are **not sourced**. They are stated scenario assumptions chosen by the case
+> author because no real source can describe a fictional client's fictional prototype or a
+> fictional studio's internal quotes. A Hero may challenge them in discussion — that is a
+> legitimate move.
+
+| # | Assumption | Value used | Basis | Sensitivity |
+|---|---|---|---|---|
+| MA1 | Project Horn frustum dimensions (base radius, top radius, height) and Project Orb sphere radius | Base 3.5 in, top 2.0 in, height 6.0 in (slant height 6.19 in, computed); sphere radius 3.5 in | No real "Project Horn"/"Project Orb" spec exists to source — these are the studio's own foam-model dimensions. Sized to a plausible portable-Bluetooth-speaker footprint, with the sphere's radius matched to the frustum's base radius so both shells plausibly house the same driver/battery stack. | These dimensions drive every downstream surface-area and volume calculation. A mechanical ±50% sensitivity check on each dimension shows this assumption **can, by itself, flip the recommendation to Project Horn** (each of the four dimensions flips it individually at one end of its ±50% range), and several of those flexes also push the margin outside SPEC §2's 20% cap — a Hero who picks very different dimensions should expect not just a different gap, but possibly a different winner. |
+| MA2 | Client's target first-year production volume | 250,000 units | Plausible year-one volume for a mid-market consumer portable-audio SKU launch; no real client exists to source a real number from. | Directly sets the amortized-tooling-cost-per-unit term. Below roughly 50,000 units/year, Project Horn's $26,000 tooling premium (MA6) costs more per unit and can flip the recommendation toward Project Orb; above roughly 500,000 units/year the tooling gap shrinks toward negligible per-unit cost and the fixed packing-efficiency gap (MA4 vs. Kepler's 74.05%) dominates, favoring Project Horn more strongly. Confirmed stable under a mechanical ±50% check. |
+| MA3 | Enclosure shell material (both options) | PC/ABS blend | PC/ABS is a well-established, widely used material for consumer-electronics and speaker enclosures (S9) — but which material this fictional studio specifically chose is a scenario detail, not a fact to look up. The same material is assumed for both shells so the comparison is not biased by a material choice. | None — identical for both options, so it cancels out of the Horn-vs-Orb comparison. |
+| MA4 | Project Horn packing efficiency inside a shipping container | 80% | Placed between the sphere's proven 74.05% Kepler ceiling (a frustum should out-pack a sphere, since frustums can nest like stacked cups) and the 75–85% fill-rate guidance published for optimized rectangular cartons (S8) — a frustum nests better than a sphere but not as well as a true rectangular box. | **This is the most dilemma-sensitive assumption in the case.** If the true figure is closer to 75% (S8's lower-concern threshold), Project Horn's shipping advantage over Project Orb narrows sharply and the recommendation may flip toward Project Orb. If it is closer to 85% (S8's "achievable" figure), Project Horn's advantage widens. A mechanical ±50% check confirms this does not flip the verdict by itself, but does push the margin outside SPEC §2's 20% cap at the low end. |
+| MA5 | Wall thickness used to derive material cost per sq in (S6) | 0.0925 in (midpoint) | Picked as the midpoint of Protolabs' published recommended ABS wall-thickness range, 0.045–0.140 in (S5) — a real range exists, but no single point value is published, since actual wall thickness is a part-specific design choice. | Low. Material cost is a small fraction (well under $1/unit) of total cost per unit next to amortized tooling and shipping, so this pick does not meaningfully affect the recommendation. Confirmed stable under a mechanical ±50% check. |
+| MA6 | Mold tooling cost (production-grade steel tooling at the 250,000-unit/year volume in MA2) | Project Horn (tapered): $58,000; Project Orb (sphere): $32,000 | Both anchored inside the published high-volume steel-tooling range of $5,000–$100,000 (S7); the tapered geometry is priced toward the top half of that range per the cited DFM guidance that added complexity (draft, taper, side-action risk) raises tooling cost, while the simple sphere is priced toward the lower-middle. No public source gives a controlled dollar comparison between a tapered mold and a spherical mold for the same part, so a specific point value could not be sourced. | **Dilemma-sensitive.** The $26,000 gap becomes $0.104/unit at the MA2 volume of 250,000 units — small next to the packing-efficiency gap (MA4), but a mechanical ±50% check shows Project Horn's *own* tooling cost alone (cut to $29,000) is enough to **flip the recommendation to Project Horn**, and raising it (to $87,000) pushes the margin outside SPEC §2's 20% cap in the other direction. |
+
+## Appendix D — Sources
+
+| # | Claim | Value | Source | Date | Confidence |
+|---|---|---|---|---|---|
+| S1 | 40 ft High-Cube dry container internal volume | 2,683 cu ft (≈76 m³) | bws.net — [40-foot dry high-cube container specifications](https://www.bws.net/toolbox/container-specifications/40-foot-dry-high-cube) | accessed 2026-08-27 | MEDIUM |
+| S2 | Freightos Baltic Index (FBX) Global Container Index, current spot rate | $3,570.80 per 40 ft container | Freightos — [FBX Global Container Freight Index](https://www.freightos.com/enterprise/terminal/freightos-baltic-index-global-container-pricing-index/) | accessed 2026-08-27 (live daily index; no fixed as-of date shown on page) | MEDIUM |
+| S3 | ABS resin spot price, North America | ≈$1.94/kg ≈ $0.88/lb | BusinessAnalytiq — [Acrylonitrile Butadiene Styrene (ABS) USA Price Index](https://businessanalytiq.com/procurementanalytics/index/acrylonitrile-butadiene-styrene-abs-usa-price-index-2/) | accessed 2026-08-27 (August 2026, live index; re-sourced after the prior citation stopped showing a USA figure) | MEDIUM |
+| S4 | ABS density | 1.052 g/cm³ (≈0.038 lb/in³), extrusion grade | AmesWeb — [Density of Plastics and Polymers](https://amesweb.info/Materials/Density-of-Plastics.aspx) | accessed 2026-08-27 (re-sourced after MatWeb returned HTTP 403 on re-fetch) | HIGH |
+| S5 | ABS recommended injection-molding wall thickness range | 0.045–0.140 in | Protolabs — [Plastic Injection Molding Design Guidelines](https://www.protolabs.com/services/injection-molding/plastic-injection-molding/design-guidelines/) | accessed 2026-08-27 | HIGH |
+| S6 | Material cost per sq in of shell surface (derived from S3 × S4 × MA5) | $0.0031 per sq in | Derived: $0.88/lb × 0.038 lb/in³ × 0.0925 in ≈ $0.0031/in². Inputs S3, S4; wall thickness is MA5, a midpoint picked from S5's range. `derived: true` | accessed 2026-08-27 | MEDIUM |
+| S7 | Injection-mold tooling cost benchmark for high-volume (10k+ unit, complex geometry) production, plus a 100k-unit worked example | $5,000–$100,000 (steel production tooling), plus a $20,000 example for a 100,000-unit steel mold | Formlabs — [How to Estimate Injection Molding Cost](https://formlabs.com/blog/injection-molding-cost/) | accessed 2026-08-27 (re-verified; the page's own figures had drifted from the 2026-08-26 access) | MEDIUM |
+| S8 | Rectangular-carton / palletized-cargo container fill-rate guidance | Above 85% achievable in most cases; below 75% suggests a planning/calibration problem | 3dloadcalculator.com — [Container Utilization: The Cost Hiding in Plain Sight](https://3dloadcalculator.com/blog/container-utilization-the-cost-hiding-in-plain-sight/) | accessed 2026-08-27 (re-verified; the DHL-study attribution is no longer on the page) | MEDIUM |
+| S9 | PC/ABS blend is a common material for consumer-electronics and speaker enclosures | — (qualitative precedent) | audioXpress — [Some Thoughts on Plastics for Speaker Enclosures](https://audioxpress.com/article/some-thoughts-on-plastics-for-speaker-enclosures); Canyon Components — [PC/ABS Selection Guide](https://www.canyoncomponents.com/materialpages/pc-abs-polycarbonate-acrylonitrile-butadiene-styrene) | accessed 2026-08-27 | MEDIUM |
+
+Project Orb's ≈74.05% packing-efficiency figure (Appendix C) is the Kepler conjecture's proven
+sphere-packing ceiling and needs no market-data citation — see the note under Appendix C.
+
+## Appendix E — "How To…" Math Questions To Research
 
 **Vocabulary terms**
 

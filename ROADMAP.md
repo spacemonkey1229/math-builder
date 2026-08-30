@@ -1,6 +1,6 @@
 # Roadmap — Math Builder
 
-**Last refreshed: 2026-08-24 (v2.14), against live scripts, not carried-forward numbers.**
+**Last refreshed: 2026-08-30 (v2.15), against live scripts, not carried-forward numbers.**
 For the full reasoning behind any line below — why a number moved, what broke, what was fixed —
 see **[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md)**, the complete narrative log. This file is just
 the status page: what's done, what's not, what's next.
@@ -11,11 +11,10 @@ the status page: what's done, what's not, what's next.
 
 | # | What | Why it's first |
 |---|---|---|
-| 1 | **Run the first real case with a real learner** (Track A3) | The single blocking fact — 0 cases have ever been run with a real learner, out of 80 now published. Everything else is still a machine claim until this happens |
-| 2 | **Write the two remaining Pre-Calculus cases** (Polar/Parametric, Trig Identities) | Finishes Pre-Calculus completely — zero gaps left in that subject |
-| 3 | **Move the 7 drafting-stage cases through research → readiness → publish** (`alert-curve`, `bioreactor-bid`, `compute-lease`, `cooling-curve`, `downbeat-split`, `enclosure-call`, `placement-test`) | Already scoped and written, just sitting in the pipeline — the fastest remaining progress |
-| 4 | **Finish `fret-board`'s research stage** (already has a `RESEARCH_LOG.md` started) | Closest case to clearing the gate after the drafting batch above |
-| 5 | **Push `app/student-moksh-atit.html` to the live site** | Currently local-only; his first assigned month can't actually be used until this ships |
+| 1 | **Run the first real case with a real learner** (Track A3) | The single blocking fact — 0 cases have ever been run with a real learner, out of 88 now published. Everything else is still a machine claim until this happens |
+| 2 | **Push `app/student-moksh-atit.html` to the live site** | Currently local-only; his first assigned month can't actually be used until this ships |
+| 3 | **Write the 9 remaining scoped-but-unwritten concepts** | A fresh career/industry-gap batch (`CONCEPTS_pim-sector-gaps_2026-08-24.md`) — the drafting/research/readiness pipeline is now fully empty, so this is the next real work |
+| 4 | **Push a `case-publish` to Google Drive for the first time** | Every case published this session (8 total) built its packet and promoted the read-model, but Drive upload was held back pending separate approval each time — still an open step for all of them |
 
 ---
 
@@ -25,20 +24,30 @@ the status page: what's done, what's not, what's next.
 quality-checked: Phone Plans → Family Trip → Key Length → Field Watch → Apron Order. His page:
 `app/student-moksh-atit.html`. Not yet pushed to the live site — still local only.
 
-**80 cases** are genuinely ready to hand to any learner (passed every quality check this project
+**88 cases** are genuinely ready to hand to any learner (passed every quality check this project
 requires, live re-scan via `app/build_pipeline.py`). The previously-flagged batch of 10
 mis-published cases (`archery-camp`, `baseball-lineup`, `cardiology`, `catering`, `house-plans`,
 `lebron-vs-michael`, `nuclear-waste`, `phone-plan`, `rent-vs-own`, `robotics-engineer`) has since
 been remediated — each now carries a recorded `TIER2_PASS` with all six Tier 2 probes passing; see
-their individual `QA_REPORT.md` files for the per-case fix log. `the-multiplier-recruit`,
-`the-reserve-asymptote`, and `roofline-call` have also cleared the gate and published since the
-last refresh.
+their individual `QA_REPORT.md` files for the per-case fix log.
 
-**7 cases are in drafting**, written but not yet researched: `alert-curve`, `bioreactor-bid`,
-`compute-lease`, `cooling-curve`, `downbeat-split`, `enclosure-call`, `placement-test`.
-**1 case (`fret-board`) is in research** — sourcing has started (`RESEARCH_LOG.md` exists).
-**9 concepts remain unwritten**, including the two remaining Pre-Calculus gaps below and a fresh
-career/industry-gap batch (`CONCEPTS_pim-sector-gaps_2026-08-24.md`).
+**The entire drafting/research/readiness pipeline is now empty (2026-08-30) — all 8 cases that were
+in flight reached `TIER2_PASS` and published.** `bioreactor-bid` and `enclosure-call` cleared
+cleanly (12.4% and 8.85% margins). The other 6 — `fret-board`, `alert-curve`, `compute-lease`,
+`cooling-curve`, `downbeat-split`, `placement-test` — all hit a genuine SPEC §2 balance failure
+(margins from 51.6% up to 350%, one case with a structurally zero-cost option, one with a
+zero-slack tie) and needed a real retune, not a number tweak: reframed primary metrics
+(`fret-board` → total shop-time, `downbeat-split` → expected studio time including redelivery
+risk), re-sourced or corrected Modeling Assumptions grounded in better research
+(`cooling-curve`'s mold-cost gap, `compute-lease`'s growth-rate proxy — whose fix flipped the
+recommended winner entirely), an expanded/more-realistic dataset (`alert-curve`'s historical log,
+6→14 rows), and added real budget slack (`placement-test`, $30k→$60k). All 8 have full packets,
+interactive HTML, and are promoted in the read-model. Google Drive upload was intentionally held
+back on every one, pending separate approval. Per-case detail and full retune reasoning is in each
+case's `QA_REPORT.md`.
+**9 concepts remain unwritten** — a fresh career/industry-gap batch
+(`CONCEPTS_pim-sector-gaps_2026-08-24.md`). Both remaining Pre-Calculus gaps (Polar/Parametric,
+Trig Identities) are closed.
 
 ---
 
@@ -64,7 +73,7 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 | Tag old cases against the skill map | ✅ Done | Worked to its honest limit |
 | Add Pre-Calculus / Calculus / Discrete Math to the skill map | ✅ Done | — |
 | Give every case facilitator discussion notes | 🔄 In progress | 16 of 56 older cases still missing them |
-| **Write/finish cases for Geometry & Pre-Calculus gaps** | 🔄 **Active priority** | See table below |
+| **Write/finish cases for Geometry & Pre-Calculus gaps** | 🔄 In progress | Pre-Calculus is now fully closed; Geometry gaps remain — see table below |
 | Some subject areas have almost no cases at all | ⏳ Not started | Number Theory is the thinnest |
 
 **Geometry & Pre-Calculus gap tracker** (reprioritized ahead of other subjects per direct request):
@@ -73,8 +82,8 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 |---|---|---|---|
 | Pre-Calc | Matrices | 7 skills | ✅ Published (`the-multiplier-recruit`) |
 | Pre-Calc | Intro to Limits | 5 skills | ✅ Published (`the-reserve-asymptote`) |
-| Pre-Calc | Polar & Parametric | 6 skills | 🔜 Not written yet |
-| Pre-Calc | Trig Identities | 5 skills | 🔜 Not written yet |
+| Pre-Calc | Polar & Parametric | 6 skills | ✅ Published (`feedback`) |
+| Pre-Calc | Trig Identities | 5 skills | ✅ Published (`deluge-gun`) |
 | Geometry | Fundamentals | 7 skills | ✅ Published (`roofline-call`) |
 | Geometry | Quadrilaterals & Polygons | 2 skills | ⏳ Low priority — barely worth its own case now |
 | Geometry | Visual Perceptibility | 2 skills | ⛔ No case concept exists yet at all |
@@ -136,13 +145,20 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 
 | | |
 |---|---|
-| Cases that are genuinely ready to assign (published, live re-scan) | **80** |
-| Cases in drafting (written, not yet researched) | 7 |
-| Cases in research | 1 |
+| Cases that are genuinely ready to assign (published, live re-scan) | **88** |
+| Cases in drafting / research / readiness | **0** — the pipeline is fully empty |
 | Concepts scoped but not yet written into a case | 9 |
 | Cases ever run with a real student | **0** |
 | Skills in the curriculum map | 437 |
-| `app/dashboard.html` last rebuilt | **2026-08-24** — must be rerun (`python3 app/build_dashboard.py`) after every future `case-publish`, or the live site keeps serving stale data even though the underlying case files are correct |
+| `app/dashboard.html` last rebuilt | **2026-08-30** — must be rerun (`python3 app/build_dashboard.py`) after every future `case-publish`, or the live site keeps serving stale data even though the underlying case files are correct |
+
+**2026-08-30 note:** `bioreactor-bid`, `enclosure-call`, `fret-board`, `alert-curve`,
+`compute-lease`, `cooling-curve`, `downbeat-split`, and `placement-test` — all 8 cases that were
+in flight — reached `TIER2_PASS` and published this session (packet + interactive HTML +
+read-model promotion). Google Drive upload was not pushed for any of them, held for separate
+approval. `fret-board`, `alert-curve`, `compute-lease`, `cooling-curve`, `downbeat-split`, and
+`placement-test` all required a genuine retune first (see the note above for what changed in
+each).
 
 Full derivations, per-script commands, and the reasoning trail for every one of these numbers are
 in [ROADMAP_HISTORY.md](ROADMAP_HISTORY.md).

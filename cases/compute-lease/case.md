@@ -76,13 +76,13 @@ discussion post 500 "excellent" words on the questions above.
 
 | Quantity | Value |
 |---|---|
-| Days until Sofia's board recommendation is due | {{NEEDS_SOURCE: stated in-scenario deadline, days from case launch to board meeting}} |
+| Days until Sofia's board recommendation is due | 2 days [MA3] |
 | Evaluation window for the primary metric | 24 months |
-| Long Lock contract term (may exceed the evaluation window) | {{NEEDS_SOURCE: stated contract term in months, e.g. 36}} |
-| Number of GPUs Kestrel is deciding whether to commit to | {{NEEDS_SOURCE: GPU cluster size, count of GPUs}} |
-| Kestrel's starting (month 0) monthly GPU-hour demand from paying customers | {{NEEDS_SOURCE: baseline monthly GPU-hours actually rented by paying customers, month 0}} |
+| Long Lock contract term (may exceed the evaluation window) | 36 months [S2] |
+| Number of GPUs Kestrel is deciding whether to commit to | 512 GPUs [MA1] |
+| Kestrel's starting (month 0) monthly GPU-hour demand from paying customers | 120,000 GPU-hours/month [MA2] |
 
-*Note: Kestrel Compute is a scenario construction for this case — there is no real company by this name. The evaluation window (24 months) and the fact that the Long Lock's own contract term runs longer than that window are both fixed constraints of the board's request, not sourced figures.*
+*Note: Kestrel Compute is a scenario construction for this case — there is no real company by this name. The evaluation window (24 months) and the fact that the Long Lock's own contract term runs longer than that window are both fixed constraints of the board's request, not sourced figures. See the Modeling Assumptions block below for MA1–MA3.*
 
 ---
 
@@ -90,8 +90,8 @@ discussion post 500 "excellent" words on the questions above.
 
 | Spec | Value |
 |---|---|
-| Fixed rate per GPU-hour of cluster capacity, locked for the full contract term | {{NEEDS_SOURCE: reserved/committed-use GPU cluster pricing, USD per GPU-hour, e.g. from a published reserved H100/GPU cluster rate card}} |
-| Monthly fixed cost (rate × committed GPU-hours per month, regardless of usage) | {{NEEDS_SOURCE: derived from rate and committed capacity once both are sourced}} |
+| Fixed rate per GPU-hour of cluster capacity, locked for the full contract term | $2.97 [S2] |
+| Monthly fixed cost (rate × committed GPU-hours per month, regardless of usage) | $1,110,067 (= $2.97/GPU-hr × 512 GPUs [MA1] × 730 hr/month) [S2] |
 | Whether the monthly payment changes if fewer GPU-hours are actually used | No — fixed regardless of utilization |
 
 ---
@@ -100,7 +100,7 @@ discussion post 500 "excellent" words on the questions above.
 
 | Spec | Value |
 |---|---|
-| On-demand rate per GPU-hour | {{NEEDS_SOURCE: published on-demand GPU pricing, USD per GPU-hour, e.g. AWS EC2 P5/H100 on-demand pricing, or CoreWeave / Lambda Labs published on-demand rate card}} |
+| On-demand rate per GPU-hour | $6.88 [S1] |
 | Billing basis | Pay only for GPU-hours actually consumed by paying customers that month |
 | Minimum commitment | None |
 
@@ -110,17 +110,39 @@ discussion post 500 "excellent" words on the questions above.
 
 | Scenario | Month-over-month customer GPU-hour demand growth rate |
 |---|---|
-| Low | {{NEEDS_SOURCE: low end of a realistic month-over-month AI infrastructure demand growth rate, drawn from public hyperscaler capex/AI infrastructure growth disclosures}} |
-| Mid | {{NEEDS_SOURCE: mid-range month-over-month growth rate from the same disclosures}} |
-| High | {{NEEDS_SOURCE: high end of the same published growth-rate range}} |
+| Low | 1.1% [S5] |
+| Mid | 1.7% [S3] |
+| High | 2.1% [S4] |
 
-*Kestrel's own actual growth rate is not independently known or sourceable — it is a fictional company. The range above anchors Kestrel's planning scenarios to real, published growth rates seen in AI-infrastructure capital spending elsewhere in the industry.*
+*Kestrel's own actual growth rate is not independently known or sourceable — it is a fictional company. The range above anchors Kestrel's planning scenarios to a real, publicly-traded, mid-size cloud infrastructure provider's own recent quarterly revenue growth trajectory (see Appendix E) — the closest available real-world analog to Kestrel's own stated scale.*
+
+---
+
+## Modeling Assumptions
+
+> These figures are **not sourced**. They are stated scenario assumptions chosen by the case
+> author, needed because Kestrel Compute is a fictional company and no real business supplies
+> them. A Hero may challenge them in discussion — that is a legitimate move.
+
+| # | Assumption | Value used | Basis | Sensitivity |
+|---|---|---|---|---|
+| MA1 | Number of GPUs Kestrel commits to under the Long Lock | 512 GPUs | No real committed-cluster size exists for a fictional company. 512 GPUs (64 × 8-GPU instances) aligns with the published ceiling for AWS's own EC2 Capacity Blocks for ML cluster product, which supports reservations up to 64 p5 instances / 512 GPUs. | Load-bearing. Sets the Long Lock's fixed monthly cost floor ($1,110,067/month regardless of usage). A materially different cluster size shifts every D2/D4/D5 result and could move the D5 crossover growth rate. |
+| MA2 | Kestrel's starting (month 0) monthly GPU-hour demand | 120,000 GPU-hours/month | No real company exists to supply this figure. 120,000 GPU-hours/month is ≈32% of MA1's 373,760 GPU-hour/month committed capacity (512 GPUs × 730 hr), representing a newly-signed reserved cluster that starts under-utilized and is expected to grow into its capacity — a standard reserved-capacity planning pattern. | The single most sensitivity-loaded figure in the case: it is the seed value for every month of D1's demand sequence under all three growth scenarios, and therefore feeds every D2, D4, and D5 result directly. A higher starting utilization makes the Long Lock look better sooner; a lower one favors the Open Tap longer. |
+| MA3 | Days until Sofia's board recommendation is due | 2 days | Purely narrative detail internal to the fictional scenario — not externally sourceable. Matches the Overview's existing prose ("two days left to decide"). | None. Decorative only; does not feed any Challenge (D1–D6) calculation. |
 
 ---
 
 ## Appendix E: Sources
 
-*(To be completed by case-research. Every {{NEEDS_SOURCE}} placeholder above will be resolved here with a URL, publisher, access date, and confidence grade, or converted to a disclosed Modeling Assumption if no public source exists.)*
+| # | Claim | Value | Source | Date | Confidence |
+|---|---|---|---|---|---|
+| S1 | On-demand hourly price of AWS EC2 p5.48xlarge (8× H100 GPUs), us-east-1 → derived per-GPU rate | $55.04/instance-hr → $6.88/GPU-hour | AWS list price, via [instances.vantage.sh](https://instances.vantage.sh/aws/ec2/p5.48xlarge) and cross-checked at [aws-pricing.com](https://aws-pricing.com/p5.48xlarge.html) | Accessed 2026-08-26 | MEDIUM |
+| S2 | AWS EC2 p5.48xlarge 3-Year Reserved Instance (No Upfront) hourly rate, us-east-1 → derived per-GPU rate and Long Lock contract term | $23.7773/instance-hr → $2.97/GPU-hour; 3-year (36-month) term | AWS list price, via [instances.vantage.sh](https://instances.vantage.sh/aws/ec2/p5.48xlarge) | Accessed 2026-08-26 | MEDIUM |
+| S3 | DigitalOcean Holdings (NYSE: DOCN) Q1 2026 revenue growth, year-over-year (proxy for Mid growth scenario) | +22% YoY ($258M) → 1.7%/month | DigitalOcean Holdings, Inc. — [DigitalOcean Announces First Quarter 2026 Financial Results](https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Announces-First-Quarter-2026-Financial-Results/default.aspx) | Published 2026-05-04, accessed 2026-08-30 | HIGH |
+| S4 | DigitalOcean Holdings (NYSE: DOCN) Q2 2026 revenue growth guidance, year-over-year (proxy for High growth scenario) | +29% YoY (guided) → 2.1%/month | DigitalOcean Holdings, Inc. — [DigitalOcean Expects to Report Record Q2 2026 Results with RPO to Exceed $800M, Up More Than 10X Year Over Year](https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Expects-to-Report-Record-Q2-2026-Results-with-RPO-to-Exceed-800M-Up-More-Than-10X-Year-Over-Year/default.aspx) | Published 2026-06, accessed 2026-08-30 | HIGH |
+| S5 | DigitalOcean Holdings (NYSE: DOCN) Q2 2025 revenue growth, year-over-year (proxy for Low growth scenario) | +14% YoY → 1.1%/month | DigitalOcean Holdings, Inc. — [DigitalOcean Expects to Report Record Q2 2026 Results with RPO to Exceed $800M, Up More Than 10X Year Over Year](https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Expects-to-Report-Record-Q2-2026-Results-with-RPO-to-Exceed-800M-Up-More-Than-10X-Year-Over-Year/default.aspx) | Published 2026-06, accessed 2026-08-30 | HIGH |
+
+*S3, S4, and S5 are proxy figures — three points along one real, publicly-traded, mid-size cloud infrastructure company's (DigitalOcean) own disclosed quarterly revenue growth trajectory, converted from a year-over-year percentage to an equivalent constant monthly compound rate (shown in each source's note in case.json). They are not literally "GPU-hours rented by Kestrel's own paying customers" — no such disclosure exists for a fictional company — which is why Appendix D already frames them as an anchor, not as Kestrel's own known rate. DigitalOcean was chosen over the previously-cited hyperscaler-scale AI-infrastructure figures (see RESEARCH_LOG.md and the case's own QA history) because it is a much closer real-world analog to Kestrel's stated mid-size scale. Full derivations and rejected alternatives are in RESEARCH_LOG.md.*
 
 ---
 

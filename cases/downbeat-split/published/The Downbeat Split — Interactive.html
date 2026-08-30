@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Downbeat Split — Interactive</title>
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC — Downbeat Split */
+  .decision-table td.win{background:var(--ok-bg) !important;font-weight:700}
+  .beatstaff{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;margin:16px 0;font-family:var(--sans);font-size:.82rem;color:var(--sub);text-align:center}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-metronome" viewBox="0 0 24 24"><path d="M8 21h8l-2-15h-4z"/><path d="M12 4v3"/><path d="M9 21l3-14 3 14"/></symbol>
+  <symbol id="icon-note" viewBox="0 0 24 24"><circle cx="7" cy="18" r="3"/><path d="M10 18V4l9-2v14"/><circle cx="16" cy="16" r="3"/></symbol>
+  <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Downbeat Split</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Fractions &mdash; Multiplication &amp; Division</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">The click track loops in Elena Cross's headphones for the ninth time, and every time it loops, the take underneath it is a hair long. Not enough that anyone at the network would flag it just by ear &mdash; you'd need a stopwatch, and Elena is the only one in the booth anyone trusts with one. The ensemble is on a break, brass mutes scattered across the risers, and the pencil marks on Elena's score are starting to look less like notation and more like frustration. On the console in front of her sits the client's spot, dropped into the session as a locked video reference, its outgoing black frame burned into the timeline like a deadline that already happened. The producer, headset draped around his neck, leans through the booth door for the third time this hour and says only, "Whenever you're ready" &mdash; which everyone in the room understands to mean the take is due before lunch.</p>
+  <p>Elena has two versions of the cue open side by side on her music stand. One is the version the ensemble already knows cold, clean straight subdivisions they could sight-read blind, and it lands the cue a hair off the mark &mdash; close enough that most arrangers would just nudge the tempo and call it a day. The other is scrawled in pencil in the margin of the last measure, a syncopated rewrite that splits one beat cleanly against the grain of the rest of the phrase, hits the mark exactly, and would mean starting the rehearsal clock over from zero with an ensemble that is already watching the wall clock over the concertmaster's shoulder.</p>
+  <p>She picks up her pencil, taps it once against the stand, and looks up.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Elena Cross is a staff arranger at Larkspur Sound, a commercial audio production house, responsible for delivering a finished orchestral cue that fills the client's broadcast ad spot exactly, frame for frame, and accountable to the session's contracted producer for both the take's musical quality and the studio's booked rehearsal-hour budget (see Appendix A). The client's broadcast slot has one fixed, non-negotiable target <span class="gterm" data-term="Measurement">duration</span> the finished cue must fill (see Appendix A) &mdash; the network will not air a spot that runs long, and will not pad black frames to cover one that runs short.</p>
+  <p>Two arrangements of the same sixteen-bar cue are on Elena's stand tonight, and the ensemble has already worked through the first one in this session:</p>
+  <p><strong>The Straight Cut</strong> &mdash; the arrangement already rehearsed, built entirely from straight, repeating mixed-number note values (see Appendix B). The ensemble can sight-read it cleanly, but multiplying the phrase's mixed-number beat length by the mixed-number seconds-per-beat at session tempo across the whole cue lands its total running time close to, but not exactly on, the broadcast slot's target &mdash; the remaining gap has to be absorbed as a small across-the-board tempo adjustment (see Appendices A and B).</p>
+  <p><strong>The Downbeat Split</strong> &mdash; a rewrite of one beat in the final measure, splitting that beat by dividing a fraction of it by the ensemble's normal fractional subdivision unit (see Appendix D), sized to close the Straight Cut's timing gap exactly rather than approximately. The syncopated subdivision reads correctly on the page and hits the target slot precisely, but it is new material the ensemble has not rehearsed, and every additional read-through of an unfamiliar subdivision like this one is booked, and paid, at the studio's standard union rehearsal rate (see Appendix C).</p>
+  <p>Every rehearsal minute the studio books, on either arrangement, is paid at the same union scale (see Appendix C), so booked rehearsal time is only part of what either option really costs. The network's frame-accuracy delivery requirement is not negotiable, and a take that misses it does not get a warning &mdash; it gets rejected on delivery, and the ensemble has to be re-booked for a whole new session to re-cut the spot from scratch. Elena's recommendation has to be judged on one number: expected total studio minutes required to deliver a broadcast-ready take &mdash; each option's booked rehearsal minutes, plus the <span class="gterm" data-term="Probability">probability</span>-weighted cost, in re-booked session minutes, of exactly that happening (see Appendices A, C, D and E).</p>
+  <p>Every sourced and assumed figure in this case is listed in Appendices E and F, and the vocabulary and "how to&hellip;" skills this case will ask of you are listed in Appendix G &mdash; that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Elena Cross. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Straight Cut</h4>
+      <p style="margin:0">Ship the already-rehearsed straight-subdivision arrangement and absorb the timing gap with a small tempo compromise.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Downbeat Split</h4>
+      <p style="margin:0">Rewrite the beat with a syncopated subdivision that hits the target duration exactly, at the cost of additional rehearsal time.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which option you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include the Straight Cut's total running time (D1), a partial-phrase check locating the target cutoff (D2), the Downbeat Split's beat-subdivision calculation (D3), a rehearsal read-through fit-check (D4), and a final decision table comparing expected total studio minutes for both options, with a stated recommendation (D5).</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; Cue Brief &amp; Broadcast Slot</summary>
+    <div class="inner">
+      <table id="tblA">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Client broadcast slot target duration (exact, frame-accurate)</td><td class="num">21 7/8 seconds [MA1]</td></tr>
+        <tr><td>Total booked studio session length for this cue</td><td class="num">90 minutes (1 1/2 hours) [MA2]</td></tr>
+        <tr><td>Contracted producer accountability</td><td>Elena is accountable to the session's contracted producer for delivering a take that fits the target slot within the client's frame-accuracy tolerance, and for staying within the studio's booked rehearsal-hour budget.</td></tr>
+      </table>
+      <p class="side-note">Larkspur Sound and this specific cue are invented for this case (see Appendix E); the broadcast industry's frame-accurate delivery requirement for ad spots is a real, standard practice this case models. If a delivered take is rejected, the studio has to book a brand-new session of the same total booked length (this table's own row above) to re-cut the spot from scratch, regardless of which arrangement was rejected &mdash; the network does not grant a shorter make-good session for either option.</p>
+    </div>
+  </details>
+
+  <details id="apx-b">
+    <summary>Appendix B &mdash; The Straight Cut: Phrase &amp; Tempo Data</summary>
+    <div class="inner">
+      <table id="tblB">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Full cue length (measures)</td><td class="num">16 measures [MA3]</td></tr>
+        <tr><td>Phrase length per repeat, straight subdivision (beats, <span class="gterm" data-term="Mixed Number">mixed number</span>)</td><td class="num">3 3/4 beats [MA4]</td></tr>
+        <tr><td>Session tempo (seconds per beat, mixed number)</td><td class="num">1 1/3 seconds per beat [MA5]</td></tr>
+        <tr><td>Number of full phrase repeats across the cue</td><td class="num">4 repeats [MA6]</td></tr>
+        <tr><td>Fraction of the final phrase used in the partial-phrase check (D2)</td><td class="num">3/8 [MA7]</td></tr>
+      </table>
+      <p class="side-note">The Straight Cut's computed total running time is D1's deliverable, not a sourced figure &mdash; it is built from the rows above. Work it out yourself in the Working Notebook below.</p>
+    </div>
+  </details>
+
+  <details id="apx-c">
+    <summary>Appendix C &mdash; AFM Session Rehearsal Rate Reference</summary>
+    <div class="inner">
+      <p>Real, published American Federation of Musicians (AFM) session-rate scale data, reproduced here so the rehearsal-cost side of the comparison has a real anchor rather than an invented one.</p>
+      <table id="tblC">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>AFM published commercial/jingle session rehearsal rate</td><td class="num">$133.01 per one-hour minimum call (Side Musician scale) [S1]</td></tr>
+        <tr><td>AFM standard minimum session call length</td><td class="num">60 minutes (1 hour) [S2]</td></tr>
+      </table>
+      <p class="side-note">This is real union rate-card data (see Appendix F) used to anchor the cost side of the decision; it is not Larkspur Sound's own negotiated house rate unless it happens to match.</p>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; The Downbeat Split: Subdivision &amp; Rehearsal Data</summary>
+    <div class="inner">
+      <table id="tblD">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Ensemble's normal subdivision unit (fraction of a beat)</td><td class="num">1/2 beat (eighth-note subdivision) [MA8]</td></tr>
+        <tr><td>Rehearsal time per read-through of the new syncopated passage (mixed-number minutes)</td><td class="num">2 1/2 minutes [MA9]</td></tr>
+        <tr><td>Rehearsal time remaining in the booked session for new material (mixed-number minutes)</td><td class="num">22 1/2 minutes [MA10]</td></tr>
+      </table>
+      <p class="side-note"><strong>Decision table shell</strong> (fill this in as part of D5 &mdash; the Working Notebook's Step 5 will check your arithmetic, it will not fill this table for you):</p>
+      <table id="tblDshell" class="decision-table">
+        <tr><th>&nbsp;</th><th>The Straight Cut</th><th>The Downbeat Split</th></tr>
+        <tr><td>Rehearsal minutes required</td><td></td><td></td></tr>
+        <tr><td>Redelivery-risk probability (see Appendix E)</td><td></td><td></td></tr>
+        <tr><td>Probability-weighted redelivery-risk minutes</td><td></td><td></td></tr>
+        <tr><td>Expected total minutes required</td><td></td><td></td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced</strong>. Larkspur Sound, this cue, and its client's broadcast slot are invented for this case (see Appendix A) &mdash; there is no real session to look up. Each value below is a stated scenario assumption chosen by the case author so the two arrangements are directly comparable and the D1&ndash;D5 arithmetic resolves in exact fractions and mixed numbers with no rounding. A Hero may challenge any of these in discussion &mdash; that is a legitimate move.</blockquote>
+      <table id="tblE">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+        <tr><td>MA1</td><td>Client broadcast slot target duration</td><td class="num">21 7/8 seconds</td><td>Real broadcast ad spots run in standard lengths (:15/:30/:60); this case's fictional client brief sets a specific frame-accurate figure inside that range.</td></tr>
+        <tr><td>MA2</td><td>Total booked studio session length for this cue</td><td class="num">90 minutes (1 1/2 hours)</td><td>One AFM minimum hour (Appendix C, S2) plus a half-hour of likely overtime.</td></tr>
+        <tr><td>MA3</td><td>Full cue length</td><td class="num">16 measures</td><td>Fixed directly by the case's own narrative ("the same sixteen-bar cue," Background).</td></tr>
+        <tr><td>MA4</td><td>Phrase length per repeat, straight subdivision</td><td class="num">3 3/4 beats</td><td>Author's choice of arrangement structure.</td></tr>
+        <tr><td>MA5</td><td>Session tempo (seconds per beat)</td><td class="num">1 1/3 seconds per beat (45 BPM)</td><td>A slow-to-moderate underscore tempo.</td></tr>
+        <tr><td>MA6</td><td>Number of full phrase repeats across the cue</td><td class="num">4 repeats</td><td>Author's choice of arrangement structure.</td></tr>
+        <tr><td>MA7</td><td>Fraction of the final phrase used in the partial-phrase check (D2)</td><td class="num">3/8</td><td>Chosen so D1 and D2 chain together with no fudge factor.</td></tr>
+        <tr><td>MA8</td><td>Ensemble's normal subdivision unit</td><td class="num">1/2 beat (eighth-note)</td><td>Eighth notes are the conventional "straight" default subdivision in staff notation.</td></tr>
+        <tr><td>MA9</td><td>Rehearsal time per read-through of the new syncopated passage</td><td class="num">2 1/2 minutes</td><td>No public data exists for this; based on a full pass of the 16-bar cue at 45 BPM plus a reset/count-off.</td></tr>
+        <tr><td>MA10</td><td>Rehearsal time remaining in the booked session</td><td class="num">22 1/2 minutes</td><td>Total booked session minus time already spent on the Straight Cut this session.</td></tr>
+        <tr><td>MA11</td><td>Redelivery-risk probability, The Straight Cut</td><td class="num">1/3</td><td>No published rejection-rate data exists for this failure mode; set in line with Larkspur Sound's own delivery history with this client.</td></tr>
+        <tr><td>MA12</td><td>Redelivery-risk probability, The Downbeat Split</td><td class="num">1/20</td><td>No published rejection-rate data exists; set well below MA11 because the passage is rehearsed to an exact target across 9 read-throughs before it is recorded.</td></tr>
+      </table>
+      <p class="side-note">MA11/MA12 are the single most load-bearing dials in this case &mdash; see the Twist and the Working Notebook's Step 5 sliders.</p>
+    </div>
+  </details>
+
+  <details id="apx-f">
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <p>All AFM figures below come from the American Federation of Musicians' own Commercial Announcements Agreement text (a national union agreement, not a third-party summary). Every other open figure in Appendices A, B, and D described a property of this case's invented cue and session, and became the stated Modeling Assumptions in Appendix E instead.</p>
+      <table id="tblF">
+        <tr><th>id</th><th>Claim</th><th>Value</th><th>Source</th><th>Accessed</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>AFM commercial/jingle session rehearsal rate (Side Musician, one-hour minimum call)</td><td class="num">$133.01</td><td><a href="https://afm47.org/docs/AFM%20Commercial%20Announcements%20Signatory%20Packet%20-%20October%202023.pdf" target="_blank" rel="noopener">AFM Commercial Announcements Agreement Signatory Packet</a>, Version 2 (2023-09-29)</td><td>2026-08-26</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>AFM standard minimum session call length</td><td class="num">60 minutes</td><td><a href="https://afm47.org/docs/AFM%20Commercial%20Announcements%20Signatory%20Packet%20-%20October%202023.pdf" target="_blank" rel="noopener">AFM Commercial Announcements Agreement Signatory Packet</a>, Version 2 (2023-09-29)</td><td>2026-08-26</td><td>HIGH</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-30. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; The Straight Cut's total running time (D1)</h4>
+    <div class="goal">Multiply the phrase's mixed-number beat length by the mixed-number seconds-per-beat, then multiply across every phrase repeat (Appendix B). Enter mixed numbers as decimals if that's easier &mdash; a mixed number converts to a decimal by adding the whole part to the fraction part.</div>
+    <div class="fieldrow"><label for="d1beat">Phrase length per repeat (beats)</label><input type="number" id="d1beat" step="0.01" placeholder="as a decimal"></div>
+    <div class="fieldrow"><label for="d1tempo">Session tempo (sec/beat)</label><input type="number" id="d1tempo" step="0.0001" placeholder="as a decimal"></div>
+    <div class="fieldrow"><label for="d1repeats">Number of full repeats</label><input type="number" id="d1repeats" step="1" placeholder="a whole number"></div>
+    <div class="fieldrow"><label for="d1total">Total running time (seconds)</label><input type="number" id="d1total" step="0.001"><button onclick="checkD1()">Check</button><span class="fb" id="fbD1"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Partial-phrase check (D2)</h4>
+    <div class="goal">Multiply a fraction of the final phrase's mixed-number beat length by the session tempo, to locate exactly where the broadcast slot's target cutoff falls (Appendix B).</div>
+    <div class="fieldrow"><label for="d2frac">Fraction of final phrase</label><input type="number" id="d2frac" step="0.001" placeholder="as a decimal"></div>
+    <div class="fieldrow"><label for="d2sec">Partial-phrase time (seconds)</label><input type="number" id="d2sec" step="0.001"><button onclick="checkD2()">Check</button><span class="fb" id="fbD2"></span></div>
+    <div class="side-note">Does your Step 1 total, plus this partial-phrase time, land on 21 7/8 seconds? That's the target from Appendix A &mdash; the tool won't print it for you, but you can add it up yourself.</div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; The Downbeat Split's beat-subdivision calculation (D3)</h4>
+    <div class="goal">Divide the timing gap (as a fraction of the final phrase's beat length) by the ensemble's normal fractional subdivision unit (Appendix D).</div>
+    <div class="fieldrow"><label for="d3num">Gap fraction (of final phrase)</label><input type="number" id="d3num" step="0.001" placeholder="as a decimal"></div>
+    <div class="fieldrow"><label for="d3den">Subdivision unit (fraction of a beat)</label><input type="number" id="d3den" step="0.001" placeholder="as a decimal"></div>
+    <div class="fieldrow"><label for="d3result">Subdivision split</label><input type="number" id="d3result" step="0.001"><button onclick="checkD3()">Check</button><span class="fb" id="fbD3"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Rehearsal read-through fit-check (D4)</h4>
+    <div class="goal">Divide the mixed-number rehearsal time remaining in the booked session by the length of one read-through of the syncopated passage (Appendix D). How many <em>complete</em> read-throughs fit?</div>
+    <div class="fieldrow"><label for="d4rem">Minutes remaining in session</label><input type="number" id="d4rem" step="0.01" placeholder="as a decimal"></div>
+    <div class="fieldrow"><label for="d4per">Minutes per read-through</label><input type="number" id="d4per" step="0.01" placeholder="as a decimal"></div>
+    <div class="fieldrow"><label for="d4result">Complete read-throughs</label><input type="number" id="d4result" step="1"><button onclick="checkD4()">Check</button><span class="fb" id="fbD4"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; Decision table and expected total minutes (D5)</h4>
+    <div class="goal">Rehearsal minutes required (minutes-per-read-through &times; whole-number read-throughs), plus probability-weighted redelivery-risk minutes (a stated fraction &times; the total booked session length), for both options. Drag the sliders below to see how the redelivery-risk assumptions (MA11/MA12) and the re-book session length (MA2) change each option's expected total &mdash; the tool computes both live; it does not tell you which one wins.</div>
+    <div class="sliderow"><label style="min-width:260px;font-size:.86rem">Straight Cut redelivery-risk probability (MA11)</label><input type="range" id="slRiskA" min="0" max="1" step="0.01"><span class="val" id="slRiskAVal"></span></div>
+    <div class="sliderow"><label style="min-width:260px;font-size:.86rem">Downbeat Split redelivery-risk probability (MA12)</label><input type="range" id="slRiskB" min="0" max="1" step="0.01"><span class="val" id="slRiskBVal"></span></div>
+    <div class="sliderow"><label style="min-width:260px;font-size:.86rem">Re-book session length, minutes (MA2)</label><input type="range" id="slRebook" step="1"><span class="val" id="slRebookVal"></span></div>
+    <table id="tblLive" class="decision-table">
+      <tr><th>&nbsp;</th><th>The Straight Cut</th><th>The Downbeat Split</th></tr>
+      <tr><td>Rehearsal minutes required</td><td class="num" id="liveRehA">&mdash;</td><td class="num" id="liveRehB">&mdash;</td></tr>
+      <tr><td>Redelivery-risk probability</td><td class="num" id="liveRiskA">&mdash;</td><td class="num" id="liveRiskB">&mdash;</td></tr>
+      <tr><td>Probability-weighted redelivery-risk minutes</td><td class="num" id="liveRiskMinA">&mdash;</td><td class="num" id="liveRiskMinB">&mdash;</td></tr>
+      <tr><td><strong>Expected total minutes required</strong></td><td class="num" id="liveTotalA"><strong>&mdash;</strong></td><td class="num" id="liveTotalB"><strong>&mdash;</strong></td></tr>
+    </table>
+    <div class="side-note">This live table recomputes from the sliders above using this case's own model (the same one <code>sensitivity_model.py</code> runs) &mdash; it is a calculator, not a printed verdict. Reset the sliders to the case's own stated MA11/MA12/MA2 values with the button below.</div>
+    <button class="ghost" onclick="resetSliders()">Reset sliders to case values</button>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-clock"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>At roughly the 15-minute mark: the producer, checking his phone, mentions &mdash; almost as an aside &mdash; that this is not the first time Larkspur Sound has delivered a cue to this exact client on a tight tempo compromise. The last time, the network's traffic department rejected the take on delivery for running outside frame-accuracy tolerance, and Larkspur had to re-book the ensemble and re-cut the spot on the studio's own dime, after the ad buy's air date had already been locked.</p>
+      <p>This does not hand you a new number &mdash; Appendix E's MA11 (the redelivery-risk probability for the Straight Cut) was on the page the whole time, and D1&ndash;D5 still compute exactly as stated. What changes is the <em>weight</em> you put on that number: it's easy to read MA11 as an abstract, hypothetical "what if" and discount it while doing the arithmetic. The Twist confirms it is not hypothetical &mdash; it already happened, to this exact client, on this exact kind of compromise.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">I'm re-reading the Step 5 table now that I know MA11 isn't hypothetical &mdash; did my "already rehearsed = free" instinct price the Straight Cut's real risk at zero?</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] American Federation of Musicians &mdash; Commercial Announcements Agreement Signatory Packet, Version 2 (2023-09-29). AFM commercial/jingle session rehearsal rate, Side Musician scale: $133.01 per one-hour minimum call.</li>
+      <li>[S2] American Federation of Musicians &mdash; Commercial Announcements Agreement Signatory Packet, Version 2 (2023-09-29). AFM standard minimum session call length: 60 minutes.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Downbeat Split &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from
+   cases/downbeat-split/case.json (case_md_sha256:
+   91a66c18dd64d728bef6e23010e922c8a2d83b62c8d7a790dac9514ac5b677ce).
+   JS port of sensitivity_model.py's PARAMS/FLEX/evaluate() — the
+   Working Notebook's Step 5 live table calls into these rather than
+   re-deriving the tally inline, so the notebook and
+   sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+const PARAMS = {
+  // D1-D4 raw dials (Appendices B and D) — feed Steps 1-4's checkers
+  beat_length_beats: 3.75,          // MA4
+  sec_per_beat: 4/3,                // MA5 (1 1/3)
+  repeats: 4,                       // MA6
+  partial_fraction: 3/8,            // MA7
+  subdivision_unit: 0.5,            // MA8
+  readthrough_min: 2.5,             // MA9
+  remaining_min: 22.5,              // MA10
+  // D5 primary-metric dials (same keys/values as sensitivity_model.py)
+  rehearsal_min_a: 0.0,
+  rehearsal_min_b: 22.5,
+  redelivery_risk_prob_a: 1/3,      // MA11
+  redelivery_risk_prob_b: 1/20,     // MA12
+  rebook_session_min: 90.0          // MA2
+};
+// Probe 5 flexes only these — the retune's own new dials (MA11/MA12) plus
+// the re-book session length (MA2), matching sensitivity_model.py's FLEX.
+const FLEX = ["redelivery_risk_prob_a", "redelivery_risk_prob_b", "rebook_session_min"];
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const totalA = p.rehearsal_min_a + p.redelivery_risk_prob_a * p.rebook_session_min;
+  const totalB = p.rehearsal_min_b + p.redelivery_risk_prob_b * p.rebook_session_min;
+  // Lower expected total is better; this function's contract is "higher is
+  // better" (matching sensitivity_model.py's evaluate()), so return the
+  // negated minutes.
+  return {A: -totalA, B: -totalB};
+}
+function evaluate_twist(params){
+  // The Twist does not add a new number to the model — Appendix E's MA11
+  // was already on the page (see FACILITATOR.md). It changes how much
+  // weight a reader puts on MA11, not the arithmetic itself, so this is
+  // the same computation as evaluate() with the same parameters.
+  return evaluate(params);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkD1(){
+  const beat = val('d1beat'), tempo = val('d1tempo'), reps = val('d1repeats');
+  const expected = round(PARAMS.beat_length_beats * PARAMS.sec_per_beat * PARAMS.repeats, 3);
+  const userBeat = near(beat, PARAMS.beat_length_beats, 0.01);
+  const userTempo = near(tempo, PARAMS.sec_per_beat, 0.005);
+  const userReps = reps === PARAMS.repeats;
+  const userTotal = near(val('d1total'), expected, 0.05);
+  fb('fbD1', userBeat && userTempo && userReps && userTotal);
+}
+function checkD2(){
+  const frac = val('d2frac');
+  const expected = round(PARAMS.partial_fraction * PARAMS.beat_length_beats * PARAMS.sec_per_beat, 3);
+  const okFrac = near(frac, PARAMS.partial_fraction, 0.01);
+  const okSec = near(val('d2sec'), expected, 0.03);
+  fb('fbD2', okFrac && okSec);
+}
+function checkD3(){
+  const num = val('d3num'), den = val('d3den');
+  const expected = round(PARAMS.partial_fraction / PARAMS.subdivision_unit, 3);
+  const okNum = near(num, PARAMS.partial_fraction, 0.01);
+  const okDen = near(den, PARAMS.subdivision_unit, 0.01);
+  const okResult = near(val('d3result'), expected, 0.02);
+  fb('fbD3', okNum && okDen && okResult);
+}
+function checkD4(){
+  const rem = val('d4rem'), per = val('d4per');
+  const expected = Math.floor(PARAMS.remaining_min / PARAMS.readthrough_min);
+  const okRem = near(rem, PARAMS.remaining_min, 0.1);
+  const okPer = near(per, PARAMS.readthrough_min, 0.05);
+  const okResult = val('d4result') === expected;
+  fb('fbD4', okRem && okPer && okResult);
+}
+
+/* Step 5 live table -- reads the three sliders, calls evaluate(), and
+   renders both options' rows. Never prints a stored verdict; every
+   number on screen is recomputed from the current slider positions. */
+function updateLiveTable(){
+  const riskA = parseFloat(document.getElementById('slRiskA').value);
+  const riskB = parseFloat(document.getElementById('slRiskB').value);
+  const rebook = parseFloat(document.getElementById('slRebook').value);
+  document.getElementById('slRiskAVal').textContent = riskA.toFixed(2);
+  document.getElementById('slRiskBVal').textContent = riskB.toFixed(2);
+  document.getElementById('slRebookVal').textContent = rebook.toFixed(0) + ' min';
+
+  const params = {redelivery_risk_prob_a: riskA, redelivery_risk_prob_b: riskB, rebook_session_min: rebook};
+  const r = evaluate(params);
+  const totalA = -r.A, totalB = -r.B;
+  const riskMinA = riskA * rebook, riskMinB = riskB * rebook;
+
+  document.getElementById('liveRehA').textContent = PARAMS.rehearsal_min_a.toFixed(1);
+  document.getElementById('liveRehB').textContent = PARAMS.rehearsal_min_b.toFixed(1);
+  document.getElementById('liveRiskA').textContent = riskA.toFixed(3);
+  document.getElementById('liveRiskB').textContent = riskB.toFixed(3);
+  document.getElementById('liveRiskMinA').textContent = riskMinA.toFixed(1);
+  document.getElementById('liveRiskMinB').textContent = riskMinB.toFixed(1);
+  document.getElementById('liveTotalA').innerHTML = '<strong>' + totalA.toFixed(1) + '</strong>';
+  document.getElementById('liveTotalB').innerHTML = '<strong>' + totalB.toFixed(1) + '</strong>';
+
+  const cellA = document.getElementById('liveTotalA'), cellB = document.getElementById('liveTotalB');
+  cellA.classList.toggle('win', totalA < totalB);
+  cellB.classList.toggle('win', totalB < totalA);
+}
+function resetSliders(){
+  // Bounds derived from PARAMS at runtime (roughly a fifth to double the
+  // case's own re-book session length), not typed as literals in the markup.
+  const rebookEl = document.getElementById('slRebook');
+  rebookEl.min = Math.round(PARAMS.rebook_session_min * 0.2);
+  rebookEl.max = Math.round(PARAMS.rebook_session_min * 2);
+  document.getElementById('slRiskA').value = PARAMS.redelivery_risk_prob_a;
+  document.getElementById('slRiskB').value = PARAMS.redelivery_risk_prob_b;
+  rebookEl.value = PARAMS.rebook_session_min;
+  updateLiveTable();
+}
+['slRiskA','slRiskB','slRebook'].forEach(id => document.getElementById(id).addEventListener('input', updateLiveTable));
+resetSliders();
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "downbeat-split";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "The Straight Cut's total running time"],
+  ["D2", "Partial-phrase check locating the target cutoff"],
+  ["D3", "The Downbeat Split's beat-subdivision calculation"],
+  ["D4", "Rehearsal read-through fit-check"],
+  ["D5", "Final decision table and recommendation"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (>=8 terms, every url https://
+   to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Every link below was fetched and confirmed live 2026-08-30 (curl
+   HTTP 200) as part of building this file.
+   ================================================================ */
+const GLOSSARY = {
+  "Fraction": {def: "A number that represents part of a whole, written as one number over another (numerator over denominator).",
+    url: "https://www.mathsisfun.com/fractions.html"},
+  "Mixed Number": {def: "A whole number combined with a fraction, e.g. 3 3/4 -- a fraction bigger than one written in whole-plus-part form.",
+    url: "https://www.mathsisfun.com/mixed-fractions.html"},
+  "Improper Fraction": {def: "A fraction where the numerator is bigger than the denominator (e.g. 15/4) -- the form a mixed number converts to before you multiply or divide it.",
+    url: "https://www.cuemath.com/numbers/improper-fractions/"},
+  "Numerator and Denominator": {def: "The numerator (top number) counts the parts you have; the denominator (bottom number) counts the parts in the whole.",
+    url: "https://www.cuemath.com/numbers/numerator-and-denominator/"},
+  "Reciprocal": {def: "A fraction flipped upside down (its numerator and denominator swapped) -- multiplying by the reciprocal is how you divide fractions.",
+    url: "https://www.mathsisfun.com/definitions/reciprocal.html"},
+  "Probability": {def: "A number between 0 and 1 describing how likely an event is to happen -- 0 means never, 1 means certain.",
+    url: "https://www.mathsisfun.com/data/probability.html"},
+  "Expected Value": {def: "The long-run average outcome of an uncertain event: each possible result times its probability, added together.",
+    url: "https://www.khanacademy.org/math/statistics-probability/random-variables-stats-library/random-variables-discrete/a/expected-value-of-a-discrete-random-variable"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Unit": {def: "A defined quantity -- a second, a beat, a minute -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"}
+};
+const HOWTO = [
+  ["how to multiply two mixed numbers", "Mixed Number"],
+  ["how to divide a fraction by a fraction", "Reciprocal"],
+  ["how to multiply a fraction and a mixed number", "Improper Fraction"],
+  ["how to divide fractions and mixed numbers", "Fraction"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link glossary concepts in prose.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  // The Twist doesn't change any parameter (see evaluate_twist() above) —
+  // ticking this box just visually flags that the reader has re-examined
+  // the Step 5 table with MA11's real weight in mind. Nudge them back to it.
+  const checked = document.getElementById('applyTwist').checked;
+  if(checked){
+    document.getElementById('notebook').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

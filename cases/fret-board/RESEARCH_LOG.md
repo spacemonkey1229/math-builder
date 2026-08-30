@@ -126,3 +126,36 @@ source to find — no search was run for it. **Exit chosen: stated Modeling Assu
 
 Next step: run `case-qa` on `fret-board` (per this task's instructions, that step and everything
 after it is intentionally **not** run in this session).
+
+## Addendum, 2026-08-27 — primary-metric retune research
+
+The 2026-08-26 `case-readiness` run found the original primary metric (cents of pitch deviation
+at fret 12) structurally unbalanceable (100% margin) — see `QA_REPORT.md` and
+`case.json.balance.margin_note`. The case owner decided to retune rather than accept the
+imbalance. One additional search was run to ground the retune honestly rather than inventing a
+number outright:
+
+**Search: `how long does a guitar refret job take hours StewMac shop labor`.** Fetched
+StewMac's "Guitar repair money talk: estimate hours, not dollars" directly. Found a real,
+specific line item from a real shop's own published job estimate: "Refret with #0147 wire: -
+.6hrs" (0.6 hours) for the fret-installation portion of one example repair job. No general
+industry standard for total fretting/refret time was found (searched, not present) — this is one
+professional's one real line item, not a trade standard, so it is cited as **S5**, confidence
+MEDIUM, and used only as *directional, order-of-magnitude context* for the new Modeling Assumption
+MA6 (45-minute shared cutting/installing/dressing baseline), not restated as the value itself —
+the source's job is a repair refret (installing wire into existing slots), not this case's
+fresh-neck slot-cutting job, so the values are related but not identical tasks.
+
+No source exists, and none was expected to exist, for the two new per-fret calculation-time
+figures (MA4: 20 sec, Precision Method; MA5: 14 sec, Rule of Eighteen) — these are reasoned
+scenario estimates based on the real, countable difference in arithmetic steps between the two
+governing formulas already in Appendices B/C (a fractional-exponent evaluation vs. a simple
+division-and-subtraction), consistent with S3's own explicit historical claim that the Rule of
+Eighteen's divider-based method was built specifically to avoid hand computation "in the days
+before calculators and computers." Declared as Modeling Assumptions, not sourced facts, per
+`case-write` SKILL.md's placeholder discipline.
+
+**Outcome:** 1 new source added (S5, MEDIUM confidence, directional only), 3 new Modeling
+Assumptions added (MA4, MA5, MA6), 0 numbers fabricated as fact. `margin_pct` recomputed at 4.2%
+on the retuned primary metric (total shop time). Full derivation in `case.json.balance.margin_note`
+and `case.json.derived.shop_time_primary_metric`.

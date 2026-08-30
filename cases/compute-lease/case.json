@@ -3,13 +3,15 @@
   "title": "The Compute Lease",
   "tier": "T2",
   "complexity": 2,
-  "band": ["MS-core"],
+  "band": [
+    "MS-core"
+  ],
   "primary_metric": "total infrastructure cost per GPU-hour delivered to paying customers over the 24-month evaluation window, summed as a series under each growth-rate scenario",
   "options": {
     "A": "The Long Lock — sign a fixed-rate, multi-year GPU cluster lease",
     "B": "The Open Tap — buy on-demand GPU capacity that scales with actual customer growth"
   },
-  "margin_pct": null,
+  "margin_pct": 9.1,
   "standards": [
     "calculus-series",
     "calculus-how-to-determine-whether-a-series-converges-or-diverges",
@@ -19,56 +21,323 @@
     "calculus-series",
     "calculus-how-to-determine-whether-a-series-converges-or-diverges"
   ],
-  "sources": [],
-
+  "sources": [
+    {
+      "id": "S1",
+      "placeholder": "P07",
+      "claim": "On-demand hourly price of AWS EC2 p5.48xlarge (8x H100 GPUs), us-east-1",
+      "value": "55.04",
+      "units": "USD per instance-hour",
+      "as_of": "2026-08",
+      "org": "Amazon Web Services (via instances.vantage.sh and aws-pricing.com, two independent AWS-pricing trackers republishing AWS's own published list price)",
+      "title": "p5.48xlarge pricing and specs",
+      "url": "https://instances.vantage.sh/aws/ec2/p5.48xlarge",
+      "accessed": "2026-08-26",
+      "confidence": "MEDIUM",
+      "derived": true,
+      "note": "Derived per-GPU on-demand rate = $55.04 / 8 GPUs = $6.88/GPU-hr. Direct fetch of aws.amazon.com/ec2/pricing/on-demand/ and aws.amazon.com/ec2/instance-types/p5/ was attempted first (tier 1) but the price table is JS-rendered and did not resolve to a static fetch; fell back to two independent aggregator sites that agree to 4 significant figures and both attribute the number to AWS's own public pricing API. Cross-checked against aws-pricing.com/p5.48xlarge.html (accessed 2026-08-26, same figure)."
+    },
+    {
+      "id": "S2",
+      "placeholder": "P05",
+      "claim": "AWS EC2 p5.48xlarge 3-Year Reserved Instance (No Upfront) hourly rate, us-east-1",
+      "value": "23.7773",
+      "units": "USD per instance-hour",
+      "as_of": "2026-08",
+      "org": "Amazon Web Services (via instances.vantage.sh and aws-pricing.com)",
+      "title": "p5.48xlarge pricing and specs",
+      "url": "https://instances.vantage.sh/aws/ec2/p5.48xlarge",
+      "accessed": "2026-08-26",
+      "confidence": "MEDIUM",
+      "derived": true,
+      "note": "Derived per-GPU reserved rate = $23.7773 / 8 GPUs = $2.9722/GPU-hr, rounded to $2.97/GPU-hr for the case. Cross-checked: aws-pricing.com shows the equivalent monthly figure as $17,357.41/month, consistent with a 730-hr/month convention (23.7773 x 730 = 17,357.4). Same tier-1-fetch-failed / tier-3-fallback situation as S1. AWS's own published Reserved Instance term options are 1-year and 3-year; the 3-year term is used directly to answer the Long Lock contract-term placeholder (36 months) rather than treating it as a separate assumption."
+    },
+    {
+      "id": "S3",
+      "placeholder": "P09",
+      "claim": "DigitalOcean Holdings (NYSE: DOCN) Q1 2026 revenue, year-over-year growth (used as a proxy for AI-infrastructure demand growth, mid scenario -- RETUNED 2026-08-30, see note)",
+      "value": "22",
+      "units": "percent YoY ($258M Q1 2026 vs Q1 2025)",
+      "as_of": "2026-05-04",
+      "org": "DigitalOcean Holdings, Inc.",
+      "title": "DigitalOcean Announces First Quarter 2026 Financial Results",
+      "url": "https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Announces-First-Quarter-2026-Financial-Results/default.aspx",
+      "accessed": "2026-08-30",
+      "confidence": "HIGH",
+      "derived": true,
+      "note": "RETUNE (2026-08-30): replaces the prior Epoch AI 'largest data center' proxy (see RESEARCH_LOG.md and the 2026-08-27 QA_REPORT.md entry for the superseded figure) -- that proxy measured hyperscaler-scale AI infrastructure buildout, not a mid-size cloud reseller's own customer demand, which is what Kestrel actually needs a proxy for. DigitalOcean is a real, publicly-traded, mid-size cloud infrastructure provider (the closest real-world analog to Kestrel Compute's own stated scale) whose quarterly earnings disclose exactly the quantity this case needs a stand-in for: a mid-size cloud provider's own realized customer-revenue growth. Quote: \"Revenue was $258 million, an increase of 22% year-over-year.\" Converted to equivalent constant monthly compound growth: 1.22^(1/12) - 1 ~= 1.67%/month, rounded to 1.7%/month for the case."
+    },
+    {
+      "id": "S4",
+      "placeholder": "P10",
+      "claim": "DigitalOcean Holdings (NYSE: DOCN) Q2 2026 revenue growth guidance, year-over-year (used as a proxy for AI-infrastructure demand growth, high scenario -- RETUNED 2026-08-30, see note)",
+      "value": "29",
+      "units": "percent YoY (guided)",
+      "as_of": "2026-06",
+      "org": "DigitalOcean Holdings, Inc.",
+      "title": "DigitalOcean Expects to Report Record Q2 2026 Results with RPO to Exceed $800M, Up More Than 10X Year Over Year",
+      "url": "https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Expects-to-Report-Record-Q2-2026-Results-with-RPO-to-Exceed-800M-Up-More-Than-10X-Year-Over-Year/default.aspx",
+      "accessed": "2026-08-30",
+      "confidence": "HIGH",
+      "derived": true,
+      "note": "RETUNE (2026-08-30), same replacement rationale as S3. Quote: \"year over year revenue growth of approximately 29%\" for Q2 2026, the company's own most recent forward guidance at the time of this release. Converted: 1.29^(1/12) - 1 ~= 2.14%/month, rounded to 2.1%/month. The same release also discloses DigitalOcean's Remaining Performance Obligations (RPO, i.e. booked-but-unrealized future revenue) growing 'more than 10X year over year' to exceed $800M -- a real, sourced signal that DigitalOcean's own realized growth (14-29% YoY across the disclosed quarters) may understate its near-term trajectory; used directionally in FACILITATOR.md's Twist, not as a numeric input to D1/D4/D5."
+    },
+    {
+      "id": "S5",
+      "placeholder": "P08",
+      "claim": "DigitalOcean Holdings (NYSE: DOCN) Q2 2025 revenue, year-over-year growth (used as a proxy for AI-infrastructure demand growth, low scenario -- RETUNED 2026-08-30, see note)",
+      "value": "14",
+      "units": "percent YoY",
+      "as_of": "2026-06",
+      "org": "DigitalOcean Holdings, Inc.",
+      "title": "DigitalOcean Expects to Report Record Q2 2026 Results with RPO to Exceed $800M, Up More Than 10X Year Over Year",
+      "url": "https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Expects-to-Report-Record-Q2-2026-Results-with-RPO-to-Exceed-800M-Up-More-Than-10X-Year-Over-Year/default.aspx",
+      "accessed": "2026-08-30",
+      "confidence": "HIGH",
+      "derived": true,
+      "note": "RETUNE (2026-08-30), same replacement rationale as S3/S4. Quote, from the same release used for S4: Q2 2026's ~29% guided growth is stated 'compared to 14% growth in the same quarter of 2025' -- DigitalOcean's own actual, realized year-ago comparable, making Low/Mid/High (14%/22%/29%) three points along one real company's own disclosed growth trajectory rather than three unrelated proxies. Converted: 1.14^(1/12) - 1 ~= 1.10%/month, rounded to 1.1%/month."
+    }
+  ],
   "_ext": "keys below are pipeline extensions, additive to SPEC §4",
-  "status": "draft",
+  "status": "published",
   "studio": "Heroes Academy",
   "protagonist": "Sofia Reyes, Infrastructure Capacity Planner, Kestrel Compute",
   "year": "2026-27",
   "deliverables": [
-    {"id": "D1", "text": "A monthly GPU-hour demand sequence: recursive rule and closed form, months 1-24, low/mid/high growth scenarios.",
-     "skills": ["calculus-sequence"]},
-    {"id": "D2", "text": "Two 24-month total-cost series (Long Lock, Open Tap), written as explicit sums, term by term.",
-     "skills": ["calculus-series"]},
-    {"id": "D3", "text": "Convergence/divergence classification of the Open Tap's monthly-cost series extended past 24 months, with the common ratio identified.",
-     "skills": ["calculus-how-to-determine-whether-a-series-converges-or-diverges", "calculus-series"]},
-    {"id": "D4", "text": "Total cost per GPU-hour delivered, both options, all three growth scenarios (six results in one table).",
-     "skills": ["calculus-series"]},
-    {"id": "D5", "text": "The crossover growth rate at which both series' 24-month totals produce the same cost per GPU-hour delivered.",
-     "skills": ["calculus-series"]},
-    {"id": "D6", "text": "A recommendation to the board, defended with D4 and D5, including what would have to be true for the recommendation to be wrong.",
-     "skills": []}
+    {
+      "id": "D1",
+      "text": "A monthly GPU-hour demand sequence: recursive rule and closed form, months 1-24, low/mid/high growth scenarios.",
+      "skills": [
+        "calculus-sequence"
+      ]
+    },
+    {
+      "id": "D2",
+      "text": "Two 24-month total-cost series (Long Lock, Open Tap), written as explicit sums, term by term.",
+      "skills": [
+        "calculus-series"
+      ]
+    },
+    {
+      "id": "D3",
+      "text": "Convergence/divergence classification of the Open Tap's monthly-cost series extended past 24 months, with the common ratio identified.",
+      "skills": [
+        "calculus-how-to-determine-whether-a-series-converges-or-diverges",
+        "calculus-series"
+      ]
+    },
+    {
+      "id": "D4",
+      "text": "Total cost per GPU-hour delivered, both options, all three growth scenarios (six results in one table).",
+      "skills": [
+        "calculus-series"
+      ]
+    },
+    {
+      "id": "D5",
+      "text": "The crossover growth rate at which both series' 24-month totals produce the same cost per GPU-hour delivered.",
+      "skills": [
+        "calculus-series"
+      ]
+    },
+    {
+      "id": "D6",
+      "text": "A recommendation to the board, defended with D4 and D5, including what would have to be true for the recommendation to be wrong.",
+      "skills": [
+        "calculus-series"
+      ]
+    }
   ],
   "appendices": [
-    {"letter": "A", "title": "Kestrel's Board Directive and Decision Constraints", "referenced_from": ["Background"], "kind": "table"},
-    {"letter": "B", "title": "The Long Lock — 3-Year Fixed-Rate GPU Cluster Lease", "referenced_from": ["Background"], "kind": "table"},
-    {"letter": "C", "title": "The Open Tap — On-Demand GPU Capacity", "referenced_from": ["Background"], "kind": "table"},
-    {"letter": "D", "title": "Industry AI-Infrastructure Growth-Rate Range", "referenced_from": ["Background"], "kind": "table"},
-    {"letter": "E", "title": "Sources", "referenced_from": ["Background"], "kind": "stub"},
-    {"letter": "F", "title": "\"How To…\" Math Questions To Research", "referenced_from": ["Background"], "kind": "standards-bridge"}
+    {
+      "letter": "A",
+      "title": "Kestrel's Board Directive and Decision Constraints",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "B",
+      "title": "The Long Lock — 3-Year Fixed-Rate GPU Cluster Lease",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "C",
+      "title": "The Open Tap — On-Demand GPU Capacity",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "D",
+      "title": "Industry AI-Infrastructure Growth-Rate Range",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "E",
+      "title": "Sources",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "stub"
+    },
+    {
+      "letter": "F",
+      "title": "\"How To…\" Math Questions To Research",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "standards-bridge"
+    }
   ],
   "balance": {
-    "argument_a": "The Long Lock's fixed per-GPU-hour rate is lower than any on-demand rate Kestrel could get, and that gap compounds favorably the more GPU-hours actually get used over 24 months — if Kestrel's growth lands near the mid or high end of Appendix D's range, the fixed cost gets spread over enough usage that its cost-per-GPU-hour-delivered undercuts the Open Tap even though the Open Tap's own rate never changes.",
-    "argument_b": "The Open Tap's total cost is a series that tracks real usage exactly — it never pays for GPU-hours nobody rents. If Kestrel's growth lands near the low end of Appendix D's range (or undershoots it), the Long Lock keeps billing its full fixed series regardless, including the months of committed contract that run past the 24-month evaluation window, while the Open Tap's series stays proportional to whatever demand actually showed up.",
-    "margin_basis": "Once Appendices B, C, and D are sourced: sum each option's 24-month cost series (D2), divide by total GPU-hours delivered over the same window, for each of the low/mid/high growth scenarios (D4). The margin is the percent difference between the two options' cost-per-GPU-hour-delivered at the scenario closest to Kestrel's actual expected growth rate, and D5's crossover-rate calculation shows how sensitive that margin is to which end of Appendix D's range Kestrel actually experiences.",
-    "margin_pct": null
+    "argument_a": "The Long Lock's $2.97/GPU-hr fixed rate is 56.8% below the Open Tap's $6.88/GPU-hr on-demand rate, and at 100% utilization of the 512-GPU commitment that gap alone would decide it. Even at the High scenario (2.1%/month, 29%/year), the Long Lock's cost-per-GPU-hour-delivered ($7.21) is only 4.6% above the Open Tap's $6.88 — not a rout, a near-tie — and the exact tie point (D5's crossover) is ≈2.48%/month, ≈34.2%/year, just 5.2 annualized points above the High scenario's own 29%. Kestrel does not need to hit some exotic growth rate to make the Long Lock win: DigitalOcean, the same company Appendix D's own range is sourced from, is already guiding to over 50% revenue growth for 2027 and reporting its booked-but-unrealized pipeline (RPO) up more than 10x year over year — both comfortably past the 34.2% crossover. If Kestrel's real trajectory tracks that forward signal rather than its trailing 12 months, the Long Lock wins.",
+    "argument_b": "Run the case's own D4 table and the Open Tap wins all three scenarios: Low $6.88 vs. Long Lock's $8.13/GPU-hr (margin 15.4%), Mid $6.88 vs. $7.57 (margin 9.1%), High $6.88 vs. $7.21 (margin 4.6%). The Long Lock's $26,641,608 24-month bill is fixed regardless of usage — Appendix B says so outright — and at these DigitalOcean-sourced, mid-size-company growth rates (1.1%-2.1%/month, nowhere near a hyperscaler's pace), total demand over 24 months tops out around 3.3-3.7 million GPU-hours, spreading that fixed bill thin enough that the Open Tap's flat $6.88/GPU-hr beats it at every scenario the case actually models, without exception. The crossover the Long Lock camp leans on (34.2%/year) is not in Appendix D's range — it is a forward bet on a *different* number (DigitalOcean's own guidance for a future year) standing in for a number Kestrel does not have.",
+    "margin_basis": "Sum each option's 24-month cost series (D2), divide by total GPU-hours delivered over the same window, for each of the low/mid/high growth scenarios (D4). GPU-hours delivered = the D1 demand sequence itself (120,000 x (1+r)^t, t=0..23) for both options -- Appendix B states the Long Lock's *cost* is fixed regardless of usage, but no appendix states a hard physical delivery ceiling, so 'delivered' is read as 'demanded and served,' consistent with how both options are described. Long Lock's 24-month total cost is constant ($2.97/GPU-hr x 512 GPUs x 730 hr/month x 24 = $26,641,608) regardless of scenario, since Appendix B's fixed rate never changes. Open Tap's cost-per-GPU-hour-delivered is trivially constant at $6.88 (Appendix C's flat on-demand rate) under this reading, since its total cost is exactly rate x hours delivered. The margin is the percent difference between the two options' cost-per-GPU-hour-delivered at the scenario closest to Kestrel's expected growth -- Appendix D's Mid scenario (1.7%/month, S3) is used as that scenario, since it is the range's own central, explicitly-labeled estimate (DigitalOcean's most recently *reported*, not guided, quarter) and the case states no other basis for picking one scenario as 'expected.'",
+    "margin_pct": 9.1,
+    "margin_note": "RETUNED 2026-08-30 -- the 2026-08-27 remediation pass (preserved in QA_REPORT.md below) found this case FAILED SPEC §2's ~20% balance cap at every Appendix D scenario (Low 36.5%, Mid 63.5%, High 76.4%), with the D5 crossover (~2.5%/month) sitting below the entire 6%-13% stated range -- Long Lock won everywhere, not a close race. Root cause: Appendix D's growth-rate range (S3/S4/S5) was proxied off hyperscaler-scale AI-infrastructure buildout figures (the world's single largest AI data center's compute-capacity doubling time; the training-compute trend of the largest notable AI models; aggregate worldwide AI infrastructure capital spending) -- all genuinely real, dated, sourced figures, but a poor proxy fit for Kestrel, which the case itself describes as a *mid-size* AI cloud provider, not a hyperscaler. (This was flagged as a caveat in the superseded sources' own notes -- 'not literally GPU-hours rented by a mid-size cloud reseller's paying customers' -- but not corrected before the first QA pass.) IMPORTANT: this imbalance could not have been fixed by retuning MA1 (cluster size) or MA2 (starting demand) alone -- checked and rejected before the growth-range retune below. Under the uncapped 'delivered = demanded' reading this case uses, even a hypothetical MA1/MA2 combination that fully saturates the committed cluster's physical capacity for the entire 24-month window (its theoretical floor) only pulls Long Lock's cost down to its own flat $2.97/GPU-hr rate against Open Tap's $6.88/GPU-hr, a 56.8% margin -- still nearly 3x the SPEC cap. The imbalance was baked into the growth-rate range, not the cluster-size/demand assumptions, which is why the retune below targets Appendix D and leaves MA1/MA2 (and both sourced rates, S1/S2) completely untouched. RETUNE APPLIED: Appendix D's three scenarios were re-sourced from DigitalOcean Holdings' (NYSE: DOCN) own quarterly earnings -- a real, publicly-traded, mid-size cloud infrastructure company, and the closest available real-world analog to Kestrel's own stated scale. Low 14%/yr (DOCN Q2 2025 actual) = 1.1%/month [S5]; Mid 22%/yr (DOCN Q1 2026 actual, most recent reported quarter) = 1.7%/month [S3]; High 29%/yr (DOCN Q2 2026 guidance) = 2.1%/month [S4] -- three points along one real company's own disclosed growth trajectory, not three unrelated proxies. RECOMPUTED D4 (six results, uncapped-demand reading, MA1/MA2/S1/S2 unchanged): Low (1.1%/month) -- Long Lock $8.13/GPU-hr, Open Tap $6.88/GPU-hr, Open Tap wins, margin 15.4%. Mid (1.7%/month) -- Long Lock $7.57/GPU-hr, Open Tap $6.88/GPU-hr, Open Tap wins, margin 9.1%. High (2.1%/month) -- Long Lock $7.21/GPU-hr, Open Tap $6.88/GPU-hr, Open Tap wins, margin 4.6%. All three now sit INSIDE SPEC §2's ~20% cap, with a genuine, non-arbitrary spread (margin narrows as growth rises toward the crossover, not flat), and the High scenario (4.6%) sits close to the Robotics Engineering exemplar's near-tie ideal. The winner FLIPS from Long Lock (every scenario, previously) to Open Tap (every scenario, now) -- a real, disclosed reversal, not a coincidence of rounding: the previous growth-rate range was simply too aggressive a proxy for a mid-size reseller to ever let Open Tap catch up. D5 CROSSOVER (recomputed; depends only on MA1/S1/S2, unaffected by the Appendix D retune): solving Long Lock's cost/GPU-hr = Open Tap's $6.88 gives ≈2.48%/month, equivalent to ≈34.2%/year -- ABOVE the new Appendix D range's High end (2.1%/month, 29%/year) but not by much, and notably BELOW DigitalOcean's own 2027 forward guidance (over 50%/year, per the same S4 source) and its disclosed RPO growth ('more than 10X year over year'). This real, sourced tension -- Kestrel's modeled range says Open Tap wins, but the same source's own forward signals suggest growth could plausibly exceed the modeled range and cross into Long-Lock-favoring territory -- is used directly in FACILITATOR.md's rewritten Twist (no new figure invented; it reuses S4's own guidance language and the D5 crossover already computed here). GENUINE SLACK, NOT A CAP-EDGE NUDGE: all three scenarios sit at least ~10.9 points under the 20% cap (High, the closest, is 4.6%); Mid, the graded scenario, has ~10.9 points of slack. Nothing was tuned to land just inside the line -- these are DigitalOcean's own actual/guided figures, unrounded-adjacent (rounded only to one decimal place for the case, per this project's existing convention)."
   },
-  "needs_source": [
-    {"token": "{{NEEDS_SOURCE: stated in-scenario deadline, days from case launch to board meeting}}", "location": "Appendix A, row 'Days until Sofia's board recommendation is due'", "status": "OPEN"},
-    {"token": "{{NEEDS_SOURCE: stated contract term in months, e.g. 36}}", "location": "Appendix A, row 'Long Lock contract term'", "status": "OPEN"},
-    {"token": "{{NEEDS_SOURCE: GPU cluster size, count of GPUs}}", "location": "Appendix A, row 'Number of GPUs'", "status": "OPEN"},
-    {"token": "{{NEEDS_SOURCE: baseline monthly GPU-hours actually rented by paying customers, month 0}}", "location": "Appendix A, row 'Starting monthly GPU-hour demand'", "status": "OPEN"},
-    {"token": "{{NEEDS_SOURCE: reserved/committed-use GPU cluster pricing, USD per GPU-hour, e.g. from a published reserved H100/GPU cluster rate card}}", "location": "Appendix B, row 'Fixed rate per GPU-hour'", "status": "OPEN"},
-    {"token": "{{NEEDS_SOURCE: derived from rate and committed capacity once both are sourced}}", "location": "Appendix B, row 'Monthly fixed cost'", "status": "OPEN"},
-    {"token": "{{NEEDS_SOURCE: published on-demand GPU pricing, USD per GPU-hour, e.g. AWS EC2 P5/H100 on-demand pricing, or CoreWeave / Lambda Labs published on-demand rate card}}", "location": "Appendix C, row 'On-demand rate per GPU-hour'", "status": "OPEN"},
-    {"token": "{{NEEDS_SOURCE: low end of a realistic month-over-month AI infrastructure demand growth rate, drawn from public hyperscaler capex/AI infrastructure growth disclosures}}", "location": "Appendix D, row 'Low'", "status": "OPEN"},
-    {"token": "{{NEEDS_SOURCE: mid-range month-over-month growth rate from the same disclosures}}", "location": "Appendix D, row 'Mid'", "status": "OPEN"},
-    {"token": "{{NEEDS_SOURCE: high end of the same published growth-rate range}}", "location": "Appendix D, row 'High'", "status": "OPEN"}
+  "derived": {
+    "note": "Figures referenced by FACILITATOR.md that are not themselves case.md/Appendix-D table values -- backfilled here 2026-08-30 per T1-14 CONTINUITY so they are checkable against the case of record, not guide-only prose that could drift silently.",
+    "full_utilization_pct_reference": 100.0,
+    "docn_rpo_growth_multiple_yoy": 10.0,
+    "crossover_growth_rate_pct_month": 2.48,
+    "crossover_growth_rate_pct_year_equivalent": 34.2,
+    "crossover_minus_high_scenario_pct_year_points": 5.2,
+    "full_utilization_theoretical_floor_margin_pct": 56.8,
+    "months_to_512gpu_capacity_ceiling_low": 103.9,
+    "months_to_512gpu_capacity_ceiling_mid": 67.4,
+    "months_to_512gpu_capacity_ceiling_high": 54.7
+  },
+  "sensitivity_disclosure": [
+    {
+      "param": "n_gpus",
+      "category": "F",
+      "justification": "MA1 (512 GPUs) is a fictional-scenario construction -- Kestrel Compute does not exist, so no real committed-cluster size can be cited; 512 GPUs was chosen to align with AWS's own published EC2 Capacity Blocks ceiling. Flexing this dial -50% (256 GPUs) flips the Mid-scenario winner from Open Tap to Long Lock: a smaller committed cluster halves the Long Lock's total 24-month fixed bill, pulling its cost-per-GPU-hour-delivered ($3.78 at 256 GPUs vs. $7.57 at 512) well under the Open Tap's flat $6.88 rate. Verified in cases/compute-lease/sensitivity_model.py, tier2_probes.py --probe 5 --flex 0.5. +50% (768 GPUs) does not flip the winner (Open Tap still wins, margin 39.4%)."
+    },
+    {
+      "param": "starting_demand_gpu_hrs",
+      "category": "F",
+      "justification": "MA2 (120,000 GPU-hrs/month starting demand) is a fictional-scenario construction for the same reason as MA1 -- no real company exists to supply Kestrel's own starting utilization, so it was set at roughly 32% of MA1's committed capacity as a standard reserved-capacity ramp-in pattern. Flexing this dial +50% (180,000 GPU-hrs/month) flips the Mid-scenario winner from Open Tap to Long Lock: higher starting demand spreads the Long Lock's fixed bill over more delivered GPU-hours from month 1 onward, pulling its cost-per-GPU-hour-delivered ($5.05 vs. $7.57 at the base) under the Open Tap's $6.88. Verified in cases/compute-lease/sensitivity_model.py, tier2_probes.py --probe 5 --flex 0.5. -50% (60,000 GPU-hrs/month) does not flip the winner (Open Tap still wins, margin 54.5%)."
+    }
   ],
-  "modeling_assumptions": [],
-  "sensitivity_note": null,
-  "qa": {"verdict": null, "run_on": null, "blockers_open": null, "case_md_sha256": null},
+  "needs_source": [
+    {
+      "token": "{{NEEDS_SOURCE: stated in-scenario deadline, days from case launch to board meeting}}",
+      "location": "Appendix A, row 'Days until Sofia's board recommendation is due'",
+      "status": "ASSUMPTION"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: stated contract term in months, e.g. 36}}",
+      "location": "Appendix A, row 'Long Lock contract term'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: GPU cluster size, count of GPUs}}",
+      "location": "Appendix A, row 'Number of GPUs'",
+      "status": "ASSUMPTION"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: baseline monthly GPU-hours actually rented by paying customers, month 0}}",
+      "location": "Appendix A, row 'Starting monthly GPU-hour demand'",
+      "status": "ASSUMPTION"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: reserved/committed-use GPU cluster pricing, USD per GPU-hour, e.g. from a published reserved H100/GPU cluster rate card}}",
+      "location": "Appendix B, row 'Fixed rate per GPU-hour'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: derived from rate and committed capacity once both are sourced}}",
+      "location": "Appendix B, row 'Monthly fixed cost'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: published on-demand GPU pricing, USD per GPU-hour, e.g. AWS EC2 P5/H100 on-demand pricing, or CoreWeave / Lambda Labs published on-demand rate card}}",
+      "location": "Appendix C, row 'On-demand rate per GPU-hour'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: low end of a realistic month-over-month AI infrastructure demand growth rate, drawn from public hyperscaler capex/AI infrastructure growth disclosures}}",
+      "location": "Appendix D, row 'Low'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: mid-range month-over-month growth rate from the same disclosures}}",
+      "location": "Appendix D, row 'Mid'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: high end of the same published growth-rate range}}",
+      "location": "Appendix D, row 'High'",
+      "status": "SOURCED"
+    }
+  ],
+  "modeling_assumptions": [
+    {
+      "id": "MA1",
+      "assumption": "Number of GPUs Kestrel commits to under the Long Lock",
+      "value_used": "512 GPUs",
+      "basis": "Kestrel Compute is a fictional company, so no real committed-cluster size exists to cite. 512 GPUs (64 x 8-GPU instances) aligns with the published ceiling for AWS's own EC2 Capacity Blocks for ML cluster product, which supports reservations up to 64 p5 instances / 512 GPUs.",
+      "sensitivity": "Load-bearing. This sets the Long Lock's fixed monthly cost floor (512 x 730 hr x $2.97/GPU-hr = $1,110,067/month regardless of usage). A materially larger or smaller cluster size shifts every D2/D4/D5 result and could move the crossover growth rate found in D5. Recommend a sanity check against the balance/margin figures during case-qa."
+    },
+    {
+      "id": "MA2",
+      "assumption": "Kestrel's starting (month 0) monthly GPU-hour demand from paying customers",
+      "value_used": "120,000 GPU-hours/month",
+      "basis": "No real company exists to supply this figure. 120,000 GPU-hours/month is ~32% of MA1's 373,760 GPU-hour/month committed capacity (512 GPUs x 730 hr), representing a newly-signed reserved cluster that starts under-utilized and is expected to grow into its capacity -- a standard reserved-capacity planning pattern.",
+      "sensitivity": "The single most sensitivity-loaded figure in the case: it is the seed value for every month of D1's demand sequence under all three growth scenarios, and therefore feeds every D2, D4, and D5 result directly. A higher starting utilization makes the Long Lock look better sooner (fixed cost spread over more usage from month 1); a lower one favors the Open Tap longer. Recommend this be checked against the balance/margin_basis in case.json during case-qa or case-balance review."
+    },
+    {
+      "id": "MA3",
+      "assumption": "Days until Sofia's board recommendation is due",
+      "value_used": "2 days",
+      "basis": "Purely narrative detail internal to the fictional scenario -- not externally sourceable. Matches the Overview's existing prose (\"two days left to decide\").",
+      "sensitivity": "None. Decorative only; does not feed any Challenge (D1-D6) calculation."
+    }
+  ],
+  "sensitivity_note": "MA1 and MA2 (GPU cluster size and starting demand) are the two load-bearing modeling assumptions and directly affect which option wins under which growth scenario -- recommend review during case-qa / balance-check.",
+  "cohort_bands": [
+    {
+      "band": "12-18 (Full)",
+      "note": "The size the case was authored for. Socratic plan and Anchor timings run as written (45 minutes, all 4 anchors, full twist, two deep-conflict threads)."
+    },
+    {
+      "band": "6-9 (Compressed)",
+      "note": "Anchors 2-3 combine into one pass (\"what are we even deciding, and how would we find out\"); the twist still drops at the same relative point but only one deep-conflict thread runs (\"what a well-sourced range can't tell you\" -- the D5 crossover vs. DigitalOcean's own forward guidance -- since it is the one with the sharpest numeric payoff); total runtime shortens to roughly 30 minutes, content held constant."
+    },
+    {
+      "band": "1-2 (1:1 / pair)",
+      "note": "No vote to take at Anchor 1 -- the learner states an initial position instead. The facilitator plays devil's advocate directly rather than cold-calling. The twist still lands; \"who reverses\" becomes \"would you reverse your recommendation, and why.\""
+    }
+  ],
+  "qa": {
+    "state": "TIER2_PASS",
+    "verdict": "PASS",
+    "run_on": "2026-08-30",
+    "blockers_open": 0,
+    "gaps_open": 0,
+    "case_md_sha256": "57b6340423e34f1d51124eb42aacc803a7954021e8069fe2c1ba2b5159ae5813",
+    "tier2": {
+      "P1": "PASS",
+      "P2": "PASS",
+      "P3": "PASS",
+      "P4": "PASS",
+      "P5": "PASS (disclosed)",
+      "P6": "PASS"
+    },
+    "tier3_runs": [],
+    "blocker_detail": "None open. T1-09 SPEC §2 balance test now PASSes: margin_pct=9.1 (mid scenario) on the primary metric, cap ~20%. Appendix D's growth-rate range was retuned 2026-08-30 (re-sourced from DigitalOcean Holdings' own quarterly earnings, a real mid-size cloud company, replacing the original hyperscaler-scale proxies) -- MA1/MA2 and both sourced rates (S1/S2) are unchanged; see case.json.balance.margin_note and RESEARCH_LOG.md's 2026-08-30 entry for the full derivation and why MA1/MA2 alone could not have fixed this. The winner flips to the Open Tap at all three retuned scenarios (Low 15.4%, Mid 9.1%, High 4.6%), all with genuine slack under the cap. FACILITATOR.md's Twist was rewritten (the original 512-GPU capacity-ceiling twist no longer triggers within the 24-month window under the slower retuned growth rates; replaced with a twist built from the same DigitalOcean source's own forward guidance/RPO growth, already cited, no new figure invented). All six Tier 2 probes adjudicated and clear the gate: P1 (fresh blind subagent) independently reached Option B with matching arithmetic; P2 both arguments carry real numbers, neither collapses; P3 trap matches FACILITATOR.md's; P4 twist has no hidden-convention dependency; P5 mechanically unstable on MA1/MA2 at +-50% but disclosed via sensitivity_disclosure[] (category F, both); P6 all 5 sources re-fetched live, figures intact. See QA_REPORT.md's 2026-08-30 entry for full detail."
+  },
   "authored_on": "2026-08-24",
-  "pipeline_version": "1.0"
+  "pipeline_version": "1.0",
+  "published_on": "2026-08-30"
 }

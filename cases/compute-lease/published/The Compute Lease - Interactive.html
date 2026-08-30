@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Compute Lease — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md
+  (Math Builder A7, DOCTRINE_LEDGER MCS-37/MCS-39). Case data below is copied verbatim
+  from cases/compute-lease/case.md / case.json (case_md_sha256:
+  57b6340423e34f1d51124eb42aacc803a7954021e8069fe2c1ba2b5159ae5813, as of 2026-08-30 retune).
+
+  HARD LINE (MCS-37): this file never prints case.json's balance.margin_pct (9.1) or
+  states which option (Long Lock / Open Tap) wins as a static literal anywhere outside
+  a <script> tag's live computation. The Working Notebook computes each option's cost
+  per GPU-hour delivered live, from the case's own raw inputs (rates, GPU count, starting
+  demand, growth rate) -- the calculator never hands the Hero the recommendation.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC: compute-lease table styling */
+  .seq-table td.n{font-weight:700;color:var(--navy)}
+  .seq-table input[type=number]{width:110px}
+  .worklog{font-family:var(--sans);font-size:.8rem;color:var(--sub);margin-top:8px}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-server" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><circle cx="7" cy="7" r="1"/><circle cx="7" cy="17" r="1"/></symbol>
+  <symbol id="icon-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+  <symbol id="icon-tap" viewBox="0 0 24 24"><path d="M6 3v6a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><path d="M12 15v6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Compute Lease</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Series &middot; Sequence &middot; Convergence</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Sofia Reyes has the same spreadsheet open in two windows, and neither one is winning.</p>
+  <p>It's late enough that the office kitchen light has gone to its dim auto-off setting, and the only sound is the low whir of the demo rack in the corner &mdash; a handful of GPUs still churning through some customer's overnight training job. Sofia is Kestrel Compute's infrastructure capacity planner, which mostly means she is the person who has to say, in writing, how many GPUs the company commits to and for how long. Friday she stands in front of the board with a recommendation. Whichever way it goes, her name is the one attached to the cost line for the next two years.</p>
+  <p>One window holds an email from a hardware vendor's sales rep, subject line still bolded from this morning, laying out a multi-year GPU cluster contract. The other holds a tab full of on-demand pricing pages, scrollable, cancelable, unforgiving on a per-hour basis. Both get Kestrel to the same place &mdash; enough GPU capacity to serve its customers. They get there in completely different ways.</p>
+  <p>Sofia pulls a blank legal pad toward her, uncaps a pen, and writes two headers at the top of the page, one for each option. She doesn't write anything under either one yet. She just sits there, pen hovering, rack humming, with two days left to decide which header she's going to fill in.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Kestrel Compute is a mid-size AI cloud provider that rents GPU capacity to customers running machine-learning workloads &mdash; from small research teams renting a handful of GPUs by the hour to larger customers running sustained training jobs. Sofia Reyes is Kestrel's Infrastructure Capacity Planner, responsible for recommending how the company acquires the GPU capacity it resells. The board has asked her for a single recommendation, backed by numbers, by Friday's meeting (see Appendix A).</p>
+  <p>Two paths are on the table.</p>
+  <div class="card">
+    <p><strong>The Long Lock.</strong> Kestrel signs a fixed-rate, multi-year commitment for a dedicated GPU cluster. The per-GPU-hour rate is lower than any on-demand price Kestrel could get elsewhere, and it is locked in for the full term of the contract &mdash; Kestrel pays the same fixed amount every month whether its customers rent every GPU-hour available or almost none of it (see Appendix B). The commitment term extends past the two-year window the board has asked Sofia to evaluate, so a portion of the fixed cost keeps arriving even after that evaluation window closes (see Appendix A).</p>
+    <p style="margin-bottom:0"><strong>The Open Tap.</strong> Kestrel instead buys GPU capacity on the on-demand market, month by month, only paying for the GPU-hours its customers actually consume. The per-GPU-hour rate is higher than the Long Lock's locked-in rate, but Kestrel never pays for capacity nobody rents, and spend scales automatically with however fast &mdash; or slowly &mdash; Kestrel's customer base actually grows (see Appendix C).</p>
+  </div>
+  <p>Kestrel's own month-over-month customer growth rate is not a fixed, known number &mdash; it depends on how fast the company's sales team closes new accounts and how much existing customers expand their usage, and it could land anywhere across a real, published range of growth rates seen elsewhere in the AI-infrastructure industry (see Appendix D). Whichever option Kestrel picks, the board's decision criterion is the same: which one delivers a lower total infrastructure cost per GPU-hour actually delivered to paying customers, over the two-year window Sofia has been asked to evaluate.</p>
+  <p>Every dollar figure, rate, and growth-rate range this case depends on is either given directly above, or fixed in Appendices A through D. Every external source cited anywhere in this case is collected in Appendix F. The vocabulary and &ldquo;how to&hellip;&rdquo; skills this case will ask you to research are listed in Appendix G &mdash; that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Sofia Reyes. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Long Lock</h4>
+      <p style="margin:0">Sign the fixed-rate, multi-year GPU cluster commitment.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Open Tap</h4>
+      <p style="margin:0">Buy on-demand GPU capacity that scales month to month with actual customer growth.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which option you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include a monthly GPU-hour demand sequence, recursive and closed form (D1); two 24-month total-cost series written as explicit sums (D2); a convergence/divergence classification of the Open Tap's underlying series extended past 24 months (D3); total cost per GPU-hour delivered for both options across all three growth scenarios, six results in one table (D4); the crossover growth rate where both options tie (D5); and a recommendation to the board, defended with D4 and D5, including what would have to be true for it to be wrong (D6).</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; Kestrel's Board Directive and Decision Constraints</summary>
+    <div class="inner">
+      <table id="tblA">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Days until Sofia's board recommendation is due</td><td class="num">2 days [MA3]</td></tr>
+        <tr><td>Evaluation window for the primary metric</td><td class="num">24 months</td></tr>
+        <tr><td>Long Lock contract term (may exceed the evaluation window)</td><td class="num">36 months [S2]</td></tr>
+        <tr><td>Number of GPUs Kestrel is deciding whether to commit to</td><td class="num">512 GPUs [MA1]</td></tr>
+        <tr><td>Kestrel's starting (month 0) monthly GPU-hour demand from paying customers</td><td class="num">120,000 GPU-hours/month [MA2]</td></tr>
+      </table>
+      <p class="side-note">Kestrel Compute is a scenario construction for this case &mdash; there is no real company by this name. The evaluation window and the fact that the Long Lock's own contract term runs longer than it are both fixed constraints of the board's request, not sourced figures. See Appendix E for MA1&ndash;MA3.</p>
+    </div>
+  </details>
+
+  <details id="apx-b">
+    <summary>Appendix B &mdash; The Long Lock: 3-Year Fixed-Rate GPU Cluster Lease</summary>
+    <div class="inner">
+      <table id="tblB">
+        <tr><th>Spec</th><th>Value</th></tr>
+        <tr><td>Fixed rate per GPU-hour of cluster capacity, locked for the full contract term</td><td class="num">$2.97 [S2]</td></tr>
+        <tr><td>Monthly fixed cost (rate &times; committed GPU-hours per month, regardless of usage)</td><td class="num">$2.97/GPU-hr &times; 512 GPUs &times; 730 hr/month</td></tr>
+        <tr><td>Whether the monthly payment changes if fewer GPU-hours are actually used</td><td class="num">No &mdash; fixed regardless of utilization</td></tr>
+      </table>
+      <p class="side-note">You'll compute the actual monthly fixed cost yourself in the Working Notebook &mdash; this appendix gives you the rate and the GPU count, not the product.</p>
+    </div>
+  </details>
+
+  <details id="apx-c">
+    <summary>Appendix C &mdash; The Open Tap: On-Demand GPU Capacity</summary>
+    <div class="inner">
+      <table id="tblC">
+        <tr><th>Spec</th><th>Value</th></tr>
+        <tr><td>On-demand rate per GPU-hour</td><td class="num">$6.88 [S1]</td></tr>
+        <tr><td>Billing basis</td><td class="num">Pay only for GPU-hours actually consumed by paying customers that month</td></tr>
+        <tr><td>Minimum commitment</td><td class="num">None</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; Industry AI-Infrastructure Growth-Rate Range</summary>
+    <div class="inner">
+      <table id="tblD">
+        <tr><th>Scenario</th><th>Month-over-month customer GPU-hour demand growth rate</th></tr>
+        <tr><td>Low</td><td class="num">1.1% [S5]</td></tr>
+        <tr><td>Mid</td><td class="num">1.7% [S3]</td></tr>
+        <tr><td>High</td><td class="num">2.1% [S4]</td></tr>
+      </table>
+      <p class="side-note">Kestrel's own actual growth rate is not independently known or sourceable &mdash; it is a fictional company. The range above anchors Kestrel's planning scenarios to DigitalOcean Holdings' (NYSE: DOCN) own recent quarterly revenue growth trajectory &mdash; the closest available real-world analog to Kestrel's own stated scale. See Appendix F.</p>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author, needed because Kestrel Compute is a fictional company and no real business supplies them. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+      <table id="tblE">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th></tr>
+        <tr><td>MA1</td><td>Number of GPUs Kestrel commits to under the Long Lock</td><td class="num">512 GPUs</td></tr>
+        <tr><td>MA2</td><td>Kestrel's starting (month 0) monthly GPU-hour demand</td><td class="num">120,000 GPU-hours/month</td></tr>
+        <tr><td>MA3</td><td>Days until Sofia's board recommendation is due</td><td class="num">2 days</td></tr>
+      </table>
+      <p class="side-note">MA1 and MA2 are the two most load-bearing assumptions in the case &mdash; the Sensitivity Explorer in the Working Notebook (Step 6) lets you flex both and watch the live cost-per-GPU-hour numbers respond.</p>
+    </div>
+  </details>
+
+  <details id="apx-f">
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table id="tblF">
+        <tr><th>#</th><th>Claim</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>On-demand hourly price of AWS EC2 p5.48xlarge (8&times; H100 GPUs), us-east-1 &rarr; derived per-GPU rate</td><td><a href="https://instances.vantage.sh/aws/ec2/p5.48xlarge" target="_blank" rel="noopener">instances.vantage.sh</a></td><td>MEDIUM</td></tr>
+        <tr><td>S2</td><td>AWS EC2 p5.48xlarge 3-Year Reserved Instance (No Upfront) hourly rate, us-east-1 &rarr; derived per-GPU rate and Long Lock term</td><td><a href="https://instances.vantage.sh/aws/ec2/p5.48xlarge" target="_blank" rel="noopener">instances.vantage.sh</a></td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>DigitalOcean Holdings (NYSE: DOCN) Q1 2026 revenue growth, YoY (Mid scenario)</td><td><a href="https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Announces-First-Quarter-2026-Financial-Results/default.aspx" target="_blank" rel="noopener">DigitalOcean Q1 2026 Results</a></td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>DigitalOcean Holdings (NYSE: DOCN) Q2 2026 revenue growth guidance, YoY (High scenario)</td><td><a href="https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Expects-to-Report-Record-Q2-2026-Results-with-RPO-to-Exceed-800M-Up-More-Than-10X-Year-Over-Year/default.aspx" target="_blank" rel="noopener">DigitalOcean Q2 2026 Guidance</a></td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>DigitalOcean Holdings (NYSE: DOCN) Q2 2025 revenue growth, YoY (Low scenario)</td><td><a href="https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Expects-to-Report-Record-Q2-2026-Results-with-RPO-to-Exceed-800M-Up-More-Than-10X-Year-Over-Year/default.aspx" target="_blank" rel="noopener">DigitalOcean Q2 2026 Guidance (same release)</a></td><td>HIGH</td></tr>
+      </table>
+      <p class="side-note">S3, S4, and S5 are proxy figures &mdash; three points along one real, publicly-traded, mid-size cloud infrastructure company's (DigitalOcean) own disclosed quarterly revenue growth trajectory, converted from a year-over-year percentage to an equivalent constant monthly compound rate. They are not literally "GPU-hours rented by Kestrel's own paying customers" &mdash; no such disclosure exists for a fictional company.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-30. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Monthly GPU-hour demand sequence (D1)</h4>
+    <div class="goal">Pick a growth scenario, then compute Kestrel's projected monthly GPU-hour demand for every month of the 24-month evaluation window, starting at month zero, either recursively (each month = previous month &times; (1 + growth rate)) or with the closed form d(t) = d&#8320; &times; (1 + r)<sup>t</sup>. d&#8320; = 120,000 GPU-hrs/month.</div>
+    <div class="fieldrow"><label for="scenSel1">Growth scenario</label>
+      <select id="scenSel1" onchange="buildDemandTable()">
+        <option value="1.1">Low &mdash; 1.1%/month</option>
+        <option value="1.7" selected>Mid &mdash; 1.7%/month</option>
+        <option value="2.1">High &mdash; 2.1%/month</option>
+      </select>
+    </div>
+    <table class="seq-table" id="demandTable"></table>
+    <button onclick="checkDemand()">Check All</button>
+    <span class="fb" id="demandSummary"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Two 24-month total-cost series (D2)</h4>
+    <div class="goal">Using the same scenario as Step 1, write each option's 24-month total cost as an explicit sum, term by term, then compute the total. Long Lock: 24 equal fixed-cost terms. Open Tap: rate &times; each month's demand, summed over 24 months (use your Step 1 sequence).</div>
+    <div class="fieldrow"><label for="myLLTotal">Your Long Lock total cost ($)</label><input type="number" step="0.01" id="myLLTotal"></div>
+    <div class="fieldrow"><label for="myOTTotal">Your Open Tap total cost ($)</label><input type="number" step="0.01" id="myOTTotal"><button onclick="checkCostSeries()">Check</button><span class="fb" id="costSeriesFb"></span></div>
+    <div class="worklog" id="costSeriesWork"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Convergence/divergence classification (D3)</h4>
+    <div class="goal">Extend the Open Tap's monthly-cost sequence hypothetically past the end of the evaluation window, forever, at the same growth rate. What is the common ratio between consecutive terms? Does the resulting infinite series converge or diverge?</div>
+    <div class="fieldrow"><label for="myRatio">Your common ratio (1 + the scenario's monthly growth rate, as a decimal)</label><input type="number" step="0.0001" id="myRatio"></div>
+    <div class="fieldrow"><label for="myConvDiv">Converges or diverges?</label>
+      <select id="myConvDiv"><option value="">-- choose --</option><option value="converges">Converges</option><option value="diverges">Diverges</option></select>
+      <button onclick="checkConvergence()">Check</button><span class="fb" id="convFb"></span>
+    </div>
+    <div class="worklog" id="convWork"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Total cost per GPU-hour delivered, all six results (D4)</h4>
+    <div class="goal">For each of the three growth scenarios, divide each option's D2 total cost by that scenario's total GPU-hours delivered (the sum of your D1 demand sequence) to get cost per GPU-hour delivered. Fill in all six cells.</div>
+    <table id="d4Table">
+      <tr><th>Scenario</th><th>Long Lock ($/GPU-hr)</th><th>Open Tap ($/GPU-hr)</th></tr>
+      <tr><td>Low (1.1%/month)</td><td><input type="number" step="0.0001" id="d4_LL_low"></td><td><input type="number" step="0.0001" id="d4_OT_low"></td></tr>
+      <tr><td>Mid (1.7%/month)</td><td><input type="number" step="0.0001" id="d4_LL_mid"></td><td><input type="number" step="0.0001" id="d4_OT_mid"></td></tr>
+      <tr><td>High (2.1%/month)</td><td><input type="number" step="0.0001" id="d4_LL_high"></td><td><input type="number" step="0.0001" id="d4_OT_high"></td></tr>
+    </table>
+    <button onclick="checkD4()">Check All</button>
+    <span class="fb" id="d4Summary"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; The crossover growth rate (D5)</h4>
+    <div class="goal">Find the monthly growth rate at which the Long Lock and the Open Tap produce the same 24-month cost per GPU-hour delivered. Try values, or solve directly &mdash; your call.</div>
+    <div class="fieldrow"><label for="myCrossover">Your crossover rate (%/month)</label><input type="number" step="0.001" id="myCrossover"><button onclick="checkCrossover()">Check</button><span class="fb" id="crossoverFb"></span></div>
+    <div class="fieldrow"><label for="crossInOut">Is that rate inside or outside Appendix D's stated range?</label>
+      <select id="crossInOut"><option value="">-- choose --</option><option value="inside">Inside the range</option><option value="outside">Outside the range</option></select>
+      <button onclick="checkCrossInOut()">Check</button><span class="fb" id="crossInOutFb"></span>
+    </div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 6 &mdash; Sensitivity Explorer (MA1 / MA2)</h4>
+    <div class="goal">Appendix E flags the cluster size (MA1) and starting demand (MA2) as the case's two most load-bearing assumptions. Drag the sliders and watch the Mid-scenario cost per GPU-hour respond live for both options &mdash; the tool computes both numbers; it does not tell you which one wins.</div>
+    <div class="sliderow"><label for="slNGpus" style="min-width:220px;font-family:var(--sans)">Number of GPUs (MA1)</label><input type="range" id="slNGpus" step="1" oninput="onFlexChange()"><span class="val" id="slNGpusVal"></span></div>
+    <div class="sliderow"><label for="slDemand" style="min-width:220px;font-family:var(--sans)">Starting demand, GPU-hrs/month (MA2)</label><input type="range" id="slDemand" step="1000" oninput="onFlexChange()"><span class="val" id="slDemandVal"></span></div>
+    <table id="tblLive">
+      <tr><th>Option</th><th>Live cost per GPU-hour delivered ($), Mid scenario, at current sliders</th></tr>
+      <tr><td>A &mdash; Long Lock</td><td class="num" id="liveTotalA">&mdash;</td></tr>
+      <tr><td>B &mdash; Open Tap</td><td class="num" id="liveTotalB">&mdash;</td></tr>
+    </table>
+  </div>
+
+  <div class="stepbox">
+    <h4>Last step &mdash; Recommendation (D6)</h4>
+    <div class="goal">State which option you recommend to the board and defend it using your D4 and D5 results, including what would have to be true about Kestrel's actual growth rate for your recommendation to be wrong. This step isn't graded here &mdash; it's your own reasoning, saved locally as you write.</div>
+    <textarea id="d6Notes" placeholder="Your recommendation and defense..." style="width:100%;min-height:110px;font-family:var(--sans);font-size:.9rem;border:1px solid #bcc4cf;border-radius:6px;padding:8px" oninput="saveD6()"></textarea>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-tap"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>The 22%, and the 29%-guided, growth figures Appendix D borrows are DigitalOcean's <em>realized and guided revenue</em> growth. The same earnings release that gives you the 29% figure for Q2 2026 also discloses something else: DigitalOcean's <em>booked-but-not-yet-realized</em> future business &mdash; contracts already signed, revenue not yet counted &mdash; grew more than 10 times year over year. And in the same release, DigitalOcean told investors it now expects <em>2027</em> revenue growth to exceed 50% &mdash; far above anything in Appendix D's range.</p>
+      <p>If Kestrel's own sales pipeline looked anything like that &mdash; bookings racing ahead of realized revenue &mdash; would you trust Appendix D's range to hold for the full 24 months? Does that change what Sofia should recommend?</p>
+      <p style="font-style:normal;color:#cdd9e6;font-size:.85rem">This twist introduces no new figure &mdash; it reuses the case's own S4 citation more fully than Appendix D's table alone captures. It does not hand you a new number to plug into D4/D5; it asks you to weigh how much you trust the range those results are built on.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>AWS EC2 p5.48xlarge pricing &mdash; <a href="https://instances.vantage.sh/aws/ec2/p5.48xlarge" target="_blank" rel="noopener">instances.vantage.sh</a> (S1, S2)</li>
+      <li>DigitalOcean Holdings &mdash; <a href="https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Announces-First-Quarter-2026-Financial-Results/default.aspx" target="_blank" rel="noopener">Q1 2026 Financial Results</a> (S3)</li>
+      <li>DigitalOcean Holdings &mdash; <a href="https://investors.digitalocean.com/news/news-details/2026/DigitalOcean-Expects-to-Report-Record-Q2-2026-Results-with-RPO-to-Exceed-800M-Up-More-Than-10X-Year-Over-Year/default.aspx" target="_blank" rel="noopener">Q2 2026 Guidance / RPO Release</a> (S4, S5)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Compute Lease &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/compute-lease/case.md
+   and case.json (case_md_sha256: 57b6340423e34f1d51124eb42aacc803a7954021e8069fe2c1ba2b5159ae5813).
+   PARAMS/FLEX/evaluate() port cases/compute-lease's own sensitivity_model.py
+   (Mid-scenario cost per GPU-hour delivered) — the Working Notebook's checkers
+   below call into these rather than re-deriving the tally inline, per
+   templates/INTERACTIVE_HTML_CONTRACT.md §2. No evaluate_twist() — this case's
+   twist (see Twist section) is a qualitative reframing, not a new arithmetic
+   perturbation, same as cases/bioreactor-bid and cases/fret-board.
+
+   NOTE on "higher is better": this case's primary metric is total cost per
+   GPU-hour delivered — LOWER is better here. evaluate() returns each option's
+   raw cost per GPU-hour, NEGATED, matching the sensitivity_model.py convention
+   (higher-is-better harness), but the Working Notebook UI never states which
+   number "wins" — it only confirms whether the Hero's own arithmetic matches
+   the live numbers, per MCS-37.
+   ================================================================ */
+const PARAMS = {
+  n_gpus: 512,
+  starting_demand_gpu_hrs: 120000,
+  ll_rate_per_gpu_hr: 2.97,
+  ot_rate_per_gpu_hr: 6.88,
+  mid_growth_pct_month: 1.7,
+  hours_per_month: 730,
+  n_months: 24
+};
+const FLEX = ["n_gpus", "starting_demand_gpu_hrs"];
+
+function sumDemand(d0, rPctMonth, nMonths){
+  const r = rPctMonth / 100;
+  if(r === 0) return d0 * nMonths;
+  return d0 * ((Math.pow(1 + r, nMonths) - 1) / r);
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const llTotalCost = p.ll_rate_per_gpu_hr * p.n_gpus * p.hours_per_month * p.n_months;
+  const sd = sumDemand(p.starting_demand_gpu_hrs, p.mid_growth_pct_month, p.n_months);
+  const llCostPerHr = llTotalCost / sd;
+  const otCostPerHr = p.ot_rate_per_gpu_hr; // constant under this case's reading
+  return {A: -llCostPerHr, B: -otCostPerHr};
+}
+function crossoverGrowthPctMonth(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const llTotalCost = p.ll_rate_per_gpu_hr * p.n_gpus * p.hours_per_month * p.n_months;
+  const target = p.ot_rate_per_gpu_hr;
+  let lo = 0.0001, hi = 50.0;
+  for(let i = 0; i < 80; i++){
+    const mid = (lo + hi) / 2;
+    const sd = sumDemand(p.starting_demand_gpu_hrs, mid, p.n_months);
+    const cost = llTotalCost / sd;
+    if(cost > target) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+function demandSeq(rPctMonth, params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const r = rPctMonth / 100;
+  const out = [];
+  for(let t = 0; t < p.n_months; t++) out.push(p.starting_demand_gpu_hrs * Math.pow(1 + r, t));
+  return out;
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const d6 = localStorage.getItem(CASE_ID+'_d6notes') || '';
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Recommendation (D6)</h2>
+    <div class="meta">${d6 ? d6.replace(/</g,'&lt;') : 'Not yet written.'}</div>
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook build + check functions.
+   ================================================================ */
+function buildDemandTable(){
+  const t = document.getElementById('demandTable');
+  let html = '<tr><th>Month <em>t</em></th><th>Your demand (GPU-hrs)</th><th></th></tr>';
+  for(let t2 = 0; t2 < 24; t2++){
+    html += `<tr><td class="n">${t2}</td><td><input type="number" step="0.01" id="dem${t2}"></td><td class="fb" id="demFb${t2}"></td></tr>`;
+  }
+  t.innerHTML = html;
+}
+function currentScenario1(){ return parseFloat(document.getElementById('scenSel1').value); }
+function checkDemand(){
+  const r = currentScenario1();
+  const seq = demandSeq(r, {});
+  let okCount = 0;
+  for(let t = 0; t < 24; t++){
+    const expected = round(seq[t], 2);
+    const userVal = parseFloat(val('dem' + t));
+    const ok = near(userVal, expected, Math.max(1, expected * 0.01));
+    if(ok) okCount++;
+    const el = document.getElementById('demFb' + t);
+    el.className = 'fb ' + (ok ? 'ok' : 'bad');
+    el.textContent = ok ? '✓' : 'try again';
+  }
+  const summary = document.getElementById('demandSummary');
+  summary.className = 'fb ' + (okCount === 24 ? 'ok' : 'bad');
+  summary.textContent = okCount + ' / 24 correct';
+}
+function checkCostSeries(){
+  const r = currentScenario1();
+  const seq = demandSeq(r, {});
+  const llTotal = PARAMS.ll_rate_per_gpu_hr * PARAMS.n_gpus * PARAMS.hours_per_month * PARAMS.n_months;
+  const otTotal = PARAMS.ot_rate_per_gpu_hr * seq.reduce((a,b)=>a+b, 0);
+  const userLL = parseFloat(val('myLLTotal'));
+  const userOT = parseFloat(val('myOTTotal'));
+  const ok = near(userLL, llTotal, llTotal * 0.01) && near(userOT, otTotal, otTotal * 0.01);
+  fb('costSeriesFb', ok);
+  document.getElementById('costSeriesWork').textContent =
+    `At the selected scenario: Long Lock total (24 equal terms) and Open Tap total (rate × sum of your Step 1 sequence) both have a fixed structure — the terms themselves are what Challenge D2 asks you to write out explicitly.`;
+}
+function checkConvergence(){
+  const r = currentScenario1();
+  const expectedRatio = round(1 + r / 100, 4);
+  const userRatio = parseFloat(val('myRatio'));
+  const ratioOk = near(userRatio, expectedRatio, 0.001);
+  const userCD = document.getElementById('myConvDiv').value;
+  const cdOk = userCD === 'diverges'; // ratio > 1 for any positive growth rate => diverges
+  const ok = ratioOk && cdOk;
+  fb('convFb', ok);
+  document.getElementById('convWork').textContent =
+    `A series with common ratio r diverges whenever |r| >= 1. Any positive month-over-month growth rate produces a ratio strictly greater than 1.`;
+}
+function checkD4(){
+  const scens = [["low", 1.1], ["mid", 1.7], ["high", 2.1]];
+  let okCount = 0;
+  scens.forEach(([key, r]) => {
+    const res = evaluate({mid_growth_pct_month: r});
+    const expLL = round(-res.A, 4), expOT = round(-res.B, 4);
+    const userLL = parseFloat(val('d4_LL_' + key));
+    const userOT = parseFloat(val('d4_OT_' + key));
+    const okLL = near(userLL, expLL, 0.02);
+    const okOT = near(userOT, expOT, 0.02);
+    if(okLL) okCount++;
+    if(okOT) okCount++;
+  });
+  const summary = document.getElementById('d4Summary');
+  summary.className = 'fb ' + (okCount === 6 ? 'ok' : 'bad');
+  summary.textContent = okCount + ' / 6 correct';
+}
+function checkCrossover(){
+  const expected = crossoverGrowthPctMonth({});
+  const userVal = parseFloat(val('myCrossover'));
+  const ok = near(userVal, expected, 0.05);
+  fb('crossoverFb', ok);
+}
+function checkCrossInOut(){
+  const crossover = crossoverGrowthPctMonth({});
+  const inRange = crossover >= 1.1 && crossover <= 2.1;
+  const expected = inRange ? 'inside' : 'outside';
+  const userVal = document.getElementById('crossInOut').value;
+  fb('crossInOutFb', userVal === expected);
+}
+function saveD6(){
+  localStorage.setItem(CASE_ID+'_d6notes', document.getElementById('d6Notes').value);
+}
+function restoreD6(){
+  const saved = localStorage.getItem(CASE_ID+'_d6notes');
+  if(saved) document.getElementById('d6Notes').value = saved;
+}
+
+function buildSliders(){
+  const bounds = {
+    slNGpus: PARAMS.n_gpus,
+    slDemand: PARAMS.starting_demand_gpu_hrs
+  };
+  Object.keys(bounds).forEach(id => {
+    const base = bounds[id];
+    const el = document.getElementById(id);
+    el.min = Math.max(1, Math.round(base / 2));
+    el.max = Math.round(base * 2);
+    el.value = base;
+  });
+}
+function currentFlexParams(){
+  return Object.assign({}, PARAMS, {
+    n_gpus: parseFloat(document.getElementById('slNGpus').value),
+    starting_demand_gpu_hrs: parseFloat(document.getElementById('slDemand').value)
+  });
+}
+function refreshLiveTotals(){
+  const params = currentFlexParams();
+  const result = evaluate(params);
+  document.getElementById('liveTotalA').textContent = '$' + round(-result.A, 2);
+  document.getElementById('liveTotalB').textContent = '$' + round(-result.B, 2);
+}
+function onFlexChange(){
+  document.getElementById('slNGpusVal').textContent = document.getElementById('slNGpus').value;
+  document.getElementById('slDemandVal').textContent = document.getElementById('slDemand').value;
+  refreshLiveTotals();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "compute-lease";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Monthly GPU-hour demand sequence, recursive and closed form"],
+  ["D2", "Two 24-month total-cost series, written as explicit sums"],
+  ["D3", "Convergence/divergence classification of the Open Tap's extended series"],
+  ["D4", "Total cost per GPU-hour delivered, both options, all three growth scenarios"],
+  ["D5", "The crossover growth rate"],
+  ["D6", "A recommendation to the board, defended with D4 and D5"],
+  ["C1", "Research link answering a How To... question (Appendix G)"],
+  ["C2", "250+ word pitch, using the C1 resource, with an original visual"],
+  ["C4", "Appendix of original thinking/evidence"],
+  ["C5", "Case discussion participation (2+ posts, or 500 words if absent)"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). All 10 terms below were fetched
+   and confirmed live on khanacademy.org, 2026-08-30, this session
+   (see build notes) — every URL was navigated to directly and its
+   rendered page title checked, except "Percent," reused verbatim from
+   templates/INTERACTIVE_HTML_CONTRACT.md's own verified starter
+   glossary per MCS-21 (a URL fetched and confirmed for one case is a
+   legitimate source for the same term reused verbatim elsewhere).
+   ================================================================ */
+const GLOSSARY = {
+  "Sequence": {def: "An ordered list of numbers, called terms, that follow a pattern.",
+    url: "https://www.khanacademy.org/math/algebra-home/alg-sequences"},
+  "Series": {def: "The sum of the terms of a sequence, added together.",
+    url: "https://www.khanacademy.org/math/algebra-home/alg-series-and-induction"},
+  "Geometric Sequence": {def: "A sequence where each term is found by multiplying the previous term by a fixed number, the common ratio.",
+    url: "https://www.khanacademy.org/math/algebra-home/alg-series-and-induction"},
+  "Geometric Series": {def: "The sum of the terms of a geometric sequence.",
+    url: "https://www.khanacademy.org/math/algebra-home/alg-series-and-induction"},
+  "Common Ratio": {def: "The fixed number each term of a geometric sequence is multiplied by to get the next term.",
+    url: "https://www.khanacademy.org/math/algebra-home/alg-series-and-induction"},
+  "Recursive Formula": {def: "A rule that defines each term of a sequence using the term(s) before it, plus a starting value.",
+    url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:sequences/x2f8bb11595b61c86:constructing-arithmetic-sequences/v/recursive-formulas-for-arithmetic-sequences"},
+  "Explicit Formula": {def: "A rule that computes any term of a sequence directly from its position number, without needing the terms before it. Also called a closed form.",
+    url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:sequences/x2f8bb11595b61c86:constructing-arithmetic-sequences/v/recursive-formulas-for-arithmetic-sequences"},
+  "Convergent Series": {def: "An infinite series whose partial sums approach a single finite number as more terms are added.",
+    url: "https://www.khanacademy.org/math/ap-calculus-bc/bc-series-new"},
+  "Divergent Series": {def: "An infinite series whose partial sums do not settle on any single finite number as more terms are added.",
+    url: "https://www.khanacademy.org/math/ap-calculus-bc/bc-series-new"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"}
+};
+const HOWTO = [
+  ["how to determine whether a series converges or diverges", "Convergent Series"],
+  ["how to write a recursive formula for a sequence", "Recursive Formula"],
+  ["how to write an explicit (closed) formula for a sequence", "Explicit Formula"],
+  ["how to find the common ratio of a geometric sequence", "Common Ratio"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* Resolve the hand-placed .gterm-placeholder span left in the Background
+   prose above (the "growth rate" mention has no matching glossary key, so
+   this is a no-op safety net; kept for parity with the shell contract in
+   case a future edit adds a matching term). */
+document.querySelectorAll('.gterm-placeholder[data-term]').forEach(ph => {
+  const term = ph.dataset.term;
+  if(!GLOSSARY[term]){ ph.replaceWith(document.createTextNode(term.toLowerCase())); return; }
+  const span = document.createElement('span');
+  span.innerHTML = gtermHTML(term, term.toLowerCase());
+  ph.replaceWith(span.firstChild);
+});
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+
+/* Build the Working Notebook's tables and prime the live totals. */
+buildDemandTable();
+buildSliders();
+onFlexChange();
+restoreD6();
+</script>
+</body>
+</html>

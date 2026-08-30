@@ -123,13 +123,13 @@ separate edit. The creator can deliver only one newly edited cut per production 
 
 | | Value |
 |---|---|
-| Production weeks remaining in the test window before quarter-end | {{NEEDS_SOURCE: number of production weeks remaining in the paid-placement test window before quarter-end, counted from the campaign kickoff date}} |
+| Production weeks remaining in the test window before quarter-end | 5 weeks [MA1] |
 
 ## Appendix B — Budget Split
 
 | | Value |
 |---|---|
-| Total fixed ad-spend budget locked for the quarter's paid-placement test | {{NEEDS_SOURCE: total fixed paid-placement test ad-spend budget, USD, already locked by the finance team for the quarter}} |
+| Total fixed ad-spend budget locked for the quarter's paid-placement test | $60,000 [MA2] |
 | Variants funded under The Straight Cut | 1 |
 | Variants funded under The Full Rotation | 6 |
 
@@ -137,27 +137,40 @@ separate edit. The creator can deliver only one newly edited cut per production 
 
 | | Value |
 |---|---|
-| Minimum recommended spend or conversions per ad variant to exit the platform's learning phase and produce a statistically usable conversion-rate read | {{NEEDS_SOURCE: Meta and Google Ads' published minimum recommended optimization events (conversions) or spend per ad set/variant needed to exit the learning phase and produce a reliable conversion-rate read}} |
+| Meta's minimum recommended optimization events for an ad set to exit the learning phase | 50 events / 7-day week [S2] |
+| Google Ads' minimum recommended conversion volume for a reliable Smart Bidding read | 30 conversions / 30-day month [S1] |
+| Assumed average cost per attributable conversion for this scenario (no official dollar threshold is published by either platform — see Appendix E) | $20 / conversion [MA3] |
+| **Derived minimum-viable spend per variant over the 5-week test window** (250 events [Meta, S2, × 5 weeks] × $20/conversion [MA3]) | **$5,000 / variant** |
 
 ## Appendix D — Industry Benchmark Data
 
 | | Value |
 |---|---|
-| Published industry benchmark conversion rate range, paid-social/influencer video ad placements | {{NEEDS_SOURCE: published industry benchmark conversion rate range for paid-social/influencer video ad placements, most recent available, IAB or eMarketer}} |
-| Published industry benchmark CPM range, paid-social video ad placements | {{NEEDS_SOURCE: published industry benchmark CPM range for paid-social video ad placements, most recent available, Meta and Google Ads}} |
+| Published industry benchmark conversion rate range, paid-social/influencer video ad placements (contested — see Appendix E) | 1%–3%, used: 2% [MA4] |
+| Published industry benchmark CPM range, paid-social video ad placements (contested — see Appendix E) | $10–$20, used: $15 [MA5] |
 
 ## Appendix E — Modeling Assumptions
 
-No figures in this case have yet been converted to stated Modeling Assumptions. This appendix will
-be completed by `case-research`: any `{{NEEDS_SOURCE}}` placeholder above that returns NOT FOUND
-becomes a numbered assumption here, with its value, basis, and sensitivity stated openly — never
-silently invented.
+> These figures are **not sourced**. They are stated scenario assumptions chosen by the case
+> author. A Hero may challenge them in discussion — that is a legitimate move.
+
+| # | Assumption | Value used | Basis | Sensitivity |
+|---|---|---|---|---|
+| MA1 | Production weeks remaining before quarter-end | 5 weeks | This is a detail internal to Jaylen's fictional employer's production calendar — no public source can ever exist for it. Set to more than the 3 required cuts so the D1 permutation calculation requires the full `nPr` formula (order matters across more available weeks than cuts needed) rather than a trivial `3!`. | **Also feeds Appendix C's threshold, not just D1's magnitude.** `weeks_remaining` sets the threshold formula's week term (50 events/week [S2] × weeks_remaining × $20/conversion [MA3]). At 5 weeks the threshold is $5,000/variant. Raising this to 7.5 weeks (+50%) raises the threshold to $7,500/variant — at the case's current $60,000 budget, Full Rotation's $10,000/variant split still clears that raised threshold, with $2,500 (33%) to spare. |
+| MA2 | Total fixed ad-spend budget for the quarter's test | $60,000 | Also a detail internal to Jaylen's fictional employer's already-locked budget — unsourceable by construction. A defensible quarterly paid-social test budget for a mid-size direct-to-consumer brand's single sponsored-video campaign cycle. Divides evenly by 6 variants ($10,000/variant) for clean D2 arithmetic — double Appendix C's $5,000/variant minimum-viable-spend threshold, not exactly at it. | **This is the load-bearing number for D3/D4.** At $60,000, every Full Rotation variant's $10,000 split spend clears the Appendix C threshold with room to spare, so no variant is excluded from D4's attributable-conversions total. Below $30,000 total, one or more Full Rotation variants would fall short of the threshold and must be excluded, which would change the D4 comparison materially — this is exactly what D3's clearance table is for. |
+| MA3 | Assumed average cost per attributable conversion | $20 | Neither Meta nor Google publishes an official dollar minimum-spend threshold (only conversion-count thresholds — see S1, S2). Converting the sourced conversion-count threshold into a dollar figure usable in Challenge D3 requires a cost-per-conversion estimate. Public per-conversion cost figures found during research ranged roughly $2–$60 across non-primary sources with no single authoritative figure freely available; $20 is a round mid-range figure chosen for clean classroom arithmetic, not a cited statistic. | Raising this assumption raises the Appendix C dollar threshold (harder for Full Rotation to clear); at the current $60,000 budget, Full Rotation's $10,000/variant split clears the threshold even at a +50% move (raises the threshold to $7,500/variant, still $2,500 below the split). |
+| MA4 | Industry benchmark conversion rate used in D4 | 2% (stated range 1%–3%) | Publicly visible conversion-rate figures for paid-social/influencer video are a **contested figure**: search turned up numbers from under 1% to over 14% depending on the site, funnel stage, and industry mix, with no shared primary source; IAB does not publish a free point figure and eMarketer's benchmark data is subscription-gated (confirmed via a direct fetch that returned a 404 on the free page). 2% is stated as a reasonable typical value for this scenario, not a cited fact. | Applies identically to both options in the D4 conversions-per-dollar calculation, so it does not by itself flip the recommendation — that flip is driven by MA2/MA3. |
+| MA5 | Industry benchmark CPM used in D4 | $15 (stated range $10–$20) | Same contested-figure situation as MA4: found CPM figures ranged from about $7 to $30+ across non-primary aggregator sources with no authoritative convergence, and eMarketer's paid data was not accessible. $15 stated as a reasonable typical value, not a cited fact. | Applies identically to both options; does not independently flip the recommendation. |
 
 ## Appendix F — Sources
 
-No sources have yet been located for this case. This appendix will list every externally-sourced
-figure once `case-research` runs, with claim, value, publisher, URL, access date, and confidence
-grade.
+| # | Claim | Value | Source | Date | Confidence |
+|---|---|---|---|---|---|
+| S1 | Google Ads' recommended minimum conversion volume for a statistically reliable Smart Bidding performance read | 30 conversions / 30-day month (50 for Target ROAS) | Google — [About Smart Bidding](https://support.google.com/google-ads/answer/7065882?hl=en) | Accessed 2026-08-27 (page undated) | MEDIUM |
+| S2 | Meta's stated minimum optimization-event volume for an ad set to exit the Learning phase | 50 optimization events / 7-day week | Meta — [About learning limited](https://en-gb.facebook.com/business/help/269269737396981), Meta Business Help Center | Accessed 2026-08-26 (page undated; confirmed via search snippet, direct fetch of page body was not possible) | MEDIUM |
+
+All figures not listed above are stated Modeling Assumptions (SEE APPENDIX E) — never silently
+invented, per this case's anti-fabrication policy.
 
 ## Appendix G — "How To…" Math Questions To Research
 

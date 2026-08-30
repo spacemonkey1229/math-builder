@@ -24,7 +24,7 @@ Every fret on a guitar neck marks the point where the string, stopped short by a
 
 **Option B — The Rule of Eighteen.** Use the traditional luthier's shortcut passed down in the shop: divide the *remaining* string length by a fixed whole-number divisor at each fret, a method generations of luthiers used before calculators were sitting on every bench (SEE APPENDIX C).
 
-The shop's scale length, fret count, and Yuki's client deadline are fixed constraints, not choices (SEE APPENDIX F). Both methods place all twelve frets inside that same deadline — the shop cares about the result, not which arithmetic got there. What differs is how far each method's fret positions drift from true equal temperament, and whether that drift stays inside what a professional's ear — and a client's tuner — will accept (SEE APPENDIX D). Fret-position drift can also be read as a string-length ratio problem: reducing the open-to-fretted length ratio at each fret shows which frets, if any, land on the kind of simple whole-number ratio a musician's ear recognizes as a clean interval (SEE APPENDIX E). Every sourced or derived figure in this case is documented, with its source and confidence, in **Appendix G**; the handful of figures with no public source are stated openly as Modeling Assumptions rather than invented.
+The shop's scale length, fret count, and Yuki's client deadline are fixed constraints, not choices (SEE APPENDIX F). Both methods finish comfortably inside that same five-day deadline, but they do not cost the shop the same number of minutes — computing each fret's Precision Method position by hand takes a little longer than the Rule of Eighteen's simpler running division, though that gap is small next to the time every job spends, regardless of method, cutting, installing, and dressing the frets once they're marked (SEE APPENDIX F). What also differs is how far each method's fret positions drift from true equal temperament, and whether that drift stays inside what a professional's ear — and a client's tuner — will accept (SEE APPENDIX D). Fret-position drift can also be read as a string-length ratio problem: reducing the open-to-fretted length ratio at each fret shows which frets, if any, land on the kind of simple whole-number ratio a musician's ear recognizes as a clean interval (SEE APPENDIX E). Every sourced or derived figure in this case is documented, with its source and confidence, in **Appendix G**; the handful of figures with no public source are stated openly as Modeling Assumptions rather than invented.
 
 The vocabulary and the "how to…" skills this case will ask of you are listed in **Appendix H** — that is where Challenge 1 sends you.
 
@@ -56,13 +56,11 @@ Do you:
 - **D2 — A fret-position table, Rule of Eighteen.** Using the traditional whole-number-divisor shortcut, compute the distance from the nut for the same frets 1 through 12 (Appendix C).
 - **D3 — A cents-of-deviation conversion.** Using the length difference between your D1 and D2 results at fret 12, convert that difference into cents of pitch deviation from true equal temperament, showing your arithmetic (Appendix D).
 - **D4 — A GCF string-length-ratio table.** For frets 1 through 5, express the open-string-length-to-fretted-string-length ratio at each fret in lowest terms using the greatest common factor, and state which of those frets (if any) reduce to a simple whole-number ratio (Appendix E).
-- **D5 — A recommendation** comparing the two methods' 12th-fret deviation against the acceptable intonation tolerance in Appendix D, and against the week-long re-fret cost in Appendix F if a method's drift proves unacceptable.
+- **D5 — A recommendation** comparing the two methods' total shop time in Appendix F and their 12th-fret deviation against the acceptable intonation tolerance in Appendix D, and against the week-long re-fret cost in Appendix F if a method's drift proves unacceptable.
 
 4.) An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.
 
 5.) Participate twice or more in the Case Study discussion. *If you are absent the day of a discussion post 500 "excellent" words on the questions above.
-
-<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->
 
 ---
 
@@ -205,6 +203,16 @@ Referenced from Challenge D4.
 | Number of frets on this neck | 22 — **stated Modeling Assumption, see MA2** |
 | Client deadline (days from today) | 5 days — **stated Modeling Assumption, see MA3** |
 | Cost of a re-fret if a method's drift is unacceptable | roughly a week of unpaid rework (see Background) |
+| Estimated calculation time per fret, Precision Method | 20 seconds — **stated Modeling Assumption, see MA4** |
+| Estimated calculation time per fret, Rule of Eighteen | 14 seconds — **stated Modeling Assumption, see MA5** |
+| Shared shop time to cut, install, and dress all 22 frets once marked (same for both methods) | 45 minutes — **stated Modeling Assumption, see MA6** |
+| Total shop time, Precision Method (shared time + 22 × per-fret calculation time) | ≈ 52.33 minutes (derived) |
+| Total shop time, Rule of Eighteen (shared time + 22 × per-fret calculation time) | ≈ 50.13 minutes (derived) |
+
+**Derivation of the total-shop-time figures:** total shop time = shared cutting/installing/dressing time (MA6) + (per-fret calculation time × 22 frets).
+
+- Precision Method: 45 + (20 × 22 ÷ 60) = 45 + 7.33 = **52.33 minutes**
+- Rule of Eighteen: 45 + (14 × 22 ÷ 60) = 45 + 5.13 = **50.13 minutes**
 
 Referenced from Background and Challenge D5.
 
@@ -220,6 +228,9 @@ Referenced from Background and Challenge D5.
 | MA1 | Acceptable intonation tolerance a professional luthier targets, at the 12th fret | 5 cents | No single published professional trade standard states one hard number. Guitar-technician and luthier discussion threads converge on a working range of roughly 2–6 cents (tighter for critical bridge-saddle work, looser for general setup), and published psychoacoustic pitch-discrimination research places the just-noticeable difference for most listeners in a similar few-cents range. 5 cents sits inside that commonly cited range as a workable mid-point. | The dilemma's D5 recommendation is sensitive to this value — the answer is sensitive to where this line is drawn. |
 | MA2 | Number of frets on this neck | 22 | Falls inside the 21–24 fret range StewMac states is typical for a modern electric guitar [S4]; this build's exact count is a shop/client choice, not a published standard. | Low — the fret count does not change the per-fret math in D1–D4; it only bounds how many rows Appendix B/C could in principle extend to. |
 | MA3 | Client turnaround (days from today) | 5 days | Consistent with the Overview's "before the week is out" and a realistic fast custom-shop turnaround for a fretting job on an otherwise-finished neck. | Low for D1–D4; relevant context for D5's discussion of whether a re-fret is survivable within the deadline. |
+| MA4 | Estimated hand/calculator time to compute one fret's position, Precision Method | 20 seconds | The Precision Method requires evaluating a fractional exponent (n/12) on a scientific calculator, then subtracting from 1 and multiplying by the scale length — more keystrokes than a simple division, and an easy step to mis-key. No published source times this specific task, so it is a reasoned scenario estimate, not a discovered fact. | **Dilemma-sensitive.** The total-shop-time comparison in Appendix F is close, so it does not take much to move it: if this figure runs roughly 50% faster than estimated (about 10 seconds instead of 20), the total-shop-time comparison may flip toward the Precision Method. A larger figure only widens the Rule of Eighteen's time advantage. |
+| MA5 | Estimated hand/calculator time to compute one fret's position, Rule of Eighteen | 14 seconds | The Rule of Eighteen requires only a division of the remaining length by 18 followed by a running subtraction — the same two-step shortcut that proportional dividers were originally built to avoid doing by hand [S3]. No published source times this specific task, so it is a reasoned scenario estimate, not a discovered fact. | **Dilemma-sensitive.** The total-shop-time comparison in Appendix F is close, so it does not take much to move it: if this figure runs roughly 50% slower than estimated (about 21 seconds instead of 14), the total-shop-time comparison may flip toward the Precision Method. A smaller figure only widens the Rule of Eighteen's time advantage. |
+| MA6 | Shared shop time to cut, install, and dress all 22 frets once marked (identical regardless of which method produced the marks) | 45 minutes | Consistent with published professional repair-shop time-costing practice [S5] — a real shop's own job-estimate example lists roughly 0.6 hours for the fret-installation portion of a comparable repair; this build additionally requires cutting fresh slots and dressing/leveling the frets, so 45 minutes is used as a round, order-of-magnitude estimate for the full sequence on this build's 22 frets. | This shared baseline is large relative to the per-fret calculation-time difference between the two methods, which shapes how the total-shop-time comparison in Appendix F reads. |
 
 ---
 
@@ -231,8 +242,9 @@ Referenced from Background and Challenge D5.
 | S2 | The modern, more precise fret-spacing divisor some shops use instead of the traditional 18 | 17.817154 | StewMac — ["Fret Scale Rule Instructions"](https://www.stewmac.com/video-and-ideas/online-resources/learn-about-guitar-and-instrument-fretting-and-fretwork/fret-scale-rule-instructions/) | accessed 2026-08-24 | HIGH |
 | S3 | The traditional "rule of 18" historically used an exact whole-number divisor of 18, and produces frets that trend flat of true equal temperament | divisor = 18 (exact) | Liutaio Mottola — ["Was the Rule of 18 Good Enough?"](https://www.liutaiomottola.com/PrevPubs/RuleOf18/RuleOf18.htm) | accessed 2026-08-24 | HIGH |
 | S4 | Named standard guitar scale lengths and typical modern-electric fret-count range | Fender-style 25.5 in; Gibson-style 24.75 in; PRS-style 25 in; 21–24 frets typical | StewMac — ["Guitar Scale Length Explained"](https://www.stewmac.com/video-and-ideas/online-resources/learn-about-guitar-and-instrument-fretting-and-fretwork/scale-length-explained/) | accessed 2026-08-24 | HIGH |
+| S5 | A real professional repair-shop job-costing example, used only as directional context for MA6's shared-shop-time estimate — one cited line item runs roughly 0.6 hours for the fret-installation portion of a comparable repair job | 0.6 hours (fret-installation line item, one example job) | StewMac — ["Guitar repair money talk: estimate hours, not dollars"](https://www.stewmac.com/video-and-ideas/online-resources/reference/guitar-repair-money-talk-estimate-hours-not-dollars/) | accessed 2026-08-27 | MEDIUM |
 
-All computed fret-position, cents-of-deviation, and GCF-ratio figures in Appendices B, C, D, and E are **derived** from S1/S3 (the governing formulas) and S4 (the scale length), not independently sourced numbers — the arithmetic is shown at each step so a reader can verify it.
+All computed fret-position, cents-of-deviation, and GCF-ratio figures in Appendices B, C, D, and E are **derived** from S1/S3 (the governing formulas) and S4 (the scale length), not independently sourced numbers — the arithmetic is shown at each step so a reader can verify it. S5 is directional context only for MA6 (Appendix F), not a value used directly.
 
 Referenced from Background ("All figures in this case are sourced or derived in Appendix G, with any unsourced scenario figures stated openly in the Modeling Assumptions block above.").
 
@@ -252,3 +264,6 @@ Referenced from Background ("All figures in this case are sourced or derived in 
 - How to find the greatest common factor of a set of numbers
 - How to evaluate an exponential expression
 - How to find equivalent ratios
+- How to compare two or more values
+
+<!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->
