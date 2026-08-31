@@ -1,0 +1,1095 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Clampband Margin — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md
+  (Math Builder A7, DOCTRINE_LEDGER MCS-37/MCS-39). Case data below is copied verbatim
+  from cases/the-clampband-margin/case.md / case.json (case_md_sha256:
+  4983a0ec34f6fcf4871f7808171005b6de8d422de9782228e54c598cfd2aab47, as of 2026-08-31).
+
+  HARD LINE (MCS-37): this file never prints case.json's balance verdict (which stack-up
+  method "wins" the growing-supplier-count durability comparison, or margin_pct=9.6) as a
+  static literal. The Working Notebook computes T_WC(n), T_MRSS(n), each method's margin
+  against Appendix B's thresholds, and the feasibility-gated durability score live, from
+  the case's own raw numbers (Appendix C tolerances, Appendix D formulas, Appendix E MA4's
+  gapping allowance) -- the calculator never hands the Hero the recommendation.
+
+  PARAMS/FLEX/evaluate() below is a direct JS port of
+  cases/the-clampband-margin/sensitivity_model.py -- verified numerically to match it
+  (see the build/QA notes accompanying this file). Step 5 and the Twist section expose
+  the correction_factor (S6) and gapping_allowance_in (MA4) dials live, including the
+  +50% correction-factor stress test (2.25x) that sensitivity_disclosure[] in case.json
+  found breaks the Modified RSS Stack's own durability at n=10 -- the single most
+  load-bearing fragility this case discloses.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:80px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+  #twistCompute{display:none;margin-top:12px;padding:10px 12px;background:#2b323b;border:1px solid #444;border-radius:8px;font-family:var(--sans);font-size:.86rem;font-style:normal !important;color:#e8e3d5}
+  #twistCompute table{margin:8px 0 0}
+  #twistCompute th{background:#3a4350}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC: Clampband Margin notebook widgets */
+  .calc-out{font-family:var(--sans);font-weight:700;color:var(--navy);min-width:90px;display:inline-block}
+  .n-table td.n{font-weight:700;color:var(--navy)}
+  .pass{color:var(--ok);font-weight:700}
+  .fail{color:var(--bad);font-weight:700}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-clamp" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/><path d="M9 9l1.5 1.5M14.5 14.5L13 13"/></symbol>
+  <symbol id="icon-sat" viewBox="0 0 24 24"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M2 6l7 3M2 18l7-3M22 6l-7 3M22 18l-7-3"/><path d="M12 3v6M12 15v6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Launchpad</div>
+        <h1>Case Study: The Clampband Margin</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch &middot; HS-entry</span>
+      <span class="pill">Limits &middot; Asymptotes &middot; Continuity (Informal)</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Wes Okonkwo has the drawing pulled up on two monitors and a paper printout of the same drawing on the desk between them, because he has learned not to trust himself to catch an error on a screen alone.</p>
+  <p>The satellite ships to the launch site in two weeks. Everything else on it is done &mdash; solar arrays folded and stowed, harness routed, thermal blankets closed out &mdash; except for the one signature block still empty at the bottom of the separation-joint drawing: his. The clampband is the last thing holding the satellite to the rocket, and the first thing that has to let go, cleanly, on command, four hundred miles up, with no technician standing by to give it a second try.</p>
+  <p>Three different shops made the three parts that stack together at that joint, and all three came back from inspection this morning marked "accept" &mdash; each one is genuinely within its own printed tolerance. That is exactly the problem. Wes has two spreadsheets open, each one a different way of adding those three "accept" numbers together into a single predicted margin, and the two spreadsheets do not agree on how much room the joint actually has.</p>
+  <p>His phone buzzes with a text from the program manager asking if the drawing is signed yet. Wes doesn't answer it. He minimizes the message, leans back, and looks at the two numbers side by side.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Wes Okonkwo is a mechanical integration engineer at a small-satellite prime contractor. He owns the mechanical sign-off on the payload separation system for the company's current spacecraft, and his signature on the clampband joint drawing is the one that certifies the joint is ready to fly. Once the satellite is integrated to the launch vehicle at the range, this decision cannot be revisited &mdash; there is no on-orbit rework for a separation joint that fails to release (see Appendix A).</p>
+  <p>The joint in question is a Marman-style clampband &mdash; a band that clamps two mating flanges together under preload, and is designed to release both flanges cleanly the instant the band is cut or unlatched. Three separate interfaces stack together to determine how much margin the joint actually has once it's assembled, and each interface comes from a different supplier: the bus adapter flange outer diameter, the clampband ring inner diameter, and the preload bolt-and-shim assembly (see Appendix C). Every one of the three parts delivered for this build passed its own supplier's inspection against its own printed tolerance. None of the three suppliers did anything wrong.</p>
+  <p>The question is how to combine those three independently-toleranced parts into a single predicted number for how tight or loose the joint will actually be &mdash; and how that predicted number should be checked against published clampband design-margin thresholds (a NASA design guideline's own preload criterion, paired with the numeric margins real clampband programs design to) (see Appendix B).</p>
+  <p>Two methods are on the table.</p>
+  <p><strong>The Worst-Case Stack.</strong> Add all three suppliers' tolerances directly, assuming the worst possible combination of all three parts could occur at once. This is the conservative approach: it guarantees that every accepted joint releases correctly under any combination of in-spec parts, at the cost of a wider predicted tolerance band &mdash; which means rejecting (and reworking, or requesting replacement parts for) some individual parts that are genuinely within their own printed spec, simply because the specific combination on hand happens to fall near the edge.</p>
+  <p><strong>The Modified RSS Stack.</strong> Combine the three suppliers' tolerances using the root-sum-square method (the square root of the sum of the squares), then apply the correction factor that real tolerance-stacking practice applies on top of it. Pure, uncorrected RSS assumes every supplier's printed &plusmn; tolerance is a true 3-sigma bound on a centered, normal, independent process &mdash; an assumption that a 1962 tolerance-stacking study (later adopted into Motorola's Six Sigma mechanical design practice) found routinely fails in practice, because printed tolerances are often really closer to a 2-sigma range. The correction is a flat &times;1.5 multiplier on the RSS result (see Appendix D) &mdash; real, industry-standard practice, not a full worst-case sum, but not naive uncorrected RSS either.</p>
+  <p>Both methods are legitimate, real engineering practice; nothing about the joint's design requires one over the other. What changes the comparison is that this contractor's satellite line is scaling: near-term programs call for clampband joints with more than three contributing supplier interfaces (see Appendix D). Extending both stack-up formulas to those future joints, and converting NASA-adjacent industry's dimensionless margin thresholds into a comparison against a dimensional tolerance stack, requires stating a handful of scenario modeling choices, disclosed in full &mdash; including how much confidence to place in each one &mdash; in Appendix E (see Appendix E). Published recommended design-margin thresholds for clampband systems, the real per-supplier tolerance values for this build, and the stack-up math for both methods across a growing supplier count are in the appendices below. Every external source cited anywhere in this case is collected in Appendix F. The vocabulary and "how to&hellip;" skills this case asks you to research are listed in Appendix G &mdash; that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Wes Okonkwo. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Worst-Case Stack</h4>
+      <p style="margin:0">Sign off using the Worst-Case Stack &mdash; size the release-preload margin by summing all three suppliers' tolerances directly.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Modified RSS Stack</h4>
+      <p style="margin:0">Sign off using the Modified RSS Stack &mdash; size the release-preload margin using the root-sum-square of all three suppliers' tolerances, scaled by the industry-standard &times;1.5 correction factor.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must include: (a) use of the "how to&hellip;" resource you researched in Challenge 1, and (b) at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include:
+      <ul style="margin-top:8px">
+        <li style="margin-bottom:8px"><strong>D1 &mdash; A stack-up table across a growing supplier count.</strong> Using the per-interface tolerances in Appendix C and the stack-up formulas in Appendix D, build a table of the predicted total tolerance under the Worst-Case Stack and under the Modified RSS Stack, for a joint with 3 contributing supplier interfaces up through the largest count shown in Appendix D. From the table, estimate how each method's predicted tolerance behaves as the number of contributing interfaces keeps growing.</li>
+        <li style="margin-bottom:8px"><strong>D2 &mdash; A horizontal asymptote identified algebraically.</strong> Write the ratio of the Modified RSS Stack's predicted tolerance to the Worst-Case Stack's predicted tolerance as a function of the number of contributing supplier interfaces, n. Using that equation directly &mdash; not your table from D1 &mdash; identify the function's horizontal asymptote algebraically, and show the algebra.</li>
+        <li style="margin-bottom:8px"><strong>D3 &mdash; A margin-threshold continuity check.</strong> For each stack-up method, compare your D1 table's predicted margin, at every supplier count n, against NASA's recommended design-margin thresholds in Appendix B. State, for each method, whether the pass/fail outcome against those thresholds changes smoothly or jumps abruptly somewhere in your table &mdash; and if it jumps, name the specific supplier count where that happens.</li>
+        <li style="margin-bottom:8px"><strong>D4 &mdash; The current three-supplier margin.</strong> Using Appendix C's real per-interface tolerances for this build's actual three suppliers, compute the predicted total tolerance under each stack-up method for n = 3, and state how each compares to NASA's design-margin thresholds from Appendix B for this specific joint, today.</li>
+        <li style="margin-bottom:8px"><strong>D5 &mdash; An original visual.</strong> Graph both stack-up functions from D1 &mdash; the Worst-Case Stack and the Modified RSS Stack &mdash; against the number of contributing supplier interfaces, over the same range you tabulated in D1. Mark the horizontal asymptote you found in D2 and mark the supplier count you identified in D3, if any. This satisfies Challenge 2(b).</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. If you are absent the day of a discussion post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; The Shipment Constraint</summary>
+    <div class="inner">
+      <table id="tblA">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Days remaining until the satellite ships to the launch site</td><td>14 days</td></tr>
+        <tr><td>Number of competing stack-up methodologies the joint sign-off may use</td><td>Exactly one &mdash; the drawing carries a single signature and a single stated method</td></tr>
+        <tr><td>Whether the sign-off methodology can be revisited after the satellite is integrated to the launch vehicle</td><td>No</td></tr>
+        <tr><td>Joint type</td><td>Marman-style clampband separation joint</td></tr>
+        <tr><td>Document Wes's sign-off certifies</td><td>The mechanical closure/acceptance record for the payload separation system</td></tr>
+      </table>
+      <p class="side-note">The contractor and program in this case are a scenario construction &mdash; there is no real company or spacecraft named here. The Marman clampband joint concept, the published design-margin guidance in Appendix B, and the ISO 2768 and Protolabs tolerance references (Appendix C) are all real. Referenced from Background.</p>
+    </div>
+  </details>
+
+  <details id="apx-b">
+    <summary>Appendix B &mdash; Marman Clamp Design-Margin Thresholds</summary>
+    <div class="inner">
+      <table id="tblB">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Guideline document (qualitative design criterion)</td><td>NASA Preferred Reliability Practices, Guideline No. GD-ED-2214, "Marman Clamp System Design Guidelines," issued by Goddard Space Flight Center (GSFC) [S1]</td></tr>
+        <tr><td>GD-ED-2214's own preload-design criterion</td><td>"The criterion for designing strap preloads is that no gapping occurs when the maximum expected load is applied" [S1]</td></tr>
+        <tr><td>Numeric preload gapping margin used industry-wide (minimum)</td><td class="num">1.25 [S2]</td></tr>
+        <tr><td>Numeric release-element margin used industry-wide (minimum)</td><td class="num">&gt;2.00 [S2]</td></tr>
+        <tr><td>Bridge from a dimensional tolerance stack to these dimensionless margins</td><td>No public source publishes one &mdash; this case states its own disclosed Modeling Assumption instead (Appendix E, MA4)</td></tr>
+      </table>
+      <p class="side-note">Neither GD-ED-2214 nor the industry paper that reports the 1.25/2.00 figures (Appendix F, S2) publishes a formula connecting a dimensional tolerance-stack value (inches) to these load-based margin factors. Referenced from Background and Challenges D3, D4.</p>
+    </div>
+  </details>
+
+  <details id="apx-c">
+    <summary>Appendix C &mdash; The Three-Supplier Tolerance Stack</summary>
+    <div class="inner">
+      <p>The clampband's nominal diameter (15.000 in) and the preload bolt+shim stack's nominal height (0.500 in) are a stated scenario assumption (Appendix E, MA3). The tolerance <strong>class</strong> assigned to each supplier and the tolerance <strong>values</strong> themselves are real, cited figures.</p>
+      <table id="tblC">
+        <tr><th>Interface</th><th>Supplier</th><th>Governing tolerance standard/source</th><th>Toleranced dimension</th><th>Tolerance (&plusmn;)</th></tr>
+        <tr><td>Bus adapter flange outer diameter</td><td>Supplier B</td><td>ISO 2768-1, class f (fine) [S3]</td><td>15.000 in (381.0 mm) nominal OD</td><td class="num">0.0079 in (0.2 mm) [S3]</td></tr>
+        <tr><td>Clampband ring inner diameter</td><td>Supplier A</td><td>Protolabs standard CNC machining tolerance [S4]</td><td>15.000 in (381.0 mm) nominal ID</td><td class="num">0.0050 in (0.13 mm) [S4]</td></tr>
+        <tr><td>Preload bolt + shim stack height</td><td>Supplier C</td><td>ISO 2768-1, class f (fine) [S3]</td><td>0.500 in (12.7 mm) nominal stack height</td><td class="num">0.0039 in (0.1 mm) [S3]</td></tr>
+      </table>
+      <h3 style="margin-top:20px">ISO 2768-1 general tolerance classes (reference, mm)</h3>
+      <table id="tblC2">
+        <tr><th>Class</th><th>Name</th><th>6&ndash;30 mm</th><th>30&ndash;120 mm</th><th>120&ndash;400 mm</th></tr>
+        <tr><td>f</td><td>Fine</td><td class="num">0.1</td><td class="num">0.15</td><td class="num">0.2</td></tr>
+        <tr><td>m</td><td>Medium</td><td class="num">0.2</td><td class="num">0.3</td><td class="num">0.5</td></tr>
+        <tr><td>c</td><td>Coarse</td><td class="num">0.5</td><td class="num">0.8</td><td class="num">1.2</td></tr>
+        <tr><td>v</td><td>Very coarse</td><td class="num">1.0</td><td class="num">1.5</td><td class="num">2.5</td></tr>
+      </table>
+      <p class="side-note">Full ISO 2768-1 table extends further; only the ranges relevant to this build's dimensions are reproduced [S3]. Referenced from Background and Challenges D1, D4, D5.</p>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; Stack-Up Formulas Across a Growing Supplier Count</summary>
+    <div class="inner">
+      <p>The <strong>Worst-Case Stack</strong> predicts a total tolerance equal to the direct sum of every contributing interface's tolerance: <code>T_WC(n) = t&#8321; + t&#8322; + &hellip; + t&#8345;</code>.</p>
+      <p>The <strong>Modified RSS Stack</strong> predicts a total tolerance equal to the root-sum-square of every contributing interface's tolerance, scaled by a real, industry-standard correction factor of <strong>1.5</strong> (the "Benderizing" correction, see Appendix F, S6): <code>T_MRSS(n) = 1.5 &times; &radic;(t&#8321;&sup2; + t&#8322;&sup2; + &hellip; + t&#8345;&sup2;)</code>, where t is the &plusmn; tolerance of each contributing supplier interface and n is the number of contributing interfaces.</p>
+      <table id="tblD" class="n-table">
+        <tr><th>n (supplier interfaces)</th><th>Worst-Case Stack, T_WC(n)</th><th>Modified RSS Stack, T_MRSS(n)</th></tr>
+        <tr><td class="n">3 (this build)</td><td class="num">0.0168 in</td><td class="num">0.0152 in</td></tr>
+        <tr><td class="n">6</td><td class="num">0.0336 in</td><td class="num">0.0206 in</td></tr>
+        <tr><td class="n">7</td><td class="num">0.0392 in</td><td class="num">0.0222 in</td></tr>
+        <tr><td class="n">10 (largest modeled)</td><td class="num">0.0560 in</td><td class="num">0.0266 in</td></tr>
+      </table>
+      <p class="side-note">The future supplier counts above (6, 7, 10) are a stated scenario extension (Appendix E, MA1). Rows beyond n=3 use Appendix C's average per-interface tolerance, 0.0056 in, per Appendix E, MA2. Referenced from Background and Challenges D1, D2, D3, D5.</p>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+      <table id="tblE">
+        <tr><th>#</th><th>Assumption</th><th>Value / method used</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Future supplier-interface counts extending Appendix D</td><td class="num">n = 6, 7, 10</td><td>Shifts where D1's table samples the trend; does not change which method grows faster (n vs. &radic;n).</td></tr>
+        <tr><td>MA2</td><td>Rows beyond n=3 use one equal, average per-interface tolerance</td><td class="num">0.0056 in</td><td>Affects the exact numbers in later rows, not the qualitative asymptote finding.</td></tr>
+        <tr><td>MA3</td><td>Nominal clampband diameter / bolt+shim stack height</td><td class="num">15.000 in / 0.500 in</td><td>Could shift which ISO 2768-1 range row applies, not the comparison between formulas.</td></tr>
+        <tr><td>MA4</td><td>Nominal per-joint gapping allowance bridging Appendix B's dimensionless margins to Appendix C/D's dimensional values</td><td class="num">0.070 in</td><td><strong>Most load-bearing assumption in the case.</strong> A different allowance moves WHERE any crossover happens, not WHETHER Worst-Case eventually falls behind Modified RSS.</td></tr>
+      </table>
+      <p class="side-note">Referenced from Appendix D.</p>
+    </div>
+  </details>
+
+  <details id="apx-f">
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table id="tblF">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Marman clamp guideline, qualitative preload-design criterion</td><td>Qualitative no-gapping criterion (no numeric margin stated)</td><td>NASA GSFC, Guideline No. GD-ED-2214, "Marman Clamp System Design Guidelines" (<a href="https://extapps.ksc.nasa.gov/Reliability/Documents/Preferred_Practices/2214.pdf" target="_blank" rel="noopener">PDF</a>)</td><td>n.d.</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Numeric gapping (1.25) and release-element (&gt;2.00) design margins</td><td class="num">1.25; &gt;2.00</td><td>C. Lazansky (Sierra Nevada Corporation), "Refinement of a Low-Shock Separation System," ESMATS/Aerospace Mechanisms Symposium (<a href="https://esmats.eu/amspapers/pastpapers/pdfs/2012/lazansky.pdf" target="_blank" rel="noopener">PDF</a>)</td><td>2012</td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>ISO 2768-1 general tolerance table (fine class, relevant ranges)</td><td>&plusmn;0.2 mm (120&ndash;400 mm); &plusmn;0.1 mm (6&ndash;30 mm)</td><td>ISO 2768-1:1989, as reproduced by RpProto (<a href="https://www.rpproto.com/wp-content/uploads/2021/05/General-Tolerances-ISO-2768.pdf" target="_blank" rel="noopener">PDF</a>)</td><td>n.d.</td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Protolabs standard CNC machining tolerance</td><td class="num">0.005 in (0.13 mm)</td><td>Protolabs, "Understanding CNC Machining Tolerances" (<a href="https://www.protolabs.com/resources/design-tips/fine-tuning-tolerances-for-cnc-machined-parts/" target="_blank" rel="noopener">link</a>)</td><td>n.d.</td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>Protolabs standard injection-molding tolerances (reference only)</td><td>0.003 in mold-tool; 0.002 in/in resin</td><td>Protolabs, "Understanding Injection Molding Tolerances" (<a href="https://www.protolabs.com/resources/blog/injection-molding-tolerances/" target="_blank" rel="noopener">link</a>)</td><td>2023</td><td>HIGH</td></tr>
+        <tr><td>S6</td><td>The &times;1.5 "Benderizing" correction factor for RSS tolerance stacking</td><td class="num">1.5</td><td>F. Scholz (Boeing), "Tolerance Stack Analysis Methods," citing A. Bender Jr. (1962) and Harry &amp; Stewart (1988), Motorola (<a href="https://faculty.washington.edu/fscholz/Reports/isstech-95-030.pdf" target="_blank" rel="noopener">PDF</a>)</td><td>1995 (1962 orig.)</td><td>HIGH</td></tr>
+      </table>
+      <p class="side-note">Referenced from Appendices B and C.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-31. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Stack-up table across a growing supplier count (D1)</h4>
+    <div class="goal">Using Appendix C's real tolerances (n=3) and Appendix E MA2's averaging rule (n&gt;3), compute the Worst-Case Stack and Modified RSS Stack predicted total tolerance at each modeled supplier count.</div>
+    <table class="n-table" id="s1Table">
+      <tr><th>n</th><th>Your T_WC(n), in</th><th>Your T_MRSS(n), in</th><th></th></tr>
+      <tr><td class="n">3</td><td><input type="number" step="0.0001" id="s1_wc3"></td><td><input type="number" step="0.0001" id="s1_mrss3"></td><td class="fb" id="s1Fb3"></td></tr>
+      <tr><td class="n">6</td><td><input type="number" step="0.0001" id="s1_wc6"></td><td><input type="number" step="0.0001" id="s1_mrss6"></td><td class="fb" id="s1Fb6"></td></tr>
+      <tr><td class="n">7</td><td><input type="number" step="0.0001" id="s1_wc7"></td><td><input type="number" step="0.0001" id="s1_mrss7"></td><td class="fb" id="s1Fb7"></td></tr>
+      <tr><td class="n">10</td><td><input type="number" step="0.0001" id="s1_wc10"></td><td><input type="number" step="0.0001" id="s1_mrss10"></td><td class="fb" id="s1Fb10"></td></tr>
+    </table>
+    <div class="fieldrow"><button onclick="checkStep1()">Check All</button><span class="fb" id="s1Summary"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Horizontal asymptote, algebraically (D2)</h4>
+    <div class="goal">Write R(n) = T_MRSS(n) / T_WC(n) for n &gt; 3 using Appendix D's formulas and Appendix E MA2's averaging rule, then find R(n)'s horizontal asymptote as n &rarr; &infin;. Enter the asymptote's y-value below (show your algebra in your pitch, not here).</div>
+    <div class="fieldrow">
+      <label for="asymYVal">Horizontal asymptote, y =</label>
+      <input type="number" step="0.0001" id="asymYVal">
+      <button onclick="checkAsymptote()">Check</button>
+      <span class="fb" id="asymFb"></span>
+    </div>
+    <p class="side-note">Hint check only &mdash; it confirms whether your y-value is right, not your algebra. A correct D2 shows R(n) simplifying to a single constant divided by &radic;n, then reasons about what happens to that fraction as n grows without bound.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Margin-threshold continuity check (D3)</h4>
+    <div class="goal">For each method and each modeled n, compute the margin = 0.070 in &divide; T(n) (Appendix E, MA4), then compare it against Appendix B's 1.25 gapping and 2.00 release-element thresholds. Enter each margin, then say where (if anywhere) each method's pass/fail outcome flips.</div>
+    <table class="n-table" id="s3Table">
+      <tr><th>n</th><th>Your Worst-Case margin</th><th></th><th>Your Modified RSS margin</th><th></th></tr>
+      <tr><td class="n">3</td><td><input type="number" step="0.001" id="s3_wc3"></td><td class="fb" id="s3FbWc3"></td><td><input type="number" step="0.001" id="s3_mrss3"></td><td class="fb" id="s3FbMrss3"></td></tr>
+      <tr><td class="n">6</td><td><input type="number" step="0.001" id="s3_wc6"></td><td class="fb" id="s3FbWc6"></td><td><input type="number" step="0.001" id="s3_mrss6"></td><td class="fb" id="s3FbMrss6"></td></tr>
+      <tr><td class="n">7</td><td><input type="number" step="0.001" id="s3_wc7"></td><td class="fb" id="s3FbWc7"></td><td><input type="number" step="0.001" id="s3_mrss7"></td><td class="fb" id="s3FbMrss7"></td></tr>
+      <tr><td class="n">10</td><td><input type="number" step="0.001" id="s3_wc10"></td><td class="fb" id="s3FbWc10"></td><td><input type="number" step="0.001" id="s3_mrss10"></td><td class="fb" id="s3FbMrss10"></td></tr>
+    </table>
+    <div class="fieldrow">
+      <label for="crossoverWC">Worst-Case first fails a threshold at n =</label>
+      <select id="crossoverWC"><option value="">choose&hellip;</option><option value="3">3</option><option value="6">6</option><option value="7">7</option><option value="10">10</option><option value="never">never (in modeled range)</option></select>
+    </div>
+    <div class="fieldrow">
+      <label for="crossoverMRSS">Modified RSS first fails a threshold at n =</label>
+      <select id="crossoverMRSS"><option value="">choose&hellip;</option><option value="3">3</option><option value="6">6</option><option value="7">7</option><option value="10">10</option><option value="never">never (in modeled range)</option></select>
+      <button onclick="checkStep3()">Check All</button>
+      <span class="fb" id="s3Summary"></span>
+    </div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Today's three-supplier margin (D4)</h4>
+    <div class="goal">Using Appendix C's real per-interface tolerances for this build's actual three suppliers, state whether each method clears BOTH of Appendix B's thresholds at n=3 today.</div>
+    <div class="fieldrow">
+      <label for="clearsWC3">Worst-Case Stack clears both thresholds at n=3?</label>
+      <select id="clearsWC3"><option value="">choose&hellip;</option><option value="yes">yes</option><option value="no">no</option></select>
+    </div>
+    <div class="fieldrow">
+      <label for="clearsMRSS3">Modified RSS Stack clears both thresholds at n=3?</label>
+      <select id="clearsMRSS3"><option value="">choose&hellip;</option><option value="yes">yes</option><option value="no">no</option></select>
+      <button onclick="checkStep4()">Check</button>
+      <span class="fb" id="s4Fb"></span>
+    </div>
+    <p class="side-note">This is only today's build (n=3) &mdash; it is not, by itself, the whole dilemma. D1&ndash;D3 ask you to look further than n=3.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; Flex the assumptions (optional)</h4>
+    <div class="goal">Appendix E flags MA4 (the gapping allowance) as the case's single most load-bearing assumption, and Appendix F's S6 note flags the &times;1.5 correction factor as a real, cited number worth stress-testing anyway. Drag either slider and watch every modeled n's margin &mdash; and its pass/fail badge against Appendix B's thresholds &mdash; update live for both stack-up methods. The tool never states which method "wins"; it only shows the live numbers.</div>
+    <div class="sliderow"><label for="slAllow" style="min-width:260px;font-family:var(--sans)">MA4 &mdash; Gapping allowance (in)</label><input type="range" id="slAllow" step="0.001" oninput="onFlexChange()"><span class="val" id="slAllowVal"></span></div>
+    <div class="sliderow"><label for="slCorr" style="min-width:260px;font-family:var(--sans)">S6 &mdash; Correction factor (&times;)</label><input type="range" id="slCorr" step="0.01" oninput="onFlexChange()"><span class="val" id="slCorrVal"></span></div>
+    <table id="tblLive" class="n-table">
+      <tr><th>n</th><th>Worst-Case margin</th><th>Modified RSS margin</th></tr>
+      <tr><td class="n">3</td><td class="num" id="live_wc3">&mdash;</td><td class="num" id="live_mrss3">&mdash;</td></tr>
+      <tr><td class="n">6</td><td class="num" id="live_wc6">&mdash;</td><td class="num" id="live_mrss6">&mdash;</td></tr>
+      <tr><td class="n">7</td><td class="num" id="live_wc7">&mdash;</td><td class="num" id="live_mrss7">&mdash;</td></tr>
+      <tr><td class="n">10</td><td class="num" id="live_wc10">&mdash;</td><td class="num" id="live_mrss10">&mdash;</td></tr>
+    </table>
+    <p class="side-note">A margin shown in <span class="pass">green</span> clears both of Appendix B's thresholds (1.25 gapping, 2.00 release-element); a margin in <span class="fail">red</span> fails at least one. This slider tool recomputes live from the same model as Steps 1&ndash;4 &mdash; it lets you feel out how fragile either method's "durability" really is without ever stating a winner. That comparison is yours to make in your pitch.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-sat"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p><strong>Beat 1.</strong> The company's next satellite program is already contracted to use a clampband joint with substantially more contributing supplier interfaces than this one &mdash; and Wes's sign-off memo is being adopted as the default policy for that program too, not re-derived from scratch. Whatever you decided by reasoning only from today's n=3 numbers just stopped being the whole question. What just broke in your original model &mdash; were you wrong about the math, or just missing information about how far this decision actually reaches?</p>
+      <p><strong>Beat 2.</strong> By now, most rooms have converged on whichever method still clears both of Appendix B's thresholds across the full modeled range &mdash; treating it as the safe, durable pick, "safety margin built in twice over." Before you settle there: you're trusting a &times;1.5 correction factor from a 1962 study, carried into practice by a 1988 Motorola guide. What if it's not exactly 1.5 &mdash; what if the real correction for <em>this</em> build's suppliers should be larger, say &times;2.25? Does your durable pick still survive, at the largest modeled supplier count?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Show both methods' live margin at n=10 under a &times;2.25 correction factor, side by side with the real &times;1.5 baseline</label>
+      </div>
+      <div id="twistCompute"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>NASA GSFC, Guideline No. GD-ED-2214, <a href="https://extapps.ksc.nasa.gov/Reliability/Documents/Preferred_Practices/2214.pdf" target="_blank" rel="noopener">"Marman Clamp System Design Guidelines"</a> (S1)</li>
+      <li>C. Lazansky, <a href="https://esmats.eu/amspapers/pastpapers/pdfs/2012/lazansky.pdf" target="_blank" rel="noopener">"Refinement of a Low-Shock Separation System"</a>, ESMATS 2012 (S2)</li>
+      <li>ISO 2768-1:1989, as reproduced by RpProto, <a href="https://www.rpproto.com/wp-content/uploads/2021/05/General-Tolerances-ISO-2768.pdf" target="_blank" rel="noopener">"ISO General Tolerances Chart"</a> (S3)</li>
+      <li>Protolabs, <a href="https://www.protolabs.com/resources/design-tips/fine-tuning-tolerances-for-cnc-machined-parts/" target="_blank" rel="noopener">"Understanding CNC Machining Tolerances"</a> (S4)</li>
+      <li>Protolabs, <a href="https://www.protolabs.com/resources/blog/injection-molding-tolerances/" target="_blank" rel="noopener">"Understanding Injection Molding Tolerances"</a> (S5)</li>
+      <li>F. Scholz (Boeing), <a href="https://faculty.washington.edu/fscholz/Reports/isstech-95-030.pdf" target="_blank" rel="noopener">"Tolerance Stack Analysis Methods"</a> (S6)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Clampband Margin &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/the-clampband-margin's
+   case.md and case.json (case_md_sha256:
+   4983a0ec34f6fcf4871f7808171005b6de8d422de9782228e54c598cfd2aab47). PARAMS/
+   FLEX/evaluate() is a direct JS port of
+   cases/the-clampband-margin/sensitivity_model.py's own worst-case-vs-Modified-RSS
+   feasibility-gated durability model — the Working Notebook's Step 1-5 functions
+   below call into these rather than re-deriving the tally inline, per
+   templates/INTERACTIVE_HTML_CONTRACT.md §2.
+
+   evaluate_twist(): sensitivity_model.py has no evaluate_twist() of its own —
+   this case's Twist doesn't change any Modeling Assumption, it stress-tests
+   the real, cited correction_factor (S6) the way Tier 2 Probe 5's --flex-all
+   pass did. evaluate_twist() below returns the same {A,B} shape as evaluate(),
+   computed under an overridden correction_factor — used only by the Twist's
+   live-compute panel, never folded into the Working Notebook's own Steps 1-5.
+   ================================================================ */
+const PARAMS = {
+  tol_flange_in: 0.0079,      // Supplier B, ISO 2768-1 class f [S3]
+  tol_ring_in: 0.0050,        // Supplier A, Protolabs CNC [S4]
+  tol_boltshim_in: 0.0039,    // Supplier C, ISO 2768-1 class f [S3]
+  correction_factor: 1.5,     // x1.5 Bender/Motorola correction [S6]
+  gapping_allowance_in: 0.070,// MA4 — nominal per-joint gapping allowance
+  gapping_threshold: 1.25,    // Appendix B / S2
+  release_threshold: 2.00     // Appendix B / S2
+};
+// Probe 5's doctrinal default sweep flexes only MA4 (gapping_allowance_in) —
+// the one dial in this case's modeling_assumptions[] that is a genuinely
+// authorial scenario convention, not cited/sourced data.
+const FLEX = ["gapping_allowance_in"];
+const MODELED_NS = [3, 6, 7, 10];
+
+function avgTol(p){ return (p.tol_flange_in + p.tol_ring_in + p.tol_boltshim_in) / 3.0; }
+function T_WC(n, p){
+  const avg = avgTol(p);
+  return (n === 3) ? (p.tol_flange_in + p.tol_ring_in + p.tol_boltshim_in) : n * avg;
+}
+function T_MRSS(n, p){
+  const avg = avgTol(p);
+  if(n === 3){
+    return p.correction_factor * Math.sqrt(p.tol_flange_in*p.tol_flange_in + p.tol_ring_in*p.tol_ring_in + p.tol_boltshim_in*p.tol_boltshim_in);
+  }
+  return p.correction_factor * avg * Math.sqrt(n);
+}
+function marginAt(T, p){ return T ? (p.gapping_allowance_in / T) : Infinity; }
+function passesBothThresholds(margin, p){ return margin >= p.gapping_threshold && margin >= p.release_threshold; }
+/* Feasibility-gated durability score (FACILITATOR.md "winning_option"): an
+   option that fails EITHER threshold at ANY modeled n is disqualified (0.0).
+   A surviving option's score is its worst (minimum) margin across the range. */
+function durabilityScore(TFn, p){
+  const margins = [];
+  for(const n of MODELED_NS){
+    const T = TFn(n, p);
+    const m = marginAt(T, p);
+    if(!passesBothThresholds(m, p)) return 0.0;
+    margins.push(m);
+  }
+  return Math.min(...margins);
+}
+function evaluate(paramsOverride){
+  const p = Object.assign({}, PARAMS, paramsOverride || {});
+  return { A: durabilityScore(T_WC, p), B: durabilityScore(T_MRSS, p) };
+}
+function evaluate_twist(paramsOverride){
+  // Twist stress-tests correction_factor (S6), not a Modeling Assumption —
+  // same {A,B} shape, computed under whatever correction_factor is passed in.
+  return evaluate(paramsOverride);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (Steps 1-5).
+   ================================================================ */
+function checkStep1(){
+  let okCount = 0;
+  const total = 8;
+  MODELED_NS.forEach(n => {
+    const wcExpected = round(T_WC(n, PARAMS), 4);
+    const mrssExpected = round(T_MRSS(n, PARAMS), 4);
+    const wcUser = parseFloat(val('s1_wc'+n));
+    const mrssUser = parseFloat(val('s1_mrss'+n));
+    const wcOk = near(wcUser, wcExpected, 0.0005);
+    const mrssOk = near(mrssUser, mrssExpected, 0.0005);
+    if(wcOk) okCount++;
+    if(mrssOk) okCount++;
+    fb('s1Fb'+n, wcOk && mrssOk);
+  });
+  const summary = document.getElementById('s1Summary');
+  summary.className = 'fb ' + (okCount === total ? 'ok' : 'bad');
+  summary.textContent = okCount + ' / ' + total + ' correct';
+}
+function checkAsymptote(){
+  // R(n) = T_MRSS(n)/T_WC(n) for n>3 = correction_factor / sqrt(n) -> 0 as n -> infinity.
+  const userY = parseFloat(val('asymYVal'));
+  fb('asymFb', near(userY, 0, 0.001));
+}
+function checkStep3(){
+  let okCount = 0;
+  const total = 10;
+  MODELED_NS.forEach(n => {
+    const wcMargin = round(marginAt(T_WC(n, PARAMS), PARAMS), 3);
+    const mrssMargin = round(marginAt(T_MRSS(n, PARAMS), PARAMS), 3);
+    const wcUser = parseFloat(val('s3_wc'+n));
+    const mrssUser = parseFloat(val('s3_mrss'+n));
+    const wcOk = near(wcUser, wcMargin, 0.01);
+    const mrssOk = near(mrssUser, mrssMargin, 0.01);
+    if(wcOk) okCount++;
+    if(mrssOk) okCount++;
+    fb('s3FbWc'+n, wcOk);
+    fb('s3FbMrss'+n, mrssOk);
+  });
+  // True crossover: first modeled n at which each method fails either threshold.
+  let trueWcCrossover = 'never', trueMrssCrossover = 'never';
+  for(const n of MODELED_NS){
+    if(!passesBothThresholds(marginAt(T_WC(n, PARAMS), PARAMS), PARAMS)){ trueWcCrossover = String(n); break; }
+  }
+  for(const n of MODELED_NS){
+    if(!passesBothThresholds(marginAt(T_MRSS(n, PARAMS), PARAMS), PARAMS)){ trueMrssCrossover = String(n); break; }
+  }
+  const userWcCross = document.getElementById('crossoverWC').value;
+  const userMrssCross = document.getElementById('crossoverMRSS').value;
+  if(userWcCross === trueWcCrossover) okCount++;
+  if(userMrssCross === trueMrssCrossover) okCount++;
+  const summary = document.getElementById('s3Summary');
+  summary.className = 'fb ' + (okCount === total ? 'ok' : 'bad');
+  summary.textContent = okCount + ' / ' + total + ' correct';
+}
+function checkStep4(){
+  const wcMargin = marginAt(T_WC(3, PARAMS), PARAMS);
+  const mrssMargin = marginAt(T_MRSS(3, PARAMS), PARAMS);
+  const trueWcClears = passesBothThresholds(wcMargin, PARAMS) ? 'yes' : 'no';
+  const trueMrssClears = passesBothThresholds(mrssMargin, PARAMS) ? 'yes' : 'no';
+  const userWc = document.getElementById('clearsWC3').value;
+  const userMrss = document.getElementById('clearsMRSS3').value;
+  fb('s4Fb', userWc === trueWcClears && userMrss === trueMrssClears);
+}
+
+/* Step 5 — live sensitivity sliders (MA4, S6). */
+function buildSliders(){
+  const elAllow = document.getElementById('slAllow');
+  elAllow.min = 0.035; elAllow.max = 0.105; elAllow.value = PARAMS.gapping_allowance_in;
+  const elCorr = document.getElementById('slCorr');
+  elCorr.min = 0.75; elCorr.max = 2.25; elCorr.value = PARAMS.correction_factor;
+}
+function currentFlexParams(){
+  return Object.assign({}, PARAMS, {
+    gapping_allowance_in: parseFloat(document.getElementById('slAllow').value),
+    correction_factor: parseFloat(document.getElementById('slCorr').value)
+  });
+}
+function paintMarginCell(id, margin, p){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const ok = passesBothThresholds(margin, p);
+  el.textContent = round(margin, 3);
+  el.className = 'num ' + (ok ? 'pass' : 'fail');
+}
+function refreshLiveMargins(){
+  const p = currentFlexParams();
+  MODELED_NS.forEach(n => {
+    paintMarginCell('live_wc'+n, marginAt(T_WC(n, p), p), p);
+    paintMarginCell('live_mrss'+n, marginAt(T_MRSS(n, p), p), p);
+  });
+}
+function onFlexChange(){
+  document.getElementById('slAllowVal').textContent = round(parseFloat(document.getElementById('slAllow').value), 3) + ' in';
+  document.getElementById('slCorrVal').textContent = '×' + round(parseFloat(document.getElementById('slCorr').value), 2);
+  refreshLiveMargins();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-clampband-margin";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "A stack-up table across a growing supplier count (n=3,6,7,10)"],
+  ["D2", "A horizontal asymptote of the Modified RSS/Worst-Case ratio, found algebraically"],
+  ["D3", "A margin-threshold continuity check across the modeled range"],
+  ["D4", "Today's three-supplier (n=3) margin comparison"],
+  ["D5", "An original graph of both stack-up functions vs. supplier count"],
+  ["C1", "Research link answering a How To... question (Appendix G)"],
+  ["C2", "250+ word pitch, using the C1 resource, with an original visual"],
+  ["C4", "Appendix of original thinking/evidence"],
+  ["C5", "Case discussion participation (2+ posts, or 500 words if absent)"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   "Limit", "Asymptote", "Continuity (Informal)", and the two How To...
+   links are this case's own new vocabulary — freshly fetched and
+   confirmed live on khanacademy.org, 2026-08-31, this session, from
+   Precalculus Unit 10 ("Limits and continuity"). "Ratio", "Percent",
+   "Measurement", "Distance", "Data" are reused verbatim from
+   templates/INTERACTIVE_HTML_CONTRACT.md's verified starter glossary.
+   ================================================================ */
+const GLOSSARY = {
+  "Limit": {def: "The value a function's output gets closer and closer to as its input approaches some value (or grows without bound) — even if the function never actually reaches it.",
+    url: "https://www.khanacademy.org/math/precalculus/x9e81a4f98389efdf:limits-and-continuity/x9e81a4f98389efdf:defining-limits-and-using-limit-notation/a/limits-intro"},
+  "Asymptote": {def: "A line a curve gets closer and closer to but never crosses (or only crosses near the middle), describing the curve's behavior at its far edges.",
+    url: "https://www.khanacademy.org/math/precalculus/x9e81a4f98389efdf:limits-and-continuity/x9e81a4f98389efdf:connecting-limits-at-infinity-and-horizontal-asymptotes/v/limits-at-positive-and-negative-infinity"},
+  "Continuity": {def: "A function is continuous at a point if you could draw it through that point without lifting your pencil — informally, no sudden jump, hole, or break.",
+    url: "https://www.khanacademy.org/math/precalculus/x9e81a4f98389efdf:limits-and-continuity/x9e81a4f98389efdf:defining-continuity-at-a-point/e/continuity-at-a-point-algebraic"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Measurement": {def: "Assigning a number to a physical quantity -- length, time, mass -- using a chosen unit.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Distance": {def: "How far apart two points or places are.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"}
+};
+const HOWTO = [
+  ["how to estimate a limit from a table or graph", "Limit"],
+  ["how to identify a vertical or horizontal asymptote from a function's equation", "Asymptote"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal gating. CASE-SPECIFIC: onTwistToggle()
+   below computes and displays each method's live margin at n=10 under
+   the real x1.5 correction factor and a stress-tested x2.25 factor,
+   side by side — never a static literal, and never a statement of
+   which named option wins.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applyEl = document.getElementById('applyTwist');
+  const out = document.getElementById('twistCompute');
+  if(!out) return;
+  if(applyEl && applyEl.checked){
+    const baseline = evaluate_twist(PARAMS);
+    const stressed = evaluate_twist(Object.assign({}, PARAMS, {correction_factor: 2.25}));
+    const wcMarginBase = marginAt(T_WC(10, PARAMS), PARAMS);
+    const mrssMarginBase = marginAt(T_MRSS(10, PARAMS), PARAMS);
+    const wcMarginStress = marginAt(T_WC(10, Object.assign({}, PARAMS, {correction_factor: 2.25})), PARAMS);
+    const mrssMarginStress = marginAt(T_MRSS(10, Object.assign({}, PARAMS, {correction_factor: 2.25})), PARAMS);
+    const badge = (m) => passesBothThresholds(m, PARAMS) ? '<span class="pass">clears both thresholds</span>' : '<span class="fail">fails a threshold</span>';
+    out.style.display = 'block';
+    out.innerHTML = 'Live-computed at n=10, from the same model as the Working Notebook — never a stated winner: '
+      + '<table><tr><th></th><th>&times;1.5 (real, cited)</th><th>&times;2.25 (stress test)</th></tr>'
+      + '<tr><td>Worst-Case margin</td><td class="num">' + round(wcMarginBase,3) + ' — ' + badge(wcMarginBase) + '</td><td class="num">' + round(wcMarginStress,3) + ' — ' + badge(wcMarginStress) + '</td></tr>'
+      + '<tr><td>Modified RSS margin</td><td class="num">' + round(mrssMarginBase,3) + ' — ' + badge(mrssMarginBase) + '</td><td class="num">' + round(mrssMarginStress,3) + ' — ' + badge(mrssMarginStress) + '</td></tr>'
+      + '</table>';
+  } else {
+    out.style.display = 'none';
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+
+/* Prime the Working Notebook's live tools. */
+buildSliders();
+onFlexChange();
+</script>
+</body>
+</html>

@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Skin Pack Atlas — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md
+  (Math Builder A7, DOCTRINE_LEDGER MCS-37/MCS-39). Case data below is copied verbatim
+  from cases/the-skin-pack-atlas/case.md / case.json (qa.case_md_sha256:
+  6cf2dbf3cfb34f446c76347bbb6e3879fea49ac0cd0735f6830a3668d0ef786e).
+
+  HARD LINE (MCS-37): this file never prints case.json's balance verdict (the 85.1%/51.8%
+  revenue-weighted/device-count figures for Option A, or margin_pct=14.9) as a static
+  literal. The Working Notebook computes the install-base matrix M, its inverse, its
+  determinant, the solved revenue-per-install vector r = M^-1 v, and the final
+  device-count/revenue-weighted decision table live, from the case's own raw Appendix A/C
+  inputs -- the calculator never hands the Hero the recommendation.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC: Skin Pack Atlas notebook matrix-entry widgets */
+  .matrixgrid{display:grid;grid-template-columns:repeat(2,90px);gap:6px;margin:4px 0}
+  .matrixgrid input{width:90px}
+  .calc-out{font-family:var(--sans);font-weight:700;color:var(--navy);min-width:90px;display:inline-block}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></symbol>
+  <symbol id="icon-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Skin Pack Atlas</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Pre-Calculus &middot; Matrices</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">The fan on Alicia Tran's laptop is loud enough to hear over the Discord call, and nobody has said anything for eleven seconds. On her second monitor sit two renders of the same character, side by side, wearing the same new skin. On the left, every scale on the tail is crisp enough to count. On the right, the same scales blur slightly the moment the camera zooms in &mdash; not broken, just softer, the kind of soft a player notices without being able to say why.</p>
+  <p>Alicia is the only technical artist at Tanager Games, seven people total, and she is the one who has to explain &mdash; again &mdash; why a texture that looks perfect on her own phone can make a stranger's phone refuse to draw it at all. The community manager shares her screen too: support tickets from the last skin pack, sorted by country, most of them from India and Nigeria &mdash; Tanager's two fastest-growing markets, where a large share of new phones still ship with budget-tier silicon rather than the flagship chips Alicia's own test device runs. &ldquo;Players are saying their skins are just&hellip; gray,&rdquo; she says. &ldquo;Some are asking for refunds.&rdquo;</p>
+  <p>The build for tonight's release is sitting in two branches, one for each atlas, and Alicia has maybe twenty minutes before she has to pick one and merge it. She pulls up her spreadsheet of device data instead of picking by feel this time. Somewhere in these two columns of numbers is an answer that isn't just &ldquo;which one looks better in a screenshot.&rdquo;</p>
+  <p>She opens both branches side by side, uncaps a marker for the whiteboard, and starts drawing a grid.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Alicia Tran is the sole technical artist at Tanager Games, a seven-person indie studio that makes <em>Molt</em>, a collectible-creature idle RPG (see Appendix D). <em>Molt</em>'s revenue comes almost entirely from character skin packs, and Alicia is responsible for the technical decision of how each pack's new art gets packed into the game before it ships &mdash; and accountable to the rest of the small team for making sure this week's pack does not silently break the game for players who already paid for it. Two packaging options are on the table for tonight's release, and only one can ship:</p>
+  <div class="card">
+    <p><strong>The Crest Atlas</strong> &mdash; pack the new character art into a single <strong>8192&times;8192</strong> texture atlas. This is the sharpest possible version of the new skins, and it is what Alicia's own flagship test device renders (see Appendix D).</p>
+    <p style="margin-bottom:0"><strong>The Anchor Atlas</strong> &mdash; pack the same art into a single <strong>4096&times;4096</strong> texture atlas instead. This requires compressing the source art harder to fit, which visibly softens fine detail like scale edges and fur, but every device Tanager has ever tested has been able to load a 4096&times;4096 texture without failure (see Appendix D).</p>
+  </div>
+  <p>The failure mode that matters is not gradual: a mobile GPU either supports a texture at a given dimension or it does not. If a device's GPU cannot handle a texture at the atlas's dimension, that texture does not load &mdash; the character shows up untextured, or the game refuses to draw that screen at all. This is a hard pass/fail, tied to a real, published mobile-GPU texture-size capability ladder (see Appendix C), not a matter of the art simply looking a little worse on older phones.</p>
+  <p>Tanager's two fastest-growing markets, by new installs, are India and Nigeria (see Appendix A). Both markets skew toward budget-tier Android hardware: in India, MediaTek &mdash; whose chips run ARM Mali-family GPUs rather than Qualcomm's Adreno &mdash; is the single largest smartphone chipset vendor, and in Nigeria more than half of all phones sold are one of three Transsion-made brands (Tecno, Infinix, Itel) built almost entirely on the same budget MediaTek/Unisoc silicon (see Appendix C). A real, current, peer-reviewed-track study of commercial mobile games found that GPU-related problems &mdash; specifically devices too old or low-tier to render what a game asks of them &mdash; account for close to a quarter of all the compatibility bugs those games' own developers had to fix (see Appendix C). A ratio that only counts <em>devices</em> running budget silicon, though, is not the whole picture: not every install is worth the same to the studio, because heavier-spending players tend to cluster on newer, higher-tier devices. Tanager's own analytics dashboard reports total monthly skin-pack revenue by country, but does not break that revenue out by device tier &mdash; a real limitation many small studios operate under. Alicia has to reconstruct that missing breakdown herself, using India and Nigeria's known device-tier composition and each market's known total revenue as a system of two linear equations (see Appendices A and B), built on top of a small set of disclosed modeling assumptions and proxies where Tanager's own real business data does not exist to source (see Appendix E).</p>
+  <p>Alicia's recommendation must be judged on one number: <strong>the revenue-weighted percent of Tanager's active install base that can render the chosen atlas without a texture load failure</strong>, found by building a 2&times;2 system of linear equations from Appendices A and C and solving it using matrix algebra (see Appendices A, B, C and D). Every sourced and assumed figure in this case is listed in Appendix F, and the vocabulary and &ldquo;how to&hellip;&rdquo; skills this case will ask of you are listed in Appendix G &mdash; that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Alicia Tran. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Crest Atlas</h4>
+      <p style="margin:0">Ship tonight's skin pack packed into an 8192&times;8192 texture atlas &mdash; the sharpest version of the art, at the cost of failing to load on some budget-tier devices.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Anchor Atlas</h4>
+      <p style="margin:0">Ship tonight's skin pack packed into a 4096&times;4096 texture atlas instead &mdash; visibly softer art, but every device Tanager has ever tested loads it.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: D1) a labeled 2&times;2 install-base matrix M (Appendix B) &mdash; rows are Tanager's two named growth markets, columns are the two device tiers, every entry defined in words, with the matrix's dimensions stated; D2) the identity matrix I and the computed inverse matrix M<sup>&minus;1</sup>, with a verification step showing the full arithmetic of M &middot; M<sup>&minus;1</sup> entry by entry, confirming it equals I &mdash; not just asserting that it does; D3) the determinant of M, computed by hand using the 2&times;2 determinant formula, with a one-sentence explanation of why a nonzero determinant is required before M can be inverted at all; D4) the solved revenue-per-active-install vector r = M<sup>&minus;1</sup>v for the reported total-revenue vector v (Appendix A), showing the full matrix arithmetic used to solve the system &mdash; not just the final numbers; D5) a final decision table (Appendices C and D) &mdash; for the Crest Atlas and the Anchor Atlas, the device-count percent of the install base that renders successfully, the revenue-weighted percent that renders successfully (using D4's per-tier revenue rates), and your recommendation stated and defended using that last column.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Growth-Market Revenue and Install Data</summary>
+    <div class="inner">
+      <table id="apxA">
+        <tr><th></th><th>India</th><th>Nigeria</th></tr>
+        <tr><td>Tanager's reported active installs, this market, most recent month</td><td class="num">40,000 [MA1]</td><td class="num">20,000 [MA1]</td></tr>
+        <tr><td>Share of this market's installs on a Value-tier GPU (see Appendix C)</td><td class="num">47% [S1']</td><td class="num">50.7% [S2']</td></tr>
+        <tr><td>Share of this market's installs on a Flagship-tier GPU (see Appendix C)</td><td class="num">53% [S1']</td><td class="num">49.3% [S2']</td></tr>
+        <tr><td>Tanager's reported total skin-pack revenue, this market, most recent month (USD)</td><td class="num">$19,780 [MA1]</td><td class="num">$9,409 [MA1]</td></tr>
+      </table>
+      <p class="side-note">India and Nigeria are Tanager's two fastest-growing markets by new installs this year (see Appendix E, MA1). Tanager Games and <em>Molt</em> are both fictional; the studio's own install and revenue figures above are disclosed as stated business assumptions (MA1), built on top of the real, cited regional chipset-vendor-share figures in Appendix C. India's Value-tier share is MediaTek's current chipset market share (the complement, 53%, is everyone else &mdash; Qualcomm, Unisoc, Samsung); Nigeria's Value-tier share is the combined current market share of the three Transsion-made brands (Tecno, Infinix, Itel), whose phones run the same budget MediaTek/Unisoc chipset families (see Appendix C, MA3). Referenced from Background and Challenges D1, D4.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; The Install-Base Matrix M</summary>
+    <div class="inner">
+      <p>Alicia's model treats each of Tanager's two growth markets as a row and each of two device tiers as a column:</p>
+      <ul>
+        <li><strong>Column 1 &mdash; Flagship-tier</strong>: GPUs capable of rendering an 8192&times;8192 texture without failure.</li>
+        <li><strong>Column 2 &mdash; Value-tier</strong>: GPUs found in budget-oriented chipsets (MediaTek in India; Transsion-brand devices &mdash; Tecno, Infinix, Itel &mdash; in Nigeria, predominantly MediaTek/Unisoc chipsets), used here as the best available current, region-specific proxy for devices at meaningful risk of a texture-size failure at 8192&times;8192 (see Appendix C, MA3).</li>
+      </ul>
+      <p>Each entry equals that market's total reported active installs (Appendix A) multiplied by its Flagship-tier or Value-tier share (Appendix A, sourced from Appendix C). <strong>M</strong> is a matrix with matrix dimension <strong>2&times;2</strong> &mdash; 2 rows (markets) by 2 columns (device tiers) &mdash; once every entry is filled in. Its exact numeric entries are:</p>
+      <table id="apxB">
+        <tr><th></th><th>Flagship-tier installs</th><th>Value-tier installs</th></tr>
+        <tr><td>India</td><td class="num">40,000 &times; 0.53 = 21,200</td><td class="num">40,000 &times; 0.47 = 18,800</td></tr>
+        <tr><td>Nigeria</td><td class="num">20,000 &times; 0.493 = 9,860</td><td class="num">20,000 &times; 0.507 = 10,140</td></tr>
+      </table>
+      <p class="side-note">India and Nigeria installs and shares from Appendix A [MA1, S1', S2']. Referenced from Background and Challenges D1, D2, D3.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Real GPU Hardware and Texture-Cap Reference Data</summary>
+    <div class="inner">
+      <p>This appendix is real, published hardware data, reproduced here so the device-tier split in Appendices A and B can be checked against it.</p>
+      <table id="apxC">
+        <tr><th>Claim</th><th>Value</th><th>Source</th></tr>
+        <tr><td>Current (2025) smartphone chipset market share, India</td><td>MediaTek 47%, Qualcomm 31%, other (Unisoc/Samsung) 22%</td><td>[S1'] Counterpoint Research, &ldquo;India Smartphone Market Q2 2025&rdquo;</td></tr>
+        <tr><td>Current (2025) smartphone brand market share, Nigeria</td><td>Tecno 23.55%, Infinix 21.73%, Itel 5.41% (Transsion combined 50.69%); Samsung 12.36%, Apple 9.43%, Xiaomi 7.15%, Huawei 4.34%, Oppo 3.59%, Vivo 1.46%</td><td>[S2'] Statcounter Global Stats, via Intelpoint republication</td></tr>
+        <tr><td>Which GPU family each named chipset vendor's silicon uses</td><td>MediaTek and Unisoc chips run ARM Mali-family GPUs; Qualcomm chips run Adreno GPUs</td><td>[S1', S2'] ARM Mali product licensing pages; AndroidAuthority MediaTek chip guide; public device spec sheets</td></tr>
+        <tr><td>Share of studied commercial mobile-game compatibility bugs that are GPU-related, and which device population they concentrate on</td><td>21 of 91 (23%) of studied bugs are GPU-related; &ldquo;Insufficient GPU&rdquo; (11 of 91) explicitly tied to older/low-configuration devices</td><td>[S7] Song et al., &ldquo;An Empirical Analysis of Compatibility Issues for Industrial Mobile Games&rdquo; (arXiv, 2025)</td></tr>
+        <tr><td>Current, live distribution of GPU rendering-API capability across all active Android devices</td><td>OpenGL ES 3.2: 98.24%; ES 3.1: 0.39%; ES 3.0: 0.86%; ES 2.0: 0.49%. Vulkan: none 7.37%, 1.0.3 3.86%, 1.1 62.09%, 1.3 26.01%, 1.4 0.67%</td><td>[S8] Google, Android Developers &ldquo;Distribution dashboard&rdquo; (live, snapshot ending 2025-11-24)</td></tr>
+        <tr><td>Maximum supported 2D texture dimension by mobile GPU generation</td><td>2048 px (older/budget, e.g. PowerVR SGX 535); 4096 px (Mali-400-class, discontinued by ARM in 2015; also PowerVR SGX 543); 8192 px (modern flagship, per Unreal Engine's own supported ceiling); 16384 px (top-tier, Unity's own engine-wide cap)</td><td>[S3&ndash;S6] Apple OpenGL ES Hardware Platform Guide; ARM Mali-400 MP specification; Unreal Engine texture documentation; Unity SystemInfo documentation</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Atlas Packaging Options</summary>
+    <div class="inner">
+      <table id="apxD">
+        <tr><th></th><th>Option A &mdash; The Crest Atlas</th><th>Option B &mdash; The Anchor Atlas</th></tr>
+        <tr><td>Atlas dimensions</td><td class="num">8192 &times; 8192 px</td><td class="num">4096 &times; 4096 px</td></tr>
+        <tr><td>Minimum device GPU generation required to render without a load failure (see Appendix C)</td><td>Flagship-tier (a modern GPU whose maximum texture dimension is &ge; 8192 px)</td><td>Value-tier (budget chipset-family GPU, capped at 4096 px or below in this model, or better)</td></tr>
+        <tr><td>Can a Value-tier device render this option?</td><td>Fails to load, per this model (see Appendices C, E &mdash; MA3 discloses this is likely conservative for current budget silicon)</td><td>Loads successfully (see Appendix C)</td></tr>
+        <tr><td>Visible art quality on a device that can render it</td><td>Full detail; the source art's native resolution</td><td>Visibly softened; source art compressed harder to fit the smaller atlas</td></tr>
+      </table>
+      <p class="side-note"><em>Molt</em> and Tanager Games are both fictional, invented for this case (see Appendix E). Referenced from Background and Challenge D5.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+      <table id="apxE">
+        <tr><th>#</th><th>Assumption</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Tanager Games and <em>Molt</em> are fictional; the studio's reported active-install and revenue figures for India and Nigeria (Appendix A) are the case's own invented business figures.</td><td>No real seven-person studio matching this description exists to source install or revenue figures from. The invented figures were built so that each market's device-tier composition matches the real, cited current regional chipset-vendor-share data in Appendix C.</td><td>The final revenue-weighted percentage in the Challenge 3 decision table &mdash; and therefore which atlas is defensible &mdash; is sensitive to these invented install and revenue totals. A Hero may reasonably challenge these figures and re-run the matrix solve with their own numbers, as long as the device-tier composition still matches Appendix C.</td></tr>
+        <tr><td>MA2</td><td>Chipset-vendor share (MediaTek in India; Transsion-brand devices in Nigeria) is used as a proxy for &ldquo;Value-tier, capped below 8192&times;8192,&rdquo; even though not every device from these vendors is actually capped there, and the reverse complement (Qualcomm/Samsung/other) is treated as uniformly Flagship-tier even though it also contains some lower-tier devices.</td><td>MediaTek and Unisoc chipsets integrate ARM Mali-family GPUs; Qualcomm chipsets integrate Adreno GPUs. Chipset-vendor share is real, current, and region-specific (S1', S2') &mdash; a meaningfully better-grounded proxy than a global GPU-brand blog, but still a proxy, not a direct device-capability census.</td><td>Two compounding, disclosed directions of possible error: some devices in the &ldquo;Flagship&rdquo; complement may still be older/lower-tier hardware this proxy doesn't count, and some MediaTek/Transsion-brand devices may run modern silicon well above the 4096 px cap this proxy assumes (see MA3).</td></tr>
+        <tr><td>MA3</td><td>The Value-tier's assumed hard cap at 4096&times;4096 was set by the Mali-400 GPU, which ARM discontinued in 2015. The budget chipsets that actually dominate India and Nigeria's device-tier proxy today (Unisoc T612/T615, MediaTek Helio-class) use newer Mali-G52/G57-class GPUs supporting OpenGL ES 3.2 and Vulkan &mdash; APIs the Mali-400 never supported at all.</td><td>Public spec sheets confirm the Infinix Hot 9 Pro, Infinix Smart 5, and Itel P65 (three of Nigeria's best-selling models) run MediaTek Helio or Unisoc T-series chips with Mali-G52/G57-class GPUs, not Mali-400. Google's own live Android distribution data shows 98.24% of all active Android handheld devices today report OpenGL ES 3.2 (see Appendix C, S8), the tier these budget chips carry.</td><td>This pushes in one specific, named direction: it means the model's Value-tier failure assumption is very likely <strong>conservative</strong> &mdash; Option A's true 2026 failure rate among &ldquo;Value-tier&rdquo;-proxy devices is probably smaller than this case models, not larger. It does not flip the case's answer, and a Hero who raises this point should be credited for catching a real, current limitation of the model.</td></tr>
+      </table>
+      <p class="side-note">Referenced from Background, Appendix A, Appendix D.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxF">
+        <tr><th>id</th><th>Claim</th><th>Value</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1'</td><td>Current (Q2 2025) smartphone chipset market share, India</td><td>MediaTek 47%, Qualcomm 31%, remainder ~22%</td><td><a href="https://counterpointresearch.com/en/insights/india-smartphone-market-q2-2025" target="_blank" rel="noopener">Counterpoint Research</a></td><td>HIGH</td></tr>
+        <tr><td>S2'</td><td>Current (Feb 2025) smartphone brand market share, Nigeria</td><td>Tecno 23.55%, Infinix 21.73%, Itel 5.41% (Transsion combined 50.69%)</td><td><a href="https://intelpoint.co/insights/tecno-has-the-highest-share-among-phone-brands-in-nigeria-at-23-55-as-of-february-2025/" target="_blank" rel="noopener">Statcounter via Intelpoint</a></td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Maximum 2D texture dimension by iOS GPU generation</td><td>2048&times;2048 (SGX 535); 4096&times;4096 (SGX 543)</td><td><a href="https://developer.apple.com/library/archive/documentation/OpenGLES/Conceptual/OpenGLESHardwarePlatformGuide_iOS/OpenGLESPlatforms/OpenGLESPlatforms.html" target="_blank" rel="noopener">Apple OpenGL ES Hardware Platform Guide</a></td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Maximum 2D texture dimension, ARM Mali-400 MP</td><td>4096 px along any axis</td><td><a href="http://infocenter.arm.com/help/topic/com.arm.doc.faqs/ka13314.html" target="_blank" rel="noopener">ARM FAQ ka13314</a></td><td>MEDIUM</td></tr>
+        <tr><td>S5</td><td>Maximum supported texture resolution in Unreal Engine</td><td>8192&times;8192</td><td><a href="https://dev.epicgames.com/documentation/en-us/unreal-engine/texture-format-support-and-settings-in-unreal-engine" target="_blank" rel="noopener">Epic Games documentation</a></td><td>HIGH</td></tr>
+        <tr><td>S6</td><td>Maximum supported texture size in Unity</td><td>16384 px</td><td><a href="https://docs.unity3d.com/ScriptReference/SystemInfo-maxTextureSize.html" target="_blank" rel="noopener">Unity SystemInfo documentation</a></td><td>HIGH</td></tr>
+        <tr><td>S7</td><td>Share of studied commercial mobile-game compatibility bugs that are GPU-related</td><td>21 of 91 (23%)</td><td><a href="https://arxiv.org/abs/2504.20261" target="_blank" rel="noopener">Song et al., arXiv 2025</a></td><td>MEDIUM</td></tr>
+        <tr><td>S8</td><td>Current, live distribution of GPU rendering-API capability, active Android devices</td><td>OpenGL ES 3.2: 98.24%</td><td><a href="https://developer.android.com/about/dashboards" target="_blank" rel="noopener">Google Android Developers, Distribution dashboard</a></td><td>HIGH</td></tr>
+      </table>
+      <p class="side-note">This case originally cited a 2013 Unity blog post and a 2017 DeviceAtlas blog post for its GPU-vendor-share figures; both were flagged as stale in review and have been superseded here by S1', S2', S7, and S8 (see RESEARCH_LOG.md for the full remediation trail). Referenced from Background.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-31. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Build the install-base matrix M and state its dimensions</h4>
+    <div class="goal">Given data is in Appendix A/B. Each entry equals a market's total active installs times its Flagship- or Value-tier share. Type the matrix's four entries and its dimensions (e.g. &ldquo;2x2&rdquo;).</div>
+    <div class="fieldrow"><label for="d1_m11">M row 1, col 1 &mdash; India Flagship-tier installs</label><input type="number" step="1" id="d1_m11"></div>
+    <div class="fieldrow"><label for="d1_m12">M row 1, col 2 &mdash; India Value-tier installs</label><input type="number" step="1" id="d1_m12"></div>
+    <div class="fieldrow"><label for="d1_m21">M row 2, col 1 &mdash; Nigeria Flagship-tier installs</label><input type="number" step="1" id="d1_m21"></div>
+    <div class="fieldrow"><label for="d1_m22">M row 2, col 2 &mdash; Nigeria Value-tier installs</label><input type="number" step="1" id="d1_m22"></div>
+    <div class="fieldrow"><label for="d1_dim">Matrix dimensions</label><input type="text" id="d1_dim" placeholder="e.g. 2x2"></div>
+    <button onclick="checkD1()">Check</button><span class="fb" id="d1_fb"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: Identity matrix I and inverse M<sup>&minus;1</sup></h4>
+    <div class="goal">Write the 2&times;2 identity matrix, then your computed M<sup>&minus;1</sup>. The check verifies M &middot; M<sup>&minus;1</sup> = I entry by entry.</div>
+    <div class="fieldrow"><label>I entries (top row, bottom row)</label>
+      <input type="number" step="1" id="d2_i11" placeholder="top-left"><input type="number" step="1" id="d2_i12" placeholder="top-right">
+      <input type="number" step="1" id="d2_i21" placeholder="bottom-left"><input type="number" step="1" id="d2_i22" placeholder="bottom-right">
+    </div>
+    <div class="fieldrow"><label>M<sup>&minus;1</sup> entries (top row, bottom row)</label>
+      <input type="number" step="0.0000001" id="d2_inv11" placeholder="top-left"><input type="number" step="0.0000001" id="d2_inv12" placeholder="top-right">
+      <input type="number" step="0.0000001" id="d2_inv21" placeholder="bottom-left"><input type="number" step="0.0000001" id="d2_inv22" placeholder="bottom-right">
+    </div>
+    <button onclick="checkD2()">Check</button><span class="fb" id="d2_fb"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: Determinant of M</h4>
+    <div class="goal">Use the 2&times;2 determinant formula: for [[m11,m12],[m21,m22]], det = m11&middot;m22 &minus; m12&middot;m21.</div>
+    <div class="fieldrow"><label for="d3_det">det(M)</label><input type="number" step="1" id="d3_det"></div>
+    <div class="fieldrow"><label for="d3_why">Why must it be nonzero to invert M?</label><textarea id="d3_why" style="width:340px" placeholder="one sentence"></textarea></div>
+    <button onclick="checkD3()">Check</button><span class="fb" id="d3_fb"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: Solve r = M<sup>&minus;1</sup>v for the revenue-per-install vector</h4>
+    <div class="goal">v = [India revenue, Nigeria revenue]<sup>T</sup> (Appendix A). Solve for r = [Flagship-tier $/install, Value-tier $/install]<sup>T</sup>.</div>
+    <div class="fieldrow"><label for="d4_rflag">r &mdash; Flagship-tier revenue per active install ($/month)</label><input type="number" step="0.001" id="d4_rflag"></div>
+    <div class="fieldrow"><label for="d4_rval">r &mdash; Value-tier revenue per active install ($/month)</label><input type="number" step="0.001" id="d4_rval"></div>
+    <button onclick="checkD4()">Check</button><span class="fb" id="d4_fb"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; D5: Final decision table</h4>
+    <div class="goal">For each atlas option: the device-count percent of the install base that renders successfully, and the revenue-weighted percent (using D4's per-tier revenue rates). The Anchor Atlas succeeds on every device tier by construction (Appendix D).</div>
+    <table>
+      <tr><th></th><th>Device-count % rendering successfully</th><th>Revenue-weighted % rendering successfully</th></tr>
+      <tr><td>Option A &mdash; Crest Atlas (8192)</td><td class="num"><input type="number" step="0.01" id="d5_a_device"></td><td class="num"><input type="number" step="0.01" id="d5_a_revenue"></td></tr>
+      <tr><td>Option B &mdash; Anchor Atlas (4096)</td><td class="num"><input type="number" step="0.01" id="d5_b_device"></td><td class="num"><input type="number" step="0.01" id="d5_b_revenue"></td></tr>
+    </table>
+    <div class="fieldrow"><label for="d5_rec">Your recommendation and one-sentence defense</label><textarea id="d5_rec" style="width:420px" placeholder="A or B, and why, using the revenue-weighted column"></textarea></div>
+    <button onclick="checkD5()">Check</button><span class="fb" id="d5_fb"></span>
+    <p class="side-note">This checks your arithmetic, not your recommendation &mdash; there is no single right answer here, only correct or incorrect math.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 6 &mdash; Explore the sensitivity (optional)</h4>
+    <div class="goal">Appendix E flags MA3 as this case's single most important honest finding: the model's Value-tier hard cap describes a discontinued GPU (Mali-400), so it may be over-counting failures. Drag the slider to see how Option A's live revenue-weighted percent responds as fewer &ldquo;Value-tier&rdquo;-proxy installs are treated as a hard failure &mdash; the tool computes it live; it does not tell you which option wins at any setting.</div>
+    <div class="sliderow"><label for="slMA3" style="min-width:320px;font-family:var(--sans)">MA3 &mdash; fraction of Value-tier-proxy installs still treated as a hard failure</label><input type="range" id="slMA3" min="0" max="1" step="0.01" oninput="onFlexChange()"><span class="val" id="slMA3Val"></span></div>
+    <table id="tblLive">
+      <tr><th>Option</th><th>Live revenue-weighted % rendering successfully, at current slider</th></tr>
+      <tr><td>Crest Atlas (A)</td><td class="num" id="liveA">&mdash;</td></tr>
+      <tr><td>Anchor Atlas (B)</td><td class="num" id="liveB">&mdash;</td></tr>
+    </table>
+    <p class="side-note">At the slider's default (1.0) this reproduces the same all-or-nothing cap D5 used. Sliding toward 0.0 approximates MA3's claim that fewer Value-tier-proxy installs are really incapable of loading the Crest Atlas than the model's blanket cap assumes. That comparison is yours to make in D5.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before opening this &mdash; in a live discussion, this section is addressed at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-grid"/></svg> This Case Ships Without a Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to open this</button>
+    <div id="twistNarrative">
+      <p>As with the project's other strongest structurally-driven cases, the surprise here is mathematical, not narrative: the moment a Hero realizes that &ldquo;percent of devices that fail&rdquo; and &ldquo;percent of <em>revenue</em> that fails&rdquo; are not the same number, and that the gap between them is exactly what D4's matrix solve was for. A Hero who stops at Appendix C's raw device-share percentages will never notice this on their own.</p>
+      <p>The pressure a scripted twist would normally add is still here &mdash; it's in the case's own trap and the Deep Conflict discussion your facilitator runs instead: a large, real device-count share on budget-tier GPUs in Tanager's fastest-growing markets that looks alarming on its own, and Appendix E's disclosed MA3 finding that the model's own hard cap may be over-counting failures on top of that. Rather than manufacture a scripted mid-discussion reveal, this case ships without one.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li><strong>S1'</strong> &mdash; Counterpoint Research, &ldquo;India Smartphone Shipments Rise 8% YoY in Q2 2025&hellip;&rdquo; (accessed 2026-08-30)</li>
+      <li><strong>S2'</strong> &mdash; Statcounter Global Stats, via Intelpoint republication, &ldquo;Tecno has the highest share among phone brands in Nigeria&hellip;&rdquo; (accessed 2026-08-30)</li>
+      <li><strong>S3</strong> &mdash; Apple Inc., OpenGL ES Hardware Platform Guide for iOS (archived) (accessed 2026-08-30)</li>
+      <li><strong>S4</strong> &mdash; ARM, FAQ ka13314, maximum framebuffer/texture resolution for Mali-400 MP (accessed 2026-08-30)</li>
+      <li><strong>S5</strong> &mdash; Epic Games, Texture Format Support and Settings in Unreal Engine (accessed 2026-08-30)</li>
+      <li><strong>S6</strong> &mdash; Unity Technologies, SystemInfo.maxTextureSize documentation (accessed 2026-08-30)</li>
+      <li><strong>S7</strong> &mdash; Song, Chen, Ma, Lu, Lin, Fan, Yang, &ldquo;An Empirical Analysis of Compatibility Issues for Industrial Mobile Games,&rdquo; arXiv 2025 (accessed 2026-08-30)</li>
+      <li><strong>S8</strong> &mdash; Google, Android Developers, &ldquo;Distribution dashboard&rdquo; (accessed 2026-08-30)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Skin Pack Atlas &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/the-skin-pack-atlas/
+   case.md and case.json (qa.case_md_sha256:
+   6cf2dbf3cfb34f446c76347bbb6e3879fea49ac0cd0735f6830a3668d0ef786e). PARAMS/
+   FLEX/evaluate()/deviceCountPct() port
+   cases/the-skin-pack-atlas/sensitivity_model.py's own 2x2 install-base
+   matrix solve — the Working Notebook's Step 1-6 functions below call into
+   these rather than re-deriving the tally inline, per
+   templates/INTERACTIVE_HTML_CONTRACT.md §2. This case's Twist is N/A (see
+   the Twist section above and FACILITATOR.md, "Twist: N/A"), so there is no
+   evaluate_twist() to port.
+   ================================================================ */
+const INDIA_VALUE_SHARE = 0.47;     // [S1'] MediaTek's India chipset share
+const NIGERIA_VALUE_SHARE = 0.507;  // [S2'] Transsion-brand combined Nigeria share
+
+const PARAMS = {
+  india_installs: 40000.0,          // MA1
+  nigeria_installs: 20000.0,        // MA1
+  india_revenue_usd: 19780.0,       // MA1
+  nigeria_revenue_usd: 9409.0,      // MA1
+  value_tier_overcount_frac: 1.0    // MA3 proxy -- see sensitivity_model.py docstring
+};
+// Probe 5 flexes THESE and only these -- the subset that is a stated Modeling
+// Assumption (MA1, MA3), not cited/sourced device-tier share data (S1'/S2').
+const FLEX = [
+  "india_installs", "nigeria_installs",
+  "india_revenue_usd", "nigeria_revenue_usd",
+  "value_tier_overcount_frac"
+];
+
+/* Build M, solve r = M^-1 v, and return every intermediate D1-D5 names. */
+function solveModel(paramsOverride){
+  const p = Object.assign({}, PARAMS, paramsOverride || {});
+  const indiaFlagship = p.india_installs * (1.0 - INDIA_VALUE_SHARE);
+  const indiaValue = p.india_installs * INDIA_VALUE_SHARE;
+  const nigeriaFlagship = p.nigeria_installs * (1.0 - NIGERIA_VALUE_SHARE);
+  const nigeriaValue = p.nigeria_installs * NIGERIA_VALUE_SHARE;
+
+  const m11 = indiaFlagship, m12 = indiaValue, m21 = nigeriaFlagship, m22 = nigeriaValue;
+  const det = m11 * m22 - m12 * m21;
+
+  const v0 = p.india_revenue_usd, v1 = p.nigeria_revenue_usd;
+  const rFlagship = det !== 0 ? (m22 * v0 - m12 * v1) / det : NaN;
+  const rValue = det !== 0 ? (-m21 * v0 + m11 * v1) / det : NaN;
+
+  const flagshipInstalls = indiaFlagship + nigeriaFlagship;
+  const valueInstalls = indiaValue + nigeriaValue;
+  const totalInstalls = flagshipInstalls + valueInstalls;
+  const flagshipRevenue = flagshipInstalls * rFlagship;
+  const valueRevenue = valueInstalls * rValue;
+  const totalRevenue = flagshipRevenue + valueRevenue;
+
+  return {
+    m11, m12, m21, m22, det, rFlagship, rValue,
+    flagshipInstalls, valueInstalls, totalInstalls,
+    flagshipRevenue, valueRevenue, totalRevenue, p
+  };
+}
+function invM(paramsOverride){
+  const s = solveModel(paramsOverride);
+  return {
+    i11: s.m22 / s.det, i12: -s.m12 / s.det,
+    i21: -s.m21 / s.det, i22: s.m11 / s.det
+  };
+}
+/* D5's decision table: revenue-weighted percent of active install base that
+   renders the chosen atlas without a texture load failure. Higher is
+   better. Option B (Anchor Atlas) is a fixed 100% by construction. */
+function evaluate(paramsOverride){
+  const s = solveModel(paramsOverride);
+  const p = s.p;
+  let valueSuccessFrac = 1.0 - p.value_tier_overcount_frac;
+  valueSuccessFrac = Math.max(0.0, Math.min(1.0, valueSuccessFrac));
+  const aSuccessRevenue = s.flagshipRevenue + valueSuccessFrac * s.valueRevenue;
+  const aRevenuePct = 100.0 * aSuccessRevenue / s.totalRevenue;
+  return { A: aRevenuePct, B: 100.0 };
+}
+/* Device-count (not revenue-weighted) success percentage -- used only for
+   D5's first column, not the case's primary metric. */
+function deviceCountPct(paramsOverride){
+  const s = solveModel(paramsOverride);
+  const p = s.p;
+  const valueSuccessFrac = Math.max(0.0, Math.min(1.0, 1.0 - p.value_tier_overcount_frac));
+  const aSuccessInstalls = s.flagshipInstalls + valueSuccessFrac * s.valueInstalls;
+  return { A: 100.0 * aSuccessInstalls / s.totalInstalls, B: 100.0 };
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (Steps 1-6).
+   ================================================================ */
+function checkD1(){
+  const m11=parseFloat(val('d1_m11')), m12=parseFloat(val('d1_m12')), m21=parseFloat(val('d1_m21')), m22=parseFloat(val('d1_m22'));
+  const dim = (document.getElementById('d1_dim').value || '').trim();
+  const okDim = /^2\s*[x×]\s*2$/i.test(dim);
+  const exp = solveModel(PARAMS);
+  const ok = near(m11,exp.m11,1) && near(m12,exp.m12,1) && near(m21,exp.m21,1) && near(m22,exp.m22,1) && okDim;
+  fb('d1_fb', ok);
+}
+function checkD2(){
+  const i11=parseFloat(val('d2_i11')), i12=parseFloat(val('d2_i12')), i21=parseFloat(val('d2_i21')), i22=parseFloat(val('d2_i22'));
+  const okI = i11===1 && i12===0 && i21===0 && i22===1;
+  const inv11=parseFloat(val('d2_inv11')), inv12=parseFloat(val('d2_inv12')), inv21=parseFloat(val('d2_inv21')), inv22=parseFloat(val('d2_inv22'));
+  const exp = invM(PARAMS);
+  const okInv = near(inv11,exp.i11,0.0000005) && near(inv12,exp.i12,0.0000005) && near(inv21,exp.i21,0.0000005) && near(inv22,exp.i22,0.0000005);
+  fb('d2_fb', okI && okInv);
+}
+function checkD3(){
+  const d = parseFloat(val('d3_det'));
+  const exp = solveModel(PARAMS).det;
+  fb('d3_fb', near(d, exp, 1));
+}
+function checkD4(){
+  const rFlag = parseFloat(val('d4_rflag')), rVal = parseFloat(val('d4_rval'));
+  const exp = solveModel(PARAMS);
+  const ok = near(rFlag, exp.rFlagship, 0.01) && near(rVal, exp.rValue, 0.01);
+  fb('d4_fb', ok);
+}
+function checkD5(){
+  const aDev=parseFloat(val('d5_a_device')), aRev=parseFloat(val('d5_a_revenue'));
+  const bDev=parseFloat(val('d5_b_device')), bRev=parseFloat(val('d5_b_revenue'));
+  const dev = deviceCountPct(PARAMS);
+  const rev = evaluate(PARAMS);
+  const ok = near(aDev,dev.A,0.1) && near(bDev,dev.B,0.1) && near(aRev,rev.A,0.1) && near(bRev,rev.B,0.1);
+  fb('d5_fb', ok);
+}
+function onFlexChange(){
+  const frac = parseFloat(document.getElementById('slMA3').value);
+  document.getElementById('slMA3Val').textContent = frac.toFixed(2);
+  const rev = evaluate({ value_tier_overcount_frac: frac });
+  document.getElementById('liveA').textContent = round(rev.A, 1) + '%';
+  document.getElementById('liveB').textContent = round(rev.B, 1) + '%';
+}
+(function initSlider(){
+  const sl = document.getElementById('slMA3');
+  sl.value = PARAMS.value_tier_overcount_frac;
+  onFlexChange();
+})();
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-skin-pack-atlas";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "A labeled 2x2 install-base matrix M, every entry defined in words, with the matrix's dimensions stated."],
+  ["D2", "The identity matrix I and the computed inverse matrix M^-1, with a verification step showing M * M^-1 = I entry by entry."],
+  ["D3", "The determinant of M, computed by hand, with a one-sentence explanation of why a nonzero determinant is required before M can be inverted."],
+  ["D4", "The solved revenue-per-active-install vector r = M^-1 v for the reported total-revenue vector v, showing the full matrix arithmetic used."],
+  ["D5", "A final decision table: device-count percent and revenue-weighted percent of install base that renders successfully for each atlas option, with a stated recommendation defended using the revenue-weighted column."]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). Matrix/Matrix Dimension/
+   Determinant/Identity Matrix reused verbatim from
+   cases/the-multiplier-recruit's own GLOSSARY (same standards group,
+   same Pre-Calculus/Matrices skills) -- a URL fetched and confirmed for
+   one case is a legitimate source for the same term reused verbatim in
+   a different case (contract §3). Ratio/Percent/Decimal/Mean reused
+   verbatim from the same starter set.
+   ================================================================ */
+const GLOSSARY = {
+  "Matrix": {def: "A rectangular array of numbers arranged in rows and columns.",
+    url: "https://www.mathsisfun.com/algebra/matrix-introduction.html"},
+  "Matrix Dimension": {def: "The size of a matrix, written as rows times columns -- a 2x2 matrix has 2 rows and 2 columns.",
+    url: "https://www.mathsisfun.com/algebra/matrix-introduction.html"},
+  "Determinant": {def: "A special number calculated from a square matrix; for a 2x2 matrix [[a,b],[c,d]] it equals ad minus bc.",
+    url: "https://www.mathsisfun.com/algebra/matrix-determinant.html"},
+  "Identity Matrix": {def: "A square matrix with 1s on the main diagonal and 0s everywhere else -- multiplying by it leaves any matrix unchanged.",
+    url: "https://www.cuemath.com/algebra/identity-matrix/"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"}
+};
+const HOWTO = [
+  ["How to add and multiply matrices", "Matrix"],
+  ["How to find the determinant of a 2x2 matrix", "Determinant"],
+  ["How to solve a system of equations using a matrix", "Identity Matrix"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal gating. This case has no computed twist
+   to apply (see Twist section above), so revealTwist() just shows the
+   explanation; there is no onTwistToggle()/applyTwist checkbox to wire.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Opened';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>
