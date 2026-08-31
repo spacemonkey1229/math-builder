@@ -95,8 +95,14 @@ The Series Path and the Table Path both run on the same target microcontroller. 
 | Cycles per multiply instruction | 1 cycle (MA1) |
 | Cycles per add instruction | 1 cycle [S10] |
 | Cycles for one flash-memory read access | 3 cycles (MA2) |
+| Operations the Series Path's 2nd-order polynomial requires (Horner form) | 2 multiplies + 3 adds |
+| Operations the Table Path's lookup-plus-interpolation requires | 2 flash reads + 1 multiply + 2 adds |
 
-Referenced from Background and forces the compute-time calculations in Challenges D4 and D5.
+Referenced from Background and forces the compute-time calculations in Challenges D4 and D5. The
+operation counts above are fixed by each path's arithmetic structure, not a modeling choice — a
+2nd-order polynomial evaluated in Horner form is always 2 multiplies and 3 adds regardless of its
+coefficients, and linear interpolation between two stored points is always 2 reads, 1 multiply,
+and 2 adds regardless of table size.
 
 ---
 
