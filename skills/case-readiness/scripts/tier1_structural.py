@@ -360,11 +360,24 @@ def run(project, cid):
     if not arg_b.strip():
         R.blocker('T1-09', "SPEC §2 — strongest quantitative argument for B not written")
     mp = c.get('margin_pct', bal.get('margin_pct'))
+    waiver = c.get('balance_test_waiver') or {}
+    waiver_complete = waiver.get('granted') and all(
+        (waiver.get(k) or '').strip() if isinstance(waiver.get(k), str) else waiver.get(k)
+        for k in ('reason', 'ledger_ref', 'approved_by', 'date')
+    )
     if mp is None:
         R.blocker('T1-09', "SPEC §2 — margin_pct not recorded")
     elif mp > 20:
-        R.blocker('T1-09', f"SPEC §2 — UNBALANCED: margin is {mp}% on '{c.get('primary_metric')}' "
-                           f"(cap ~20%). Retune a constraint. Do NOT fix this by hiding data.")
+        if waiver_complete:
+            R.gap('T1-09', f"SPEC §2 — margin is {mp}% on '{c.get('primary_metric')}' (cap ~20%), "
+                           f"but MCS-46 waiver on file (ledger_ref={waiver.get('ledger_ref')!r}, "
+                           f"approved_by={waiver.get('approved_by')!r}, date={waiver.get('date')!r}): "
+                           f"{waiver.get('reason')}")
+        else:
+            R.blocker('T1-09', f"SPEC §2 — UNBALANCED: margin is {mp}% on '{c.get('primary_metric')}' "
+                               f"(cap ~20%). Retune a constraint, or record a complete MCS-46 "
+                               f"balance_test_waiver (granted/reason/ledger_ref/approved_by/date). "
+                               f"Do NOT fix this by hiding data.")
     elif mp > 15:
         R.gap('T1-09', f"margin {mp}% is inside the cap but wide; the discussion will be one-sided")
     if not (c.get('primary_metric') or '').strip():
