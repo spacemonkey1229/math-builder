@@ -369,6 +369,23 @@ published ranges.
 ---
 
 ### C9 — The Transfer Window   ·   score 0.0   ·   quality 8/8   ·   tier T2
+
+> **SUPERSEDED 2026-08-31.** This concept was written up as `cases/the-transfer-window/` and fully
+> researched, but the balance test failed by roughly two orders of magnitude
+> (`margin_pct` = 15,940.5%, cap ~20%): chemical and full-electric propulsion differ by a real,
+> fixed ~800x in transit time (kN-class chemical thrust vs. mN-class Hall-effect electric thrust)
+> while only ~2–6x in payload-mass fraction, and no real, non-fabricated metric, contract-window
+> term, or cost figure closes that gap — see `cases/the-transfer-window/RESEARCH_LOG.md`'s
+> "RETUNE PASS" section for the full investigation. `cases/the-transfer-window/` is left untouched
+> as the historical record — do not delete it, do not re-run `case-write` on it. The replacement
+> concept, **C8 — The Phasing Call**, in
+> `CONCEPTS_precal-second-pass_2026-08-30.md`, keeps the same protagonist (Talia Brooks), career
+> (Trajectory Analyst), company (Meridian Launch Systems), and target skill group
+> (Pre-Calculus/Polar And Parametric), but compares two rendezvous-*timing* strategies on the
+> *same* propulsion system (direct/fast-track rendezvous vs. multi-orbit phasing rendezvous —
+> real precedent shows a few-x schedule spread, not several-hundred-x) instead of two different
+> propulsion *technologies*. See C8 for the full writeup; written as `the-phasing-call`.
+
 **Protagonist.** Talia Brooks, Trajectory Analyst at a small commercial launch company.
 Personally at stake: the transfer-orbit design she signs off on this week is what the payload
 customer's contract locks in.

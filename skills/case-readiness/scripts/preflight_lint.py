@@ -53,8 +53,14 @@ def check_student_facing_leak(md_path):
     if not os.path.isfile(md_path):
         return findings
     text = open(md_path, encoding="utf-8").read()
-    marker = text.find("<!-- FACILITATOR ONLY -->")
-    student_text = text if marker == -1 else text[:marker]
+    # Match the marker as a prefix, not an exact string: most cases' boilerplate
+    # reads "<!-- FACILITATOR ONLY: balance argument, margin, ... -->" rather than
+    # the bare "<!-- FACILITATOR ONLY -->" this used to require verbatim, which
+    # made text.find() return -1 on nearly every case in the corpus and silently
+    # treat the whole file -- including the marker comment's own "FACILITATOR"
+    # text -- as student-facing. Found while gating the-clampband-margin.
+    marker_match = re.search(r'<!--\s*FACILITATOR ONLY\b', text)
+    student_text = text if marker_match is None else text[:marker_match.start()]
 
     for i, line in enumerate(student_text.splitlines(), 1):
         if BALANCE_RESULT_NEAR_PCT_RE.search(line):

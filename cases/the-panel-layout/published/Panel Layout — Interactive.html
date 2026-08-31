@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Panel Layout — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md
+  (Math Builder A7, DOCTRINE_LEDGER MCS-37/MCS-39). Case data below is copied verbatim
+  from cases/the-panel-layout/case.md / case.json (case_md_sha256:
+  ffbc403f1eb8362d8016379c0c83933f54bb860b93f2df7672e00ad88fa671df, as of 2026-08-31).
+
+  HARD LINE (MCS-37): this file never prints case.json's balance verdict (which option
+  wins the miss-rate-weighted expected-time comparison, or margin_pct=2.46) as a static
+  literal. The Working Notebook computes T(x), its critical point, and the miss-rate-
+  weighted expected seconds per successful actuation live, from the case's own raw
+  inputs (Appendix A widths/distances, Appendix B Fitts's Law coefficients, Appendix C
+  tested miss rates) -- the calculator never hands the Hero the recommendation.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+  #twistCompute{display:none;margin-top:12px;padding:10px 12px;background:#2b323b;border:1px solid #444;border-radius:8px;font-family:var(--sans);font-size:.86rem;font-style:normal !important;color:#e8e3d5}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC: Panel Layout notebook widgets */
+  .calc-out{font-family:var(--sans);font-weight:700;color:var(--navy);min-width:90px;display:inline-block}
+  .xstar-table td.n{font-weight:700;color:var(--navy)}
+  .miss-given{font-family:var(--sans);font-size:.78rem;color:var(--sub)}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="16" cy="9" r="2.4"/><rect x="6" y="13" width="4" height="4"/><rect x="11.5" y="13" width="4" height="4"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: Panel Layout</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Critical Points &middot; Derivatives &middot; Optimization</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Marcus Feld has the two prototypes side by side on his bench, and for the third time this morning he reaches across each of them in turn, the way an operator would reach after setting an infusion rate &mdash; thumb landing on the Confirm control, then across to the panel's other required controls in the same motion. On his monitor, the motion-capture software still has a small red dot frozen over yesterday's test session, a tester's fingertip traced frame by frame across two control panels that look almost the same and measure completely differently. Both panels are freshly milled prototypes, and the room still smells faintly of warm plastic from the model shop three doors down.</p>
+  <p>His inbox has the tooling vendor's email open in the background tab, subject line unread twice already: <em>time to lock the panel drawing.</em> Once that drawing goes out, the injection-mold cavity gets cut, and there is no cheap way back &mdash; a hardware revision this far along does not get a second layout without a very uncomfortable conversation, and whichever panel he signs off on this afternoon is the one with his name on the sign-off line if a miss-rate problem ever turns up in the field.</p>
+  <p>Marcus picks up the Close Reach panel first. Bigger Confirm control, right where his thumb already wants to be. Then the Long Reach panel &mdash; smaller Confirm control, farther out, but the panel's other required controls sit closer together than they do on the first prototype, easier to reach in the same breath.</p>
+  <p>He sets both panels down, side by side, and opens the sign-off form.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Marcus Feld is a Human Factors Engineer at Meridian Medical, responsible for signing off on the control-panel layout of the company's bedside infusion-therapy console before its next hardware revision goes to tooling. Once his sign-off is submitted, the panel's injection-molding cavity is cut and the layout is locked for the life of that hardware revision &mdash; any layout problem found afterward becomes a design-history-file finding with Marcus's own sign-off attached to it.</p>
+  <p>The console's post-setup confirmation sequence requires an operator to reach the Confirm control &mdash; the single most frequently used control in the sequence &mdash; and then, in the same reach cycle, the panel's other required controls (see Appendix A). Panel space near the operator's resting hand position is limited: the near-zone closest to that resting position can comfortably fit either a larger Confirm control or more generous spacing for the other required controls, but not both at once (see Appendix A).</p>
+  <p>Two fully tooled prototype panels have already been built and tested (see Appendices A and C):</p>
+  <div class="card">
+    <p><strong>Close Reach</strong> claims most of the near-zone for the Confirm control &mdash; a larger target, placed close to the resting hand position &mdash; which lowers the Confirm control's own predicted movement time and tested miss rate, but pushes the panel's other required controls farther from the resting hand position, raising their predicted movement time and tested miss rate.</p>
+    <p style="margin-bottom:0"><strong>Long Reach</strong> gives most of the near-zone to the other required controls instead, placing them closer to the resting hand position, but shrinks the Confirm control and moves it farther out, raising its own predicted movement time and tested miss rate.</p>
+  </div>
+  <p>Every control's predicted movement time is modeled with Fitts's Law, the standard human-factors model for target-acquisition movement time, using coefficients from a published ISO 9241-9 evaluation (see Appendix B). Marcus's recommendation has to be judged on one figure: the whole panel's predicted seconds of task-completion time per successful actuation, across the full control sequence &mdash; not the Confirm control in isolation, and not either option's raw movement-time total without accounting for how often an operator misses and has to try again (see Appendices A, B and C).</p>
+  <p>Every sourced and assumed figure in this case is listed in Appendices D and E, and the vocabulary and "how to&hellip;" skills this case will ask of you are listed in Appendix F &mdash; that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Marcus Feld. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Close Reach</h4>
+      <p style="margin:0">Recommend Close Reach &mdash; lock in the larger Confirm control close to the resting hand position, even though it claims panel space the other required controls need.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Long Reach</h4>
+      <p style="margin:0">Recommend Long Reach &mdash; lock in the smaller Confirm control farther from the resting hand position, freeing panel space for the other required controls.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must include: (a) use of the "how to&hellip;" resource you researched in Challenge 1, and (b) at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include:
+      <ul style="margin-top:8px">
+        <li style="margin-bottom:8px"><strong>D1.</strong> The whole-panel Fitts's Law time model, built and differentiated (see Appendices A and B): the Confirm control's width and distance, and the other required controls' shared distance, expressed as functions of a single allocation variable x (the fraction of near-zone capacity given to the Confirm control, x = 0 at Long Reach and x = 1 at Close Reach), the resulting total predicted completion time T(x) for one pass through the full control sequence, its derivative T'(x) shown step by step, and the full algebra used to solve T'(x) = 0 for every critical point in the feasible domain 0 &le; x &le; 1.</li>
+        <li style="margin-bottom:8px"><strong>D2.</strong> A first-derivative-test sign chart (see D1): the sign of T'(x) evaluated at a test point on each side of every critical point found in D1, each critical point classified as a local minimum, local maximum, or neither, with a stated reason for each classification.</li>
+        <li style="margin-bottom:8px"><strong>D3.</strong> A closed-domain optimization table: T(x) evaluated at the domain's two endpoints (x = 0, Long Reach, and x = 1, Close Reach) and at every interior critical point classified in D2, with the global minimum of T(x) on the feasible domain identified and justified by comparing all of those values against each other, not asserted.</li>
+        <li style="margin-bottom:8px"><strong>D4.</strong> A miss-rate-weighted final decision table (see Appendix C): using the panel's tested miss rates for the Confirm control and for the other required controls at Long Reach and at Close Reach, and stating explicitly what is and is not known about miss rate at any interior layout identified as the time-minimizer in D3, compute the expected seconds of predicted task-completion time per successful actuation &mdash; accounting for the expected extra attempts a miss requires &mdash; for Long Reach, for Close Reach, and for D3's global minimizer, with a final recommendation stated in terms of that per-successful-actuation figure.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. If you are absent the day of a discussion post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; Panel Layout &amp; Option Endpoint Specifications</summary>
+    <div class="inner">
+      <p>Close Reach and Long Reach are the two ends of a single continuous design choice: how much of the panel's scarce near-zone &mdash; the strip of panel real estate closest to the resting hand position &mdash; is allocated to the Confirm control versus reserved for the panel's other required controls. Let <strong>x</strong> stand for the fraction of near-zone capacity allocated to the Confirm control, with x = 0 at Long Reach, x = 1 at Close Reach, and 0 &le; x &le; 1 for any layout physically buildable inside the current hardware revision's enclosure.</p>
+      <p>All figures in this table are stated Modeling Assumptions, not measurements of a real product &mdash; Meridian Medical and this hardware revision are invented for this case (see Appendix D for the basis and sensitivity of each).</p>
+      <table id="tblA">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Confirm control width at x = 0 (Long Reach), mm</td><td class="num">10 (MA1)</td></tr>
+        <tr><td>Confirm control width at x = 1 (Close Reach), mm</td><td class="num">30 (MA2)</td></tr>
+        <tr><td>Confirm control distance from the resting hand position at x = 0 (Long Reach), mm</td><td class="num">120 (MA3)</td></tr>
+        <tr><td>Confirm control distance from the resting hand position at x = 1 (Close Reach), mm</td><td class="num">60 (MA4)</td></tr>
+        <tr><td>Shared distance from the resting hand position to the other required controls at x = 0 (Long Reach), mm</td><td class="num">80 (MA5)</td></tr>
+        <tr><td>Shared distance from the resting hand position to the other required controls at x = 1 (Close Reach), mm</td><td class="num">140 (MA6)</td></tr>
+        <tr><td>Fixed target width of each of the other required controls (does not change with x), mm</td><td class="num">20 (MA7)</td></tr>
+        <tr><td>Count of other required controls sharing the near-zone trade-off with the Confirm control</td><td class="num">3 (MA8)</td></tr>
+      </table>
+      <p class="side-note">For any x strictly between 0 and 1, this case models the Confirm control's width and distance, and the other controls' shared distance, as varying linearly between their two named-option endpoint values above &mdash; the simplest model consistent with a continuous range of buildable layouts between the two prototypes actually tooled and tested (see Appendix C). This linear-interpolation choice is itself a stated Modeling Assumption (MA9, see Appendix D). Referenced from Background and Challenge D1.</p>
+    </div>
+  </details>
+
+  <details id="apx-b">
+    <summary>Appendix B &mdash; Fitts's Law Model &amp; ISO 9241-9 Coefficients</summary>
+    <div class="inner">
+      <p>Fitts's Law predicts the movement time required to acquire a target of a given width at a given distance (Paul Fitts, 1954), and is the model international usability-testing standard ISO 9241-9 uses to evaluate pointing-device and control performance. This case uses the common Shannon-formulation index of difficulty:</p>
+      <p><code>ID = log2(D/W + 1)</code>, in bits &nbsp;&middot;&nbsp; <code>MT = a + b &middot; ID</code>, in seconds</p>
+      <p>where D is the movement <span class="gterm-placeholder" data-term="Distance"></span> from the resting hand position to a control's center, W is that control's target width, and a and b are regression coefficients fit to real human performance data.</p>
+      <table id="tblB">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Fitts's Law intercept coefficient, a, seconds</td><td class="num">0.6992 [S1]</td></tr>
+        <tr><td>Fitts's Law slope coefficient, b, seconds per bit</td><td class="num">0.1714 [S1]</td></tr>
+      </table>
+      <p class="side-note">These coefficients are drawn from the "touchpad + tap" condition of a published ISO 9241-9 conformant Fitts's Law evaluation (see Appendix E, S1) &mdash; a real, dated, peer-reviewed measurement of human target-acquisition performance for a hand-operated tap-to-select task, used here as the best available public stand-in for this panel's hand-reach-and-press task. The whole-panel model built in Challenge D1 applies this formula once for the Confirm control and once for each of the other required controls (Appendix A), summed into a single predicted completion time T(x) for one pass through the full control sequence. Referenced from Background and Challenge D1.</p>
+    </div>
+  </details>
+
+  <details id="apx-c">
+    <summary>Appendix C &mdash; Panel Usability Test Log (Tested Miss Rates)</summary>
+    <div class="inner">
+      <p>Meridian Medical's usability lab tested a small panel of operators at both named prototype configurations &mdash; no layout in between has been physically built or tested &mdash; and recorded the following. All figures in this table are stated Modeling Assumptions, not a real usability test log &mdash; Meridian Medical's test panel is invented for this case (see Appendix D for the basis and sensitivity of each).</p>
+      <table id="tblC">
+        <tr><th></th><th>Confirm control miss rate</th><th>Other-required-controls average miss rate</th></tr>
+        <tr><td>Long Reach (x = 0)</td><td class="num">0.06 (MA10)</td><td class="num">0.02 (MA11)</td></tr>
+        <tr><td>Close Reach (x = 1)</td><td class="num">0.01 (MA12)</td><td class="num">0.07 (MA13)</td></tr>
+      </table>
+      <p class="side-note">No layout between the two named options has been physically prototyped or tested, so no tested miss-rate figure exists yet for an interior layout &mdash; Challenge D4 states explicitly what is and is not known about that layout's miss rate before using it in a recommendation. Referenced from Background and Challenge D4.</p>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move; Appendix F names the skills a Hero would need to test one.</blockquote>
+      <p>Meridian Medical and this specific hardware revision are invented for this case &mdash; no real public product's panel drawing exists to cite. The dimensions below are chosen to sit inside real, generally-published human-factors ranges for hand-operated console controls: touch/push targets sized for reliable actuation under time pressure (or gloved use) commonly cluster at roughly 20 mm and above in the human-factors usability literature, and a bedside console's near-zone &mdash; the reach envelope closest to a defined resting hand position &mdash; is commonly on the order of 50&ndash;150 mm.</p>
+      <table id="tblD">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Confirm control width, Long Reach (x=0)</td><td class="num">10 mm</td><td>Below the ~20 mm range commonly associated with reliable, low-error touch/push actuation &mdash; consistent with Long Reach's narrative of a deliberately undersized Confirm control.</td><td>Feeds MTc(0) in D1's model. Raising this value shrinks Long Reach's Confirm-control disadvantage; see MA9's note on the interior critical point x*.</td></tr>
+        <tr><td>MA2</td><td>Confirm control width, Close Reach (x=1)</td><td class="num">30 mm</td><td>Comfortably above the ~20 mm reliable-actuation range, consistent with Close Reach's narrative of a deliberately oversized Confirm control.</td><td>Feeds MTc(1). Lowering this toward MA1's value flattens the whole trade-off and can remove the interior critical point entirely.</td></tr>
+        <tr><td>MA3</td><td>Confirm control distance, Long Reach (x=0)</td><td class="num">120 mm</td><td>Outer edge of a plausible near-zone reach envelope.</td><td>Feeds MTc(0) and D3's endpoint comparison directly.</td></tr>
+        <tr><td>MA4</td><td>Confirm control distance, Close Reach (x=1)</td><td class="num">60 mm</td><td>Inner portion of the same envelope, close to the resting hand position.</td><td>Feeds MTc(1); a smaller value here strengthens Close Reach's own-control advantage without changing the whole-panel result much, since the other controls dominate D4 (see MA13).</td></tr>
+        <tr><td>MA5</td><td>Other-controls shared distance, Long Reach (x=0)</td><td class="num">80 mm</td><td>Inner portion of the envelope &mdash; Long Reach's whole narrative premise is that these controls stay close.</td><td>Feeds MTo(0), which is the term multiplied by MA8's count &mdash; the single most consequential distance figure for D4's outcome.</td></tr>
+        <tr><td>MA6</td><td>Other-controls shared distance, Close Reach (x=1)</td><td class="num">140 mm</td><td>Outer edge of the envelope &mdash; Close Reach's premise is that these controls get pushed out.</td><td>Feeds MTo(1). Numerically, Close Reach only wins D4's final comparison if this value drops below <strong>&asymp;118 mm</strong> (holding every other figure fixed) &mdash; this is one of the most dilemma-flippable figures in the case.</td></tr>
+        <tr><td>MA7</td><td>Fixed target width of each other required control</td><td class="num">20 mm</td><td>Set at the same ~20 mm reliable-actuation benchmark used for MA1/MA2, since these controls' size does not change with x.</td><td>Feeds both MTo(0) and MTo(1) equally; changing it shifts both options' other-control time by roughly the same amount and does not by itself flip D4.</td></tr>
+        <tr><td>MA8</td><td>Count of other required controls</td><td class="num">3</td><td>A short post-setup confirmation sequence on a bedside infusion console plausibly has a small number of required checks beyond Confirm (e.g. rate/target confirmation, an alarm-silence acknowledgment, a start acknowledgment) &mdash; 3 is a mid-range, defensible count for that kind of sequence.</td><td><strong>Directly dilemma-flipping.</strong> At n=1 or n=2 other required controls, Close Reach wins D4's expected-time comparison; at n=3 (the value used) or higher, Long Reach wins. A Hero who checks this sensitivity has found the real lever in this case.</td></tr>
+        <tr><td>MA9</td><td>Linear interpolation of width/distance in x between the two named endpoints</td><td class="num">(structural choice, not a numeric value)</td><td>The simplest model consistent with a continuous range of buildable layouts between the only two prototypes actually tooled &mdash; with no third prototype tested, a straight line is the least additional assumption a modeler can add.</td><td>A non-linear interpolation (e.g. one that saturates faster near an endpoint) could move x* without changing which of D3's compared values is largest, but a Hero should be able to say so explicitly rather than assume linearity is "the truth."</td></tr>
+        <tr><td>MA10</td><td>Confirm control tested miss rate, Long Reach (x=0)</td><td class="num">0.06 (6%)</td><td>Set higher than Close Reach's, consistent with a smaller, farther target; within the range usability testing commonly reports for a non-trivial but not extreme error rate under a small, first-generation sample of test operators.</td><td>Feeds D4's expected-attempts multiplier for the Confirm term at Long Reach; a lower value here would make Long Reach's D4 win even larger, not smaller.</td></tr>
+        <tr><td>MA11</td><td>Other-controls average tested miss rate, Long Reach (x=0)</td><td class="num">0.02 (2%)</td><td>Set low, consistent with those controls sitting in the easiest, closest part of the near-zone at this option.</td><td>Small individual effect, but multiplied by MA8's count of 3 in D4 &mdash; see MA8 and MA6 for the more consequential levers.</td></tr>
+        <tr><td>MA12</td><td>Confirm control tested miss rate, Close Reach (x=1)</td><td class="num">0.01 (1%)</td><td>Set low, consistent with a large, close target.</td><td>Even setting this to 0 does not flip D4's result on its own &mdash; the case's real sensitivity lives in the other-controls figures (MA6, MA13), not here; a Hero who spends their sensitivity argument only on this figure has picked the less consequential lever.</td></tr>
+        <tr><td>MA13</td><td>Other-controls average tested miss rate, Close Reach (x=1)</td><td class="num">0.07 (7%)</td><td>Set higher than Long Reach's, consistent with those controls being pushed to the outer, more error-prone part of the near-zone at this option.</td><td>Multiplied by MA8's count of 3 in D4. Close Reach only wins D4's final comparison if this value drops below <strong>&asymp;4.1%</strong> (holding every other figure fixed) &mdash; one of the most dilemma-flippable figures in the case, alongside MA6 and MA8.</td></tr>
+      </table>
+      <p class="side-note">No tested miss-rate figure exists, or could exist, for the interior time-minimizing x* found in D1&ndash;D3 &mdash; no layout strictly between the two named options has ever been built. Challenge D4 asks you to state this limitation explicitly rather than assume x*'s miss rate can be interpolated the same way its distances and widths were (MA9); this case does not supply a value for it, by design. Referenced from Background.</p>
+    </div>
+  </details>
+
+  <details id="apx-e">
+    <summary>Appendix E &mdash; Sources</summary>
+    <div class="inner">
+      <table id="tblE">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Fitts's Law regression coefficients (intercept a, slope b) for the Shannon-formulation model MT = a + b&middot;log2(D/W+1), "touchpad + tap" condition, ISO 9241-9 conformant two-dimensional target-acquisition task</td><td class="num">a = 0.6992 s, b = 0.1714 s/bit, r = .9124</td><td>Hassan, M., Magee, J., &amp; MacKenzie, I. S. &mdash; "A Fitts' Law Evaluation of Hands-Free and Hands-On Input on a Laptop Computer," <em>Proceedings of HCII 2019</em> (LNCS 11573), pp. 234&ndash;249 (<a href="https://doi.org/10.1007/978-3-030-23563-5_20" target="_blank" rel="noopener">DOI</a>; <a href="https://www.yorku.ca/mack/hcii2019.html" target="_blank" rel="noopener">author's page</a>)</td><td>2019</td><td>MEDIUM</td></tr>
+      </table>
+      <p class="side-note">Note on S1's confidence grade: this is a real, dated, peer-reviewed ISO 9241-9 conformant study with unambiguous units (the paper explicitly ties its task to the ISO 9241-9 two-dimensional circular target layout and Shannon ID formula). It is graded MEDIUM rather than HIGH because the measured task &mdash; a fingertip tap on a laptop touchpad &mdash; is a proxy for this case's actual task, a hand reaching to press a physical control-panel button; no public ISO 9241-9 study of a bedside medical-device control panel specifically was found. Referenced from Background.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-31. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Build T(x) and find its critical point (D1)</h4>
+    <div class="goal">T(x) sums one Fitts's Law term for the Confirm control and one (times MA8's count) for the other required controls, with width/distance interpolated linearly in x between Appendix A's endpoints. Use the calculator below to explore T(x) at any x you choose, then find and enter the interior critical point where T'(x) = 0.</div>
+    <div class="fieldrow">
+      <label for="calcX">x to evaluate (0 to 1)</label>
+      <input type="number" step="0.0001" min="0" max="1" id="calcX" value="0">
+      <button onclick="computeTx()">Compute T(x)</button>
+      <span class="calc-out" id="calcTxResult">&mdash;</span>
+    </div>
+    <div class="fieldrow">
+      <label for="userXStar">Your critical point x* (0&ndash;1)</label>
+      <input type="number" step="0.0001" id="userXStar">
+      <span class="fb" id="xStarFb"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="userTxStar">Your T(x*), seconds</label>
+      <input type="number" step="0.001" id="userTxStar">
+      <button onclick="checkCriticalPoint()">Check</button>
+      <span class="fb" id="tStarFb"></span>
+    </div>
+    <p class="side-note">The Check confirms whether your typed T(x*) matches T(x) evaluated at <em>your own</em> x, and separately whether your x is close to the actual critical point &mdash; it won't hand you either number outright.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; First-derivative-test sign chart (D2)</h4>
+    <div class="goal">Pick your own test point on each side of your critical point from Step 1, evaluate the sign of T'(x) at each, then classify the critical point.</div>
+    <div class="fieldrow">
+      <label for="testXLeft">Test x-value, left of your critical point</label>
+      <input type="number" step="0.0001" min="0" max="1" id="testXLeft">
+      <label for="signLeft" style="min-width:0">Sign of T'(x) there</label>
+      <select id="signLeft"><option value="">choose&hellip;</option><option value="positive">positive</option><option value="negative">negative</option></select>
+    </div>
+    <div class="fieldrow">
+      <label for="testXRight">Test x-value, right of your critical point</label>
+      <input type="number" step="0.0001" min="0" max="1" id="testXRight">
+      <label for="signRight" style="min-width:0">Sign of T'(x) there</label>
+      <select id="signRight"><option value="">choose&hellip;</option><option value="positive">positive</option><option value="negative">negative</option></select>
+    </div>
+    <div class="fieldrow">
+      <label for="classification">Classification of the critical point</label>
+      <select id="classification"><option value="">choose&hellip;</option><option value="local minimum">local minimum</option><option value="local maximum">local maximum</option><option value="neither">neither</option></select>
+      <button onclick="checkSignChart()">Check</button>
+      <span class="fb" id="signFb"></span>
+    </div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Closed-domain optimization table (D3)</h4>
+    <div class="goal">Compute T(x) at both domain endpoints and at the interior critical point from Step 1, then identify which of the three is the global minimum of raw T(x) on the feasible domain.</div>
+    <table class="xstar-table" id="d3Table">
+      <tr><th>x</th><th>Layout</th><th>Your T(x), seconds</th><th></th></tr>
+      <tr><td class="n">0</td><td>Long Reach</td><td><input type="number" step="0.001" id="d3_x0"></td><td class="fb" id="d3Fb0"></td></tr>
+      <tr><td class="n">1</td><td>Close Reach</td><td><input type="number" step="0.001" id="d3_x1"></td><td class="fb" id="d3Fb1"></td></tr>
+      <tr><td class="n">x*</td><td>Interior critical point (your Step 1 answer)</td><td><input type="number" step="0.001" id="d3_xstar"></td><td class="fb" id="d3FbStar"></td></tr>
+    </table>
+    <div class="fieldrow">
+      <label for="globalMin">Which is the global minimum of raw T(x)?</label>
+      <select id="globalMin"><option value="">choose&hellip;</option><option value="long">Long Reach (x=0)</option><option value="close">Close Reach (x=1)</option><option value="star">Interior critical point (x*)</option></select>
+      <button onclick="checkD3()">Check All</button>
+      <span class="fb" id="d3Summary"></span>
+    </div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Miss-rate-weighted expected time (D4)</h4>
+    <div class="goal">Fold in Appendix C's tested miss rates: each control is retried (same movement time, same miss rate) until it succeeds, so the expected number of attempts is 1/(1&minus;miss rate). Compute the expected seconds per successful actuation for Long Reach and Close Reach using the given miss rates below.</div>
+    <table id="d4Given">
+      <tr><th>Layout</th><th>Confirm miss rate</th><th>Other-controls miss rate</th></tr>
+      <tr><td>Long Reach (x=0)</td><td class="num">0.06</td><td class="num">0.02</td></tr>
+      <tr><td>Close Reach (x=1)</td><td class="num">0.01</td><td class="num">0.07</td></tr>
+    </table>
+    <div class="fieldrow">
+      <label for="eLong">Your expected seconds, Long Reach</label>
+      <input type="number" step="0.001" id="eLong">
+      <span class="fb" id="eLongFb"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="eClose">Your expected seconds, Close Reach</label>
+      <input type="number" step="0.001" id="eClose">
+      <button onclick="checkD4()">Check Both</button>
+      <span class="fb" id="eCloseFb"></span>
+    </div>
+    <p class="miss-given">No tested miss rate exists for the interior critical point x* &mdash; Appendix C only tested the two named endpoints, so x* cannot be scored on this figure at all (state that limitation explicitly in your pitch). Your final recommendation (A or B) is yours to make in your pitch; revisit the Dilemma card above if you want to update your pick.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; Explore the sensitivity (optional)</h4>
+    <div class="goal">Appendix D flags MA6, MA8, and MA13 as the case's most dilemma-flippable assumptions. Drag the sliders to see how the live expected-seconds figures for Long Reach and Close Reach respond &mdash; the tool computes both live; it does not tell you which one wins at any setting.</div>
+    <div class="sliderow"><label for="slMA6" style="min-width:260px;font-family:var(--sans)">MA6 &mdash; Other-controls distance, Close Reach (mm)</label><input type="range" id="slMA6" step="1" oninput="onFlexChange()"><span class="val" id="slMA6Val"></span></div>
+    <div class="sliderow"><label for="slMA8" style="min-width:260px;font-family:var(--sans)">MA8 &mdash; Count of other required controls</label><input type="range" id="slMA8" step="1" oninput="onFlexChange()"><span class="val" id="slMA8Val"></span></div>
+    <div class="sliderow"><label for="slMA13" style="min-width:260px;font-family:var(--sans)">MA13 &mdash; Other-controls miss rate, Close Reach</label><input type="range" id="slMA13" step="0.01" oninput="onFlexChange()"><span class="val" id="slMA13Val"></span></div>
+    <table id="tblLive">
+      <tr><th>Layout</th><th>Live expected seconds per successful actuation, at current sliders</th></tr>
+      <tr><td>Long Reach</td><td class="num" id="liveTotalLong">&mdash;</td></tr>
+      <tr><td>Close Reach</td><td class="num" id="liveTotalClose">&mdash;</td></tr>
+    </table>
+    <p class="side-note">This slider tool recomputes live from the same model as Steps 1&ndash;4 &mdash; it lets you feel out how close the two options really are without ever stating a winner or a margin. That comparison is yours to make in D4.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-panel"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>Someone in the room points out that your own Step 1&ndash;3 work already found something interesting: the layout that actually minimizes raw predicted movement time isn't either prototype on Marcus's bench. It's the interior critical point x* &mdash; some allocation strictly between Long Reach and Close Reach &mdash; and on <em>raw</em> movement time alone (before any miss rate is folded in), it beats both named options. If a third prototype were milled at that exact allocation, would Marcus recommend it instead of either panel actually sitting on his bench?</p>
+      <p>Before answering, remember what Appendix C actually tested: the usability lab has only ever run operators through the two named endpoints. No layout at x* has ever been built, let alone tested for miss rate. What miss rate would that third panel actually have in the field &mdash; and can Marcus's sign-off form responsibly answer D4 for a panel nobody has built?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Show the live-computed raw T(x) at Long Reach, Close Reach, and your Step 1 critical point x*, side by side</label>
+      </div>
+      <div id="twistCompute"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>Hassan, M., Magee, J., &amp; MacKenzie, I. S. &mdash; <a href="https://doi.org/10.1007/978-3-030-23563-5_20" target="_blank" rel="noopener">A Fitts' Law Evaluation of Hands-Free and Hands-On Input on a Laptop Computer</a>, HCII 2019, LNCS 11573, pp. 234&ndash;249 (S1)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Panel Layout &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/the-panel-layout's
+   case.md and case.json (case_md_sha256:
+   ffbc403f1eb8362d8016379c0c83933f54bb860b93f2df7672e00ad88fa671df). PARAMS/
+   FLEX/evaluate() port cases/the-panel-layout/sensitivity_model.py's own
+   whole-panel Fitts's Law model — the Working Notebook's Step 1-5 functions
+   below call into these rather than re-deriving the tally inline, per
+   templates/INTERACTIVE_HTML_CONTRACT.md §2.
+
+   NOTE on "higher is better": this case's primary metric is expected
+   SECONDS per successful actuation — LOWER is better. evaluate() returns
+   the NEGATIVE of each option's expected seconds (matching
+   sensitivity_model.py's own convention, see its module docstring) so the
+   contract's "higher is better" shape still holds; raw seconds are exposed
+   separately by rawTime()/expectedSeconds() for the notebook's own display.
+
+   evaluate_twist(): sensitivity_model.py has no evaluate_twist() of its own
+   — this case's "twist" doesn't change any Modeling Assumption, it reveals
+   a structural fact already implicit in D1-D3 (the interior critical point
+   x* beats both named endpoints on RAW time, but has no tested miss rate).
+   evaluate_twist() below returns the same {A,B} shape as evaluate(),
+   unchanged, plus the interior point's own raw time exposed separately for
+   the Twist's live-compute panel — it is never folded into A/B, and it
+   never states which of A/B wins.
+   ================================================================ */
+const PARAMS = {
+  ma1_confirm_width_x0_mm: 10.0,   // MA1  Confirm width, Long Reach (x=0)
+  ma2_confirm_width_x1_mm: 30.0,   // MA2  Confirm width, Close Reach (x=1)
+  ma3_confirm_dist_x0_mm: 120.0,   // MA3  Confirm distance, Long Reach (x=0)
+  ma4_confirm_dist_x1_mm: 60.0,    // MA4  Confirm distance, Close Reach (x=1)
+  ma5_other_dist_x0_mm: 80.0,      // MA5  Other-controls distance, Long Reach (x=0)
+  ma6_other_dist_x1_mm: 140.0,     // MA6  Other-controls distance, Close Reach (x=1)
+  ma7_other_width_mm: 20.0,        // MA7  Fixed width of each other control
+  ma8_other_count: 3.0,            // MA8  Count of other required controls
+  // MA9 (linear interpolation in x) is structural, not a numeric dial —
+  // no PARAMS entry; the interpolation itself is fixed in rawTime() below.
+  ma10_confirm_miss_x0: 0.06,      // MA10 Confirm miss rate, Long Reach (x=0)
+  ma11_other_miss_x0: 0.02,        // MA11 Other-controls miss rate, Long Reach (x=0)
+  ma12_confirm_miss_x1: 0.01,      // MA12 Confirm miss rate, Close Reach (x=1)
+  ma13_other_miss_x1: 0.07         // MA13 Other-controls miss rate, Close Reach (x=1)
+};
+// Probe 5 flexes THESE and only these -- every numeric stated Modeling
+// Assumption (MA1-MA8, MA10-MA13). Fitts's Law coefficients (S1) are cited
+// data, not a stated assumption, so they are excluded.
+const FLEX = [
+  "ma1_confirm_width_x0_mm", "ma2_confirm_width_x1_mm",
+  "ma3_confirm_dist_x0_mm", "ma4_confirm_dist_x1_mm",
+  "ma5_other_dist_x0_mm", "ma6_other_dist_x1_mm",
+  "ma7_other_width_mm", "ma8_other_count",
+  "ma10_confirm_miss_x0", "ma11_other_miss_x0",
+  "ma12_confirm_miss_x1", "ma13_other_miss_x1"
+];
+// Fixed: cited data (Appendix E, S1), not a stated Modeling Assumption.
+const FITTS_A_S = 0.6992;
+const FITTS_B_S_PER_BIT = 0.1714;
+
+function fittsMT(distanceMm, widthMm){
+  const indexOfDifficulty = Math.log2(distanceMm / widthMm + 1.0);
+  return FITTS_A_S + FITTS_B_S_PER_BIT * indexOfDifficulty;
+}
+function lerp(v0, v1, x){ return v0 + (v1 - v0) * x; }
+function confirmWidth(p, x){ return lerp(p.ma1_confirm_width_x0_mm, p.ma2_confirm_width_x1_mm, x); }
+function confirmDist(p, x){ return lerp(p.ma3_confirm_dist_x0_mm, p.ma4_confirm_dist_x1_mm, x); }
+function otherDist(p, x){ return lerp(p.ma5_other_dist_x0_mm, p.ma6_other_dist_x1_mm, x); }
+
+/* T(x): whole-panel predicted completion time for one pass, seconds
+   (D1/D2/D3 -- the un-weighted movement-time model, no miss rate). */
+function rawTime(paramsOverride, x){
+  const p = Object.assign({}, PARAMS, paramsOverride || {});
+  const n = p.ma8_other_count;
+  const mtConfirm = fittsMT(confirmDist(p, x), confirmWidth(p, x));
+  const mtOther = fittsMT(otherDist(p, x), p.ma7_other_width_mm);
+  return mtConfirm + n * mtOther;
+}
+/* Interior critical point of T(x) on [0,1], by fine numeric search --
+   re-derived numerically here (not hardcoded) so a flexed model on Step 5's
+   sliders still finds its own x*. */
+function findXStar(paramsOverride){
+  const p = Object.assign({}, PARAMS, paramsOverride || {});
+  let bestX = 0, bestT = rawTime(p, 0);
+  for(let i = 0; i <= 2000; i++){
+    const x = i / 2000;
+    const t = rawTime(p, x);
+    if(t < bestT){ bestT = t; bestX = x; }
+  }
+  return {x: bestX, t: bestT};
+}
+/* D4: expected seconds per successful actuation at layout x, given the
+   Confirm control's and the other controls' miss rate at that x -- each
+   control retried (same MT, same miss rate) until it succeeds, so the
+   expected number of attempts is 1/(1-miss rate). */
+function expectedSeconds(paramsOverride, x, missConfirm, missOther){
+  const p = Object.assign({}, PARAMS, paramsOverride || {});
+  const n = p.ma8_other_count;
+  const mtConfirm = fittsMT(confirmDist(p, x), confirmWidth(p, x));
+  const mtOther = fittsMT(otherDist(p, x), p.ma7_other_width_mm);
+  return mtConfirm / (1.0 - missConfirm) + n * mtOther / (1.0 - missOther);
+}
+function evaluate(paramsOverride){
+  const p = Object.assign({}, PARAMS, paramsOverride || {});
+  const eClose = expectedSeconds(p, 1.0, p.ma12_confirm_miss_x1, p.ma13_other_miss_x1);
+  const eLong = expectedSeconds(p, 0.0, p.ma10_confirm_miss_x0, p.ma11_other_miss_x0);
+  return {A: -eClose, B: -eLong};
+}
+function evaluate_twist(paramsOverride){
+  const p = Object.assign({}, PARAMS, paramsOverride || {});
+  const base = evaluate(p);
+  const star = findXStar(p);
+  return Object.assign({}, base, {xStar: star.x, T_xStar: star.t});
+}
+/* Numeric derivative of T(x) by central difference -- used by Step 2's
+   sign-chart check so the notebook never hardcodes the closed-form
+   derivative (that algebra is Challenge D1's own deliverable). */
+function tPrime(paramsOverride, x, h){
+  h = h || 1e-5;
+  const p = Object.assign({}, PARAMS, paramsOverride || {});
+  return (rawTime(p, x + h) - rawTime(p, x - h)) / (2 * h);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (Steps 1-5).
+   ================================================================ */
+function computeTx(){
+  const x = parseFloat(val('calcX'));
+  if(isNaN(x) || x < 0 || x > 1){
+    document.getElementById('calcTxResult').textContent = 'enter 0–1';
+    return;
+  }
+  document.getElementById('calcTxResult').textContent = round(rawTime(PARAMS, x), 4) + ' s';
+}
+function checkCriticalPoint(){
+  const trueStar = findXStar(PARAMS);
+  const userX = parseFloat(val('userXStar'));
+  const userT = parseFloat(val('userTxStar'));
+  const xOk = !isNaN(userX) && near(userX, trueStar.x, 0.01);
+  const tExpectedAtUserX = !isNaN(userX) ? round(rawTime(PARAMS, Math.max(0, Math.min(1, userX))), 3) : null;
+  const tOk = !isNaN(userT) && tExpectedAtUserX !== null && near(userT, tExpectedAtUserX, 0.01);
+  fb('xStarFb', xOk);
+  fb('tStarFb', tOk);
+}
+function checkSignChart(){
+  const xLeft = parseFloat(val('testXLeft'));
+  const xRight = parseFloat(val('testXRight'));
+  const trueStar = findXStar(PARAMS);
+  const bracketsOk = !isNaN(xLeft) && !isNaN(xRight) && xLeft >= 0 && xRight <= 1 && xLeft < trueStar.x && xRight > trueStar.x;
+  const leftSign = !isNaN(xLeft) ? (tPrime(PARAMS, Math.max(0.0001, Math.min(0.9999, xLeft))) < 0 ? 'negative' : 'positive') : null;
+  const rightSign = !isNaN(xRight) ? (tPrime(PARAMS, Math.max(0.0001, Math.min(0.9999, xRight))) < 0 ? 'negative' : 'positive') : null;
+  let trueClass = 'neither';
+  if(leftSign === 'negative' && rightSign === 'positive') trueClass = 'local minimum';
+  else if(leftSign === 'positive' && rightSign === 'negative') trueClass = 'local maximum';
+  const userLeft = document.getElementById('signLeft').value;
+  const userRight = document.getElementById('signRight').value;
+  const userClass = document.getElementById('classification').value;
+  const ok = bracketsOk && userLeft === leftSign && userRight === rightSign && userClass === trueClass;
+  fb('signFb', ok);
+}
+function checkD3(){
+  const trueStar = findXStar(PARAMS);
+  const expected0 = round(rawTime(PARAMS, 0.0), 3);
+  const expected1 = round(rawTime(PARAMS, 1.0), 3);
+  const userStarX = parseFloat(val('userXStar'));
+  const expectedStar = round(trueStar.t, 3);
+
+  const u0 = parseFloat(val('d3_x0'));
+  const u1 = parseFloat(val('d3_x1'));
+  const uStar = parseFloat(val('d3_xstar'));
+
+  const ok0 = near(u0, expected0, 0.01);
+  const ok1 = near(u1, expected1, 0.01);
+  const okStar = near(uStar, expectedStar, 0.01);
+  fb('d3Fb0', ok0);
+  fb('d3Fb1', ok1);
+  fb('d3FbStar', okStar);
+
+  const values = {long: expected0, close: expected1, star: expectedStar};
+  const trueMinKey = Object.keys(values).reduce((a,b) => values[a] <= values[b] ? a : b);
+  const userMin = document.getElementById('globalMin').value;
+  const minOk = userMin === trueMinKey;
+
+  const okCount = [ok0, ok1, okStar, minOk].filter(Boolean).length;
+  const summary = document.getElementById('d3Summary');
+  summary.className = 'fb ' + (okCount === 4 ? 'ok' : 'bad');
+  summary.textContent = okCount + ' / 4 correct';
+}
+function checkD4(){
+  const expectedLong = round(expectedSeconds(PARAMS, 0.0, PARAMS.ma10_confirm_miss_x0, PARAMS.ma11_other_miss_x0), 3);
+  const expectedClose = round(expectedSeconds(PARAMS, 1.0, PARAMS.ma12_confirm_miss_x1, PARAMS.ma13_other_miss_x1), 3);
+  const userLong = parseFloat(val('eLong'));
+  const userClose = parseFloat(val('eClose'));
+  fb('eLongFb', near(userLong, expectedLong, 0.01));
+  fb('eCloseFb', near(userClose, expectedClose, 0.01));
+}
+
+/* Step 5 — live sensitivity sliders (MA6, MA8, MA13). */
+function buildSliders(){
+  const el6 = document.getElementById('slMA6');
+  el6.min = 60; el6.max = 220; el6.value = PARAMS.ma6_other_dist_x1_mm;
+  const el8 = document.getElementById('slMA8');
+  el8.min = 1; el8.max = 8; el8.value = PARAMS.ma8_other_count;
+  const el13 = document.getElementById('slMA13');
+  el13.min = 0; el13.max = 0.20; el13.value = PARAMS.ma13_other_miss_x1;
+}
+function currentFlexParams(){
+  return Object.assign({}, PARAMS, {
+    ma6_other_dist_x1_mm: parseFloat(document.getElementById('slMA6').value),
+    ma8_other_count: parseFloat(document.getElementById('slMA8').value),
+    ma13_other_miss_x1: parseFloat(document.getElementById('slMA13').value)
+  });
+}
+function refreshLiveTotals(){
+  const params = currentFlexParams();
+  const eLong = expectedSeconds(params, 0.0, params.ma10_confirm_miss_x0, params.ma11_other_miss_x0);
+  const eClose = expectedSeconds(params, 1.0, params.ma12_confirm_miss_x1, params.ma13_other_miss_x1);
+  document.getElementById('liveTotalLong').textContent = round(eLong, 3);
+  document.getElementById('liveTotalClose').textContent = round(eClose, 3);
+}
+function onFlexChange(){
+  document.getElementById('slMA6Val').textContent = document.getElementById('slMA6').value + ' mm';
+  document.getElementById('slMA8Val').textContent = document.getElementById('slMA8').value;
+  document.getElementById('slMA13Val').textContent = round(parseFloat(document.getElementById('slMA13').value) * 100, 0) + '%';
+  refreshLiveTotals();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-panel-layout";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "The whole-panel Fitts's Law time model T(x), built and differentiated, with every critical point found on 0<=x<=1"],
+  ["D2", "A first-derivative-test sign chart classifying every critical point"],
+  ["D3", "A closed-domain optimization table (both endpoints + every interior critical point) with the global minimum identified"],
+  ["D4", "A miss-rate-weighted final decision table (expected seconds per successful actuation) with a recommendation"],
+  ["C1", "Research link answering a How To... question (Appendix F)"],
+  ["C2", "250+ word pitch, using the C1 resource, with an original visual"],
+  ["C4", "Appendix of original thinking/evidence"],
+  ["C5", "Case discussion participation (2+ posts, or 500 words if absent)"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   First 6 terms reused verbatim from templates/INTERACTIVE_HTML_CONTRACT.md's
+   verified starter glossary (khanacademy.org, verified 2026-08-01). The
+   remaining 5 terms are this case's own new vocabulary (Critical Point,
+   Derivative, First Derivative Test, Optimization, Domain) and were freshly
+   fetched and confirmed live on khanacademy.org, 2026-08-31, this session.
+   ================================================================ */
+const GLOSSARY = {
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Measurement": {def: "Assigning a number to a physical quantity -- length, time, mass -- using a chosen unit.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Distance": {def: "How far apart two points or places are.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"},
+  "Critical Point": {def: "A point in a function's domain where its derivative is zero or undefined -- a candidate for a local minimum or maximum.",
+    url: "https://www.khanacademy.org/math/differential-calculus/dc-analytic-app/dc-evt/v/minima-maxima-and-critical-points"},
+  "Derivative": {def: "The instantaneous rate of change of a function -- the slope of its tangent line at a point.",
+    url: "https://www.khanacademy.org/math/differential-calculus/dc-diff-intro/dc-derivative-intro/a/derivative-as-a-concept"},
+  "First Derivative Test": {def: "A method that classifies a critical point as a local minimum, local maximum, or neither by checking whether the derivative's sign changes on either side of it.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-diff-analytical-applications-new/ab-5-4/a/applying-the-first-derivative-test-to-find-extrema"},
+  "Optimization": {def: "Using calculus (typically derivatives) to find the input that makes a function's output as large or as small as possible.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-diff-analytical-applications-new/ab-5-11/v/minimizing-sum-of-squares"},
+  "Domain": {def: "The complete set of input values for which a function is defined.",
+    url: "https://www.khanacademy.org/math/algebra/algebra-functions/domain-and-range/v/domain-of-a-function-intro"}
+};
+const HOWTO = [
+  ["how to find critical points of a function", "Critical Point"],
+  ["how to use the first derivative test to classify a critical point", "First Derivative Test"],
+  ["how to solve an optimization problem using derivatives", "Optimization"],
+  ["how to find the domain of a function", "Domain"],
+  ["how to compute a derivative", "Derivative"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* Resolve the hand-placed .gterm-placeholder span left in Appendix B's
+   "Distance" mention, before the auto-linker runs, so that occurrence is
+   the deliberately-chosen spot rather than whatever the auto-linker would
+   pick as the "first mention." */
+document.querySelectorAll('.gterm-placeholder[data-term]').forEach(ph => {
+  const term = ph.dataset.term;
+  const span = document.createElement('span');
+  span.innerHTML = gtermHTML(term, term.toLowerCase());
+  ph.replaceWith(span.firstChild);
+});
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal gating. CASE-SPECIFIC: onTwistToggle()
+   below computes and displays T(Long Reach), T(Close Reach), and T(x*)
+   live via rawTime()/evaluate_twist() -- never a static literal, and
+   never a statement of which named option wins the graded D4 comparison.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applyEl = document.getElementById('applyTwist');
+  const out = document.getElementById('twistCompute');
+  if(!out) return;
+  if(applyEl && applyEl.checked){
+    const result = evaluate_twist(PARAMS);
+    const t0 = round(rawTime(PARAMS, 0), 3);
+    const t1 = round(rawTime(PARAMS, 1), 3);
+    out.style.display = 'block';
+    out.innerHTML = 'Computed live from Appendix A/B, no miss rate involved: '
+      + 'T(Long Reach, x=0) = ' + t0 + ' s &middot; '
+      + 'T(Close Reach, x=1) = ' + t1 + ' s &middot; '
+      + 'T(x* = ' + round(result.xStar, 4) + ') = ' + round(result.T_xStar, 3) + ' s. '
+      + 'No tested miss rate exists for x* (Appendix C only tested the two named endpoints) -- it cannot be scored in Step 4\'s expected-time comparison.';
+  } else {
+    out.style.display = 'none';
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+
+/* Prime the Working Notebook's live tools. */
+buildSliders();
+onFlexChange();
+</script>
+</body>
+</html>
