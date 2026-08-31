@@ -158,6 +158,8 @@ def next_action_for(stage, cj, tier1, run_report_filed):
             return "Tier 1 + Tier 2 both clean (qa.state: TIER2_PASS) — ready for case-publish."
         return "Tier 1 clean — build a sensitivity_model.py, then run Tier 2 probes."
     if stage == "promotion":
+        if tier1.get("ran") and tier1.get("blockers", 0) > 0:
+            return f"Resolve {tier1['blockers']} Tier 1 blocker(s) (re-run flagged them post-publish), then re-run case-readiness."
         return "Run a Tier 3 human dry-run and file a RUN_REPORT to reach VERIFIED."
     if stage == "verified":
         return "None — this case has cleared every gate this pipeline has."
@@ -201,7 +203,13 @@ def main():
     # cases/investment-portfolio/case.json and by the pre-existing
     # standards_spine.json tagging) are genuinely different strings for the same
     # case. Mirrors the TITLE_ALIASES fix in build_legacy_readiness.py.
-    LEGACY_TITLE_ALIASES = {"Stock Market": "Investment Portfolio"}
+    LEGACY_TITLE_ALIASES = {
+        "Stock Market": "Investment Portfolio",
+        "Movie Producer": "Movie Executive",
+        "College Football Playoff Committee": "Playoff Committee",
+        "Medical Statician": "Medical Statistician",
+        "AirBnb": "AirBnb Or Landlord",
+    }
 
     written_titles = set()
     cases_out = []

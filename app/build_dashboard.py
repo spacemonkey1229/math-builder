@@ -728,10 +728,60 @@ def build_data():
         rs = ratings_by_case.get(case_id, [])
         return {"avg_rating": round(sum(rs) / len(rs), 1) if rs else None, "rating_count": len(rs)}
 
+    def _case_detail_fields(cj, ci, matrix_col):
+        """Fields shared by every Case Library entry, corpus-reconciled or
+        pipeline-native alike -- everything derivable from case.json (cj) and/or
+        a cases_index.json record (ci), independent of how the case was found."""
+        case_id = (ci or {}).get("id") or (cj or {}).get("id")
+        # Legacy cases join standards through a matrix column (skills_by_col);
+        # pipeline case.json carries its own standards id list directly, which
+        # is the more precise source when both are available.
+        skill_ids = (cj or {}).get("standards")
+        if matrix_col:
+            n_skill_ids = len(skills_by_col.get(matrix_col, []))
+        elif skill_ids:
+            n_skill_ids = len(skill_ids)
+        else:
+            n_skill_ids = None
+        return {
+            "tier": (ci or {}).get("tier") or (cj or {}).get("tier"),
+            "complexity": (cj or {}).get("complexity", (ci or {}).get("complexity")),
+            "standards_count": (ci or {}).get("standards_count") or (len(skill_ids) if skill_ids else None),
+            "domains_touched": (ci or {}).get("domains_touched") or [],
+            "skill_ids": skill_ids,
+            # skill ids are NOT shipped for the legacy join: the page derives them
+            # from heat[].by. Pipeline cases ship skill_ids above instead.
+            "n_skill_ids": n_skill_ids,
+            "case_id": case_id,
+            **_rating_summary(case_id),
+            "protagonist": (cj or {}).get("protagonist"),
+            "primary_metric": (cj or {}).get("primary_metric") or (ci or {}).get("primary_metric"),
+            "options": (cj or {}).get("options") or (ci or {}).get("options") or {"A": None, "B": None},
+            "margin_pct": (cj or {}).get("margin_pct", (ci or {}).get("margin_pct")),
+            "balance_verdict": ((cj or {}).get("balance_test") or {}).get("verdict"),
+            "argument_a": ((cj or {}).get("balance_test") or {}).get("argument_A"),
+            "argument_b": ((cj or {}).get("balance_test") or {}).get("argument_B"),
+            "deliverables": (cj or {}).get("deliverables") or [],
+            "assumptions": (cj or {}).get("assumptions") or [],
+            "qa": ({"verdict": (cj["qa"] or {}).get("verdict"),
+                    "state": (cj["qa"] or {}).get("state"),
+                    "blockers": (cj["qa"] or {}).get("blockers"),
+                    "gaps": (cj["qa"] or {}).get("gaps"),
+                    "gate": (cj["qa"] or {}).get("gate"),
+                    "run_at": (cj["qa"] or {}).get("run_at"),
+                    "note": (cj["qa"] or {}).get("note")} if (cj or {}).get("qa")
+                   else ({"verdict": ci.get("qa_verdict")} if ci and ci.get("qa_verdict") else None)),
+            "twist": (((cj or {}).get("facilitator") or {}).get("twist")),
+            "sensitivity_note": (((cj or {}).get("facilitator") or {}).get("sensitivity_note")),
+        }
+
+    used_ci_ids = set()   # cases_index ids already placed in `lib` via corpus reconciliation
     lib = []
     for c in corpus_cases:
         r = recon[c["title"]]
         ci = ci_by_title.get(r["col"]) if r["col"] else None
+        if ci:
+            used_ci_ids.add(ci["id"])
         # A corpus record's own path never updates after conversion -- it's
         # frozen at its original legacy location. Once a case is reconciled
         # to a pipeline record, prefer the reconciled paths (which do track
@@ -777,42 +827,102 @@ def build_data():
             "n_links_missing": sum(1 for k, _l, _s in ASSET_KINDS for x in links[k] if not x["exists"]),
             "has_case_json": bool(cj),
             "mapped": bool(r["col"]),
+            "legacy_unreconciled": not bool(r["col"]),
             "matrix_col": r["col"],
             "match": r["match"],
             "score": r["score"],
-            "tier": (ci or {}).get("tier") or (cj or {}).get("tier"),
-            "complexity": (cj or {}).get("complexity", (ci or {}).get("complexity")),
-            "standards_count": (ci or {}).get("standards_count"),
-            "domains_touched": (ci or {}).get("domains_touched") or [],
-            # skill ids are NOT shipped: the page derives them from heat[].by,
-            # which already carries the same join. See skillsOf() in the page.
-            "n_skill_ids": len(skills_by_col.get(r["col"], [])) if r["col"] else None,
             "root_domains": doms_by_case.get(c["title"], []),
-            "case_id": (ci or {}).get("id") or (cj or {}).get("id"),
-            **_rating_summary((ci or {}).get("id") or (cj or {}).get("id")),
-            # narrative detail: only the pipeline case carries it today. Legacy
-            # cases keep null so the panel says "not recorded", never invents.
-            "protagonist": (cj or {}).get("protagonist"),
-            "primary_metric": (cj or {}).get("primary_metric") or (ci or {}).get("primary_metric"),
-            "options": (cj or {}).get("options") or (ci or {}).get("options") or {"A": None, "B": None},
-            "margin_pct": (cj or {}).get("margin_pct", (ci or {}).get("margin_pct")),
-            "balance_verdict": ((cj or {}).get("balance_test") or {}).get("verdict"),
-            "argument_a": ((cj or {}).get("balance_test") or {}).get("argument_A"),
-            "argument_b": ((cj or {}).get("balance_test") or {}).get("argument_B"),
-            "deliverables": (cj or {}).get("deliverables") or [],
-            "assumptions": (cj or {}).get("assumptions") or [],
-            "qa": ({"verdict": (cj["qa"] or {}).get("verdict"),
-                    "state": (cj["qa"] or {}).get("state"),
-                    "blockers": (cj["qa"] or {}).get("blockers"),
-                    "gaps": (cj["qa"] or {}).get("gaps"),
-                    "gate": (cj["qa"] or {}).get("gate"),
-                    "run_at": (cj["qa"] or {}).get("run_at"),
-                    "note": (cj["qa"] or {}).get("note")} if (cj or {}).get("qa")
-                   else ({"verdict": ci.get("qa_verdict")} if ci and ci.get("qa_verdict") else None)),
-            # facilitator-only, stripped from every student payload
-            "twist": (((cj or {}).get("facilitator") or {}).get("twist")),
-            "sensitivity_note": (((cj or {}).get("facilitator") or {}).get("sensitivity_note")),
+            **_case_detail_fields(cj, ci, r["col"]),
         })
+
+    # ---- case library, part 2: pipeline-native cases ----------------------
+    # Every case authored straight through the case-brainstorm -> ... ->
+    # case-publish pipeline (not converted from a legacy corpus folder) has no
+    # entry in corpus_index.json, so the loop above never visits it -- it was
+    # invisible to the Case Library and unopenable from the dashboard even
+    # though its case.json is real, on disk, and often fully published.
+    # Walk every case pipeline_status.json knows about (any id with a real
+    # cases/<id>/case.json, at whatever stage -- drafting through verified)
+    # and add the ones the corpus loop above didn't already place.
+    for pc in pipeline.get("cases", []):
+        pid = pc["id"]
+        if pc.get("origin") == "legacy" or pid in used_ci_ids:
+            # "legacy" entries are folders already carried by corpus_cases above;
+            # everything else already reconciled is in used_ci_ids.
+            continue
+        case_dir = ROOT / "cases" / pid
+        jp = case_dir / "case.json"
+        if not jp.exists():
+            continue
+        used_ci_ids.add(pid)
+        cj = json.loads(jp.read_text(encoding="utf-8"))
+        ci = ci_by_id.get(pid)
+        rel_dir = "cases/" + pid
+
+        links = {k: [] for k, _l, _s in ASSET_KINDS}
+        pub_dir = case_dir / "published"
+        if pub_dir.is_dir():
+            kind_by_suffix = {".html": "interactive_html", ".xlsx": "data_workbooks",
+                               ".pdf": "reference_pdfs"}
+            image_ext = {".png", ".jpg", ".jpeg", ".gif", ".svg"}
+            for fp in sorted(pub_dir.iterdir()):
+                if fp.name == "MANIFEST.json" or not fp.is_file():
+                    continue
+                ext = fp.suffix.lower()
+                if ext == ".docx":
+                    kind = "guide_notes" if "facilitator" in fp.stem.lower() else "case_doc"
+                elif ext in image_ext:
+                    kind = "images"
+                else:
+                    kind = kind_by_suffix.get(ext)
+                if not kind:
+                    continue
+                rel = rel_dir + "/published/" + fp.name
+                links[kind].append(make_link(rel, fp.name, kind, kind in STUDENT_SAFE_KINDS))
+        links["_folder"] = make_link(rel_dir, pid, "folder", False)
+
+        extra = []
+        for fn, lab in (("case.md", "Case source (markdown)"),
+                        ("QA_REPORT.md", "QA report (facilitator)"),
+                        ("FACILITATOR.md", "Facilitator pack"),
+                        ("case.json", "case.json (machine record)")):
+            if (case_dir / fn).exists():
+                extra.append(make_link(rel_dir + "/" + fn, lab, "pipeline", False))
+
+        assets_manifest = {k: [x["label"] for x in links[k]] for k, _l, _s in ASSET_KINDS}
+        lib.append({
+            "title": pc["title"],
+            # These cases aren't part of a legacy Y1/Y2/Y3 cohort -- "Pipeline"
+            # is a real, distinct provenance label, not a stand-in for missing
+            # data. Studio (the pipeline's own grouping) fills the session slot.
+            "year": "Pipeline",
+            "session": cj.get("studio") or (ci or {}).get("studio") or "Unassigned studio",
+            "status": pc.get("status") or cj.get("status"),
+            "path": rel_dir,
+            "assets": assets_manifest,
+            "asset_links": links,
+            "pipeline_links": extra,
+            "has_guide": bool(assets_manifest["guide_notes"]),
+            "has_socratic_plan": bool(assets_manifest["socratic_plan"]),
+            "n_assets": sum(len(v) for v in assets_manifest.values()),
+            "n_links_ok": sum(1 for k, _l, _s in ASSET_KINDS for x in links[k] if x["exists"]),
+            "n_links_missing": sum(1 for k, _l, _s in ASSET_KINDS for x in links[k] if not x["exists"]),
+            "has_case_json": True,
+            # This case was never part of the legacy 27-case matrix, so that
+            # reconciliation ("legacy_unreconciled") doesn't apply to it at all
+            # -- it's not an unresolved gap, it just isn't the same problem.
+            # "mapped" here means the library-wide, origin-agnostic question
+            # "do we know this case's standards" -- yes, straight from its own
+            # case.json, no matrix join needed.
+            "mapped": bool(cj.get("standards")),
+            "legacy_unreconciled": False,
+            "matrix_col": None,
+            "match": "n/a",
+            "score": None,
+            "root_domains": doms_by_case.get(pc["title"], []),
+            **_case_detail_fields(cj, ci, None),
+        })
+
     lib.sort(key=lambda c: (c["year"], c["session"], c["title"]))
     lib_by_title = {c["title"]: c for c in lib}
 
@@ -824,7 +934,9 @@ def build_data():
                           for f in corpus.get("case_examples", [])],
     }
 
-    unmapped_cases = [c for c in lib if not c["mapped"]]
+    # Legacy-matrix reconciliation gaps only -- never pipeline-native cases,
+    # which were never part of that matrix and so have nothing to reconcile.
+    unmapped_cases = [c for c in lib if c["legacy_unreconciled"]]
 
     # ---- gap queue -------------------------------------------------------
     # which application domains could actually close each cluster: a real
@@ -1001,7 +1113,10 @@ def build_data():
     headline = {
         "corpus_cases": len(lib),
         "matrix_cols": len(matrix_cols),
-        "mapped": sum(1 for c in lib if c["mapped"]),
+        # legacy-matrix reconciliation only -- corpus_cases is the fixed universe
+        # that reconciliation applies to; pipeline-native cases (never in that
+        # matrix) are neither mapped nor unmapped by this measure.
+        "mapped": len(corpus_cases) - len(unmapped_cases),
         "unmapped": len(unmapped_cases),
         "orphan_cols": len(orphan_cols),
         "fuzzy": len(fuzzy_links),
@@ -3824,18 +3939,56 @@ def verify(quiet=False):
     ck("geometry skills", data["headline"]["geometry_skills"], len(geo))
     ck("geometry uncovered", data["headline"]["geometry_uncovered"], sum(1 for s in geo if s["n"] == 0))
 
-    ck("corpus cases", data["headline"]["corpus_cases"], len(corpus))
-    ck("cases emitted", len(data["cases"]), len(corpus))
-    ck("matrix columns", data["headline"]["matrix_cols"], len(spine["cases"]))
     r = reconcile(corpus, spine["cases"])
+    # Case Library entries = every corpus folder, PLUS every pipeline-native
+    # case (never in corpus_index.json, so not reconciled above) that has a
+    # real cases/<id>/case.json on disk. Mirrors the two-pass build in
+    # build_data() -- see the "case library, part 2" loop.
+    used_ci_ids_v = set()
+    for c in corpus:
+        col = r[c["title"]]["col"]
+        ci_v = ci_by_title_v.get(col) if col else None
+        if ci_v:
+            used_ci_ids_v.add(ci_v["id"])
+    pipeline_v = load("pipeline_status.json")
+    pipeline_native_ids_v = {
+        pc["id"] for pc in pipeline_v.get("cases", [])
+        if pc.get("origin") != "legacy" and pc["id"] not in used_ci_ids_v
+        and (ROOT / "cases" / pc["id"] / "case.json").exists()
+    }
+    expected_lib_total = len(corpus) + len(pipeline_native_ids_v)
+    ck("corpus cases", data["headline"]["corpus_cases"], expected_lib_total)
+    ck("cases emitted", len(data["cases"]), expected_lib_total)
+    ck("matrix columns", data["headline"]["matrix_cols"], len(spine["cases"]))
+
+    # pipeline-native cases' own contribution to with_guide/asset_files, counted
+    # the same way build_data()'s pipeline-native loop counts them (glob the
+    # published/ dir; a .docx is "guide notes" iff "facilitator" is in its name).
+    _kind_exts = {".html", ".xlsx", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".docx"}
+    pn_guide, pn_assets = 0, 0
+    for _pid in pipeline_native_ids_v:
+        pub = ROOT / "cases" / _pid / "published"
+        if not pub.is_dir():
+            continue
+        _has_guide = False
+        for fp in pub.iterdir():
+            if fp.name == "MANIFEST.json" or not fp.is_file() or fp.suffix.lower() not in _kind_exts:
+                continue
+            pn_assets += 1
+            if fp.suffix.lower() == ".docx" and "facilitator" in fp.stem.lower():
+                _has_guide = True
+        if _has_guide:
+            pn_guide += 1
     ck("mapped cases", data["headline"]["mapped"], sum(1 for v in r.values() if v["col"]))
     ck("unmapped cases", data["headline"]["unmapped"], sum(1 for v in r.values() if not v["col"]))
     ck("mapped+unmapped == corpus", data["headline"]["mapped"] + data["headline"]["unmapped"], len(corpus))
     ck("orphan matrix columns", data["headline"]["orphan_cols"],
        len(set(spine["cases"]) - {v["col"] for v in r.values() if v["col"]}))
-    ck("guide notes", data["headline"]["with_guide"], sum(1 for c in corpus if c["has_guide"]))
+    ck("guide notes", data["headline"]["with_guide"], sum(1 for c in corpus if c["has_guide"]) + pn_guide)
+    # pipeline-native cases never carry a socratic plan (that's a legacy-corpus
+    # asset kind), so they contribute nothing here.
     ck("socratic plans", data["headline"]["with_socratic"], sum(1 for c in corpus if c["has_socratic_plan"]))
-    ck("asset files", data["headline"]["asset_files"], sum(c["n_assets"] for c in corpus))
+    ck("asset files", data["headline"]["asset_files"], sum(c["n_assets"] for c in corpus) + pn_assets)
 
     ck("branches", len(data["branches"]), len(tree["branches"]))
     unm = [b["id"] for b in data["branches"] if b["coverage"]["state"] == "unmapped"]
@@ -3979,6 +4132,9 @@ def verify(quiet=False):
         for pp in [_pipeline_path(c)]
         if pp and (ROOT / pp / "published").is_dir()
     )
+    # pipeline-native cases' published/ files (all ASSET_KINDS, not just .html) --
+    # already counted the same way, above, for the "guide notes"/"asset files" checks.
+    corpus_files += pn_assets
     ck("asset links emitted", len(hrefs), data["links"]["total"])
     ck("every emitted href decodes+resolves to a file on disk", len(broken), 0)
     ck("resolved link count == live link count", resolved, len(live))
@@ -3998,7 +4154,7 @@ def verify(quiet=False):
                 for t in s["by"]:
                     by_col.setdefault(t, []).append(s["id"])
     ck("page-derived skill ids match the shipped counts",
-       [c["title"] for c in data["cases"] if c["mapped"]
+       [c["title"] for c in data["cases"] if c["mapped"] and c["matrix_col"]
         and len(by_col.get(c["matrix_col"], [])) != c["n_skill_ids"]], [])
     # A case with a real case.json (has_case_json) was individually re-authored with a
     # deliberately curated, forcing-tested standards[] -- smaller and more precise than the
