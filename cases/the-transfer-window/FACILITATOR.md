@@ -1,187 +1,269 @@
-# Guide Notes: The Transfer Window
+# FACILITATOR.md — The Transfer Window
 
-**Case:** The Transfer Window · **Tier:** T2 · **Band:** MS-core · **Studio:** MS Adventure
-**Standards:** Pre-Calculus/Polar And Parametric — `pre-calculus-parametric-equation`,
-`pre-calculus-parameter`, `pre-calculus-how-to-eliminate-the-parameter-to-find-a-rectangular-
-equation` (this case is the group's second touch beyond its single existing entry; none are
-`new_coverage`), plus four heavily-covered supporting skills from Advanced Numbers/Percents,
-Advanced Numbers/Decimals, and Measurement/Units. Exact ids in `case.json.standards[]`.
+*Facilitator-only. Do not paste any of this into case.md's student-facing appendices — case.md
+carries no marker comment for this by design (see the "Balance argument" guidance in `case-write`
+SKILL.md); the balance argument, margin, and sensitivity notes live only here and in `case.json`'s
+`balance` object.*
 
-**Status:** researched at `case-research`, 2026-08-31; **retuned (unresolved) 2026-08-31**.
-**margin_pct = 15,940.5 — Option A (The Direct Burn) wins by roughly two orders of magnitude, not
-a close call.** ⚠️ **RETUNE ATTEMPTED, MARGIN STANDS — do not send to `case-qa` as a "close"
-case.** Direct Burn's deliverable payload (17.0 kg over a derived 0.221-day transit) works out to
-≈76.9 kg/day; Patient Drift's (86.3 kg over an assumed 180-day transit) works out to ≈0.479
-kg/day. The payload advantage (~5x) never comes close to offsetting the ~800x transit-time
-disadvantage.
+**Case:** The Transfer Window · **Tier:** T2 (MS-core) · **Studio:** MS Adventure
+**Standards:** Pre-Calculus/Polar And Parametric — Parametric Equation, Parameter, How to eliminate
+the parameter to find a rectangular equation, plus supporting Percent/Decimal/Measurement skills
+(see `case.json.standards[]` for exact ids).
 
-A retune pass (`RESEARCH_LOG.md`, "RETUNE PASS — 2026-08-31") checked both routes this note
-originally suggested and found neither works without fabricating a number: (1) **MA3 is not
-unrealistically extreme** — 180 days for a full electric GEO orbit-raise sits squarely inside real
-precedent (Boeing 702SP-class all-electric satellites, ~6-month transfers), re-confirmed against
-fresh search; the ~800x transit-time gap is a real structural fact of chemical (newtons–
-kilonewtons, minutes) vs. Hall-effect electric (millinewtons, months) thrust, not a modeling
-choice. (2) **No alternative real metric closes the gap**: a cost-per-kg metric would need an
-unsourced dollar figure for launch-cost savings or delayed-revenue cost; a pass/fail framing
-against Appendix A's 240-day contract window never binds (180 days is comfortably inside it), so
-it can't discriminate between the two options as a *primary* metric. Full detail and sources in
-`RESEARCH_LOG.md`. No changes were made to `case.md`, `case.json`, or `FACILITATOR.md`'s substance
-in that pass. **Recommendation:** treat this case's research as valid and complete but one-sided
-(a legitimate, decisive real result, not a "close call" case), and — separately, as a fresh
-`case-write` effort — author a new case under a new id, same protagonist/career/skill group, built
-around two different real parking-orbit **phasing strategies** for a launch window (direct-ascent
-vs. multi-orbit phasing, a real ~2–5x schedule spread rather than chemical-vs-electric's fixed
-~800x). See `RESEARCH_LOG.md` for starting sources.
+**Status:** Researched and computed 2026-08-31 (`RESEARCH_LOG.md`). All appendix figures are closed
+and sourced. A dedicated retune pass ("RETUNE PASS — 2026-08-31") checked the margin against the
+two most likely explanations for a landslide this large and ruled both out as artifacts — see
+below.
 
-## Balance argument
+**Balance flag, read before you facilitate:** on the primary metric (kilograms of deliverable
+payload per day of transit time), the Direct Burn beats the Patient Drift by **15,940.5%** —
+roughly 160x. This is far outside SPEC §2's ~20% cap and is **waived under MCS-46**
+(`case.json.balance_test_waiver`; see `DOCTRINE_LEDGER.md`). The waiver does not mean "treat this
+as close." It means the opposite: this case is not built for a Socratic debate over which side
+wins — the Direct Burn wins, decisively, on real, honestly-sourced numbers, and every Hero should
+land there. **What this case is actually built to teach is why the margin is this large** — that
+chemical and electric propulsion differ by wildly *different* orders of magnitude on two different
+axes (~800x on transit time, only ~5x on payload mass), and that a ratio metric lets the larger
+asymmetry dominate completely rather than the two partially offsetting. The facilitator's job is to
+run an audit of the analysis, not a debate about the winner.
 
-**Argument for A (The Direct Burn).** A high-thrust chemical burn reaches the target
-geostationary orbit radius in a small fraction of the time a low-thrust electric transfer needs —
-and the payload customer's contract fixes a hard maximum delivery window (Appendix A). If the
-Patient Drift's modeled transit time comes anywhere close to that ceiling, the Direct Burn is the
-only option that comfortably clears it, and clearing the contracted delivery window is not
-optional the way a marginal payload-mass gain is. Speed converts directly into contract compliance
-and customer trust in a way the raw kg/day metric does not fully capture on its own.
+## The real numbers (facilitator reference — never appears in case.md)
 
-**Argument for B (The Patient Drift).** Electric propulsion's much higher specific impulse means a
-far smaller propellant mass fraction is needed for the same delta-v budget (Appendix B, C) — so a
-larger share of the kick stage's fixed total wet mass survives as deliverable payload. The case's
-actual primary metric is not raw payload mass and not raw speed alone, but kilograms of payload
-per day of transit — and because that is a ratio, not a race, a trajectory that delivers
-meaningfully more payload can still win on kg/day even while taking longer, provided the payload
-gain outpaces the added transit days by enough. Whether it actually does is exactly what D4
-computes.
+- Deliverable payload mass: Direct Burn 180 − 30 − 133.0 = **17.0 kg**; Patient Drift
+  180 − 30 − 63.7 = **86.3 kg**. Ratio ≈ **5.1x**, Patient Drift ahead.
+- Transit time: Direct Burn **0.221 days** (5.3 hr, the Hohmann-transfer coast time, S12); Patient
+  Drift **180 days** (MA3, anchored to real Boeing 702SP-class all-electric GEO transfers, S8/S9).
+  Ratio ≈ **815x**, Direct Burn ahead.
+- Primary metric = deliverable payload ÷ transit time: Direct Burn 17.0 / 0.221 ≈ **76.9 kg/day**;
+  Patient Drift 86.3 / 180 ≈ **0.479 kg/day**. Because the metric is a straight ratio, the ~815x
+  term the Direct Burn wins on lands in the *denominator* the same way for both options — it is not
+  offset by the ~5.1x term the Patient Drift wins on, it dominates it: 76.9 / 0.479 ≈ 160.5x
+  (15,940.5%). See `case.json.balance.margin_basis` for the full arithmetic and
+  `sensitivity_model.py` for a runnable reproduction.
+- A dedicated retune pass re-verified, independently, that neither term is an authorial exaggeration:
+  180 days sits inside real published precedent for a full electric GEO orbit-raise (not at an
+  extreme of it), and the ~800x transit-time gap is a structural fact of thrust technology —
+  chemical thrust runs newtons-to-kilonewtons and converts nearly all its delta-v in minutes;
+  Hall-effect electric thrust runs in millinewtons and can only deliver its (larger) total delta-v
+  budget continuously over months. This ratio is a property of the two real propulsion
+  technologies, not of this case's specific mass/Isp/delta-v numbers — see
+  `RESEARCH_LOG.md`'s "RETUNE PASS" for the full re-verification, including why no alternative real
+  metric (cost-per-kg, pass/fail against the 240-day contract window) closes the gap without
+  fabricating a number.
 
-**The margin.** For each option, deliverable payload mass (wet mass minus dry mass minus
-propellant mass) divided by that option's transit time in days, compared as kg/day. Computed:
-Direct Burn ≈76.9 kg/day (17.0 kg / 0.221 days) vs. Patient Drift ≈0.479 kg/day (86.3 kg / 180
-days) — **the Direct Burn wins by ≈15,940%,** not a close call. `case.json` records the full
-method and every input as `balance.margin_basis`. NASA JPL's Trajectory Browser/Horizons does not
-actually apply to an Earth parking-orbit-to-GEO transfer (it models interplanetary trajectories);
-the Direct Burn's orbital elements are instead derived directly from real orbital radii and
-Earth's real gravitational parameter via the standard Hohmann-transfer equations — see
-`RESEARCH_LOG.md` for the full trail, including why this margin is flagged for a possible retune
-rather than treated as case-ready.
+## Intro
 
-**The second, non-numeric constraint.** Appendix D's radiation-dose comparison against Appendix
-A's tolerance limit is a pass/fail gate, not part of the margin itself. It is possible for an
-option to win on kg/day and still be disqualified outright if its cumulative dose exceeds the
-payload's rated tolerance — facilitators should watch for students who compute D4 correctly but
-never check D5 against Appendix A's limit.
+Frame the format before anything else: this is a real trajectory sign-off that becomes a written
+contract term, not a worksheet. Name the opener — "You're Talia Brooks. Whichever design you
+recommend gets written into the customer's delivery contract. There's no 'we'll see' — you sign
+one." Let the stakes land before moving to the Launch.
 
-## Socratic questions
+## Launch
 
-1. Your D4 table gives a kilograms-per-day figure for each option. Which one is larger, and by
-   roughly how much — does that margin survive if the slower option's transit time turned out to
-   be a few days longer than Appendix B's modeled figure?
-2. Appendix A states a maximum acceptable delivery window. Does either option's D2 transit-time
-   check come close to that ceiling — and if the Patient Drift's transit time crossed it, would
-   the kg/day metric even matter anymore?
-3. In D2 you solved for the point where each trajectory's rectangular equation crosses the target
-   orbit radius. What would it mean, physically, if that solved point did not actually match
-   Appendix A's stated target orbit radius — what part of Appendix B would you go back and
-   question first?
-4. Appendix D compares each option's cumulative radiation dose against a stated tolerance limit.
-   Suppose the Direct Burn wins D4 comfortably but its D5 dose estimate is close to that limit —
-   does a close-but-passing dose estimate change how confidently you'd defend the Direct Burn, or
-   is a pass a pass?
-5. If the named kick stage's actual published specific impulse for its electric mode turned out to
-   be meaningfully lower than Appendix B states, which of your D3 and D4 results would change
-   first, and would that plausibly flip your D6 recommendation?
+Show Appendix B's two transfer ellipses side by side (illustrative shapes, not the case's real
+numbers) — one steep and fast, one long and gradual — with no numbers beyond the general shape yet.
+Ask: "Just from what you know about rocket engines versus ion/electric engines, which one do you
+think wins on *payload delivered per day of transit* — and by roughly how much?" Take answers
+without correcting anyone. Most rooms will correctly guess the Direct Burn is much faster and the
+Patient Drift saves more propellant — that instinct is fine and expected. What almost no room will
+guess correctly, without doing the math, is *how lopsided the actual per-day comparison turns out
+to be*, because "electric propulsion is way more efficient" sounds like it should bank enough extra
+payload to make the extra months worth it. Record the room's gut guess at the *size* of the gap
+(most will guess something like "2x," "5x," or "it's close") — Close will come back to this.
 
-## The trap
+## Anchor 1 — Take a stand and vote
 
-The trap is treating "faster" and "better" as the same claim. A Hero who fixates on the Direct
-Burn's shorter transit time and stops there has answered a question the case never actually asked
-— the primary metric is kilograms of payload *per day*, a ratio, not a race to be first. A Direct
-Burn that arrives quickly but hands over noticeably less payload mass (because a larger share of
-launch mass went to propellant) can lose on kg/day to a slower option that protects more payload,
-even though "the Direct Burn got there first" remains true and is the more intuitively persuasive
-sentence to say out loud. The reverse trap also exists: a Hero who fixates on the Patient Drift's
-payload-mass advantage and never checks its transit time against Appendix A's contracted delivery
-window, or its Appendix D radiation dose against the tolerance limit, may recommend an option that
-is not actually flyable under the contract's own constraints. Both traps come from computing one
-part of the picture (speed, or payload mass) and treating it as the whole answer.
+**TAKE A STAND AND VOTE. No reasoning yet, just commit.**
 
-## Sensitivity note
+"Is anyone courageous enough to stand with the Patient Drift — the option that protects the most
+payload mass?" Show of hands, both options, no discussion. Record the count — Close will ask again.
 
-None required. Per SPEC §6, this case carries no illness, death, financial-hardship, or other
-protected-subject stakes — it is a routine mission-design and contract-delivery trade-off between
-two legitimate, professionally defensible trajectory choices, comparable in register to Wind
-Triangle or Navigation. No facilitator content warning is needed.
+## Anchor 2 — What is the problem we're solving?
 
-## Cohort bands (SPEC §7.4 — minimum specification, drafted at write time)
+**"Is 'which one is faster' the right question?" · "What do you mean by 'saves more payload'?"**
 
-| Band | Typical size | What changes |
-|---|---|---|
-| **Full** | the size this T2 case is authored for (a full MS-core class section) | the Socratic plan below runs as written; both stand/sit votes are taken as a group |
-| **Compressed** | roughly half | Anchors 2–3 combine into one pass; the deep-conflict thread (speed vs. payload-per-day) runs as a single thread instead of two; total runtime shortens proportionally |
-| **1:1 / pair** | 1–2 learners | no vote to take — Anchor 1 becomes a stated initial position instead of a stand/sit count; the guide plays devil's advocate directly rather than cold-calling; Socratic question 2 (the delivery-window ceiling) still lands but is asked directly rather than opened to the room |
+Push the room to state the actual metric before touching an appendix: not "which trajectory is
+faster" and not "which trajectory delivers more payload mass," but kilograms of deliverable payload
+*per day of transit time* — a ratio of two independently-derived quantities, not either alone. If
+the room lands on "we need to divide one real number by another real number, not just compare two
+separate advantages," the case is working as designed.
 
-## Guide Notes — anchor ladder
+## Anchor 3 — What is the process?
 
-**Intro.** Frame the format: this is a real trajectory sign-off, not a worksheet. Name the
-opener: *"You're the analyst. Whichever design you recommend becomes the number written into the
-customer's contract. There's no 'we'll see' — you sign one."*
+**"If we go through this process and find the data, how will we decide?"**
 
-**Launch.** Show the two trajectory plots side by side (illustrative shapes, not the case's real
-numbers) — one steep and fast, one long and gradual — with no other context. Ask: *"If all you
-knew was which one gets there first, which would you pick, right now?"* Take the answers without
-correcting anyone.
+Make the room name the steps before opening an appendix: (1) write each option's position as a
+function of a parameter using its stated semi-major axis and eccentricity, (2) eliminate that
+parameter to get a rectangular equation you can actually check against the target orbit radius, (3)
+verify each trajectory really reaches the target orbit at that solved point, (4) work out each
+option's propellant-mass fraction via the rocket equation and how much payload survives, (5) divide
+deliverable payload by transit time for each option and compare, (6) check the cumulative radiation
+dose against the tolerance limit. Re-ask: "Now that we can see the steps, is our question still the
+right one?"
 
-**Anchor 1 — Take a stand and vote.** *"Is anyone courageous enough to stand with the slower
-trajectory?"* Stand-or-sit, no reasoning yet. Record the count; the Close re-asks it.
+## Anchor 4 — What don't we know?
 
-**Anchor 2 — What is the problem we're solving?** *"Is 'gets there first' the right question?"
-"What do you mean by 'more payload'?"* Push on: *"Is a kilogram delivered today worth the same as
-a kilogram delivered three weeks from now?"* Let the room sit with that discomfort — a room that
-leaves Anchor 2 still arguing about what the metric should even measure is exactly where it
-should be.
+**"Do we need to make assumptions? Which ones are critical?"**
 
-**Anchor 3 — What is the process?** Make the room name the steps before opening an appendix:
-(1) write each trajectory's position as a function of a parameter, (2) eliminate that parameter to
-get an equation you can actually check against the target orbit, (3) verify each trajectory really
-reaches the target radius, (4) work out how much propellant each option burns and how much payload
-survives, (5) divide payload by transit time for each option, (6) check the radiation dose against
-the tolerance limit. Re-ask: *"Now that we can see the steps, is our question still the right
-one?"*
+Surface the honest gaps: Appendix E's MA1 (contract delivery window), MA2 (modeling both options as
+the same geometric ellipse), MA4 (dry mass), and MA5 (radiation dose rate) are all stated,
+disclosed assumptions for a real vehicle used in a fictional company's mission — none of them
+changes which option wins D4's ratio. MA1 never binds either option under the case's own figures;
+MA2 only affects the D1/D2 algebra (making both options solve the same curve), not the mass/time
+economics; MA4 shrinks both options' payload roughly proportionally without closing the ~160x gap;
+MA5 affects only the D5 radiation pass/fail check, a separate constraint from the primary metric.
+**MA3 — the Patient Drift's 180-day transit time — is the one figure worth real scrutiny**, because
+it is the single largest lever in the whole comparison. Ask: "If MA3 is the load-bearing figure,
+should we be suspicious that it was chosen to make the Direct Burn win?" Let the room sit with that
+suspicion — then, in the Data Deep Dive, follow the real evidence that it is not: 180 days sits
+inside real precedent for a full electric GEO orbit-raise, not at an inflated extreme. A sharp Hero
+should be able to name that lengthening MA3 never helps the Patient Drift: pushed toward MA1's
+240-day contract ceiling (e.g. 239 days) the Direct Burn's margin actually *widens*, to roughly
+21,000%, because a longer transit only shrinks the Patient Drift's own kg/day figure further; pushed
+past that ceiling (270+ days) the Patient Drift is disqualified outright on the delivery-window gate
+before the kg/day comparison is even reached. Either direction, the Patient Drift never wins — the
+margin is not a knife's-edge result riding on one assumption (see `sensitivity_model.py`).
 
-**Anchor 4 — What don't we know?** Surface the honest gaps once `case-research` fills Appendix E:
-most likely, Meridian Launch Systems' own contract delivery-window and radiation-tolerance limits
-in Appendix A cannot be sourced for a fictional company and mission, and will be stated, disclosed
-assumptions anchored to a real comparable mission's own published requirements. Ask: *"Is that
-assumption critical to who wins — or does it wash out?"*
+## Data Deep Dive
 
-**Data Deep Dive.** Now, and only now, open Appendices A–D and work D1–D6.
+Now, and only now, open Appendices A–E and work D1–D6. Cold-call for D4 specifically — this is
+where a Hero who correctly found the Patient Drift protects more payload (D3) but never divided by
+each option's own transit time will not yet see the scale of the result.
 
-**Twist.** N/A at draft time — no twist is authored yet. A strong candidate for `case-research` or
-a later pass to consider: a real published finding that a payload's radiation-tolerance rating can
-be exceeded well before its stated maximum-dose limit if a solar event occurs during the transit
-window, which would cut against the Patient Drift's payload-mass advantage without changing either
-option's physical trajectory. This is left `N/A` here because it depends on real space-weather
-data not yet sourced; it should not be invented as a stated fact without a real basis.
+**Facilitator-only arithmetic note.** D3: Direct Burn deliverable payload = 180 − 30 − 133.0 =
+17.0 kg; Patient Drift = 180 − 30 − 63.7 = 86.3 kg. D4: Direct Burn 17.0 kg ÷ 0.221 days ≈ 76.9
+kg/day; Patient Drift 86.3 kg ÷ 180 days ≈ 0.479 kg/day. Percent difference (76.9 − 0.479) / 0.479
+× 100 ≈ 15,940.5%. Full derivation in `case.json.balance.margin_basis`; reproduced mechanically in
+`sensitivity_model.py`.
 
-**Close.** VOTE AGAIN: *"Did we ask the right question?"* Ask what math was new to each Hero, and
-specifically whether eliminating the parameter in D2 tripped anyone up.
+## Twist — drop this once D4 is on the board, roughly 15 minutes in
 
-**Lessons Learned.** The recurring lesson this case is built to teach: the option that "wins" on
-the most intuitively persuasive single number (speed, or raw payload mass) is not automatically
-the option that wins on the actual metric being asked about — a ratio can flip the comparison that
-either number alone would suggest, and the only way to know is to compute the ratio, not to trust
-which raw number sounds more impressive.
+Deliver slowly:
 
-**Standards Touched On.** Parametric Equation; Parameter; Percent; How to eliminate the parameter
-to find a rectangular equation; How to find the percent of a number; How to divide decimal
-numbers; How to convert an amount with compound units.
+"Someone on the team says: 'Wait — the Patient Drift protects about 5 times more payload mass, and
+electric propulsion is famous for being way more efficient than chemical. Shouldn't that count for
+more? Why isn't this close?'"
+
+Let the room sit with that. Then: "The primary metric isn't payload mass *plus* some efficiency
+credit — it's payload mass *divided by* transit time. The Patient Drift really does win the payload
+side of the ledger, by about 5x. But it loses the time side of the ledger by about 815x — because
+chemical thrust is measured in newtons to kilonewtons and converts nearly all its delta-v in
+minutes, while Hall-effect electric thrust is measured in *millinewtons*, three to four orders of
+magnitude weaker, so even though it needs *more* total delta-v for the same transfer (6.0 km/s vs.
+3.82 km/s), it can only deliver that thrust gradually, over months. A 5x advantage in the numerator
+and an 815x disadvantage in the denominator don't average out or partially cancel — they compound.
+Dividing by a denominator roughly 815x smaller has almost the same effect regardless of what sits on
+top of the division, so the result lands close to that ~815x figure, not somewhere between 5x and
+~815x."
+
+**Facilitator-only: what this actually is, and is not.** This is not a "did you pick the right
+side" reveal for the case as actually asked — the Direct Burn is the correct answer to D4's stated
+ratio metric, and a Hero who reached it with correct D1–D6 arithmetic has not been tricked. The
+twist is that the *size* of the win is not what a reasonable pre-computation intuition would
+predict (most rooms guess "2x," "5x," or "close," per the Launch), and the reason is a real
+mechanism — a ratio of a modest asymmetry (payload, ~5x) against a huge one (transit time, ~815x) —
+not an authorial trick or a tuned number. Ask directly: "Is there a real technology where the mass
+and time trade-offs are closer to the same order of magnitude — and if there were, would this case
+be a much harder call?" Point back to `RESEARCH_LOG.md`'s retune finding: the ~815x gap is a
+structural property of chemical-vs-electric *thrust*, present in essentially any real
+chemical-vs-full-electric kick-stage comparison to GEO, not a quirk of this case's specific delta-v
+or Isp numbers.
+
+## Immediate recommit
+
+Re-vote immediately. Ask by name: "Does this change your recommendation — or does it just change
+how surprised you are by the *size* of the gap you already computed?" Most Heroes who did D1–D6
+correctly should not flip; the point is whether they can now explain *why* the gap is this large,
+not whether they change their answer.
+
+## Deep conflict — two threads (20–30 min)
+
+1. **Ratio vs. sum: why a huge asymmetry swamps a modest one.** The room already computed a ~5x
+   payload advantage for the Patient Drift and a ~815x transit-time advantage for the Direct Burn.
+   Why does dividing produce ~160x apart instead of something that averages the two? Walk a Hero
+   through what the D4 ratio would look like if the two options' transit times were much closer
+   together (say, both within 2x of each other) while keeping the same ~5x payload gap — show that
+   the result would then look much more like a genuine trade-off, because neither term would
+   dominate the division.
+2. **What would actually have to change.** D6 asks what would have to change about either design
+   for the recommendation to flip. Push past "the numbers would have to be different" to a specific
+   answer: since the Direct Burn wins D4 by roughly 160x, closing the gap to parity would require
+   roughly a 160x combined swing in the payload-mass ratio and/or the transit-time ratio — for
+   instance, the Patient Drift's transit time would need to shrink from 180 days to roughly
+   1.1 days (near-chemical speed) before the two options would even approach a fair fight on this
+   metric, at which point it would no longer be describing a real low-thrust electric transfer at
+   all. That is a specific, checkable claim a Hero should be able to state, not a vague "if things
+   were different."
 
 ## 45-minute Socratic plan
 
 | Time | Move |
 |---|---|
-| 0:00–3:00 | Cold-call launch, the two trajectory plots, stand/sit vote — no explanation |
-| 3:00–10:00 | Position defense: *"Convince us why your kg/day number is the one that matters, not just who gets there first"* |
-| 10:00–15:00 | Pressure-test: *"Whose recommendation is most fragile if the transit-time or propellant figures came in different from Appendix B?"* |
-| **15:00** | **DROP the space-weather/radiation twist**, if authored in a later pass (see Twist, above); otherwise substitute Socratic question 4 (a close-but-passing dose estimate) as the pressure point |
-| 15:00–20:00 | Immediate recommit: who reverses, and why? |
-| 20:00–30:00 | Threaded deep conflict: speed-as-contract-compliance vs. payload-per-day optimization (one thread at Full band; the same single thread at Compressed) |
+| 0:00–3:00 | Launch — show both transfer ellipses side by side, cold-call for a gut read on size *and* winner, no numbers yet |
+| 3:00–10:00 | Position defense — *"Walk us through your D4 ratio — which option wins, and by roughly how much?"* |
+| 10:00–15:00 | Pressure-test the process — *"Which of your D1–D3 steps, if it were wrong, would change who wins — and which ones just change the specific numbers?"* |
+| **15:00** | **DROP THE TWIST** — why a ~5x term and an ~815x term compound to ~160x instead of partially canceling |
+| 15:00–20:00 | Immediate recommit — does the recommendation change, or just the room's read on the *size* of the gap |
+| 20:00–30:00 | Threaded deep conflict (ratio dominance; what a real flip would actually require) |
 | 30:00–45:00 | Close, re-vote, reflection, lessons learned |
+
+## The trap
+
+The trap is not "picking the wrong option" — it is under-estimating the size of the correct answer
+before computing it, and specifically assuming the payload-mass term and the transit-time term
+should carry roughly comparable weight, the way a Hero's intuition would treat "electric is way
+more efficient" as automatically enough to offset "electric takes way longer." A Hero who reasons
+"electric propulsion is famous for saving fuel, so it's probably worth the extra months" has made a
+real, specific analysis mistake: treating a divided metric as if the numerator's advantage and the
+denominator's advantage were on the same scale. The second, related trap is stopping at D3 (payload
+mass) or D2 (transit time) alone and never actually computing D4's division — a Hero who reports
+"the Patient Drift keeps more payload" and "the Direct Burn gets there faster" as two separate,
+competing facts, without dividing one by the other, will never see that the two facts are not
+remotely the same order of magnitude, and that this is exactly what decides the case.
+
+## Socratic questions
+
+1. Your D3 mass fractions show the Patient Drift protects roughly 5x more deliverable payload than the Direct Burn. Your D2 transit times show the Direct Burn arrives roughly 815x faster. Why does the D4 ratio end up favoring the Direct Burn by roughly 160x — much closer to the 815x figure than to the 5x figure — instead of landing somewhere in between?
+2. The Patient Drift's electric engine needs *more* total delta-v than the Direct Burn's chemical engine (6.0 km/s vs. 3.82 km/s) for the same transfer, yet still uses less propellant mass. What does that tell you about what specific impulse actually measures, and why a higher-Isp engine can need more delta-v and still burn less propellant?
+3. Appendix B's specific-impulse figures (290 s chemical, 1,400 s electric) differ by about 4.8x, yet the two options' propellant-mass fractions differ by less than that in D3. Meanwhile the transit times differ by roughly 815x. What does that gap between "how different the engines are" and "how different the transit times are" tell you about what's actually driving the ~160x result — is it mostly the engines' efficiency, or mostly how they deliver their thrust over time?
+4. Suppose MA3's 180-day Patient Drift transit time were cut in half, to 90 days, while every other figure in the case stayed the same. Would that fully close the D4 gap, or would the Direct Burn still win by a wide margin — and what does that tell you about how sensitive this case's real result is to its single most-scrutinized assumption?
+5. If D4 had instead asked you to build a single score by adding an evenly-weighted payload-based number and a speed-based number, instead of dividing one by the other, do you think the Patient Drift would have a real shot at winning? What would you need to know to check that, and does the answer depend on the real numbers alone or also on how you choose to combine them?
+
+## Close
+
+**VOTE AGAIN.** "Did your recommendation change — or just your sense of how large the real gap
+is?" Ask what math was new to each Hero, and specifically whether eliminating the parameter in D2,
+the rocket-equation arithmetic in D3, or dividing D3 by D2 in D4 was the step that actually
+surprised them.
+
+## Lessons Learned
+
+*(To be filled after the first real run — placeholder structure only.)*
+
+- Whether Heroes correctly predicted, before computing D4, that a ~5x payload advantage and an
+  ~815x transit-time advantage would compound into a ~160x gap rather than landing somewhere
+  between the two — or whether most rooms expected something much closer to "electric wins because
+  efficiency matters more" until the arithmetic forced the surprise.
+- Whether Anchor 4's suspicion about MA3 (is 180 days a tuned number?) resolved itself once the
+  room worked through the real thrust-technology reasoning in the Twist, or needed to be told
+  outright.
+- Whether any Hero, prompted by Socratic question 4/D6, could actually name the specific change
+  (transit time would need to shrink to near-chemical speed, at which point it would no longer
+  describe a real electric transfer) needed to flip or even meaningfully close this case's real
+  margin.
+
+## Standards Touched On
+
+Parametric Equation; Parameter; Percent; How to eliminate the parameter to find a rectangular
+equation; How to find the percent of a number; How to divide decimal numbers; How to convert an
+amount with compound units.
+
+## Facilitator note — sensitivity (SPEC §6)
+
+None required. This case carries no illness, death, financial-hardship, or other protected-subject
+stakes — it is a routine mission-design and contract-delivery trade-off between two legitimate,
+professionally defensible trajectory choices, comparable in register to Wind Triangle or
+Navigation. `case.json.balance_test_waiver` documents the separate, unrelated MCS-46 exception this
+case carries for its balance-test margin — a landslide margin driven by real, sourced figures, not
+a modeling shortcut, kept because the setup still forces genuine multi-step analysis and the
+magnitude itself is the pedagogical payoff (see the Status note above).

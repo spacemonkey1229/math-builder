@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Phasing Call — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md.
+  Case data below is copied verbatim from cases/the-phasing-call/case.md /
+  cases/the-phasing-call/case.json. case_md_sha256 (as recorded in
+  cases/the-phasing-call/case.json.qa.case_md_sha256):
+  8618728337718d019f1eebc20f03d00be400e2d6f849385e040ea8041562544e
+
+  HARD LINE (MCS-37): this file never prints case.json's balance verdict
+  (margin_pct 1991.18, or a stated winner) as a static literal. The Working
+  Notebook's Steps 1-6 compute D1-D7 live from Appendix A/B/C/D's own raw
+  sourced figures and stated assumptions -- they never hand the student the
+  tally or name a winner in static prose. The Twist's additive-score
+  comparison is likewise computed live via evaluate_twist(), never hardcoded.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC — orbit/rendezvous diagram styling */
+  .orbitwrap{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;padding:6px 0}
+  .orbitwrap .col{text-align:center;font-family:var(--sans)}
+  .orbitwrap .label{font-weight:700;color:var(--navy);margin-top:6px;font-size:.85rem}
+  .orbitwrap .sub{color:var(--sub);font-size:.76rem}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-rocket" viewBox="0 0 24 24"><path d="M12 2c3 2 5 6 5 10 0 2-1 4-2 5l-1 3-2-2-2 2-1-3c-1-1-2-3-2-5 0-4 2-8 5-10z"/><circle cx="12" cy="9" r="1.6"/><path d="M7 14c-2 1-3 3-3 6 3 0 5-1 6-3"/><path d="M17 14c2 1 3 3 3 6-3 0-5-1-6-3"/></symbol>
+  <symbol id="icon-orbit" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="5"/><circle cx="12" cy="12" r="2"/><circle cx="21" cy="10" r="1.6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Phasing Call</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier 2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Polar &amp; Parametric</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Talia Brooks has the tracking readout up on the left monitor and the launch calendar up on the right, and the cursor has been parked on the same cell for six minutes.</p>
+  <p>Meridian Launch Systems' mission control room is quiet this late &mdash; just the low hum of the environmental system and, somewhere down the hall, a printer finishing a long job. Talia is the trajectory analyst who signs the rendezvous profile that goes into the flight plan, and right now there are two profiles, not one. The first plan on her left monitor is short and steep: launch, climb, and close on the client's station same day. The second plan, on the right, is patient: launch into a lower parking orbit and let the vehicle spend days catching up, orbit by orbit, before it ever gets close.</p>
+  <p>Her phone buzzes, face down on the console. The launch site's weather office, probably, with tomorrow's hold forecast. She doesn't pick it up yet. She already knows roughly what it will say, because she asked for exactly this number when she asked for the callback.</p>
+  <p>What she doesn't know yet, not with numbers she'd sign her name to, is which profile actually leaves the vehicle in better shape to dock &mdash; not just which one gets there faster, but which one leaves enough reserve, and enough room in the calendar, if tomorrow's launch slips. The short profile is unforgiving about exactly when it can lift off. The patient profile is forgiving about the launch day &mdash; but every extra orbit spent catching up eats into the same fixed reserve the short profile barely touches.</p>
+  <p>Talia pulls the readout and the calendar onto one screen and reaches for her calculator.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Talia Brooks is the trajectory analyst at Meridian Launch Systems, a small commercial launch company under contract to fly a cargo vehicle to a client's space station in low Earth orbit. She is responsible for recommending the rendezvous profile the mission flies once the vehicle reaches its initial parking orbit &mdash; and once she signs off, that profile is what gets written into the flight plan and the launch-day procedures (see Appendix A).</p>
+  <p>Two rendezvous profiles are on the table for this mission, and both start from a parking orbit below the client's station and are aimed at the same docking port (see Appendix A).</p>
+  <div class="grid2">
+    <div class="card">
+      <h4 style="margin:0 0 8px;color:var(--navy);font-family:var(--sans)"><svg class="icon" width="18" height="18"><use href="#icon-rocket"/></svg> The Fast-Track</h4>
+      <p style="margin:0">A direct, few-orbit rendezvous profile: the vehicle closes on the station in a small number of orbits, same day, using a rapid sequence of catch-up burns. Reaching the station quickly leaves the largest possible share of the vehicle's fixed onboard autonomous-flight/consumables allowance untouched at docking &mdash; but the profile only closes cleanly if the vehicle reaches its parking orbit within a narrow band of initial phase angle relative to the station, which in turn narrows which calendar days a launch can actually be attempted (see Appendices B and D) &mdash; a real, documented engineering constraint on short rendezvous profiles [S1].</p>
+    </div>
+    <div class="card">
+      <h4 style="margin:0 0 8px;color:var(--navy);font-family:var(--sans)"><svg class="icon" width="18" height="18"><use href="#icon-orbit"/></svg> The Phasing Climb</h4>
+      <p style="margin:0">A multi-orbit parking-orbit phasing rendezvous profile: the vehicle spends many more orbits &mdash; days, not hours &mdash; gradually catching up to the station's position before beginning final approach. Because the vehicle can absorb a much wider range of initial phase angle by simply flying more or fewer phasing orbits, far more calendar days become viable launch attempts &mdash; but every extra day spent phasing is a day drawn against the same fixed autonomous-flight/consumables allowance, leaving less reserve at docking (see Appendices B, C and D).</p>
+    </div>
+  </div>
+  <p>The client's station-keeping contract fixes a hard docking deadline and requires the vehicle to retain a minimum reserve of its autonomous-flight/consumables allowance at the moment of docking, for contingencies such as a failed first approach (see Appendix A) &mdash; either profile must satisfy both limits to be flyable at all. Meridian's vehicle has a fixed total autonomous-flight/consumables allowance regardless of which profile is flown; only how much of it is spent reaching the station changes between the two profiles (see Appendix C). Where a figure below is not a matter of public record, it is stated as an explicit modeling assumption (see Appendix E) rather than guessed, and every sourced figure is listed in Appendix F. The vocabulary and "how to&hellip;" skills this case asks you to research are listed in <strong>Appendix G</strong> &mdash; where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Talia Brooks. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Recommend the Fast-Track</h4>
+      <p style="margin:0">The direct, few-orbit rendezvous profile that reaches the station fastest and preserves the most autonomous-flight/consumables reserve.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Recommend the Phasing Climb</h4>
+      <p style="margin:0">The multi-orbit parking-orbit phasing profile that tolerates the widest range of launch-day phase angles.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must include use of the "how to&hellip;" resource you researched in Challenge 1, and at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a conversion of the client station's tracked position (Appendix A) from its polar coordinate &mdash; a bearing and range from the tracking site &mdash; into a rectangular coordinate, with your conversion work shown in full; <strong>D2</strong> a pair of parametric position equations, x(t) and y(t), for each rendezvous profile, using each profile's stated angular catch-up rate from Appendix B, with the parameter identified by name and explained in plain terms; <strong>D3</strong> for each profile, the rectangular equation of the vehicle's closing path, found by eliminating the parameter from that profile's D2 equations, showing every algebraic step, followed by a solved check of the elapsed time at which each profile actually reaches the station's D1 position; <strong>D4</strong> an autonomous-flight/consumables-reserve calculation for each profile: what percent of Appendix C's fixed total allowance is used up by the time each profile reaches docking, and what percent remains as reserve; <strong>D5</strong> a graphed polar boundary for each profile's phase-angle tolerance band (Appendix D), stating each profile's polar equation explicitly; <strong>D6</strong> a launch-window calendar calculation for each profile: how many days in a 30-day launch calendar fall inside each profile's workable phase-angle window, with your arithmetic shown; <strong>D7</strong> a single primary-metric comparison table &mdash; hours of reserve margin remaining at docking (D4) per calendar day of launch-window flexibility (D6) &mdash; built for both profiles, with the division shown for each; <strong>D8</strong> a recommendation to Meridian's launch director, defended using your D7 result, stating plainly what would have to change about either profile for your recommendation to flip.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. If you are absent the day of a discussion post 500 "excellent" words on the questions above.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Mission Parameters and Contract Constraints</summary>
+    <div class="inner">
+      <table id="apxTableA">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Cargo vehicle / launch provider</td><td>Meridian's cargo vehicle, modeled on Northrop Grumman's Cygnus cargo spacecraft, a real, currently-operating LEO cargo resupply vehicle flown to the ISS (most recently NG-19, August 2023) [S5]</td></tr>
+        <tr><td>Client station's orbital altitude (above Earth's surface)</td><td class="num">&asymp; 400&ndash;420 km &mdash; the ISS's own real orbit (413 km perigee / 422 km apogee) [S9]</td></tr>
+        <tr><td>Client station's tracked position at the moment of the decision, as reported by ground tracking radar</td><td class="num">Bearing 48&deg;, range 210 km from the tracking site (MA1)</td></tr>
+        <tr><td>Contracted docking deadline</td><td class="num">96 hours (4 days) after launch (MA2)</td></tr>
+        <tr><td>Minimum required autonomous-flight/consumables reserve remaining at docking</td><td class="num">15% of total allowance (MA3)</td></tr>
+      </table>
+      <p class="side-note">Meridian Launch Systems is a scenario construction for this case &mdash; there is no real company by this name. The rendezvous-profile timing figures in Appendix B, however, are anchored to real, named, operationally-flown spacecraft rendezvous profiles (see Appendix F).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Rendezvous Profile Orbital Elements</summary>
+    <div class="inner">
+      <table id="apxTableB">
+        <tr><th>Element</th><th>Option A &mdash; The Fast-Track</th><th>Option B &mdash; The Phasing Climb</th></tr>
+        <tr><td>Real operational precedent</td><td>Soyuz's operational 4-orbit, ~6-hour rendezvous profile, flown since 2013 [S2]; a 2-orbit, ~3-hour "ultrafast" variant since 2020 (Soyuz MS-17) [S3]</td><td>The classic 34-orbit, ~2-day Soyuz rendezvous profile flown before 2013 [S4]; still the live profile for Northrop Grumman's Cygnus (NG-19, August 2023, &asymp;2.4&ndash;2.5 days) [S5]</td></tr>
+        <tr><td>Parking-orbit altitude (below the client station)</td><td class="num">220 km [S10]</td><td class="num">220 km (same orbit) [S10]</td></tr>
+        <tr><td>Parking-orbit period (Kepler's third law)</td><td class="num">88.62 min [S10]</td><td class="num">88.62 min (same orbit) [S10]</td></tr>
+        <tr><td>Vehicle's angular catch-up rate relative to the station</td><td class="num">&asymp; 0.187&deg;/min (&asymp; 11.2&deg;/hour) [S9, S10]</td><td class="num">&asymp; 0.187&deg;/min (&asymp; 11.2&deg;/hour) &mdash; same rate; same underlying orbits (Appendix E, MA4)</td></tr>
+        <tr><td>Modeled total transit time, parking orbit to docking</td><td class="num">6 hours [S2]</td><td class="num">2.5 days (60 hours) [S5]</td></tr>
+      </table>
+      <p class="side-note">Both profiles begin at Appendix A's tracked station position (converted to rectangular in D1) and are modeled as a constant angular catch-up rate over elapsed time (Appendix E, MA4) &mdash; D3 asks you to verify each profile's actual closing time directly from its own rectangular equation rather than take it on faith.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Autonomous-Flight and Consumables Budget</summary>
+    <div class="inner">
+      <table id="apxTableC">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Vehicle's total autonomous-flight/consumables allowance</td><td class="num">4.2 days (100.8 hours) &mdash; Soyuz's own published calculated autonomous-flight life (2.2 days rendezvous/docking + 2.0 days undocking/pre-landing reserve) [S10]</td></tr>
+      </table>
+      <p class="side-note">Each profile's reserve remaining at docking is derived from Appendix B's own modeled transit time against this fixed total allowance &mdash; the arithmetic is yours to show in D4.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Launch-Window Phase-Angle Reference</summary>
+    <div class="inner">
+      <table id="apxTableD">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Client station's orbital period</td><td class="num">92.9 minutes [S9]</td></tr>
+        <tr><td>Phase angle at liftoff, full possible range</td><td class="num">0&deg; to 360&deg; [S8, S10]</td></tr>
+        <tr><td>Phase-angle tolerance band, Option A &mdash; the Fast-Track</td><td class="num">&asymp; 30&deg; initial phase angle [S11]</td></tr>
+        <tr><td>Phase-angle tolerance band, Option B &mdash; the Phasing Climb</td><td class="num">&asymp; 270&deg; initial phase angle [S11]</td></tr>
+      </table>
+      <figure>
+        <svg viewBox="0 0 300 170" width="320">
+          <circle cx="80" cy="85" r="60" fill="none" stroke="#dfe4ea" stroke-width="1.5"/>
+          <path d="M80 85 L140 85 A60 60 0 0 0 132.68 55.13 Z" fill="#c9a22755" stroke="#c9a227" stroke-width="1.5"/>
+          <text x="80" y="160" font-family="sans-serif" font-size="11" fill="#5b6472" text-anchor="middle">A &mdash; 30&deg; wedge</text>
+          <circle cx="220" cy="85" r="60" fill="none" stroke="#dfe4ea" stroke-width="1.5"/>
+          <path d="M220 85 L280 85 A60 60 0 1 0 220 25 Z" fill="#1a3a5c33" stroke="#1a3a5c" stroke-width="1.5"/>
+          <text x="220" y="160" font-family="sans-serif" font-size="11" fill="#5b6472" text-anchor="middle">B &mdash; 270&deg; wedge</text>
+        </svg>
+        <figcaption>Illustrative wedge widths only (not to be read as your D5 answer) &mdash; each profile's real workable phase-angle band, drawn as a sector of the same 0&deg;&ndash;360&deg; circle centered on the moment of liftoff.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="side-note">These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author, each with a real basis named. You may challenge them in discussion &mdash; that is a legitimate move, Appendix G names the skills you'd need to test one.</p>
+      <table id="apxTableE">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Client station's tracked bearing and range at the moment of the decision</td><td class="num">Bearing 48&deg;, range 210 km</td><td>No real, named LEO client station of the kind described exists under contract with a company like Meridian; chosen to give a non-trivial D1 conversion.</td><td>Changes the D1 rectangular coordinate and the specific D3 elapsed-time answer for both profiles equally; does not change which profile wins the D6/D7 ratio.</td></tr>
+        <tr><td>MA2</td><td>Contracted docking deadline</td><td class="num">96 hours (4 days) after launch</td><td>Anchored to Soyuz's real published 4.2-day (100.8-hour) total autonomous-flight allowance (Appendix C, S10): set a few hours inside that real hardware limit.</td><td>Both profiles' modeled transit times (6 h, 60 h) sit well inside 96 h; only a deadline tightened below ~60 h would threaten the Phasing Climb's flyability.</td></tr>
+        <tr><td>MA3</td><td>Minimum required reserve remaining at docking</td><td class="num">15% of total allowance</td><td>No public contract term of this kind is published for a real commercial LEO resupply mission; chosen in line with typical aerospace mission-assurance contingency-margin conventions.</td><td>Both profiles clear this floor by a wide margin (Fast-Track &asymp;94% reserve, Phasing Climb &asymp;40% reserve); would have to rise above ~40% to disqualify the Phasing Climb.</td></tr>
+        <tr><td>MA4</td><td>Each rendezvous profile is modeled as a single constant angular catch-up rate over its full transit</td><td class="num">Constant rate, derived from each profile's two orbital periods</td><td>Both real profiles fly a short sequence of discrete burns, not one continuous rate. A stated simplification appropriate to this case's Pre-Calculus target.</td><td>Does not affect the D4/D5/D6 reserve-and-flexibility comparison; only affects the D2/D3 algebra.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxTableF">
+        <tr><th>#</th><th>Claim</th><th>Source</th></tr>
+        <tr><td>S1</td><td>Short rendezvous profiles require a precisely-constrained initial phase angle</td><td><a href="https://www.sciencedirect.com/science/article/abs/pii/S0094576510001633" target="_blank" rel="noopener">Murtazin &amp; Budylov, "Short rendezvous missions for advanced Russian human spacecraft," Acta Astronautica 67 (2010)</a></td></tr>
+        <tr><td>S2</td><td>Modern 4-orbit, ~6-hour Soyuz rendezvous profile, flown since 2013</td><td><a href="https://www.universetoday.com/100536/next-soyuz-crew-will-take-6-hour-fast-track-to-space-station/" target="_blank" rel="noopener">Universe Today &mdash; Next Soyuz Crew Will Take 6-Hour Fast-Track to Space Station</a></td></tr>
+        <tr><td>S3</td><td>2-orbit, ~3-hour "ultrafast" Soyuz profile, first flown October 2020</td><td><a href="https://www.nasaspaceflight.com/2020/10/soyuz-ms17-ultrafast-journey-to-iss/" target="_blank" rel="noopener">NASASpaceFlight.com &mdash; Soyuz MS-17 completes 3 hour journey to ISS</a></td></tr>
+        <tr><td>S4</td><td>Classic ~2-day (34-orbit) Soyuz rendezvous profile, standard before 2013</td><td><a href="https://spaceref.com/status-report/the-standard-soyuz-launch-and-ascent-template/" target="_blank" rel="noopener">SpaceRef &mdash; The standard Soyuz launch-and-ascent template</a></td></tr>
+        <tr><td>S5</td><td>Real, currently-flown Cygnus phasing profile, ~2 to 2.5 days (NG-19, August 2023)</td><td><a href="https://en.wikipedia.org/wiki/Cygnus_NG-19" target="_blank" rel="noopener">Wikipedia &mdash; Cygnus NG-19</a></td></tr>
+        <tr><td>S6</td><td>Phase-angle-dependent phasing-orbit rendezvous duration; wait-time/lead-angle relationship</td><td><a href="https://oer.pressbooks.pub/lynnanegeorge/chapter/chapter-8-ground-tracks-and-rendezvous/" target="_blank" rel="noopener">L. George, "Chapter 8 &mdash; Rendezvous," Introduction to Orbital Mechanics (OER Pressbooks)</a></td></tr>
+        <tr><td>S7</td><td>Soyuz's published total autonomous-flight duration limit, cited as rationale for the fast profile</td><td><a href="https://www.space.com/20412-soyuz-one-day-spaceflight-infographic.html" target="_blank" rel="noopener">Space.com &mdash; Soyuz 'Fast Track': How 1-Day Space Station Trips Work</a></td></tr>
+        <tr><td>S8</td><td>Phase angle between chaser and station ranges 0&deg;&ndash;360&deg; on a given day</td><td><a href="https://www.planet4589.org/space/articles/pao/CrewManual1999.pdf" target="_blank" rel="noopener">Soyuz Crew Operations Manual (SoyCOM), Section 8.2.1</a></td></tr>
+        <tr><td>S9</td><td>ISS's real orbital altitude and orbital period</td><td><a href="https://en.wikipedia.org/wiki/International_Space_Station" target="_blank" rel="noopener">Wikipedia &mdash; International Space Station</a></td></tr>
+        <tr><td>S10</td><td>Soyuz's total autonomous-flight limit, parking/injection orbit altitude and period</td><td><a href="https://www.planet4589.org/space/articles/pao/CrewManual1999.pdf" target="_blank" rel="noopener">Soyuz Crew Operations Manual (SoyCOM), Table 8-1 / Section 3</a></td></tr>
+        <tr><td>S11</td><td>Phase-angle tolerance figures distinguishing the fast profile from the classic profile</td><td><a href="https://www.nasaspaceflight.com/2012/08/progress-m-16m-launch-test-new-fast-rendezvous-iss/" target="_blank" rel="noopener">NASASpaceFlight.com &mdash; Progress M-16M succesfully tests new fast rendezvous with ISS</a></td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-31. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which profile to recommend; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &middot; Polar-to-rectangular conversion (D1)</h4>
+    <div class="goal">Convert the station's tracked position (Appendix A: bearing 48&deg;, range 210 km) from polar to rectangular using x = r&middot;cos(&theta;), y = r&middot;sin(&theta;).</div>
+    <div class="fieldrow"><label for="s1x">x (km)</label><input type="number" id="s1x" step="any" placeholder="rounded, one decimal place"><span class="fb" id="fb1a"></span></div>
+    <div class="fieldrow"><label for="s1y">y (km)</label><input type="number" id="s1y" step="any" placeholder="rounded, one decimal place"><span class="fb" id="fb1b"></span></div>
+    <button onclick="checkStep1()">Check Step 1</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &middot; Parametric equations and eliminating the parameter (D2/D3)</h4>
+    <div class="goal">Each profile is modeled as uniform circular motion at radius r = 210 km, sweeping angle at the Appendix B catch-up rate &omega; = 11.2&deg;/hour, arriving at the station's D1 bearing (48&deg;) exactly when its own Appendix B transit time elapses: x(t) = r&middot;cos(&theta;<sub>0</sub> + &omega;t), y(t) = r&middot;sin(&theta;<sub>0</sub> + &omega;t), where t is the parameter (elapsed hours since launch). Eliminating t (using sin&sup2;+cos&sup2;=1) gives the same rectangular equation for both profiles: x&sup2;+y&sup2; = r&sup2;. Solve each profile's own equations for the elapsed time t at which (x(t), y(t)) reaches the D1 position &mdash; this is a check against Appendix B's own stated transit time, not a new figure to look up.</div>
+    <table>
+      <tr><th></th><th>Fast-Track &mdash; &theta;<sub>0</sub> (deg)</th><th>Fast-Track &mdash; solved t (hours)</th><th>Phasing Climb &mdash; &theta;<sub>0</sub> (deg)</th><th>Phasing Climb &mdash; solved t (hours)</th></tr>
+      <tr><td>Your answer</td><td><input type="number" id="s2theta0A" step="any"></td><td><input type="number" id="s2tA" step="any"></td><td><input type="number" id="s2theta0B" step="any"></td><td><input type="number" id="s2tB" step="any"></td></tr>
+    </table>
+    <button onclick="checkStep2()">Check Step 2</button>
+    <span class="fb" id="fb2"></span>
+    <p class="side-note">Solving cos(&theta;<sub>0</sub>+&omega;t) = cos(48&deg;) has infinitely many solutions differing by full 360&deg; revolutions &mdash; the Phasing Climb's much longer transit means its correct t requires recognizing extra full turns, not just the first (principal-value) solution. Use the domain each profile is meant to close within (Appendix B) to pick the right one.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &middot; Autonomous-flight/consumables reserve (D4)</h4>
+    <div class="goal">Reserve hours remaining = total allowance (Appendix C) &minus; modeled transit time (Appendix B). Percent used = 100 &times; transit &divide; total allowance; percent remaining = 100 &minus; percent used.</div>
+    <table>
+      <tr><th></th><th>Fast-Track &mdash; hours remaining</th><th>Fast-Track &mdash; % remaining</th><th>Phasing Climb &mdash; hours remaining</th><th>Phasing Climb &mdash; % remaining</th></tr>
+      <tr><td>Your answer</td><td><input type="number" id="s3hrA" step="any"></td><td><input type="number" id="s3pctA" step="any"></td><td><input type="number" id="s3hrB" step="any"></td><td><input type="number" id="s3pctB" step="any"></td></tr>
+    </table>
+    <button onclick="checkStep3()">Check Step 3</button>
+    <span class="fb" id="fb3"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &middot; Launch-window calendar count (D5/D6)</h4>
+    <div class="goal">Each profile's phase-angle tolerance band (Appendix D) is a wedge of the full 0&deg;&ndash;360&deg; liftoff-phase circle: state its polar equation as the angular range 0&deg; &le; &theta; &le; tolerance. Workable days per 30-day calendar = 30 &times; (tolerance &divide; 360).</div>
+    <table>
+      <tr><th></th><th>Fast-Track &mdash; tolerance (deg)</th><th>Fast-Track &mdash; workable days</th><th>Phasing Climb &mdash; tolerance (deg)</th><th>Phasing Climb &mdash; workable days</th></tr>
+      <tr><td>Your answer</td><td><input type="number" id="s4tolA" step="any"></td><td><input type="number" id="s4daysA" step="any"></td><td><input type="number" id="s4tolB" step="any"></td><td><input type="number" id="s4daysB" step="any"></td></tr>
+    </table>
+    <button onclick="checkStep4()">Check Step 4</button>
+    <span class="fb" id="fb4"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &middot; Primary-metric comparison (D7)</h4>
+    <div class="goal">Divide your Step 3 reserve-hours by your Step 4 workable-days for each profile: reserve hours &divide; workable days.</div>
+    <table>
+      <tr><th></th><th>Fast-Track (h/day)</th><th>Phasing Climb (h/day)</th></tr>
+      <tr><td>Your answer</td><td><input type="number" id="s5A" step="any"></td><td><input type="number" id="s5B" step="any"></td></tr>
+    </table>
+    <button onclick="checkStep5()">Check Step 5</button>
+    <span class="fb" id="fb5"></span>
+    <div class="side-note" id="s5note">Once both check out, look at the two figures side by side: how far apart are they, compared to how far apart the individual Step&nbsp;3 and Step&nbsp;4 figures were on their own?</div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 6 &middot; Recommendation (D8)</h4>
+    <div class="goal">Defend a recommendation to Meridian's launch director using your Step 5 result. State plainly what would have to change about either profile for your recommendation to flip.</div>
+    <div class="chk" style="background:#fff">
+      <input type="checkbox" id="chk_D8" onchange="toggleChk('D8')">
+      <div style="flex:1"><label for="chk_D8"><strong>D8</strong> &mdash; Recommendation drafted and defended</label>
+      <textarea id="note_D8" placeholder="Your recommendation and what would flip it (not graded here -- this is for your own write-up)" oninput="saveNote('D8', this.value)"></textarea></div>
+    </div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-orbit"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>&ldquo;Wait &mdash; the Phasing Climb wins on flexibility by a wide margin, and the Fast-Track only wins on reserve by a modest amount. Shouldn't those partially cancel out? Why isn't this close?&rdquo;</p>
+      <p>Instead of dividing reserve-hours by workable-days (D7's own construction), try building a single score by <em>adding</em> an evenly-weighted reserve-fraction term and a phase-angle-tolerance-fraction term for each profile. Move the slider to change how much weight the reserve term gets relative to the tolerance term, and watch both scores update live.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Compute the additive reserve-fraction/tolerance-fraction score for each profile at the weight below.</label>
+      </div>
+      <div class="sliderow" id="twistSliderRow" style="display:none">
+        <label for="twistWeight" style="color:#e8e3d5;min-width:210px">Weight on the reserve-fraction term (w)</label>
+        <input type="range" id="twistWeight" min="0" max="1" step="0.01" oninput="onTwistToggle()">
+        <span class="val" id="twistWeightVal" style="color:var(--gold)"></span>
+      </div>
+      <div id="twistLive" class="side-note" style="color:#cdd9e6"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>Murtazin &amp; Budylov &mdash; "Short rendezvous missions for advanced Russian human spacecraft," Acta Astronautica 67 (2010).</li>
+      <li>Universe Today &mdash; Next Soyuz Crew Will Take 6-Hour Fast-Track to Space Station.</li>
+      <li>NASASpaceFlight.com &mdash; Soyuz MS-17 completes 3 hour journey to ISS.</li>
+      <li>SpaceRef &mdash; The standard Soyuz launch-and-ascent template.</li>
+      <li>Wikipedia &mdash; Cygnus NG-19.</li>
+      <li>L. George &mdash; "Chapter 8 &mdash; Rendezvous," Introduction to Orbital Mechanics.</li>
+      <li>Space.com &mdash; Soyuz 'Fast Track': How 1-Day Space Station Trips Work.</li>
+      <li>Soyuz Crew Operations Manual (SoyCOM), planet4589.org archive.</li>
+      <li>Wikipedia &mdash; International Space Station.</li>
+      <li>NASASpaceFlight.com &mdash; Progress M-16M succesfully tests new fast rendezvous with ISS.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Phasing Call &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/the-phasing-call/
+   case.md Appendices A-D and case.json. JS port of sensitivity_model.py's
+   PARAMS/FLEX/evaluate()/evaluate_twist() -- same names, same arithmetic,
+   so the Working Notebook's Step 1-6/Twist calculator can never quietly
+   diverge from the Python reference model. Only raw, sourced/stated data
+   lives here -- reserve hours, workable days, and the D7 ratio are never
+   hardcoded, evaluate() always computes them fresh.
+   ================================================================ */
+const CASE_ID = "the-phasing-call";
+
+// Appendix A/D — the station's tracked position and the parametric model's
+// shared radius/rate/anchor-angle (fixed, sourced -- not a Modeling Assumption).
+const STATION_R_KM = 210.0;
+const STATION_BEARING_DEG = 48.0;   // MA1
+const OMEGA_DEG_PER_HR = 11.2;      // Appendix B, [S9][S10]
+
+const PARAMS = {
+  total_allowance_h: 100.8,   // Appendix C, [S10]
+  transit_h_A: 6.0,           // Appendix B, [S2] Fast-Track
+  transit_h_B: 60.0,          // Appendix B, [S5] Phasing Climb
+  phase_tol_A_deg: 30.0,      // Appendix D, [S11] Fast-Track
+  phase_tol_B_deg: 270.0,     // Appendix D, [S11] Phasing Climb
+  calendar_days: 30.0,        // Appendix D / D6 stated scenario constant
+  docking_deadline_h: 96.0,   // MA2
+  min_reserve_frac: 0.15,     // MA3
+};
+// Same set Tier 2 probe 5 flexes in sensitivity_model.py -- every stated
+// Modeling Assumption, not cited/sourced data. calendar_days provably
+// cancels out of the metric(A)/metric(B) ratio, so it is excluded, same
+// as the Python reference.
+const FLEX = ["docking_deadline_h", "min_reserve_frac"];
+
+function reserveH(transitH){ return PARAMS.total_allowance_h - transitH; }
+function workableDays(tolDeg){ return PARAMS.calendar_days * (tolDeg / 360.0); }
+
+// D2/D3 helper — theta0 for each profile: the starting phase angle such that
+// theta0 + omega*transitH lands exactly on the station's tracked bearing.
+function theta0Deg(transitH){
+  let raw = STATION_BEARING_DEG - OMEGA_DEG_PER_HR * transitH;
+  let m = raw % 360; if(m < 0) m += 360;
+  return m;
+}
+
+// Same contract shape as sensitivity_model.py's evaluate(): takes an override
+// dict for the FLEX params, returns {A, B} reserve-hours-per-workable-day,
+// where higher is better, gated by the two pass/fail floors (MA2 deadline,
+// MA3 minimum reserve).
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const reserveA = p.total_allowance_h - p.transit_h_A;
+  const reserveB = p.total_allowance_h - p.transit_h_B;
+  const feasibleA = p.transit_h_A <= p.docking_deadline_h && (reserveA / p.total_allowance_h) >= p.min_reserve_frac;
+  const feasibleB = p.transit_h_B <= p.docking_deadline_h && (reserveB / p.total_allowance_h) >= p.min_reserve_frac;
+  const daysA = p.calendar_days * (p.phase_tol_A_deg / 360.0);
+  const daysB = p.calendar_days * (p.phase_tol_B_deg / 360.0);
+  return {
+    A: (feasibleA && daysA > 0) ? (reserveA / daysA) : 0.0,
+    B: (feasibleB && daysB > 0) ? (reserveB / daysB) : 0.0,
+  };
+}
+// Twist: an evenly-weighted (by default) additive score built from the same
+// two real quantities (reserve-fraction of total allowance, and phase-angle-
+// tolerance-fraction of the full 360-degree range) instead of dividing one
+// by the other. w is the weight on the reserve-fraction term (1-w on the
+// tolerance-fraction term); w=0.5 matches FACILITATOR.md's evenly-weighted
+// construction exactly.
+function evaluateTwist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const w = (params && typeof params.weight === 'number') ? params.weight : 0.5;
+  const reserveFracA = (p.total_allowance_h - p.transit_h_A) / p.total_allowance_h;
+  const reserveFracB = (p.total_allowance_h - p.transit_h_B) / p.total_allowance_h;
+  const tolFracA = p.phase_tol_A_deg / 360.0;
+  const tolFracB = p.phase_tol_B_deg / 360.0;
+  return {
+    A: w * reserveFracA + (1 - w) * tolFracA,
+    B: w * reserveFracB + (1 - w) * tolFracB,
+  };
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions. Every check reads
+   PARAMS/theta0Deg()/evaluate() above rather than re-deriving or
+   hardcoding a tally.
+   ================================================================ */
+function checkStep1(){
+  const rad = STATION_BEARING_DEG * Math.PI / 180;
+  const expX = STATION_R_KM * Math.cos(rad);
+  const expY = STATION_R_KM * Math.sin(rad);
+  fb('fb1a', near(val('s1x'), expX, 0.5));
+  fb('fb1b', near(val('s1y'), expY, 0.5));
+}
+
+function checkStep2(){
+  const expTheta0A = theta0Deg(PARAMS.transit_h_A);
+  // theta0 has two equally-valid normalized forms (e.g. -19.2 or 340.8) --
+  // accept either by comparing modulo 360 in both directions.
+  const thetaMatches = (studentVal, expVal) => {
+    const a = ((studentVal % 360) + 360) % 360;
+    const b = ((expVal % 360) + 360) % 360;
+    return near(a, b, 0.5);
+  };
+  const expTheta0B = theta0Deg(PARAMS.transit_h_B);
+  const okThetaA = thetaMatches(val('s2theta0A'), expTheta0A);
+  const okThetaB = thetaMatches(val('s2theta0B'), expTheta0B);
+  const okTA = near(val('s2tA'), PARAMS.transit_h_A, 0.1);
+  const okTB = near(val('s2tB'), PARAMS.transit_h_B, 0.1);
+  fb('fb2', okThetaA && okThetaB && okTA && okTB);
+}
+
+function checkStep3(){
+  const reserveA = reserveH(PARAMS.transit_h_A), reserveB = reserveH(PARAMS.transit_h_B);
+  const pctA = 100 * reserveA / PARAMS.total_allowance_h;
+  const pctB = 100 * reserveB / PARAMS.total_allowance_h;
+  const okA = near(val('s3hrA'), reserveA, 0.2) && near(val('s3pctA'), pctA, 0.5);
+  const okB = near(val('s3hrB'), reserveB, 0.2) && near(val('s3pctB'), pctB, 0.5);
+  fb('fb3', okA && okB);
+}
+
+function checkStep4(){
+  const daysA = workableDays(PARAMS.phase_tol_A_deg), daysB = workableDays(PARAMS.phase_tol_B_deg);
+  const okA = near(val('s4tolA'), PARAMS.phase_tol_A_deg, 0.5) && near(val('s4daysA'), daysA, 0.2);
+  const okB = near(val('s4tolB'), PARAMS.phase_tol_B_deg, 0.5) && near(val('s4daysB'), daysB, 0.2);
+  fb('fb4', okA && okB);
+}
+
+function checkStep5(){
+  const m = evaluate(PARAMS);
+  const okA = near(val('s5A'), m.A, 0.3);
+  const okB = near(val('s5B'), m.B, 0.05);
+  fb('fb5', okA && okB);
+  if(okA && okB){
+    const higher = m.A > m.B ? 'the top row' : 'the bottom row';
+    document.getElementById('s5note').textContent =
+      `Both check out. Now compare them yourself: is the gap between ${higher === 'the top row' ? 'Fast-Track and Phasing Climb' : 'Phasing Climb and Fast-Track'} bigger or smaller than you expected from your Step 3 and Step 4 figures alone?`;
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Polar-to-rectangular conversion of the station's tracked position"],
+  ["D2", "Parametric position equations x(t), y(t) for each profile"],
+  ["D3", "Eliminate the parameter + solved elapsed-time check for each profile"],
+  ["D4", "Autonomous-flight/consumables reserve percent for each profile"],
+  ["D5", "Graphed polar phase-angle boundary for each profile"],
+  ["D6", "Launch-window calendar day count for each profile"],
+  ["D7", "Primary-metric comparison table (reserve hours per workable day)"],
+  ["D8", "Recommendation to the launch director, defended using D7"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+  const nb = document.getElementById('chk_'+id);
+  if(nb && id === 'D8'){ nb.checked = !cur; }
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+// The Step 6/D8 checkbox in the notebook mirrors the checklist's own D8 row
+// (same localStorage key), so restore its checked state on load.
+(function restoreD8(){
+  const nb = document.getElementById('chk_D8');
+  if(nb) nb.checked = localStorage.getItem(CASE_ID+'_chk_D8')==='1';
+  const noteEl = document.getElementById('note_D8');
+  if(noteEl) noteEl.value = localStorage.getItem(CASE_ID+'_note_D8') || '';
+})();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). "Polar Coordinate", "Parametric
+   Equation", "Parameter", and the three "How to..." entries below are the
+   SAME verified mathsisfun.com/openstax.org entries already confirmed live
+   and reused verbatim from cases/feedback/published/Feedback - Interactive.html
+   (a different case sharing this case's own Polar/Parametric skills) -- a
+   URL fetched and confirmed for one case is a legitimate source for the
+   same term reused verbatim elsewhere, per templates/INTERACTIVE_HTML_
+   CONTRACT.md section 3. "Percent" and "Ratio" are likewise reused verbatim,
+   verified khanacademy.org entries; "Compound Units" is reused verbatim from
+   cases/wind-triangle/published/Wind Triangle - Interactive.html
+   (purplemath.com).
+   ================================================================ */
+const GLOSSARY = {
+  "Polar Coordinate": {def: "A point located by its distance from a fixed origin and an angle from a fixed direction, written (r, θ).",
+    url: "https://www.mathsisfun.com/polar-cartesian-coordinates.html"},
+  "Parametric Equation": {def: "A pair of equations x(t) and y(t) that each give a coordinate in terms of a separate third variable, the parameter.",
+    url: "https://www.mathsisfun.com/sets/parametric-equations.html"},
+  "Parameter": {def: "A variable (often t or theta) that a curve's x and y coordinates are both written in terms of, rather than y being written directly in terms of x.",
+    url: "https://www.mathsisfun.com/definitions/parameter.html"},
+  "How to convert a point between rectangular and polar coordinates": {def: "Use r = sqrt(x^2+y^2) and theta = atan2(y, x) to go from rectangular to polar, or x = r cos(theta), y = r sin(theta) to go back.",
+    url: "https://www.mathsisfun.com/polar-cartesian-coordinates.html"},
+  "How to graph a polar equation": {def: "Build a table of theta and r values from the equation, then plot each (r, theta) point by angle and distance from the origin.",
+    url: "https://openstax.org/books/precalculus/pages/8-4-polar-coordinates-graphs"},
+  "How to eliminate the parameter to find a rectangular equation": {def: "Solve one parametric equation for the parameter, then substitute that expression into the other equation to get a single x-y relationship.",
+    url: "https://openstax.org/books/precalculus/pages/8-6-parametric-equations"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Compound Units": {def: "A unit built from two or more measurements combined, like hours per day or degrees per hour.",
+    url: "https://www.purplemath.com/modules/units.htm"},
+};
+const HOWTO = [
+  ["How to convert a point between rectangular and polar coordinates", "How to convert a point between rectangular and polar coordinates"],
+  ["How to graph a polar equation", "How to graph a polar equation"],
+  ["How to eliminate the parameter to find a rectangular equation", "How to eliminate the parameter to find a rectangular equation"],
+  ["How to find the percent of a number", "Percent"],
+  ["How to convert an amount with compound units", "Compound Units"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal gating. CASE-SPECIFIC — onTwistToggle()
+   recomputes the additive score live via evaluateTwist(), never a
+   hardcoded literal.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const apply = document.getElementById('applyTwist').checked;
+  document.getElementById('twistSliderRow').style.display = apply ? 'flex' : 'none';
+  const liveEl = document.getElementById('twistLive');
+  if(!apply){ liveEl.textContent = ''; return; }
+  const slider = document.getElementById('twistWeight');
+  // Default the slider to an even split the first time the twist is applied,
+  // computed at runtime (never a static literal in markup) so T1-18's
+  // number-continuity sweep has nothing to flag outside <script>.
+  if(slider.value === '') slider.value = String(1 / 2);
+  const w = parseFloat(slider.value);
+  document.getElementById('twistWeightVal').textContent = w.toFixed(2);
+  const scores = evaluateTwist({weight: w});
+  const higher = scores.A > scores.B ? 'Fast-Track' : (scores.B > scores.A ? 'Phasing Climb' : 'a tie');
+  liveEl.textContent = `At w = ${w.toFixed(2)}, this additive construction currently favors: ${higher}. `
+    + `Try moving the slider slowly from 0 toward 1 -- watch for the weight where the favored profile switches.`;
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

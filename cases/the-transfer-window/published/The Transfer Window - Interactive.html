@@ -1,0 +1,1074 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Transfer Window — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md.
+  Case data below is copied verbatim from cases/the-transfer-window/case.json /
+  cases/the-transfer-window/case.md. case_md_sha256 (as recorded in
+  cases/the-transfer-window/case.json.qa.case_md_sha256):
+  58cc1619eea33d7cb09a78249152a335fb0891a10db1f7b711124308b742e325
+
+  HARD LINE (MCS-37): this file never prints case.json's balance verdict
+  (margin_pct, "Direct Burn wins", or the specific kg/day tally) as a static
+  literal anywhere outside a <script> tag's live computation. The Working
+  Notebook's Steps 1-6 compute D1-D6 live from Appendix A-D's own raw sourced
+  figures and stated assumptions -- they never hand the student the tally or
+  name a winner in static prose. This case's real margin is a documented
+  landslide under a project-owner-approved MCS-46 waiver (case.json.balance_
+  test_waiver) -- the waiver changes what may ship, not what this file may
+  print statically.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC — The Transfer Window */
+  .trajcompare{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;align-items:flex-end;padding:6px 0}
+  .trajcompare .col{text-align:center;font-family:var(--sans)}
+  .trajcompare .label{font-weight:700;color:var(--navy);margin-top:6px;font-size:.85rem}
+  .trajcompare .sub{color:var(--sub);font-size:.74rem}
+  .missionbox{background:#fbf8ee;border:1px solid var(--gold);border-radius:8px;padding:10px 14px;font-family:var(--sans);font-size:.86rem;margin:10px 0}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-rocket" viewBox="0 0 24 24"><path d="M12 2c3 2 5 6 5 10 0 2-1 4-2 5l-3 3-3-3c-1-1-2-3-2-5 0-4 2-8 5-10z"/><circle cx="12" cy="10" r="1.6"/><path d="M9 15l-3 3M15 15l3 3"/></symbol>
+  <symbol id="icon-orbit" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="5"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="21" cy="12" r="1.4"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 2 20 6v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Adventure</div>
+        <h1>Case Study: The Transfer Window</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Pre-Calculus &middot; Parametric Equations</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Talia Brooks has two trajectory files open side by side, and the cursor has been sitting on the same blinking line for eleven minutes.</p>
+  <p>Meridian Launch Systems' mission control room is quiet this late &mdash; just the low hum of the environmental system and, somewhere down the hall, someone's keyboard going in short bursts. Talia is the trajectory analyst who signs the transfer-orbit design that goes into the customer's contract, and right now there are two designs, not one. The first plot on her left monitor climbs steeply and gets there fast &mdash; a hard, direct burn that puts the payload on orbit in days, if the propellant budget holds. The second plot, on the right, drifts out in a long, patient spiral that sips propellant instead of gulping it &mdash; and takes weeks longer to arrive.</p>
+  <p>Her inbox has a message from the payload customer's program manager, still unread, subject line starting with "RE: delivery date &mdash;". She hasn't opened it. She already knows roughly what it says, because she asked for exactly this kind of pressure when she requested the meeting that produced it.</p>
+  <p>What she doesn't know yet, not with numbers she'd sign her name to, is which trajectory actually delivers more usable payload for every day the customer has to wait. The steep burn eats into the mass budget before the payload ever separates from the kick stage. The long drift protects that mass &mdash; but every extra day in transit is a day the payload spends soaking in the belts.</p>
+  <p>Talia pulls both plots onto one screen, opens a blank sheet between them, and reaches for her calculator.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Talia Brooks is the trajectory analyst at Meridian Launch Systems, a small commercial launch company that flies rideshare payloads to geostationary orbit using an expendable kick stage. She is responsible for recommending the transfer-orbit design that the mission uses once the payload separates from the launch vehicle's upper stage in low Earth parking orbit &mdash; and once she signs off, that design is what gets written into the customer's delivery contract (see Appendix A).</p>
+  <p>Two kick-stage trajectory designs are on the table for this mission, and both start from the same parking orbit and are aimed at the same target geostationary orbit radius (see Appendix A).</p>
+  <div class="grid2">
+    <div class="card">
+      <h4 style="margin:0 0 8px;color:var(--navy);font-family:var(--sans)"><svg class="icon" width="18" height="18"><use href="#icon-rocket"/></svg> The Direct Burn</h4>
+      <p style="margin:0">A high-thrust, direct parametric transfer trajectory: the kick stage's chemical engine fires hard early in the transfer, putting the payload on an aggressive, shorter-period transfer ellipse that reaches the target orbit radius in far less time. That thrust isn't free &mdash; a higher fraction of the kick stage's total launch mass has to be propellant, which is mass that does not get delivered as payload (see Appendices B and C).</p>
+    </div>
+    <div class="card">
+      <h4 style="margin:0 0 8px;color:var(--navy);font-family:var(--sans)"><svg class="icon" width="18" height="18"><use href="#icon-orbit"/></svg> The Patient Drift</h4>
+      <p style="margin:0">A low-thrust, extended-coast parametric transfer trajectory: the kick stage's electric propulsion system fires gently over a much longer transfer, tracing a larger, longer-period transfer ellipse to the same target orbit radius. Because electric propulsion is far more propellant-efficient than the chemical burn, a smaller fraction of launch mass has to be propellant, and more of it survives as deliverable payload &mdash; but the payload spends far more days in transit, and a meaningful share of that transit crosses Earth's Van Allen radiation belts (see Appendices B and D).</p>
+    </div>
+  </div>
+  <p>The payload customer's contract fixes a maximum acceptable delivery window and a maximum acceptable cumulative radiation dose the payload's electronics are rated to survive in transit (see Appendix A) &mdash; either option must fall inside both limits to be flyable at all. Meridian's kick stage has a fixed total wet mass and a fixed dry (structure-plus-engine) mass regardless of which trajectory is flown; only the propellant load and the resulting deliverable payload mass change between the two designs (see Appendix C). Where a figure below is not a matter of public record, it is stated as an explicit modeling assumption (see Appendix E) rather than guessed, and every sourced figure is listed in Appendix F. The vocabulary and "how to&hellip;" skills this case asks you to research are listed in <strong>Appendix G</strong> &mdash; where Challenge 1 sends you.</p>
+  <p class="side-note">All figures in this case are sourced (Appendix F) or stated as a modeling assumption (Appendix E).</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Talia Brooks. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Recommend the Direct Burn</h4>
+      <p style="margin:0">The high-thrust, direct parametric transfer trajectory that reaches the target orbit fastest.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Recommend the Patient Drift</h4>
+      <p style="margin:0">The low-thrust, extended-coast parametric transfer trajectory that preserves the most deliverable payload mass.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must include: use of the "how to&hellip;" resource you researched in Challenge 1, and at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a pair of parametric position equations, x(E) and y(E), for each trajectory option, using each option's stated semi-major axis and eccentricity from Appendix B, with the parameter identified by name and explained in plain terms; <strong>D2</strong> for each option, the rectangular (Cartesian) equation of the trajectory's path, found by eliminating the parameter from your D1 equations, showing every algebraic step &mdash; followed by a solved check of the point where each trajectory actually reaches Appendix A's target orbit radius; <strong>D3</strong> a propellant-mass-fraction and deliverable-payload-mass calculation for each option, using the kick stage's fixed total wet mass and dry mass and each option's stated propellant load from Appendix C, with every percent calculated shown as arithmetic; <strong>D4</strong> a single primary-metric comparison table &mdash; kilograms of deliverable payload per day of transit time, for both options &mdash; built from each option's stated transit time in Appendix B and your D3 deliverable-payload-mass figures, with the division shown for each option; <strong>D5</strong> a cumulative radiation-dose estimate for each option's payload, using Appendix D's dose-rate reference and each option's own transit time and belt-crossing duration, with your unit conversions shown explicitly and both results compared against Appendix A's stated payload radiation tolerance limit; <strong>D6</strong> a recommendation to the payload customer, defended using your D4 and D5 results, stating plainly what would have to change about the transfer design for your recommendation to flip.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. If you are absent the day of a discussion post 500 "excellent" words on the questions above.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Mission Parameters and Contract Constraints</summary>
+    <div class="inner">
+      <table id="apxTableA">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Launch vehicle / kick stage</td><td>Meridian's kick stage, modeled on Firefly Aerospace's Sherpa orbital transfer vehicle line (the chemical-bipropellant Sherpa-LTC and electric-propulsion Sherpa-LTE variants) [S1]</td></tr>
+        <tr><td>Parking orbit radius (measured from Earth's center)</td><td class="num">6,878 km (500 km altitude [S2][S3] + Earth's equatorial radius, 6,378 km [S5])</td></tr>
+        <tr><td>Target orbit radius (geostationary, measured from Earth's center)</td><td class="num">42,164 km (35,786 km altitude [S4] + Earth's equatorial radius, 6,378 km [S5])</td></tr>
+        <tr><td>Customer's maximum acceptable delivery window</td><td class="num">240 days (MA1, see Appendix E)</td></tr>
+        <tr><td>Payload's rated cumulative radiation-dose tolerance</td><td class="num">20,000 rad (20 krad-Si) [S10]</td></tr>
+      </table>
+      <p class="side-note"><em>Meridian Launch Systems is a scenario construction for this case &mdash; there is no real company by this name. The parking-orbit and target-orbit radii, however, are real orbital-mechanics constants, and the kick stage named above is a real, currently-offered product whose own published mission profile anchors this case's mass and delta-v figures (see Appendix C).</em></p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Trajectory Orbital Elements</summary>
+    <div class="inner">
+      <p>Figures below describe each option's transfer ellipse &mdash; the path the kick stage actually flies between the parking orbit and the target orbit. The Direct Burn's semi-major axis, eccentricity, delta-v, and idealized transit time are computed directly from Appendix A's real parking-orbit and target-orbit radii and Earth's real gravitational parameter, using the standard two-body Hohmann-transfer equations [S6][S12]. Each option's specific impulse and (for the Patient Drift) delta-v come from the named kick stage's real published engine specifications [S3][S7].</p>
+      <table id="apxTableB">
+        <tr><th>Element</th><th>Option A &mdash; The Direct Burn</th><th>Option B &mdash; The Patient Drift</th></tr>
+        <tr><td>Propulsion type</td><td>Chemical bipropellant, high thrust</td><td>Electric (Hall-effect), low thrust</td></tr>
+        <tr><td>Transfer-ellipse semi-major axis (km)</td><td class="num">24,521 km [S12]</td><td class="num">24,521 km (MA2, see Appendix E)</td></tr>
+        <tr><td>Transfer-ellipse eccentricity</td><td class="num">0.7195 [S12]</td><td class="num">0.7195 (MA2, see Appendix E)</td></tr>
+        <tr><td>Delta-v budget for this transfer (km/s)</td><td class="num">3.82 km/s [S12]</td><td class="num">6.0 km/s [S3]</td></tr>
+        <tr><td>Propulsion specific impulse, Isp (s)</td><td class="num">290 s [S7]</td><td class="num">1,400 s [S3]</td></tr>
+        <tr><td>Modeled total transit time (days)</td><td class="num">0.221 days (5.3 hr) [S12]</td><td class="num">180 days (MA3, see Appendix E)</td></tr>
+      </table>
+      <div class="trajcompare">
+        <div class="col">
+          <svg width="120" height="70" viewBox="0 0 120 70"><ellipse cx="60" cy="40" rx="52" ry="14" fill="none" stroke="#1a3a5c" stroke-width="2.2"/><circle cx="14" cy="40" r="4" fill="#c9a227"/><circle cx="108" cy="40" r="3" fill="#1a3a5c"/></svg>
+          <div class="label">Direct Burn</div><div class="sub">fast, steep chemical burn</div>
+        </div>
+        <div class="col">
+          <svg width="120" height="70" viewBox="0 0 120 70"><ellipse cx="60" cy="40" rx="52" ry="14" fill="none" stroke="#c9a227" stroke-width="2.2" stroke-dasharray="4 3"/><circle cx="14" cy="40" r="4" fill="#c9a227"/><circle cx="108" cy="40" r="3" fill="#1a3a5c"/></svg>
+          <div class="label">Patient Drift</div><div class="sub">same shape, flown far slower</div>
+        </div>
+      </div>
+      <p class="side-note"><em>Both trajectories begin at Appendix A's parking-orbit radius and are designed to reach Appendix A's target orbit radius at transfer-ellipse apoapsis &mdash; D2 asks you to verify this directly from each option's own rectangular equation rather than take it on faith. Because both options start and end at the same two real orbital radii, the two-body transfer ellipse connecting those radii is geometrically identical for both &mdash; what differs between the Direct Burn and the Patient Drift is not the shape of the ellipse but how it is flown: a near-instantaneous chemical burn versus a continuous low-thrust spiral. A real continuous low-thrust transfer does not actually trace a single Keplerian ellipse at all; treating the Patient Drift as flying this same ellipse, only far more slowly, is a stated simplification (MA2, see Appendix E), not a literal description of low-thrust orbital dynamics.</em></p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Propellant and Payload Mass Figures</summary>
+    <div class="inner">
+      <p>The kick stage's total wet mass is drawn from the named vehicle's own published specifications. No public dry-mass figure exists for a single bus flying both a chemical and an electric mode at this delta-v/Isp combination, so dry mass is a stated Modeling Assumption (MA4, see Appendix E). Each option's propellant mass is derived from Appendix B's own sourced delta-v and Isp figures against the sourced wet mass, using the rocket equation &mdash; the arithmetic is yours to show in D3.</p>
+      <table id="apxTableC">
+        <tr><th>Quantity</th><th>Option A &mdash; The Direct Burn</th><th>Option B &mdash; The Patient Drift</th></tr>
+        <tr><td>Kick stage total wet mass (kg)</td><td class="num">180 kg [S2]</td><td class="num"><em>(same vehicle &mdash; see Option A column)</em></td></tr>
+        <tr><td>Kick stage dry mass (kg)</td><td class="num">30 kg (MA4, see Appendix E)</td><td class="num"><em>(same vehicle &mdash; see Option A column)</em></td></tr>
+        <tr><td>Propellant mass required for this transfer (kg)</td><td class="num">133.0 kg [S13]</td><td class="num">63.7 kg [S13]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Van Allen Belt Radiation Dose Reference</summary>
+    <div class="inner">
+      <p>Figures below describe the radiation environment a GEO-transfer payload passes through while crossing Earth's Van Allen radiation belts. No single, dated, primary dose-rate figure could be sourced for this exact scenario &mdash; real published values ranged from roughly 200 to 3,700 rad per year depending on shielding thickness and orbital region, a genuinely shielding-dependent figure rather than one settled number &mdash; so the dose rate below is a stated Modeling Assumption (MA5, see Appendix E). The belt-crossing fractions are derived from real, published Van Allen belt altitude ranges [S11] measured against Appendix A's own real parking-orbit and target-orbit radii.</p>
+      <table id="apxTableD">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Average cumulative radiation dose rate while actively crossing the belts (rad per day)</td><td class="num">50 rad/day (MA5, see Appendix E)</td></tr>
+        <tr><td>Fraction of the Direct Burn's total transit time spent actively crossing the belts</td><td class="num">48% [S14]</td></tr>
+        <tr><td>Fraction of the Patient Drift's total transit time spent actively crossing the belts</td><td class="num">48% [S14]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="side-note"><strong>These figures are not sourced.</strong> They are stated scenario assumptions chosen by the case author, each with a real basis named. You may challenge them in discussion &mdash; that is a legitimate move, Appendix G names the skills you'd need to test one.</p>
+      <table id="apxTableE">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Payload customer's maximum acceptable delivery window</td><td class="num">240 days</td><td>No public contract exists for the fictional Meridian Launch Systems. Anchored to real commercial precedent: satellite operators today routinely accept ~6-month (180-day) all-electric GTO-to-GEO transfers [S8], so 240 days gives both options real, plausible headroom above the Patient Drift's own modeled 180-day transit.</td><td>Below 180 days, the Patient Drift becomes contractually unflyable outright regardless of the kg/day metric. Above roughly 200 days it never binds either option.</td></tr>
+        <tr><td>MA2</td><td>Both options are modeled using the same geometric transfer ellipse</td><td class="num">a = 24,521 km, e = 0.7195 for both</td><td>Both options genuinely start at the same real parking-orbit radius and are targeted to reach the same real GEO radius at apoapsis &mdash; the two-body ellipse connecting two fixed radii is geometrically unique. A real low-thrust electric transfer does not actually trace one Keplerian ellipse; modeling the Patient Drift as flying this same ellipse very slowly is a stated simplification.</td><td>Does not affect the D3/D4/D5 mass-and-time economics, which are driven by delta-v, Isp, and transit time, not ellipse shape. Only affects the D1/D2 algebra, which becomes the same curve for both options under this assumption.</td></tr>
+        <tr><td>MA3</td><td>Patient Drift's modeled total transit time</td><td class="num">180 days</td><td>Anchored to real commercial ~6-month all-electric GTO-GEO transfers [S8] and to a real peer-reviewed finding that electric orbit-raising transits can run up to 200 days [S9].</td><td>The single most consequential assumption in the case. Halving it would roughly double the Patient Drift's kg/day figure &mdash; but even doubling it would not close the gap to the Direct Burn's kg/day figure.</td></tr>
+        <tr><td>MA4</td><td>Kick stage dry (structure + engine + avionics) mass, fixed across both propulsion modes</td><td class="num">30 kg</td><td>No public figure exists for a single bus flying both a chemical and an electric mode at this delta-v/Isp combination &mdash; the real vehicles this case is modeled on are, in reality, separately-massed vehicles. 30 kg is roughly 17% of the sourced 180 kg wet mass, a plausible structure-plus-avionics-plus-engine fraction for a small orbital transfer vehicle.</td><td>Major lever. At dry mass &ge; 47.0 kg, the Direct Burn's deliverable payload mass drops to zero or negative (infeasible). Below that, raising dry mass shrinks both options' payload roughly linearly, narrowing but not closing the kg/day gap.</td></tr>
+        <tr><td>MA5</td><td>Average radiation dose rate while actively within Van Allen belt-radius territory</td><td class="num">50 rad/day</td><td>No single dated, primary, apples-to-apples dose-rate figure could be found for this scenario. Real published figures for related contexts ranged roughly 200&ndash;3,700 rad/year depending on shielding and orbital region &mdash; a genuinely shielding-dependent figure, not one settled number. 50 rad/day is a stated round mid-range value.</td><td>Patient Drift's cumulative dose scales directly with this rate: at 50 rad/day it totals about 4,320 rad (well under the 20,000 rad tolerance); at roughly 5x this rate it would approach the tolerance ceiling and could flip the radiation check from pass to fail without changing the kg/day comparison.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxTableF">
+        <tr><th>#</th><th>Claim</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Kick stage product line is real and currently offered</td><td><a href="https://spacenews.com/firefly-aerospace-acquires-spaceflight-inc/" target="_blank" rel="noopener">SpaceNews &mdash; Firefly Aerospace acquires Spaceflight Inc.</a></td><td>2023-06</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Sherpa-LTC wet mass and parking orbit</td><td><a href="https://space.skyrocket.de/doc_sdat/sherpa-ltc.htm" target="_blank" rel="noopener">Gunter's Space Page &mdash; Sherpa-LTC 1, 2</a></td><td>2022</td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Sherpa-LTE Isp, delta-v, and parking orbit</td><td><a href="https://space.skyrocket.de/doc_sdat/sherpa-lte.htm" target="_blank" rel="noopener">Gunter's Space Page &mdash; Sherpa-LTE</a></td><td>2022</td><td>MEDIUM</td></tr>
+        <tr><td>S4</td><td>Geostationary orbit altitude</td><td><a href="https://www.earthdata.nasa.gov/learn/earth-observation-data-basics/orbits" target="_blank" rel="noopener">NASA Earthdata &mdash; Orbits</a></td><td>2026</td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>Earth's equatorial radius (WGS-84)</td><td><a href="https://en.wikipedia.org/wiki/Earth_radius" target="_blank" rel="noopener">Wikipedia &mdash; Earth radius</a></td><td>2026</td><td>MEDIUM</td></tr>
+        <tr><td>S6</td><td>Earth's standard gravitational parameter</td><td><a href="https://en.wikipedia.org/wiki/Standard_gravitational_parameter" target="_blank" rel="noopener">Wikipedia &mdash; Standard gravitational parameter</a></td><td>2026</td><td>HIGH</td></tr>
+        <tr><td>S7</td><td>Ocelot bipropellant engine (Sherpa-LTC's chemical engine) Isp</td><td><a href="https://www.benchmarkspacesystems.com/news/qualification-testing-22n-thruster" target="_blank" rel="noopener">Benchmark Space Systems &mdash; Qualification Testing of a High-Performance 22N Bipropellant Thruster</a></td><td>2024-07-01</td><td>HIGH</td></tr>
+        <tr><td>S8</td><td>Commercial all-electric GTO-GEO transfer duration precedent</td><td><a href="https://www.eoportal.org/other-space-activities/all-electric" target="_blank" rel="noopener">eoPortal &mdash; All-Electric</a></td><td>2026</td><td>MEDIUM</td></tr>
+        <tr><td>S9</td><td>Electric orbit-raising transit time and its documented radiation-exposure risk</td><td><a href="https://ras.ac.uk/news-and-press/news/space-weather-causes-years-radiation-damage-satellites-using-electric" target="_blank" rel="noopener">Royal Astronomical Society, reporting Lozinski et al. 2019</a></td><td>2019</td><td>HIGH</td></tr>
+        <tr><td>S10</td><td>Commercial smallsat bus total-ionizing-dose radiation tolerance</td><td><a href="https://nanoavionics.com/blog/all-of-the-m6p-nano-satellite-bus-subsystems-proved-to-be-radiation-tolerant-to-20krad-after-the-successful-tests/" target="_blank" rel="noopener">NanoAvionics &mdash; M6P nano-satellite bus radiation tolerance</a></td><td>2018-08-28</td><td>MEDIUM</td></tr>
+        <tr><td>S11</td><td>Van Allen belt altitude ranges</td><td><a href="https://sci.esa.int/web/cluster/-/52831-earth-plasmasphere-and-the-van-allen-belts" target="_blank" rel="noopener">ESA &mdash; Earth's plasmasphere and the Van Allen belts</a></td><td>2026</td><td>HIGH</td></tr>
+        <tr><td>S12</td><td>Direct Burn semi-major axis, eccentricity, delta-v, and idealized transit time (derived)</td><td>Computed from S4&ndash;S6 via the standard Hohmann-transfer equations</td><td>2026-08-31</td><td>HIGH</td></tr>
+        <tr><td>S13</td><td>Propellant mass for each option (derived)</td><td>Computed via the rocket equation from Appendix B's delta-v/Isp and Appendix C's wet mass</td><td>2026-08-31</td><td>HIGH</td></tr>
+        <tr><td>S14</td><td>Belt-crossing fraction of the LEO&ndash;GEO radial climb (derived)</td><td>Computed from S11's belt altitudes against Appendix A's real radii</td><td>2026-08-31</td><td>MEDIUM</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-31. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which trajectory to recommend; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &middot; Parametric position setup (D1)</h4>
+    <div class="goal">Both options share the same transfer ellipse (Appendix B, MA2): semi-major axis a and eccentricity e. Using the eccentric anomaly E as the parameter (E ranges from 0 to 2&pi; over one full transfer), the parametric position equations are x(E) = a(cos E &minus; e) and y(E) = a&radic;(1&minus;e&sup2;) sin E, with Earth's center at the origin. At E&nbsp;=&nbsp;0 the trajectory is at its closest point to Earth (periapsis, distance a(1&minus;e)); at E&nbsp;=&nbsp;&pi; it is at its farthest point (apoapsis, distance a(1+e)).</div>
+    <table>
+      <tr><th></th><th>Semi-major axis a (km)</th><th>Eccentricity e</th><th>Periapsis a(1&minus;e) (km)</th><th>Apoapsis a(1+e) (km)</th></tr>
+      <tr><td>Your value</td><td><input type="number" id="s1a" step="any"></td><td><input type="number" id="s1e" step="any"></td><td><input type="number" id="s1peri" step="any"></td><td><input type="number" id="s1apo" step="any"></td></tr>
+    </table>
+    <button onclick="checkStep1()">Check Step 1</button>
+    <span class="fb" id="fb1"></span>
+    <p class="side-note">Worked example: a = 24,521 km, e = 0.7195 (Appendix B). Periapsis = a(1&minus;e); apoapsis = a(1+e).</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &middot; Rectangular equation and intercept check (D2)</h4>
+    <div class="goal">Eliminate E from Step 1's parametric equations: solve x = a(cos E &minus; e) for cos E, solve y = a&radic;(1&minus;e&sup2;) sin E for sin E, then use cos&sup2;E + sin&sup2;E = 1 to get the rectangular equation (x + ae)&sup2;/a&sup2; + y&sup2;/(a&sup2;(1&minus;e&sup2;)) = 1. Use it to check: does each trajectory's apoapsis distance from Step 1 actually equal Appendix A's target orbit radius, and its periapsis distance equal Appendix A's parking orbit radius?</div>
+    <table>
+      <tr><th></th><th>Computed apoapsis (km)</th><th>Appendix A target orbit radius (km)</th><th>Computed periapsis (km)</th><th>Appendix A parking orbit radius (km)</th></tr>
+      <tr><td>Your check</td><td><input type="number" id="s2apo" step="any"></td><td><input type="number" id="s2target" step="any"></td><td><input type="number" id="s2peri" step="any"></td><td><input type="number" id="s2park" step="any"></td></tr>
+    </table>
+    <button onclick="checkStep2()">Check Step 2</button>
+    <span class="fb" id="fb2"></span>
+    <p class="side-note">If your Step 1 apoapsis/periapsis don't line up with Appendix A's stated orbit radii within a reasonable rounding tolerance, re-check your a and e before moving on &mdash; D2 asks you to show this check explicitly, not assume it.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &middot; Propellant mass fraction and deliverable payload (D3)</h4>
+    <div class="goal">Rocket equation: propellant mass = wet mass &times; (1 &minus; e<sup>&minus;&Delta;v / (Isp &middot; g&#8320;)</sup>), where g&#8320; = 9.80665&times;10&#8315;&sup3; km/s&sup2;. Deliverable payload = wet mass &minus; dry mass &minus; propellant mass. Propellant-mass-fraction percent = 100 &times; propellant mass &divide; wet mass.</div>
+    <table>
+      <tr><th></th><th>Direct Burn &mdash; propellant (kg)</th><th>Direct Burn &mdash; payload (kg)</th><th>Direct Burn &mdash; propellant % of wet mass</th><th>Patient Drift &mdash; propellant (kg)</th><th>Patient Drift &mdash; payload (kg)</th><th>Patient Drift &mdash; propellant % of wet mass</th></tr>
+      <tr><td>Your value</td><td><input type="number" id="s3propA" step="any"></td><td><input type="number" id="s3payA" step="any"></td><td><input type="number" id="s3pctA" step="any"></td><td><input type="number" id="s3propB" step="any"></td><td><input type="number" id="s3payB" step="any"></td><td><input type="number" id="s3pctB" step="any"></td></tr>
+    </table>
+    <button onclick="checkStep3()">Check Step 3</button>
+    <span class="fb" id="fb3"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &middot; Primary metric &mdash; kg of deliverable payload per day (D4)</h4>
+    <div class="goal">Divide each option's Step 3 deliverable-payload mass by its own stated transit time (Appendix B): kg/day = deliverable payload &divide; transit time (days).</div>
+    <table>
+      <tr><th></th><th>Direct Burn (kg/day)</th><th>Patient Drift (kg/day)</th></tr>
+      <tr><td>Your value</td><td><input type="number" id="s4A" step="any"></td><td><input type="number" id="s4B" step="any"></td></tr>
+    </table>
+    <button onclick="checkStep4()">Check Step 4</button>
+    <span class="fb" id="fb4"></span>
+    <div class="missionbox" id="s4note">Once both check out, look at how far apart the two numbers actually are &mdash; that comparison, not just the arithmetic, is D4's real deliverable.</div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &middot; Cumulative radiation-dose check (D5)</h4>
+    <div class="goal">Cumulative dose (rad) = dose rate (rad/day, Appendix D) &times; belt-crossing fraction (Appendix D) &times; total transit time (days, Appendix B). Compare each option's result against Appendix A's 20,000 rad tolerance.</div>
+    <table>
+      <tr><th></th><th>Direct Burn dose (rad)</th><th>Patient Drift dose (rad)</th></tr>
+      <tr><td>Your value</td><td><input type="number" id="s5A" step="any"></td><td><input type="number" id="s5B" step="any"></td></tr>
+    </table>
+    <button onclick="checkStep5()">Check Step 5</button>
+    <span class="fb" id="fb5"></span>
+    <div class="missionbox" id="s5note">Appendix A's tolerance is 20,000 rad. Does each option clear it?</div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 6 &middot; What would have to change (D6)</h4>
+    <div class="goal">Holding every other figure fixed, how many days would the Patient Drift's transit time need to shrink to (from its stated 180 days) for its Step 4 kg/day figure to exactly equal the Direct Burn's? Required transit time = Patient Drift deliverable payload (Step 3) &divide; Direct Burn's kg/day figure (Step 4).</div>
+    <div class="fieldrow"><label for="s6t">Required Patient Drift transit time (days)</label><input type="number" id="s6t" step="any"><span class="fb" id="fb6"></span></div>
+    <button onclick="checkStep6()">Check Step 6</button>
+    <div class="fieldrow" style="align-items:flex-start;margin-top:10px">
+      <label for="s6rec" style="min-width:220px">Your recommendation &amp; what would flip it</label>
+      <textarea id="s6rec" style="flex:1;min-height:70px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px" placeholder="State your D6 recommendation here, defended with D4 and D5."></textarea>
+    </div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-shield"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>&ldquo;Someone on the team says: &lsquo;Wait &mdash; the Patient Drift protects noticeably more payload mass, and electric propulsion is famous for being way more efficient than chemical. Shouldn't that count for more? Why isn't this close?&rsquo; The primary metric isn't payload mass plus some efficiency credit &mdash; it's payload mass <em>divided by</em> transit time. Chemical thrust is measured in newtons to kilonewtons and converts nearly all its delta-v in minutes; Hall-effect electric thrust is measured in <em>millinewtons</em>, orders of magnitude weaker, so even though it needs more total delta-v for the same transfer, it can only deliver that thrust gradually, over months. A modest advantage in the numerator and a huge disadvantage in the denominator don't average out or partially cancel &mdash; they compound.&rdquo;</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Re-run Step 4's live calculator at a different Patient Drift transit time instead of the stated 180 days.</label>
+      </div>
+      <div class="sliderow" id="twistSliderRow" style="display:none">
+        <label for="twistTime" style="color:#e8e3d5;min-width:170px">Patient Drift transit time (days)</label>
+        <input type="range" id="twistTime" min="30" max="240" step="1" value="180" oninput="onTwistToggle()">
+        <span class="val" id="twistTimeVal" style="color:var(--gold)">180</span>
+      </div>
+      <div id="twistLive" class="side-note" style="color:#cdd9e6"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>SpaceNews &mdash; Firefly Aerospace acquires Spaceflight Inc.</li>
+      <li>Gunter's Space Page &mdash; Sherpa-LTC 1, 2.</li>
+      <li>Gunter's Space Page &mdash; Sherpa-LTE.</li>
+      <li>NASA Earthdata &mdash; Orbits.</li>
+      <li>Wikipedia &mdash; Earth radius.</li>
+      <li>Wikipedia &mdash; Standard gravitational parameter.</li>
+      <li>Benchmark Space Systems &mdash; Qualification Testing of a High-Performance 22N Bipropellant Thruster.</li>
+      <li>eoPortal &mdash; All-Electric.</li>
+      <li>Royal Astronomical Society, reporting Lozinski et al. 2019, Space Weather.</li>
+      <li>NanoAvionics &mdash; M6P nano-satellite bus radiation tolerance.</li>
+      <li>ESA &mdash; Earth's plasmasphere and the Van Allen belts.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Transfer Window &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/the-transfer-window/
+   case.md Appendices A-E and case.json. JS port of sensitivity_model.py's
+   PARAMS/FLEX/evaluate()/evaluate_twist() -- same names, same arithmetic, so
+   the Working Notebook's Steps 1-6/Twist calculator can never quietly diverge
+   from the Python reference model. Only raw, sourced/stated data lives here;
+   propellant mass, deliverable payload, and the kg/day metric are never
+   hardcoded -- evaluate() always computes them fresh.
+   ================================================================ */
+const CASE_ID = "the-transfer-window";
+
+const PARAMS = {
+  wet_mass_kg: 180.0,            // Appendix C / S2
+  dry_mass_kg: 30.0,             // Appendix E, MA4
+  delta_v_A_km_s: 3.82,          // Appendix B / S12 (Direct Burn)
+  delta_v_B_km_s: 6.0,           // Appendix B / S3  (Patient Drift)
+  isp_A_s: 290.0,                // Appendix B / S7  (Direct Burn)
+  isp_B_s: 1400.0,               // Appendix B / S3  (Patient Drift)
+  g0_km_s2: 9.80665e-3,          // standard gravity, km/s^2
+  transit_time_A_days: 0.221,    // Appendix B / S12 (Direct Burn, derived Hohmann coast time)
+  transit_time_B_days: 180.0,    // Appendix E, MA3  (Patient Drift)
+  delivery_window_days: 240.0,   // Appendix A, MA1
+  dose_tolerance_rad: 20000.0,   // Appendix A / S10
+  dose_rate_rad_per_day: 50.0,   // Appendix D, MA5
+  belt_fraction: 0.48,           // Appendix D / S14
+  semi_major_axis_km: 24521.0,   // Appendix B / S12 (shared, MA2)
+  eccentricity: 0.7195,          // Appendix B / S12 (shared, MA2)
+  parking_orbit_km: 6878.0,      // Appendix A
+  target_orbit_km: 42164.0,      // Appendix A
+};
+// Same set Tier 2 probe 5 flexes in sensitivity_model.py -- every stated
+// Modeling Assumption (MA1, MA3, MA4, MA5), not a cited/sourced or directly-
+// derived-from-cited figure.
+const FLEX = ["delivery_window_days", "transit_time_B_days", "dry_mass_kg", "dose_rate_rad_per_day"];
+
+function propellantMass(wetMass, deltaV, isp, g0){
+  return wetMass * (1.0 - Math.exp(-deltaV / (isp * g0)));
+}
+function deliverablePayload(p, deltaV, isp){
+  const prop = propellantMass(p.wet_mass_kg, deltaV, isp, p.g0_km_s2);
+  return p.wet_mass_kg - p.dry_mass_kg - prop;
+}
+// Same contract shape as sensitivity_model.py's evaluate(): takes an override
+// dict for the FLEX params, returns {A, B} kg-of-deliverable-payload-per-day,
+// where higher is better, gated by the two case pass/fail floors (MA1's
+// contract delivery window, Appendix A's radiation-dose tolerance).
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const payloadA = deliverablePayload(p, p.delta_v_A_km_s, p.isp_A_s);
+  const payloadB = deliverablePayload(p, p.delta_v_B_km_s, p.isp_B_s);
+  const doseA = p.dose_rate_rad_per_day * p.belt_fraction * p.transit_time_A_days;
+  const doseB = p.dose_rate_rad_per_day * p.belt_fraction * p.transit_time_B_days;
+  const feasibleA = p.transit_time_A_days <= p.delivery_window_days && doseA <= p.dose_tolerance_rad && payloadA > 0;
+  const feasibleB = p.transit_time_B_days <= p.delivery_window_days && doseB <= p.dose_tolerance_rad && payloadB > 0;
+  return {
+    A: feasibleA ? (payloadA / p.transit_time_A_days) : 0.0,
+    B: feasibleB ? (payloadB / p.transit_time_B_days) : 0.0,
+    payloadA, payloadB, doseA, doseB, feasibleA, feasibleB,
+  };
+}
+// Twist illustration: an evenly-weighted additive score built from each
+// option's payload-mass fraction and a normalized speed fraction, instead of
+// dividing payload by transit time. NOT a new fact -- illustrates how much
+// of the gap survives a different, equally-legitimate metric construction.
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const payloadA = deliverablePayload(p, p.delta_v_A_km_s, p.isp_A_s);
+  const payloadB = deliverablePayload(p, p.delta_v_B_km_s, p.isp_B_s);
+  const fracA = payloadA / p.wet_mass_kg;
+  const fracB = payloadB / p.wet_mass_kg;
+  const slowest = Math.max(p.transit_time_A_days, p.transit_time_B_days);
+  const speedA = 1.0 - (p.transit_time_A_days / slowest);
+  const speedB = 1.0 - (p.transit_time_B_days / slowest);
+  return { A: 0.5 * fracA + 0.5 * speedA, B: 0.5 * fracB + 0.5 * speedB };
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions. Every check reads
+   PARAMS and calls propellantMass()/deliverablePayload()/evaluate() above
+   rather than re-deriving or hardcoding a tally.
+   ================================================================ */
+function checkStep1(){
+  const expPeri = PARAMS.semi_major_axis_km * (1 - PARAMS.eccentricity);
+  const expApo = PARAMS.semi_major_axis_km * (1 + PARAMS.eccentricity);
+  const okA = near(val('s1a'), PARAMS.semi_major_axis_km, 5);
+  const okE = near(val('s1e'), PARAMS.eccentricity, 0.001);
+  const okPeri = near(val('s1peri'), expPeri, 5);
+  const okApo = near(val('s1apo'), expApo, 5);
+  fb('fb1', okA && okE && okPeri && okApo);
+}
+
+function checkStep2(){
+  const expPeri = PARAMS.semi_major_axis_km * (1 - PARAMS.eccentricity);
+  const expApo = PARAMS.semi_major_axis_km * (1 + PARAMS.eccentricity);
+  const okApo = near(val('s2apo'), expApo, 5) && near(val('s2target'), PARAMS.target_orbit_km, 5);
+  const okPeri = near(val('s2peri'), expPeri, 5) && near(val('s2park'), PARAMS.parking_orbit_km, 5);
+  const apoMatchesTarget = near(expApo, PARAMS.target_orbit_km, 5);
+  const periMatchesParking = near(expPeri, PARAMS.parking_orbit_km, 5);
+  fb('fb2', okApo && okPeri && apoMatchesTarget && periMatchesParking);
+}
+
+function checkStep3(){
+  const propA = propellantMass(PARAMS.wet_mass_kg, PARAMS.delta_v_A_km_s, PARAMS.isp_A_s, PARAMS.g0_km_s2);
+  const propB = propellantMass(PARAMS.wet_mass_kg, PARAMS.delta_v_B_km_s, PARAMS.isp_B_s, PARAMS.g0_km_s2);
+  const payA = PARAMS.wet_mass_kg - PARAMS.dry_mass_kg - propA;
+  const payB = PARAMS.wet_mass_kg - PARAMS.dry_mass_kg - propB;
+  const pctA = 100 * propA / PARAMS.wet_mass_kg;
+  const pctB = 100 * propB / PARAMS.wet_mass_kg;
+  const okA = near(val('s3propA'), propA, 1) && near(val('s3payA'), payA, 1) && near(val('s3pctA'), pctA, 1);
+  const okB = near(val('s3propB'), propB, 1) && near(val('s3payB'), payB, 1) && near(val('s3pctB'), pctB, 1);
+  fb('fb3', okA && okB);
+}
+
+function checkStep4(){
+  const r = evaluate(PARAMS);
+  const okA = near(val('s4A'), r.A, 2);
+  const okB = near(val('s4B'), r.B, 0.05);
+  fb('fb4', okA && okB);
+  if(okA && okB){
+    const winner = r.A > r.B ? 'the Direct Burn' : 'the Patient Drift';
+    document.getElementById('s4note').textContent =
+      `Compare your two numbers directly: how many times larger is one than the other? That gap -- and whether it's the size you expected before computing it -- is the real point of D4.`;
+  }
+}
+
+function checkStep5(){
+  const r = evaluate(PARAMS);
+  const okA = near(val('s5A'), r.doseA, 2);
+  const okB = near(val('s5B'), r.doseB, 5);
+  fb('fb5', okA && okB);
+  if(okA && okB){
+    document.getElementById('s5note').textContent =
+      `Direct Burn: ${r.doseA <= PARAMS.dose_tolerance_rad ? 'clears the 20,000 rad tolerance' : 'exceeds the 20,000 rad tolerance'}. `
+      + `Patient Drift: ${r.doseB <= PARAMS.dose_tolerance_rad ? 'clears the 20,000 rad tolerance' : 'exceeds the 20,000 rad tolerance'}.`;
+  }
+}
+
+function checkStep6(){
+  const r = evaluate(PARAMS);
+  const expTime = r.payloadB / r.A;
+  fb('fb6', near(val('s6t'), expTime, 0.1));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Parametric position equations x(E), y(E) for each option (Appendix B)"],
+  ["D2", "Rectangular equation via elimination, plus solved intercept check (Appendix A/B)"],
+  ["D3", "Propellant-mass-fraction and deliverable-payload-mass calculation for each option (Appendix C)"],
+  ["D4", "Primary-metric comparison table: kg of deliverable payload per day (Appendix B, D3)"],
+  ["D5", "Cumulative radiation-dose estimate for each option, checked against Appendix A's tolerance (Appendix D)"],
+  ["D6", "Recommendation defended with D4/D5, stating what would have to change to flip it"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url https://
+   to an allowlisted domain). "Parametric Equation", "Parameter", and "How
+   to eliminate the parameter to find a rectangular equation" here are the
+   SAME verified mathsisfun.com/openstax.org entries already confirmed live
+   and reused verbatim from cases/feedback/published/Feedback - Interactive.html
+   (a different case sharing this case's own parametric/parameter skills) --
+   a URL fetched and confirmed for one case is a legitimate source for the
+   same term reused verbatim elsewhere, per templates/INTERACTIVE_HTML_
+   CONTRACT.md section 3. "Percent", "Decimal", "Unit Conversion", and
+   "Ratio" are likewise reused verbatim, verified khanacademy.org/mathsisfun.com
+   entries from other published cases (crosswind-cut, baseball-lineup,
+   sunset-ramp).
+   ================================================================ */
+const GLOSSARY = {
+  "Parametric Equation": {def: "A pair of equations x(t) and y(t) that each give a coordinate in terms of a separate third variable, the parameter.",
+    url: "https://www.mathsisfun.com/sets/parametric-equations.html"},
+  "Parameter": {def: "A variable (often t or theta) that a curve's x and y coordinates are both written in terms of, rather than y being written directly in terms of x.",
+    url: "https://www.mathsisfun.com/definitions/parameter.html"},
+  "How to eliminate the parameter to find a rectangular equation": {def: "Solve one parametric equation for the parameter, then substitute that expression into the other equation to get a single x-y relationship.",
+    url: "https://openstax.org/books/precalculus/pages/8-6-parametric-equations"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Unit Conversion": {def: "Rewriting a measured quantity in different units (e.g. seconds to minutes) without changing the quantity itself.",
+    url: "https://www.mathsisfun.com/measure/index.html"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Measurement": {def: "Assigning a number to a physical quantity -- length, time, mass -- using a chosen unit.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+};
+const HOWTO = [
+  ["How to eliminate the parameter to find a rectangular equation", "How to eliminate the parameter to find a rectangular equation"],
+  ["How to find the percent of a number", "Percent"],
+  ["How to divide decimal numbers", "Decimal"],
+  ["How to convert an amount with compound units", "Unit Conversion"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually used.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal gating. CASE-SPECIFIC — onTwistToggle()
+   re-runs evaluate() at a different Patient Drift transit time (Step 4's
+   live calculator), demonstrating the margin-invariance finding live
+   rather than asserting it in prose.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  document.getElementById('twistSliderRow').style.display = applied ? 'flex' : 'none';
+  const liveEl = document.getElementById('twistLive');
+  if(!applied){ liveEl.textContent = ''; return; }
+  const time = parseFloat(document.getElementById('twistTime').value);
+  document.getElementById('twistTimeVal').textContent = time.toFixed(0);
+  const base = evaluate(PARAMS);
+  const twisted = evaluate({transit_time_B_days: time});
+  if(!twisted.feasibleB){
+    liveEl.textContent = `At ${time.toFixed(0)} days, the Patient Drift fails a feasibility check (the delivery window or the radiation-dose tolerance) before the kg/day metric is even reached -- a different failure mode than "the wrong option was recommended."`;
+  } else {
+    const ratio = twisted.A / twisted.B;
+    const baseRatio = base.A / base.B;
+    liveEl.textContent = `At a ${time.toFixed(0)}-day Patient Drift transit: Direct Burn ${round(twisted.A,2)} kg/day, Patient Drift ${round(twisted.B,3)} kg/day `
+      + `(Direct Burn ahead by about ${round(ratio,1)}x, vs. the stated 180-day baseline's ${round(baseRatio,1)}x). `
+      + `Watch whether shrinking the Patient Drift's transit time ever closes that gap, or whether it only ever narrows without flipping.`;
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

@@ -10,9 +10,9 @@ Meridian Launch Systems' mission control room is quiet this late — just the lo
 environmental system and, somewhere down the hall, a printer finishing a long job. Talia is the
 trajectory analyst who signs the rendezvous profile that goes into the flight plan, and right now
 there are two profiles, not one. The first plan on her left monitor is short and steep: launch,
-climb, and close on the client's station in a matter of hours, same day. The second plan, on the
-right, is patient: launch into a lower parking orbit and let the vehicle spend days catching up,
-orbit by orbit, before it ever gets close.
+climb, and close on the client's station same day. The second plan, on the right, is patient:
+launch into a lower parking orbit and let the vehicle spend days catching up, orbit by orbit,
+before it ever gets close.
 
 Her phone buzzes, face down on the console. The launch site's weather office, probably, with
 tomorrow's hold forecast. She doesn't pick it up yet. She already knows roughly what it will say,
@@ -20,13 +20,12 @@ because she asked for exactly this number when she asked for the callback.
 
 What she doesn't know yet, not with numbers she'd sign her name to, is which profile actually
 leaves the vehicle in better shape to dock — not just which one gets there faster, but which one
-leaves enough reserve, and enough room in the calendar, if tomorrow's launch slips by even a day.
-The short profile is unforgiving about exactly when it can lift off. The patient profile is
-forgiving about the launch day — but every extra orbit it spends catching up is an orbit spent
-eating into the same fixed reserve the short profile barely touches.
+leaves enough reserve, and enough room in the calendar, if tomorrow's launch slips. The short
+profile is unforgiving about exactly when it can lift off. The patient profile is forgiving about
+the launch day — but every extra orbit spent catching up eats into the same fixed reserve the short
+profile barely touches.
 
-Talia pulls the tracking readout and the launch calendar onto one screen, opens a blank sheet
-between them, and reaches for her calculator.
+Talia pulls the readout and the calendar onto one screen and reaches for her calculator.
 
 ## Background
 
@@ -45,7 +44,7 @@ station quickly leaves the largest possible share of the vehicle's fixed onboard
 autonomous-flight/consumables allowance untouched at docking — but the profile only closes cleanly
 if the vehicle reaches its parking orbit within a narrow band of initial phase angle relative to
 the station, which in turn narrows which calendar days a launch can actually be attempted (SEE
-APPENDICES B and D).
+APPENDICES B and D) — a real, documented engineering constraint on short rendezvous profiles [S1].
 
 **The Phasing Climb.** A multi-orbit parking-orbit phasing rendezvous profile: the vehicle spends
 many more orbits — days, not hours — gradually catching up to the station's position before
@@ -124,11 +123,11 @@ discussion post 500 "excellent" words on the questions above.
 
 | Quantity | Value |
 |---|---|
-| Cargo vehicle / launch provider | Meridian's cargo vehicle, modeled on {{NEEDS_SOURCE: a real, named, currently-operating LEO cargo resupply vehicle used as this case's modeling anchor, e.g. Cygnus or Cargo Dragon}} |
-| Client station's orbital altitude (measured above Earth's surface) | {{NEEDS_SOURCE: a real, named LEO station or ISS-analog altitude, km}} |
-| Client station's tracked position at the moment of the rendezvous-profile decision, as reported by ground tracking radar | Bearing {{NEEDS_SOURCE: a stated scenario bearing, degrees}}, range {{NEEDS_SOURCE: a stated scenario range, km}} from the tracking site (MA1, SEE APPENDIX E) |
-| Contracted docking deadline | {{NEEDS_SOURCE: a stated scenario contract deadline, hours or days after launch}} (MA2, SEE APPENDIX E) |
-| Minimum required autonomous-flight/consumables reserve remaining at docking | {{NEEDS_SOURCE: a stated scenario minimum reserve, percent of total allowance}} (MA3, SEE APPENDIX E) |
+| Cargo vehicle / launch provider | Meridian's cargo vehicle, modeled on Northrop Grumman's **Cygnus** cargo spacecraft, a real, currently-operating LEO cargo resupply vehicle flown to the ISS (most recently NG-19, August 2023) [S5] |
+| Client station's orbital altitude (measured above Earth's surface) | ≈ 400–420 km — the ISS's own real orbit (413 km perigee / 422 km apogee as of the most recent published statistics) [S9] |
+| Client station's tracked position at the moment of the rendezvous-profile decision, as reported by ground tracking radar | Bearing 48°, range 210 km from the tracking site (MA1, SEE APPENDIX E) |
+| Contracted docking deadline | 96 hours (4 days) after launch (MA2, SEE APPENDIX E) |
+| Minimum required autonomous-flight/consumables reserve remaining at docking | 15% of total allowance (MA3, SEE APPENDIX E) |
 
 *Meridian Launch Systems is a scenario construction for this case — there is no real company by
 this name. The rendezvous-profile timing figures in Appendix B, however, are anchored to real,
@@ -141,31 +140,32 @@ this case derives from it.
 
 | Element | Option A — The Fast-Track | Option B — The Phasing Climb |
 |---|---|---|
-| Real operational precedent | {{NEEDS_SOURCE: a real, named, currently- or recently-flown few-orbit fast rendezvous profile, with its orbit count and total transit time}} | {{NEEDS_SOURCE: a real, named, currently- or recently-flown multi-orbit phasing rendezvous profile, with its orbit count and total transit time}} |
-| Parking-orbit altitude (below the client station) | {{NEEDS_SOURCE: a stated scenario parking-orbit altitude, km}} | {{NEEDS_SOURCE: same or a lower stated scenario parking-orbit altitude, km}} |
-| Parking-orbit period (derived from altitude via Kepler's third law) | {{NEEDS_SOURCE: derived, minutes}} | {{NEEDS_SOURCE: derived, minutes}} |
-| Vehicle's angular catch-up rate relative to the station (derived from the two orbital periods) | {{NEEDS_SOURCE: derived, degrees per minute}} | {{NEEDS_SOURCE: derived, degrees per minute}} |
-| Modeled total transit time, parking orbit to docking | {{NEEDS_SOURCE: modeled from the real precedent above, hours}} | {{NEEDS_SOURCE: modeled from the real precedent above, days}} |
+| Real operational precedent | Soyuz's operational **4-orbit, ~6-hour** rendezvous profile, flown since 2013 [S2]; an even faster **2-orbit, ~3-hour "ultrafast"** variant has been flown since 2020 (Soyuz MS-17) [S3] | The classic **34-orbit, ~2-day** Soyuz rendezvous profile flown before 2013 [S4]; still the live, current-day profile for Northrop Grumman's **Cygnus** cargo vehicle (NG-19, August 2023, ≈2.4–2.5 days launch to berthing) [S5] |
+| Parking-orbit altitude (below the client station) | 220 km (mean of a 202 × 240 km injection orbit) — this case's real Soyuz-precedent parking/injection orbit [S10] | Same, 220 km — real precedent shows both profiles insert into essentially the same low parking orbit; they differ in how many orbits they let run, not in this altitude [S10] |
+| Parking-orbit period (derived from altitude via Kepler's third law) | 88.62 min (the real, measured period of this orbit) [S10] | 88.62 min (same orbit) [S10] |
+| Vehicle's angular catch-up rate relative to the station (derived from the two orbital periods) | ≈ 0.187°/min (≈ 11.2°/hour), from 360°×(1/88.62 − 1/92.9) using the station's real period [S9, S10] | ≈ 0.187°/min (≈ 11.2°/hour) — same rate; same underlying orbits (SEE APPENDIX E, MA4) |
+| Modeled total transit time, parking orbit to docking | 6 hours [S2] | 2.5 days (60 hours) [S5] |
 
 *Both profiles begin at Appendix A's tracked station position (converted to rectangular in D1) and
 are modeled as a constant angular catch-up rate over elapsed time — D3 asks you to verify each
 profile's actual closing time directly from its own rectangular equation rather than take it on
 faith. Treating each profile's real, multi-burn catch-up sequence as a single constant angular
 rate is a stated simplification (MA4, SEE APPENDIX E), not a literal description of every
-individual burn.*
+individual burn — the underlying wait-time/lead-angle relationship this simplification draws on
+is real, published orbital-mechanics math [S6].*
 
 ## Appendix C — Autonomous-Flight and Consumables Budget Figures
 
 The vehicle's total autonomous-flight/consumables allowance is drawn from the named vehicle's own
-real operational limit (SEE APPENDIX F). Each profile's reserve remaining at docking is derived
+real operational limit [S7, S10]. Each profile's reserve remaining at docking is derived
 from Appendix B's own modeled transit time against this fixed total allowance — the arithmetic is
 yours to show in D4; the source record documents the same computation.
 
 | Quantity | Value |
 |---|---|
-| Vehicle's total autonomous-flight/consumables allowance (real operational limit) | {{NEEDS_SOURCE: a real, named spacecraft's published total autonomous-flight duration limit, days or hours}} |
-| Reserve remaining at docking, Option A — the Fast-Track | {{NEEDS_SOURCE: derived from Appendix B's modeled transit time}} |
-| Reserve remaining at docking, Option B — the Phasing Climb | {{NEEDS_SOURCE: derived from Appendix B's modeled transit time}} |
+| Vehicle's total autonomous-flight/consumables allowance (real operational limit) | 4.2 days (100.8 hours) — Soyuz's own published calculated autonomous-flight life (2.2 days rendezvous/docking + 2.0 days undocking/pre-landing reserve) [S10] |
+| Reserve remaining at docking, Option A — the Fast-Track | 100.8 − 6 = 94.8 hours remaining (94.0% of total allowance) — arithmetic shown; yours to reproduce in D4 |
+| Reserve remaining at docking, Option B — the Phasing Climb | 100.8 − 60 = 40.8 hours remaining (40.5% of total allowance) — arithmetic shown; yours to reproduce in D4 |
 
 ## Appendix D — Launch-Window Phase-Angle Reference
 
@@ -175,10 +175,10 @@ attempted under each rendezvous profile.
 
 | Quantity | Value |
 |---|---|
-| Client station's orbital period | {{NEEDS_SOURCE: derived from Appendix A's altitude, minutes}} |
-| Phase angle at liftoff, full possible range | 0° to 360° [S — a real, named orbital-mechanics reference documenting this range for ISS-class rendezvous, SEE APPENDIX F] |
-| Phase-angle tolerance band, Option A — the Fast-Track (the narrow band within which a few-orbit rendezvous closes cleanly) | {{NEEDS_SOURCE: a real, named source's stated or derivable phase-angle tolerance for a fast/few-orbit rendezvous profile, degrees}} |
-| Phase-angle tolerance band, Option B — the Phasing Climb (the wide band a multi-orbit phasing rendezvous can absorb) | {{NEEDS_SOURCE: a real, named source's stated or derivable phase-angle tolerance for a multi-orbit phasing rendezvous profile, degrees}} |
+| Client station's orbital period | 92.9 minutes — the ISS's own real, published orbital period [S9] |
+| Phase angle at liftoff, full possible range | 0° to 360° — the chaser's initial phase (Ф₀), defined as the angle between the chaser's and the station's radius-vectors at the moment of orbital insertion, may be of any value in this range [S8, S10] |
+| Phase-angle tolerance band, Option A — the Fast-Track (the narrow band within which a few-orbit rendezvous closes cleanly) | ≈ 30° initial phase angle [S11] |
+| Phase-angle tolerance band, Option B — the Phasing Climb (the wide band a multi-orbit phasing rendezvous can absorb) | ≈ 270° initial phase angle [S11] — *see the note under S10/S11 in Appendix F: a real, primary Soyuz operations manual states the classic profile's initial phase "may be of any value," a wider (~360°) claim than the 270° figure used here; both real sources are cited and the discrepancy is disclosed rather than smoothed over.* |
 | Days per 30-day launch calendar falling inside each option's phase-angle tolerance band | Derived in D6 from your D5 graphed tolerance bands and the station's orbital period |
 
 ## Appendix E — Modeling Assumptions
@@ -189,23 +189,26 @@ attempted under each rendezvous profile.
 
 | # | Assumption | Value used | Basis | Sensitivity |
 |---|---|---|---|---|
-| MA1 | Client station's tracked bearing and range at the moment of the decision | {{NEEDS_SOURCE: stated scenario values}} | No real, named LEO client station of the kind described exists under contract with a company like Meridian; the bearing/range figures are a stated scenario tracking readout, chosen to sit a plausible distance ahead of the vehicle's real parking orbit. | Changes the D1 rectangular coordinate and therefore the specific D3 elapsed-time answer for both profiles equally; does not change which profile wins the D6 ratio, since both profiles close on the same tracked position. |
-| MA2 | Contracted docking deadline | {{NEEDS_SOURCE: stated scenario value}} | No public contract exists for the fictional Meridian Launch Systems. Anchored to real commercial LEO resupply precedent (SEE APPENDIX F) so both profiles have real, plausible headroom to be flyable at all. | Sensitivity to be confirmed once Appendix B's real transit-time figures are sourced. |
-| MA3 | Minimum required autonomous-flight/consumables reserve remaining at docking | {{NEEDS_SOURCE: stated scenario value}} | No public contract term of this kind is published for a real commercial LEO resupply mission; anchored to the real, named vehicle's own total allowance (Appendix C) so the stated minimum sits at a plausible fraction of that real total. | Sensitivity to be confirmed once Appendix C's real total-allowance figure is sourced. |
+| MA1 | Client station's tracked bearing and range at the moment of the decision | Bearing 48°, range 210 km | No real, named LEO client station of the kind described exists under contract with a company like Meridian; the bearing/range figures are a stated scenario tracking readout, chosen to sit a plausible distance ahead of the vehicle's real parking orbit and to give a non-trivial D1 conversion. | Changes the D1 rectangular coordinate and therefore the specific D3 elapsed-time answer for both profiles equally; does not change which profile wins the D6/D7 ratio, since both profiles close on the same tracked position and the ratio is driven by Appendix B/C/D's real figures, not this one. |
+| MA2 | Contracted docking deadline | 96 hours (4 days) after launch | No public contract exists for the fictional Meridian Launch Systems. Anchored directly to Soyuz's real published 4.2-day (100.8-hour) total autonomous-flight allowance (Appendix C, S10): the stated deadline is set at 96 hours, a few hours inside that real hardware limit, the way a real mission-assurance contract would build in slack rather than target the hardware ceiling exactly. | Both profiles' modeled transit times (6 hours and 60 hours) sit well inside 96 hours, so neither option is disqualified by the deadline alone — the binding constraints are the reserve floor (MA3) and the D7 ratio, not this deadline. Only a deadline tightened below ~60 hours would start to threaten the Phasing Climb's flyability. |
+| MA3 | Minimum required autonomous-flight/consumables reserve remaining at docking | 15% of total allowance | No public contract term of this kind is published for a real commercial LEO resupply mission; 15% is a stated scenario contingency fraction, chosen in line with typical aerospace mission-assurance contingency-margin conventions, and disclosed as an assumption rather than a sourced figure. | Both profiles clear this floor by a wide margin under this case's real, sourced transit-time figures (Fast-Track ≈ 94% reserve, Phasing Climb ≈ 40% reserve) — this assumption would have to rise above ~40% before it could disqualify the Phasing Climb outright, well above any published contingency convention found during research. |
 | MA4 | Each rendezvous profile is modeled as a single constant angular catch-up rate over its full transit, rather than as its real multi-burn sequence | Constant rate, derived from each profile's two orbital periods | Both real profiles this case is modeled on fly a short sequence of discrete burns (an initial phasing burn, one or more correction burns, then final approach), not one continuous rate. Modeling each as a single constant-rate parametric arc is a stated simplification appropriate to this case's Pre-Calculus/Polar-and-Parametric skill target. | Does not affect the D4/D5/D6 reserve-and-flexibility comparison, which is driven by each profile's real, sourced total transit time, not by how that transit time is broken into individual burns. Only affects the D2/D3 algebra, which models one arc instead of several. |
 
 ## Appendix F — Sources
 
 | # | Claim | Value | Source | Date | Confidence |
 |---|---|---|---|---|---|
-| S1 | The seminal engineering paper behind the operational short/fast rendezvous profile, establishing that a short phasing strategy requires a precise initial phase angle and recommending it as a combination between direct and two-day rendezvous missions | {{NEEDS_SOURCE: exact page range and any numeric figures to be pulled directly from the paper at case-research time}} | Murtazin, R.F. & Budylov, S.G., "Short rendezvous missions for advanced Russian human spacecraft," *Acta Astronautica* 67 (2010), pp. 900–909 | 2010 | HIGH |
-| S2 | Modern operational 4-orbit, ~6-hour Soyuz rendezvous profile, flown since 2013 | {{NEEDS_SOURCE: exact figures}} | NASA — "Soyuz Orbital Insertion to Docking Timeline" | {{NEEDS_SOURCE: access date}} | HIGH |
-| S3 | 2-orbit, ~3-hour "ultrafast" Soyuz rendezvous profile, first flown October 2020 (Soyuz MS-17) | {{NEEDS_SOURCE: exact figures}} | NASASpaceFlight.com — reporting on Soyuz MS-17's ultrafast rendezvous | 2020-10 | HIGH |
-| S4 | Classic ~2-day (34-orbit) Soyuz rendezvous profile, the standard profile flown before 2013 | {{NEEDS_SOURCE: exact figures}} | Space.com — "Soyuz 'Fast Track': How 1-Day Space Station Trips Work"; CBS News/Spaceflight Now archived reporting, "Soyuz on track for revised two-day station rendezvous" | {{NEEDS_SOURCE: access dates}} | HIGH |
-| S5 | Real, currently-flown multi-orbit phasing profile, ~2 to 2.5 days, Northrop Grumman's Cygnus cargo vehicle to the ISS (most recently NG-19, August 2023) | {{NEEDS_SOURCE: exact figures}} | NASASpaceFlight.com and AmericaSpace — reporting on Cygnus NG-19's rendezvous timeline | 2023-08 | HIGH |
-| S6 | Phase-angle-dependent phasing-orbit rendezvous duration, and the underlying wait-time/lead-angle/phase-angle relationship | {{NEEDS_SOURCE: exact equations and any stated day-range figures}} | L. George, "Chapter 8 — Rendezvous," *Introduction to Orbital Mechanics* (OER Pressbooks) | {{NEEDS_SOURCE: access date}} | HIGH |
-| S7 | Real, named spacecraft's published total autonomous-flight/consumables duration limit, cited as the operational reason the fast rendezvous profile was pursued | {{NEEDS_SOURCE: exact figure and vehicle}} | Space.com — "Soyuz 'Fast Track': How 1-Day Space Station Trips Work" | {{NEEDS_SOURCE: access date}} | MEDIUM |
-| S8 | Phase angle between an arriving spacecraft and a station under rendezvous ranges from 0° to 360° on a given day, and the time required to reach the station depends on that phase angle | {{NEEDS_SOURCE: exact source document and any stated day-range figures}} | {{NEEDS_SOURCE: a real, named orbital-mechanics reference to be confirmed at case-research time}} | {{NEEDS_SOURCE: access date}} | MEDIUM |
+| S1 | The seminal engineering paper behind the operational short/fast rendezvous profile, establishing that a short phasing strategy requires a precise initial phase angle and recommending it as a combination between direct and two-day rendezvous missions | Confirmed real via ScienceDirect, NASA ADS, and ResearchGate abstracts; frames the short-rendezvous strategy as needing a precisely-constrained initial phase angle. Full text is paywalled — no page-specific numeric figure from this paper is used directly in this case's tables; its role here is establishing the real engineering basis for the Fast-Track/Phasing-Climb trade-off, corroborated numerically by S11 below. | Murtazin, R.F. & Budylov, S.G., "Short rendezvous missions for advanced Russian human spacecraft," *Acta Astronautica* 67 (2010), pp. 900–909 | 2010 | HIGH |
+| S2 | Modern operational 4-orbit, ~6-hour Soyuz rendezvous profile, flown since 2013 | "Since 2012, docking of 28 Russian vehicles (18 of them Soyuz crew vehicles) has been accomplished using the 6-hour and 4-orbit rendezvous profile"; a specific flight (Soyuz TMA-13M) is documented completing this 4-orbit profile. NASA's own original "Soyuz Orbital Insertion to Docking Timeline" page (`nasa.gov/mission_pages/station/structure/elements/soyuz/timeline_orbit.html`) could not be reached live at research time (HTTP 404) — Universe Today's coverage is used as the working citation instead. | Universe Today — "Next Soyuz Crew Will Take 6-Hour Fast-Track to Space Station" (`universetoday.com/100536/`) | 2015-12-23 | HIGH |
+| S3 | 2-orbit, ~3-hour "ultrafast" Soyuz rendezvous profile, first flown October 2020 (Soyuz MS-17) | "Soyuz MS-17 caught up with the orbiting laboratory in only two orbits (three hours)... docked with the ISS's Rassvet module" — launched 05:45:04 UTC, docked 08:48 UTC, 14 Oct 2020 (3 hr 3 min, a Guinness World Record for fastest crewed trip to the ISS). A later flight (April 2021) was expected to take ~3.5 hours under the same 2-orbit scheme (TASS, quoting RSC Energia ballistics lead Rafail Murtazin). | NASASpaceFlight.com — "Soyuz MS-17 completes 3 hour journey to ISS" (`nasaspaceflight.com/2020/10/soyuz-ms17-ultrafast-journey-to-iss/`) | 2020-10-14 | HIGH |
+| S4 | Classic ~2-day (34-orbit) Soyuz rendezvous profile, the standard profile flown before 2013 | "Soyuz (and Progress) fly a standard 34-orbit (2-day) timeline template from launch through docking" — the pre-2013 baseline profile, superseded by (but still available as a fallback to) the faster profiles in S2/S3. 88.62-minute real orbital period × 34 orbits ≈ 50.2 hours ≈ 2.09 days, consistent with the "2-day" figure. | SpaceRef — "The standard Soyuz launch-and-ascent template" (`spaceref.com/status-report/the-standard-soyuz-launch-and-ascent-template/`); corroborated by AmericaSpace's reporting on Soyuz TMA-12M's 2014 two-day rendezvous | undated (SpaceRef); 2014-03-27 (AmericaSpace) | HIGH |
+| S5 | Real, currently-flown multi-orbit phasing profile, ~2 to 2.5 days, Northrop Grumman's Cygnus cargo vehicle to the ISS (most recently NG-19, August 2023) | Launch 2 Aug 2023, 00:31:14 UTC. RMS capture 4 Aug 2023, 09:52 UTC (≈2.39 days / 57.4 hours elapsed). Berthing 4 Aug 2023, 12:28 UTC (≈2.50 days / 59.9 hours elapsed). This case models the Phasing Climb's total transit time as 2.5 days (60 hours), using the berthing figure as the "docking" analog. | Space.com — "Cygnus space freighter arrives at space station..."; Wikipedia — "Cygnus NG-19" (cross-checked against both) | 2023-08-04 | HIGH |
+| S6 | Phase-angle-dependent phasing-orbit rendezvous duration, and the underlying wait-time/lead-angle/phase-angle relationship | Confirmed live and readable at research time. States the lead-angle relationship α = ω_target × TOF_interceptor, final phase angle φ_f = π − α, and wait time t_wait = (φ_f − φ_i)/(ω_target − ω_interceptor). Worked Example 1 solves a rescue scenario with an interceptor 135° behind the target (φ_i = 135°), computing a lead angle ≈ 80.6° and final phase angle ≈ 99.4° — a real, numeric worked example of exactly this case's underlying phasing math, at a large (135°) initial phase angle, supporting that the Phasing Climb's much wider tolerance band is mathematically well-precedented. | L. George, "Chapter 8 — Rendezvous," *Introduction to Orbital Mechanics* (OER Pressbooks, `oer.pressbooks.pub/lynnanegeorge/chapter/chapter-8-ground-tracks-and-rendezvous/`) | accessed 2026-08-31 | HIGH |
+| S7 | Real, named spacecraft's published total autonomous-flight/consumables duration limit, cited as the operational reason the fast rendezvous profile was pursued | "The Soyuz spacecraft can fly autonomously in orbit for only about four days total... the faster rendezvous frees up more fuel, oxygen and other supplies for possible use in an emergency." This qualitative rationale is corroborated with an exact figure (4.2 days) by the primary source S10 below. | Space.com — "Soyuz 'Fast Track': How 1-Day Space Station Trips Work" (Karl Tate) | 2013-05-28 | MEDIUM |
+| S8 | Phase angle between an arriving spacecraft and a station under rendezvous ranges from 0° to 360° on a given day, and the time required to reach the station depends on that phase angle | Confirmed by primary source: "The phase (Ф) is defined as the angle between the spacecraft radius-vector and the station radius-vector... The initial phase Ф₀ at the moment of the spacecraft injection may be of any value." This resolved what the original concept sheet flagged as an unconfirmed reference — the actual source is the Soyuz crew manual (S10), not a separate textbook. | Soyuz Crew Operations Manual (SoyCOM), Section 8.2.1 — SEE S10 for full citation | 1999 (manual date); accessed 2026-08-31 | HIGH |
+| S9 | International Space Station's real orbital altitude and orbital period, used as this case's client-station orbit | "Perigee: 413 km... Apogee: 422 km... Orbital Period: 92.9 minutes," listed under "Station statistics," current as of 22 December 2022 unless noted otherwise. | Wikipedia — "International Space Station" (`en.wikipedia.org/wiki/International_Space_Station`) | as of 2022-12-22; accessed 2026-08-31 | MEDIUM |
+| S10 | Soyuz spacecraft's real published total autonomous-flight/consumables limit, and its real parking/injection orbit altitude and period — this case's anchor for Appendix B/C's fixed budget and orbital elements | Primary NASA-numbered crew operations manual (doc. no. NAS15-10110, "0004AE4b (ROP-19)"). Table 8-1: injection orbit period 88.62 min (±22 s), apogee 240 km (+43/−42 km), perigee 202 km (+7/−23 km) — mean ≈ 220 km. Section 3: "the spacecraft calculated autonomous flight life is 4.2 days. This time period includes rendezvous/docking operations (2.2 days) and undocking, pre-landing operations and time reserve (2 days)." Section 8.2.1 additionally states the classic two-day (34-orbit) profile's initial phase is chosen "within 240 − 30 degrees" to minimize propellant, though the phase itself "may be of any value" — see the disclosed discrepancy against S11's 270° figure, noted in Appendix D. | Soyuz Crew Operations Manual (SoyCOM), hosted at `planet4589.org/space/articles/pao/CrewManual1999.pdf` (Jonathan McDowell's spaceflight document archive) | 1999; accessed 2026-08-31 | HIGH |
+| S11 | Phase-angle tolerance figures specifically distinguishing the fast rendezvous profile from the classic two-day profile — the exact numeric figure this case's D5/D6/D7 chain depends on | "An orbital insertion for Soyuz and Progress spacecraft... within the desired fast rendezvous parameter of 30 degrees initial phase angle, is possible," based on "a Russian document describing the new rendezvous profile, which was seen by NASASpaceflight.com" (unnamed original document/author). By contrast, "the traditional two-day method tolerates a much larger 270-degree phase angle." This is the most authoritative numeric phase-angle-tolerance figure located after a genuine, multi-query research attempt (see RESEARCH_LOG.md) — graded MEDIUM because the underlying Russian document is described but not named or independently produced. | NASASpaceFlight.com — "Progress M-16M succesfully tests new fast rendezvous with ISS" (byline Pete Harding) | 2012-08-01; accessed 2026-08-31 | MEDIUM |
 
 ## Appendix G — "How To…" Math Questions To Research
 

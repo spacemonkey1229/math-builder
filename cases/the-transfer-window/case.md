@@ -95,8 +95,8 @@ would choose and why. Your pitch must include:
     from Appendix C, with every percent calculated shown as arithmetic, not just stated as a
     result.
     D4. A single primary-metric comparison table — kilograms of deliverable payload per day of
-    transit time, for both options — built from your D2 transit-time figures and your D3
-    deliverable-payload-mass figures, with the division shown for each option.
+    transit time, for both options — built from each option's stated transit time in Appendix B
+    and your D3 deliverable-payload-mass figures, with the division shown for each option.
     D5. A cumulative radiation-dose estimate for each option's payload, using Appendix D's
     dose-rate reference and each option's own transit time (from D2) and belt-crossing duration,
     with your unit conversions shown explicitly and both results compared against Appendix A's
@@ -212,7 +212,7 @@ ranges [S11] measured against Appendix A's own real parking-orbit and target-orb
 | S3 | Sherpa-LTE Isp, delta-v, and parking orbit | up to 1,400 s Isp; over 6 km/s delta-v; 500 km SSO | Gunter's Space Page — [Sherpa-LTE](https://space.skyrocket.de/doc_sdat/sherpa-lte.htm) | 2022 | MEDIUM |
 | S4 | Geostationary orbit altitude | 35,786 km | NASA Earthdata — [Orbits](https://www.earthdata.nasa.gov/learn/earth-observation-data-basics/orbits) | 2026 | HIGH |
 | S5 | Earth's equatorial radius (WGS-84) | 6,378.137 km | Wikipedia — [Earth radius](https://en.wikipedia.org/wiki/Earth_radius) | 2026 | MEDIUM |
-| S6 | Earth's standard gravitational parameter | 398,600.4418 km³/s² | NASA JPL NAIF — [geophysical.ker](https://naif.jpl.nasa.gov/pub/naif/pds/wgc/test/geophysical.ker) | 2026 | HIGH |
+| S6 | Earth's standard gravitational parameter | 398,600.4418 km³/s² | Wikipedia, citing the WGS84 geocentric gravitational constant (NIMA TR8350.2) — [Standard gravitational parameter](https://en.wikipedia.org/wiki/Standard_gravitational_parameter) | 2026 | HIGH |
 | S7 | Ocelot bipropellant engine (Sherpa-LTC's chemical engine) Isp | 290 s | Benchmark Space Systems — [Qualification Testing of a High-Performance 22N Bipropellant Thruster](https://www.benchmarkspacesystems.com/news/qualification-testing-22n-thruster) | 2024-07-01 | HIGH |
 | S8 | Commercial all-electric GTO-GEO transfer duration precedent | ~6 months | eoPortal — [All-Electric](https://www.eoportal.org/other-space-activities/all-electric) | 2026 | MEDIUM |
 | S9 | Electric orbit-raising transit time and its documented radiation-exposure risk | up to 200 days | Royal Astronomical Society, reporting Lozinski et al. 2019, *Space Weather*, DOI 10.1029/2019SW002213 — [Space weather causes years of radiation damage to satellites using electric propulsion](https://ras.ac.uk/news-and-press/news/space-weather-causes-years-radiation-damage-satellites-using-electric) | 2019 | HIGH |
