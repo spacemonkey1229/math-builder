@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Mainline Margin — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (DOCTRINE_LEDGER MCS-37/MCS-39).
+  case.md sha256 as of build time: f41383f82afe9c6e... (see cases/the-mainline-margin/QA_REPORT.md
+  for the full hash, MCS-11). This file never prints case.json.balance.margin_pct or the winner
+  as a static literal anywhere outside a <script> computation — the Working Notebook computes it
+  live from the case's own sourced numbers (S1-S12), the same way the student does on paper.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:260px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-pipe" viewBox="0 0 24 24"><circle cx="6" cy="12" r="4"/><path d="M10 12h10"/><path d="M17 8v8"/></symbol>
+  <symbol id="icon-gauge" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4"/><path d="M9 3h6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Mainline Margin</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Advanced Operations / Variables</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Denise Okafor has the pipe spec sheet in one hand and her phone in the other, and neither one is telling her what she wants to hear.</p>
+  <p>The center-pivot line behind her throws a long shadow across the tailgate where she's spread two rolls of PVC catalog pages, corners flapping in the wind kicking up off the cut alfalfa. Denise designs irrigation systems for a small farm-contracting outfit, and this week's job is a mainline retrofit that has to do two things at once: pass government certification on paper, and beat a competitor's number on the invoice. The farmer standing twenty feet away, arms crossed, isn't going to ask her which pipe size clears the velocity limit or which one wins on the spreadsheet — he's going to ask what the check looks like, both ways.</p>
+  <p>Her laptop is open on the tailgate, the spreadsheet tab still blinking where she left it: two pipe sizes, two friction numbers, two totals that refuse to agree on a winner depending on which line she trusts. She's run the smaller pipe's velocity three times now, and gotten close enough to the limit each time that "close enough" has stopped feeling like an answer.</p>
+  <p>Her phone buzzes against the catalog pages — the competing contractor's quote, forwarded by the farmer, subject line just a dollar sign and three exclamation points. Denise doesn't open it yet. She sets it face-down, picks up her pencil, and looks at the two pipe sizes circled on the spec sheet, and doesn't write anything under either one.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Denise Okafor is an irrigation systems designer at a small farm-irrigation contracting firm. She is responsible for producing the pipe specification that goes into her firm's bid on a mainline retrofit job, and she is personally accountable for two separate things the client cares about: whether her design certifies against the federal conservation-practice standard that governs the client's cost-share contract, and whether her firm's total price beats a competing contractor's bid. Missing on either one costs the job.</p>
+  <p>Two mainline pipe options are on the table for this stretch of irrigation main, both cut from the same class of PVC pipe stock her firm regularly installs.</p>
+  <p><strong>The Lean Main.</strong> The smaller-diameter PVC option. It costs less per foot of pipe and weighs less per foot (SEE APPENDIX B, C), which matters twice over: less material spend up front, but also a smaller per-pound reimbursement under the client's cost-share program, since that program pays out by the pound of pipe actually installed (SEE APPENDIX E). Running the design flow rate through a smaller pipe also drives the water faster through the same cross-section, which pushes flow velocity — and, separately, friction loss — both higher than the wider option (SEE APPENDIX D).</p>
+  <p><strong>The Margin Main.</strong> The next-size-up PVC option. It costs more per foot and weighs more per foot, which raises both the material bill and the per-pound reimbursement. The wider cross-section keeps flow velocity lower at the same design flow rate, and cuts the pipeline's friction loss substantially — which lowers the annual cost of running the pump that pushes water through it (SEE APPENDIX D, APPENDIX F).</p>
+  <p>The client's cost-share contract is administered under USDA's Environmental Quality Incentives Program (EQIP), which will only reimburse this pipeline if it certifies against NRCS Conservation Practice Standard, Irrigation Pipeline (Code 430) (SEE APPENDIX D). Code 430 sets a hard numeric ceiling on pipeline flow velocity at the design flow rate; a design that exceeds that ceiling fails certification outright, and the EQIP reimbursement is forfeited entirely — not reduced — regardless of how the rest of the design performs (SEE APPENDIX E). Code 430 also requires friction loss to be computed by the Hazen-Williams equation, using a roughness coefficient specific to the pipe material (SEE APPENDIX D).</p>
+  <p>The farm's field layout fixes the mainline's required design flow rate and total run length; neither is Denise's to change (SEE APPENDIX A). A competing contractor has already quoted the farmer a total out-of-pocket price for the job, and Denise's own bid has to come in below it once the client's own EQIP reimbursement is netted out (SEE APPENDIX A). Running the pump that pushes water through whichever mainline is installed costs the client money every year the system operates, at a rate that depends on the pipeline's own friction loss (SEE APPENDIX F).</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Denise Okafor. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Lean Main</h4>
+      <p style="margin:0">Spec the smaller-diameter PVC mainline.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Margin Main</h4>
+      <p style="margin:0">Spec the next-size-up PVC mainline.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which pipe you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include: <strong>D1</strong> — a total-annualized-cost expression for each option, labeling every variable/constant/coefficient/term, applying the distributive property to the labor-plus-material portion; <strong>D2</strong> — a substitution table evaluating each option's Hazen-Williams friction loss and D1's expression at the farm's actual numbers; <strong>D3</strong> — a simplified annualized-cost expression per option, combining like terms; <strong>D4</strong> — a certification check: solve a one-step equation for each option's maximum flow rate before it crosses Code 430's velocity ceiling, and state pass/fail at the farm's actual flow rate; <strong>D5</strong> — a rearranged Hazen-Williams formula isolating pipe diameter via a multi-step equation, used to find the minimum diameter under a stated energy-cost cap; <strong>D6</strong> — a break-even calculation setting the two options' D3 cost-per-acre-inch expressions equal, solved as a multi-step equation with the variable on both sides, plus a final recommendation defended with the D4 and D6 results.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Denise's Bid Constraints and the Farm's Field Layout</summary>
+    <div class="inner">
+      <table id="apxA">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Mainline design flow rate required at the field inlet (GPM)</td><td class="num">440 [MA1]</td></tr>
+        <tr><td>Total mainline run length (ft)</td><td class="num">1,320 [MA2]</td></tr>
+        <tr><td>Acreage irrigated by this mainline (acres)</td><td class="num">88 [MA3]</td></tr>
+        <tr><td>Installation labor rate ($ per foot of pipe installed)</td><td class="num">$25.00 [MA4]</td></tr>
+        <tr><td>Competing contractor's total quoted price, out-of-pocket, net of EQIP (USD)</td><td class="num">$24,000 [MA6]</td></tr>
+        <tr><td>Annual hours the irrigation system operates (hr/yr)</td><td class="num">1,200 [MA5]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Option A: The Lean Main Spec Sheet</summary>
+    <div class="inner">
+      <table id="apxB">
+        <tr><th>Spec</th><th>Value</th></tr>
+        <tr><td>Nominal pipe diameter (in)</td><td class="num">6 [S6]</td></tr>
+        <tr><td>Weight per linear foot (lb/ft)</td><td class="num">2.40 [S6]</td></tr>
+        <tr><td>Material cost per linear foot (USD/ft)</td><td class="num">$5.10 [S7]</td></tr>
+        <tr><td>Hazen-Williams roughness coefficient, C (PVC/plastic)</td><td class="num">150 [S3]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Option B: The Margin Main Spec Sheet</summary>
+    <div class="inner">
+      <table id="apxC">
+        <tr><th>Spec</th><th>Value</th></tr>
+        <tr><td>Nominal pipe diameter (in)</td><td class="num">8 [S6]</td></tr>
+        <tr><td>Weight per linear foot (lb/ft)</td><td class="num">4.16 [S6]</td></tr>
+        <tr><td>Material cost per linear foot (USD/ft)</td><td class="num">$7.30 [S8]</td></tr>
+        <tr><td>Hazen-Williams roughness coefficient, C (PVC/plastic)</td><td class="num">150 [S3]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; NRCS Conservation Practice Standard, Irrigation Pipeline (Code 430)</summary>
+    <div class="inner">
+      <table id="apxD">
+        <tr><th>Design criterion</th><th>Value</th></tr>
+        <tr><td>Maximum allowable pipeline flow velocity at design capacity (ft/sec)</td><td class="num">5 [S1]</td></tr>
+        <tr><td>Friction-loss method required for certification</td><td>Hazen-Williams equation</td></tr>
+        <tr><td>Hazen-Williams equation form</td><td>h_f = 4.732&middot;(Q/C_HW)^1.85&middot;(L/D^4.87) [S2]</td></tr>
+      </table>
+      <p class="side-note">Code 430's plastic-pipe velocity ceiling is 5 ft/sec &mdash; do not confuse this with the 7 ft/sec figure that belongs to the separate NRCS Code 443 standard, which governs a different practice.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; EQIP Cost-Share Terms for Practice 430</summary>
+    <div class="inner">
+      <table id="apxE">
+        <tr><th>Term</th><th>Value</th></tr>
+        <tr><td>Reimbursement basis</td><td>Per pound of pipe installed</td></tr>
+        <tr><td>Standard cost-share rate (% of eligible cost)</td><td class="num">75% [S4]</td></tr>
+        <tr><td>Reimbursement rate per pound of pipe installed (USD/lb)</td><td class="num">$4.22 [S5]</td></tr>
+        <tr><td>Condition of payment</td><td>Forfeited in full if the installed design does not certify against Code 430</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Pump Energy Cost Figures</summary>
+    <div class="inner">
+      <table id="apxF">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Pump power source (fuel type) for this job</td><td>Electricity (grid-powered pump) [MA7]</td></tr>
+        <tr><td>Energy-cost conversion factor</td><td>Electricity: 0.885 whp-hr/kWh [S9]</td></tr>
+        <tr><td>Local price per unit of electricity (USD)</td><td class="num">$0.0917/kWh [S12]</td></tr>
+        <tr><td>Brake-horsepower sizing formula constants</td><td>BHP = (GPM &times; TDH) &divide; (3,960 &times; E); E = 0.75 typical [S10]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix G &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxG">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>NRCS Code 430 maximum plastic-pipe design velocity</td><td>5 ft/sec</td><td><a href="https://www.nrcs.usda.gov/sites/default/files/2024-12/Irrigation%20Pipeline%20(430)%20(Ft.)%20(11-24)%20Standard%20Document.pdf" target="_blank" rel="noopener">USDA NRCS, Code 430</a></td><td>2024-11</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Hazen-Williams friction-loss equation</td><td>h_f = 4.732(Q/C)^1.85(L/D^4.87)</td><td><a href="https://directives.nrcs.usda.gov/sites/default/files2/1720463089/Chapter%204%20-%20Pipe%20Flow.pdf" target="_blank" rel="noopener">USDA NRCS NEH Part 634 Ch.4</a></td><td>2022-02</td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>Hazen-Williams roughness coefficient for PVC/PE/HDPE pipe</td><td>C = 150</td><td><a href="https://directives.nrcs.usda.gov/sites/default/files2/1720463089/Chapter%204%20-%20Pipe%20Flow.pdf" target="_blank" rel="noopener">USDA NRCS NEH Part 634 Ch.4</a></td><td>2022-02</td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Standard EQIP cost-share payment rate</td><td>up to 75%</td><td><a href="https://www.ecfr.gov/current/title-7/subtitle-B/chapter-XIV/subchapter-B/part-1466/subpart-B/section-1466.23" target="_blank" rel="noopener">7 CFR &sect; 1466.23</a></td><td>current</td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>EQIP Practice 430 reimbursement rate, PVC, standard rate</td><td>$4.22/lb</td><td><a href="https://www.nrcs.usda.gov/sites/default/files/2024-11/FY25_EQIP_CostList_RestOfState.pdf" target="_blank" rel="noopener">USDA NRCS Kansas FY2025 schedule</a></td><td>2024-11</td><td>HIGH</td></tr>
+        <tr><td>S6</td><td>PIP weight per linear foot, 6in &amp; 8in nominal</td><td>6in: 2.40 lb/ft; 8in: 4.16 lb/ft</td><td><a href="https://www.jmeagle.com/sites/default/files/Irrigation_web.pdf" target="_blank" rel="noopener">JM Eagle Irrigation P.I.P. catalog</a></td><td>undated</td><td>MEDIUM</td></tr>
+        <tr><td>S7</td><td>6in 125psi gasketed PVC pipe, price per foot</td><td>$5.10/ft</td><td><a href="https://directpivotparts.com/products/6-Gasketed-PVC-Irrigation-Pipe-Per-Foot-Choose-PSI-/6PIPE125" target="_blank" rel="noopener">Direct Pivot Parts</a></td><td>current listing</td><td>MEDIUM</td></tr>
+        <tr><td>S8</td><td>8in 125psi gasketed PVC pipe, price per foot</td><td>$7.30/ft</td><td><a href="https://directpivotparts.com/products/8-Gasketed-PVC-Irrigation-Pipe-Per-Foot-Choose-PSI-/8PIPE125" target="_blank" rel="noopener">Direct Pivot Parts</a></td><td>current listing</td><td>MEDIUM</td></tr>
+        <tr><td>S9</td><td>Water-horsepower-hours per unit of pumping energy</td><td>Electricity: 0.885 whp-hr/kWh</td><td><a href="https://fieldreport.caes.uga.edu/publications/C965/irrigation-pumping-plant-performance" target="_blank" rel="noopener">UGA CAES Field Report C965</a></td><td>reviewed 2012-06</td><td>MEDIUM</td></tr>
+        <tr><td>S10</td><td>Brake-horsepower pump-sizing formula &amp; typical pump efficiency</td><td>BHP=(GPM&times;TDH)/(3960&times;E); E=0.75</td><td><a href="https://gfipps.tamu.edu/files/2021/11/EB-6011-Sizing.pdf" target="_blank" rel="noopener">Texas A&amp;M AgriLife EB-6011</a></td><td>2021-03</td><td>HIGH</td></tr>
+        <tr><td>S12</td><td>U.S. average retail price of electricity, industrial sector</td><td>9.17 cents/kWh</td><td><a href="https://www.eia.gov/electricity/monthly/update/end-use.php" target="_blank" rel="noopener">U.S. EIA</a></td><td>2026-06</td><td>HIGH</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-01. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D4: Certification check</h4>
+    <div class="goal">Solve a one-step equation for each option's maximum flow rate before its velocity reaches Code 430's 5 ft/sec ceiling (Appendix D). Diameter and Hazen-Williams inputs are in Appendices B/C.</div>
+    <div class="fieldrow"><label>Lean Main velocity at 440 GPM (ft/sec)</label><input type="number" id="d4VelA" step="0.01"><button onclick="checkD4VelA()">Check</button><span class="fb" id="d4VelAFb"></span></div>
+    <div class="fieldrow"><label>Margin Main velocity at 440 GPM (ft/sec)</label><input type="number" id="d4VelB" step="0.01"><button onclick="checkD4VelB()">Check</button><span class="fb" id="d4VelBFb"></span></div>
+    <div class="fieldrow"><label>Lean Main certified max flow (GPM)</label><input type="number" id="d4MaxA"><button onclick="checkD4MaxA()">Check</button><span class="fb" id="d4MaxAFb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D1/D2: Installed cost and EQIP reimbursement</h4>
+    <div class="goal">Build each option's material+labor cost from Appendices A/B/C, and its EQIP reimbursement from Appendix E (per-pound rate &times; total installed weight) &mdash; only if that option certifies in Step 1.</div>
+    <div class="fieldrow"><label>Lean Main installed cost (USD)</label><input type="number" id="d2CostA"><button onclick="checkD2CostA()">Check</button><span class="fb" id="d2CostAFb"></span></div>
+    <div class="fieldrow"><label>Margin Main installed cost (USD)</label><input type="number" id="d2CostB"><button onclick="checkD2CostB()">Check</button><span class="fb" id="d2CostBFb"></span></div>
+    <div class="fieldrow"><label>Lean Main EQIP reimbursement (USD)</label><input type="number" id="d2ReimbA"><button onclick="checkD2ReimbA()">Check</button><span class="fb" id="d2ReimbAFb"></span></div>
+    <div class="fieldrow"><label>Margin Main EQIP reimbursement (USD)</label><input type="number" id="d2ReimbB"><button onclick="checkD2ReimbB()">Check</button><span class="fb" id="d2ReimbBFb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: Annual pump energy cost</h4>
+    <div class="goal">Compute each option's annual pump energy cost from Appendix F's brake-horsepower formula and the Hazen-Williams friction loss you'd get from Appendix D's equation.</div>
+    <div class="fieldrow"><label>Lean Main annual energy cost (USD/yr)</label><input type="number" id="d3EnergyA"><button onclick="checkD3EnergyA()">Check</button><span class="fb" id="d3EnergyAFb"></span></div>
+    <div class="fieldrow"><label>Margin Main annual energy cost (USD/yr)</label><input type="number" id="d3EnergyB"><button onclick="checkD3EnergyB()">Check</button><span class="fb" id="d3EnergyBFb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D6: Break-even flow rate</h4>
+    <div class="goal">Set the two options' total-annualized-cost-per-acre-inch expressions equal to each other and solve for the flow rate at which they cost the same. State whether the farm's actual 440 GPM sits above or below it.</div>
+    <div class="fieldrow"><label>Your solved break-even flow rate (GPM)</label><input type="number" id="d6Breakeven" step="0.1"><span class="fb" id="d6Fb">&mdash; use the slider below to check your own value</span></div>
+    <div class="sliderow">
+      <label for="flowSlider" style="min-width:220px">Try a design flow rate (GPM)</label>
+      <input type="range" id="flowSlider" min="220" max="660" step="1" value="440" oninput="onFlowSlide()">
+      <span class="val" id="flowVal">440</span>
+    </div>
+    <div class="fieldrow"><label>Lean Main certified at this flow?</label><span class="fb" id="flowCertA">&mdash;</span></div>
+    <div class="fieldrow"><label>Cost/acre-inch gap sign at this flow</label><span class="fb" id="flowGapSign">&mdash;</span></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-gauge"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>The farm's design flow rate (Appendix A, MA1) is a stated scenario assumption, not a public figure. Use the same slider from Step 4 above to see how close the Lean Main's certification really is &mdash; and what happens to its EQIP reimbursement the instant its velocity crosses Code 430's ceiling.</p>
+      <p>If Denise's own farm turns out to need even a little more flow than she assumed, what happens to her whole recommendation for the Lean Main &mdash; not just its cost, but its eligibility?</p>
+      <div class="fieldrow"><label>Headroom to the Lean Main's certified ceiling at the current slider flow</label><span class="fb ok" id="twistHeadroomOut">&mdash;</span></div>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Set the slider to the farm's actual required flow rate and watch the reimbursement flip</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>USDA NRCS, Conservation Practice Standard, Irrigation Pipeline (Code 430), 430-CPS-2 (2024-11) &mdash; S1</li>
+      <li>USDA NRCS, Title 210 National Engineering Handbook, Part 634 "Hydraulics," Ch. 4 &mdash; S2, S3</li>
+      <li>7 CFR &sect; 1466.23, Environmental Quality Incentives Program &mdash; S4</li>
+      <li>USDA NRCS Kansas, FY2025 EQIP Payment Schedule &mdash; S5</li>
+      <li>JM Eagle, "Irrigation P.I.P." product catalog &mdash; S6</li>
+      <li>Direct Pivot Parts, online catalog &mdash; S7, S8</li>
+      <li>UGA CAES Field Report C965, Irrigation Pumping Plant Performance &mdash; S9</li>
+      <li>Texas A&amp;M AgriLife Extension EB-6011 &mdash; S10</li>
+      <li>U.S. EIA, Electricity Monthly Update &mdash; S12</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Mainline Margin &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   Given data, ported from cases/the-mainline-margin/sensitivity_model.py.
+   Raw sourced inputs and stated Modeling Assumptions only (MA1-MA7,
+   S1-S12) — no verdict, no margin_pct, no winner is ever hardcoded
+   below or anywhere else in this file.
+   ================================================================ */
+const PARAMS = {
+  design_flow_gpm: 440.0,
+  run_length_ft: 1320.0,
+  labor_rate_per_ft: 25.00,
+  annual_hours: 1200.0,
+  diameter_in_a: 6.0, weight_lb_per_ft_a: 2.40, material_cost_per_ft_a: 5.10,
+  diameter_in_b: 8.0, weight_lb_per_ft_b: 4.16, material_cost_per_ft_b: 7.30,
+  hw_c: 150.0, velocity_ceiling_fps: 5.0,
+  eqip_rate_per_lb: 4.22,
+  pump_efficiency: 0.75, whp_hr_per_kwh_electric: 0.885, price_per_kwh: 0.0917,
+  pipeline_life_years: 20.0,
+};
+const GPM_PER_CFS = 448.8325;
+const GAL_PER_ACRE_INCH = 27154.28;
+
+function velocityFps(gpm, diameterIn){
+  const qCfs = gpm / GPM_PER_CFS;
+  const dFt = diameterIn / 12.0;
+  const areaSqft = Math.PI/4.0 * dFt*dFt;
+  return qCfs / areaSqft;
+}
+function frictionLossFt(gpm, diameterIn, hwC, lengthFt){
+  const qCfs = gpm / GPM_PER_CFS;
+  const dFt = diameterIn / 12.0;
+  return 4.732 * Math.pow(qCfs/hwC, 1.85) * (lengthFt / Math.pow(dFt, 4.87));
+}
+function annualEnergyCost(gpm, headFt, p){
+  const whp = (gpm * headFt) / 3960.0;
+  const annualWhpHr = whp * p.annual_hours;
+  const kwh = annualWhpHr / p.whp_hr_per_kwh_electric;
+  return kwh * p.price_per_kwh;
+}
+function optionDetail(gpm, diameterIn, weightPerFt, materialPerFt, p){
+  const length = p.run_length_ft;
+  const installedCost = (materialPerFt + p.labor_rate_per_ft) * length;
+  const weightLb = weightPerFt * length;
+  const velocity = velocityFps(gpm, diameterIn);
+  const certified = velocity <= p.velocity_ceiling_fps;
+  const reimbursement = certified ? weightLb * p.eqip_rate_per_lb : 0.0;
+  const netCapital = installedCost - reimbursement;
+  const annualizedCapital = netCapital / p.pipeline_life_years;
+  const headFt = frictionLossFt(gpm, diameterIn, p.hw_c, length);
+  const energyCost = annualEnergyCost(gpm, headFt, p);
+  const totalAnnualCost = annualizedCapital + energyCost;
+  const annualGallons = gpm * 60.0 * p.annual_hours;
+  const acreInches = annualGallons / GAL_PER_ACRE_INCH;
+  return {certified, velocity, installedCost, weightLb, reimbursement, netCapital,
+          annualizedCapital, headFt, energyCost, totalAnnualCost, acreInches,
+          costPerAcreInch: totalAnnualCost/acreInches};
+}
+function evaluateDetail(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const gpm = p.design_flow_gpm;
+  const a = optionDetail(gpm, p.diameter_in_a, p.weight_lb_per_ft_a, p.material_cost_per_ft_a, p);
+  const b = optionDetail(gpm, p.diameter_in_b, p.weight_lb_per_ft_b, p.material_cost_per_ft_b, p);
+  return {a, b};
+}
+function certifiedMaxFlow(diameterIn, ceilingFps){
+  const dFt = diameterIn/12.0;
+  const areaSqft = Math.PI/4.0 * dFt*dFt;
+  const maxQCfs = ceilingFps * areaSqft;
+  return maxQCfs * GPM_PER_CFS;
+}
+
+/* ================================================================
+   Generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tolPct)=>Math.abs(a-b)<=Math.max(0.5, Math.abs(b)*tolPct);
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title, 'Heroes Academy Math Builder case study', '', 'Sources:', ...srcLis, '', location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   Working Notebook check functions.
+   ================================================================ */
+function checkD4VelA(){
+  const d = evaluateDetail({}); fb('d4VelAFb', near(val('d4VelA'), d.a.velocity, 0.01));
+}
+function checkD4VelB(){
+  const d = evaluateDetail({}); fb('d4VelBFb', near(val('d4VelB'), d.b.velocity, 0.01));
+}
+function checkD4MaxA(){
+  const maxFlow = certifiedMaxFlow(PARAMS.diameter_in_a, PARAMS.velocity_ceiling_fps);
+  fb('d4MaxAFb', near(val('d4MaxA'), maxFlow, 0.01));
+}
+function checkD2CostA(){ const d = evaluateDetail({}); fb('d2CostAFb', near(val('d2CostA'), d.a.installedCost, 0.01)); }
+function checkD2CostB(){ const d = evaluateDetail({}); fb('d2CostBFb', near(val('d2CostB'), d.b.installedCost, 0.01)); }
+function checkD2ReimbA(){ const d = evaluateDetail({}); fb('d2ReimbAFb', near(val('d2ReimbA'), d.a.reimbursement, 0.01)); }
+function checkD2ReimbB(){ const d = evaluateDetail({}); fb('d2ReimbBFb', near(val('d2ReimbB'), d.b.reimbursement, 0.01)); }
+function checkD3EnergyA(){ const d = evaluateDetail({}); fb('d3EnergyAFb', near(val('d3EnergyA'), d.a.energyCost, 0.02)); }
+function checkD3EnergyB(){ const d = evaluateDetail({}); fb('d3EnergyBFb', near(val('d3EnergyB'), d.b.energyCost, 0.02)); }
+
+function onFlowSlide(){
+  const gpm = val('flowSlider');
+  document.getElementById('flowVal').textContent = gpm;
+  const d = evaluateDetail({ design_flow_gpm: gpm });
+  document.getElementById('flowCertA').textContent = d.a.certified ? 'certifies' : 'FAILS certification';
+  document.getElementById('flowCertA').className = 'fb ' + (d.a.certified ? 'ok' : 'bad');
+  const gap = d.a.costPerAcreInch - d.b.costPerAcreInch;
+  document.getElementById('flowGapSign').textContent = gap > 0 ? 'Lean Main costs more/acre-inch' : (gap < 0 ? 'Lean Main costs less/acre-inch' : 'equal');
+  document.getElementById('flowGapSign').className = 'fb ' + (Math.abs(gap) < 0.01 ? 'ok' : 'bad');
+  onTwistToggle_recompute(gpm);
+}
+onFlowSlide();
+
+/* ================================================================
+   Dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-mainline-margin";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+const DELIVERABLES = [
+  ["D1", "Total-annualized-cost expression per option, distributive property shown"],
+  ["D2", "Substitution table evaluating each option's real numbers"],
+  ["D3", "Simplified expression, like terms combined"],
+  ["D4", "Certification check (one-step equation) at the actual flow rate"],
+  ["D5", "Rearranged Hazen-Williams formula, minimum diameter under an energy-cost cap"],
+  ["D6", "Break-even calculation and recommendation"],
+];
+
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   Glossary content (MCS-39: >=8 terms, allowlisted domains).
+   ================================================================ */
+const GLOSSARY = {
+  "Variable": {def: "A letter or symbol standing in for a number that can change or is not yet known.",
+    url: "https://www.khanacademy.org/math/pre-algebra/x127c6cc6:pre-algebra-foundations-2/pre-algebra-intro-to-variables/a/what-is-a-variable"},
+  "Constant": {def: "A term in an expression whose value never changes -- no variable attached.",
+    url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:foundation-algebra/x2f8bb11595b61c86:algebraic-expressions/a/parts-of-algebraic-expressions"},
+  "Coefficient": {def: "The number multiplied by a variable in a term, e.g. the 4 in 4x.",
+    url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:foundation-algebra/x2f8bb11595b61c86:algebraic-expressions/a/parts-of-algebraic-expressions"},
+  "Term": {def: "A single number, variable, or product of numbers and variables in an expression, separated by + or -.",
+    url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:foundation-algebra/x2f8bb11595b61c86:algebraic-expressions/a/parts-of-algebraic-expressions"},
+  "Like Terms": {def: "Terms in an algebraic expression that have the exact same variable raised to the same power -- the only terms you're allowed to combine by adding or subtracting.",
+    url: "https://www.mathsisfun.com/algebra/like-terms.html"},
+  "Distributive Property": {def: "The rule that lets you multiply a number by a sum or difference by multiplying it by each part separately, then adding the results: a(b + c) = ab + ac.",
+    url: "https://www.mathsisfun.com/definitions/distributive-law.html"},
+  "One-Step Equation": {def: "An equation that takes exactly one operation to solve for the variable.",
+    url: "https://www.mathsisfun.com/algebra/equations-solving.html"},
+  "Multi-Step Equation": {def: "An equation that takes more than one operation to solve -- you undo the operations in reverse order to isolate the variable.",
+    url: "https://www.mathsisfun.com/algebra/equations-solving.html"},
+  "Substitution": {def: "Replacing a variable in an expression with its actual known value, then simplifying.",
+    url: "https://www.khanacademy.org/math/pre-algebra/pre-algebra-equations-expressions/pre-algebra-evaluating-expressions/a/evaluating-expressions-with-two-variables"},
+};
+const HOWTO = [
+  ["How to evaluate a variable expression (Substitution Property)", "Substitution"],
+  ["How to add and subtract an expression with variables", "Like Terms"],
+  ["How to solve a one-step equation", "One-Step Equation"],
+  ["How to solve a multi-step equation with a variable on one side", "Multi-Step Equation"],
+  ["How to solve a multi-step equation with a variable on both sides", "Multi-Step Equation"],
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   Twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle_recompute(gpm){
+  const el = document.getElementById('twistHeadroomOut');
+  if(!el) return;
+  const maxFlow = certifiedMaxFlow(PARAMS.diameter_in_a, PARAMS.velocity_ceiling_fps);
+  const headroomPct = 100 * (maxFlow - gpm) / maxFlow;
+  el.textContent = (headroomPct >= 0 ? '+' : '') + headroomPct.toFixed(2) + '% headroom to the ceiling';
+  el.className = 'fb ' + (headroomPct >= 0 ? 'ok' : 'bad');
+}
+function onTwistToggle(){
+  if(document.getElementById('applyTwist').checked){
+    document.getElementById('flowSlider').value = PARAMS.design_flow_gpm;
+    onFlowSlide();
+  }
+}
+
+/* ================================================================
+   Tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

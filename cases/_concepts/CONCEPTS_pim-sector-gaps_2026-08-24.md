@@ -199,6 +199,16 @@ not a hard citation.
 ---
 
 ### C4 — The Fee Ladder   ·   score 0.0   ·   quality 5/8   ·   tier T2
+
+> **Moved to drafting/research 2026-09-01.** Written up and fully researched as
+> `cases/the-fee-ladder/`. Real sourced data: two real, filed State Street custody fee schedules
+> (SEC EDGAR exhibits, Gabelli Global Small and Mid Cap Value Trust and Green Century Funds) for
+> real institutional custody bp-rate magnitudes, plus the real 2019 SEC/State Street custody
+> billing-overcharge settlement as precedent; the specific fictional client's recursive four-tier
+> fee ladder is a stated Modeling Assumption anchored to those real rate magnitudes.
+> `case.json.status = "researched"`; `margin_pct` = 13.32% — comfortably under SPEC §2's ~20% cap,
+> no retune or waiver needed. See `cases/the-fee-ladder/RESEARCH_LOG.md`.
+
 **Protagonist.** Marcus Alvarez, Securities Settlement Operations Analyst at a custody bank.
 Personally at stake: sales needs a fee quote today for a new institutional client, and he's the
 one who has to defend whatever number goes out.
@@ -270,6 +280,17 @@ benchmark ranges.
 ---
 
 ### C6 — The Peg Line   ·   score 0.0   ·   quality 8/8   ·   tier T2
+
+> **MOVED TO DRAFTING/RESEARCH 2026-09-01.** Written up and fully researched as
+> `cases/the-peg-line/`. Real sourced data: Circle Reserve Fund (BlackRock) and iShares factsheets,
+> live U.S. Treasury daily bill rates, the GENIUS Act's real 93-day reserve-maturity cap, and the
+> real March 2023 USDC/SVB peg-deviation episode (Federal Reserve FEDS Notes + CoinGecko),
+> framed per this sheet's own sensitivity note as a routine treasury-allocation decision, not a
+> crisis narrative. `case.json.status = "researched"`; `margin_pct` = 97.47% (96.9%–97.8% across
+> three real sensitivity readings) — well past SPEC §2's ~20% cap, flagged plainly for
+> `case-readiness` rather than self-waived. See `cases/the-peg-line/RESEARCH_LOG.md` for the full
+> retune-attempt writeup.
+
 **Protagonist.** Priya Nathan, Treasury/Reserves Analyst at a regulated stablecoin issuer.
 Personally at stake: she has to recommend a reserve-composition change before the next monthly
 attestation report goes out under her name.
@@ -306,6 +327,56 @@ narrative.
 
 **Split risk.** NONE.
 
+### C6 — REDESIGNED (balance retune, 2026-09-01)
+
+**Status: REDESIGNED (balance retune, 2026-09-01) — original C6 writeup above is SUPERSEDED on the
+dilemma/dataset specifics below; the protagonist, domain, and target skills are unchanged.**
+
+**What changed and why.** The research pass logged above produced `margin_pct = 97.47%`, far past
+SPEC §2's ~20% cap — Option A's peg-deviation reference was a real "normal drift" figure (30 bps),
+while Option B's was a real but categorically different figure, the March 2023 USDC/SVB crisis
+tick-low (1,000–1,400 bps across three independently sourced readings). That is a normal-conditions
+number compared against a catastrophic-tail-event number — an apples-to-oranges comparison that
+structurally guaranteed a large margin regardless of which specific historical reading was used
+(confirmed by sweeping all three; the original `RESEARCH_LOG.md` documents the full retune
+attempt). The project owner reviewed this and explicitly declined an MCS-46 waiver, directing a
+redesign of the underlying dilemma/dataset instead of a self-granted exception.
+
+**The fix.** Two changes, both grounded in new real research this pass: (1) Option B's maturity
+moved from 13-week Treasury bills to 6-week Treasury bills — still real, still legally inside the
+GENIUS Act's 93-day cap (S7), but a closer, still-meaningfully-different pair than the original
+4-week-vs-13-week spread; and (2) the risk side of the metric was reframed so both options are
+measured on the *same* kind of risk (interest-rate/duration exposure) rather than two unrelated
+risk categories — Option B's peg-deviation figure is now *derived* from Option A's own real,
+sourced reference figure (30 bps, unchanged) by the square-root-of-time rule, the real,
+Basel-Committee-recommended method for scaling a risk/volatility estimate from a shorter holding
+horizon to a longer one (new source: Daníelsson & Zigrand, LSE Financial Markets Group, 2003 —
+fetched and confirmed directly). This is a "reframe the risk side of the metric so both options are
+measured on the same kind of risk, scaled by something that actually differs proportionally between
+the options" fix, not a data-fudge — every number is either the original real, sourced Treasury
+yield/drift data (now extended to the 6-week Treasury bill yield, also fetched and confirmed
+directly) or an explicitly labeled derived/modeled figure with a real, citable formula behind it.
+
+**New margin.** `margin_pct = 17.04%` (primary reading: square-root-of-time scaling), under SPEC
+§2's ~20% cap. Full arithmetic: reserve $73,434,000,000 (unchanged); annual yield A (4-week,
+3.75%) = $2,753,775,000; annual yield B (6-week, 3.81%) = $2,797,835,400; efficiency A =
+$91,792,500/bp (dev = 30 bps, real); efficiency B = $76,147,434.60/bp (dev = 30 × √(42/28) =
+36.74 bps, derived); margin = (91,792,500 − 76,147,434.60) / 91,792,500 × 100 = 17.04%. A genuine
+sensitivity range is disclosed, not hidden: a different real, defensible scaling choice (linear
+duration scaling instead of square-root) widens the margin to 32.27%, and a third, more
+conservative reading (no incremental duration risk) actually flips the recommendation to Option B
+(margin 1.57%) — this became the case's own D4 sensitivity-check deliverable, giving it real
+stakes rather than a formality. Full retune trail, all new sources (S9), and the full old-vs-new
+arithmetic are in `cases/the-peg-line/RESEARCH_LOG.md`'s "BALANCE-RETUNE REDESIGN" section.
+`case.json.status` remains `"researched"` — the balance blocker that would have stopped
+`case-readiness` is now resolved; a separate `case-readiness` pass still applies.
+
+**Skills, protagonist, domain — unchanged.** Still Priya Nathan, Treasury/Reserves Analyst,
+Northlight Financial (fictional stablecoin issuer); still `advanced-operations-scientific-notation`
+and `advanced-operations-absolute-value` (plus their "how to…" pair), exercised the same way (a
+tens-of-billions reserve total in scientific notation; `|price − $1.00|` as the load-bearing
+absolute-value metric).
+
 ---
 
 ### C7 — The Approval Graph   ·   score 0.0   ·   quality 4/8   ·   tier T1/T2
@@ -341,6 +412,11 @@ real deadline, a real cost of the stall) before `case-write`.
 ---
 
 ### C8 — The Attribution Sample   ·   score 0.0   ·   quality 6/8   ·   tier T2
+
+> **Moved to drafting 2026-08-24, researched 2026-09-01.** Written up and fully researched as
+> `cases/the-attribution-sample/`. `margin_pct` = 19.83% (SPEC §2's ~20% cap) — genuinely close,
+> no retune pass or waiver needed. See `cases/the-attribution-sample/RESEARCH_LOG.md`.
+
 **Protagonist.** Derek Okafor, Performance Marketing Analyst at an ad-tech install-attribution
 platform. Personally at stake: the weekly attribution report he ships to a mobile-game client is
 the number that decides which channels get next month's ad budget.
@@ -422,6 +498,12 @@ Triangle or Navigation.
 ---
 
 ### C10 — The Qubit Budget   ·   score 0.0   ·   quality 8/8   ·   tier T2
+
+**Status: drafted, researched (2026-09-01) — see `cases/the-qubit-budget/`.** `case.json.status` =
+`"researched"`; `margin_pct` = 16.98, under SPEC §2's ~20% cap. `new_coverage[]` is `[]` by
+design — both targeted skills were already at `n>=1`, matching this write-up's own "0 skills at
+true zero" framing; the case reinforces the thinly-covered Exponents group instead.
+
 **Protagonist.** Sam Okafor, Quantum Software Engineer at a quantum-computing startup.
 Personally at stake: this week's cloud-quantum-compute budget request is hers to defend, and the
 register-size call determines whether the client's problem is exactly represented or

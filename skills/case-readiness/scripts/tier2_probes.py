@@ -170,7 +170,7 @@ def probe_trap(project, cid, c, fac, out):
     if not fac:
         machine.append("no FACILITATOR.md — the trap cannot be named")
     else:
-        m = re.search(r'(?i)(the )?trap[^.\n]*[:.\n](.{0,400})', fac, re.S)
+        m = re.search(r'(?i)(the )?\btrap\b[^.\n]*[:.\n](.{0,400})', fac, re.S)
         if not m:
             machine.append("MCS-24 — FACILITATOR.md never names a trap. A case with no plausible "
                            "wrong path has no discussion in it.")

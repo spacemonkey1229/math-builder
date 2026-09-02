@@ -153,6 +153,14 @@ thin-covered); this is a complete-the-group case, not an inflated one.
 ---
 
 ### C2 — The Course Correction   ·   score 0.0   ·   quality 6/8   ·   tier T2
+
+> **Moved to drafting 2026-09-01.** Written up as `cases/the-course-correction/`, status
+> `researched`, margin_pct 16.88 (under the ~20% cap, no retune needed). Note for the concept-log
+> maintainer: this writeup's "currently covered by exactly one case (Wind Triangle)" line below is
+> now stale — `readmodel/standards_spine.json` shows the Vectors group at n=2 (Wind Triangle,
+> Crosswind Cut) as of case-research; this case thickens it to n=3, not n=1→2 as scored here. See
+> `cases/the-course-correction/RESEARCH_LOG.md`'s "Judgment call" section.
+
 **Protagonist.** Priya Anand, research vessel Second Mate on an oceanographic survey ship.
 Personally at stake: her course correction has to get the ship to a fixed rendezvous buoy before
 a weather window closes, and burning extra fuel on the wrong heading eats into the cruise's actual
@@ -224,11 +232,73 @@ constraint, same pattern as every existing constrained-budget case in this corpu
 
 **Split risk.** NONE.
 
+> **MOVED TO DRAFTING/RESEARCH 2026-09-01.** Written up and fully researched as
+> `cases/the-rig-budget/`. Real sourced data: Unity Technologies' own published mobile-rigging
+> guidance (docs.unity3d.com, Unity 5.6 Manual, fetched and confirmed directly) for the hero rig's
+> bone count (below 30 for mobile) and mesh density (300-1500 polygons for mobile), and Ocean View
+> Games' two published guides (gamedevcheatsheet.com/frame-budget and a dev.to Unity checklist,
+> both fetched and confirmed) for the 60fps action-game frame-rate choice and the 16.6ms/frame
+> budget. Note for the concept-log maintainer: this write-up's "currently covered by exactly one
+> case (The Multiplier Recruit)" line is stale — `readmodel/standards_spine.json` already showed
+> the Matrices group at n=2 (The Multiplier Recruit, The Skin Pack Atlas) at authoring time, so
+> this case thickens it to n=3, not n=1→2 as scored here. `case.json.status = "researched"`;
+> `margin_pct` = 45.0% (per-bone, per-frame), computed directly from real cited bone-count and
+> mesh-density guidance — well over SPEC §2's ~20% cap. A retune was attempted across the entire
+> real cited mesh-density range and only moved the margin from 45.0% to 49.0%; this is flagged as
+> an open balance concern for case-readiness to adjudicate (no waiver self-granted). See
+> `cases/the-rig-budget/RESEARCH_LOG.md`.
+
+### C3 — REDESIGNED (balance retune, 2026-09-01)
+
+**Status: REDESIGNED (balance retune, 2026-09-01) — original writeup and the "MOVED TO
+DRAFTING/RESEARCH" note above are retained for historical record; do not delete.** The project
+owner reviewed the 45.0% margin flagged above and explicitly declined an MCS-46-style waiver,
+directing a redesign of the underlying dilemma/dataset instead of a numeric patch — the "compose
+once vs. redo every time" cost model was proven algebraically incapable of dropping under SPEC
+§2's ~20% cap for any realistic vertices-per-bone value (margin(V) = (V−1)/(2V) → 50% as V grows;
+see `cases/the-rig-budget/RESEARCH_LOG.md`'s REDESIGN PASS section for the full proof).
+
+The redesign kept the same protagonist (Dana Ruiz), studio (Fenwick Games), domain (game-character
+rigging / mobile performance budgeting), and Matrices skill target, but replaced the specific
+dilemma: instead of "cache a bone's transform once vs. never cache it" (an artificial comparison
+whose real-world cost ratio is structurally lopsided), the case now compares two real, distinct,
+industry-documented skin-blending techniques at a rig's genuine multi-bone blend zones (shoulder,
+underarm, cape mount) — linear blend skinning ("The Direct Blend") vs. direct quaternion blending
+("The Quaternion Blend"). A real, peer-reviewed graphics paper — Kavan, Collins, Žára, O'Sullivan,
+"Skinning with Dual Quaternions" (SI3D 2007), fetched and read in full — reports real, measured
+GPU runtimes for exactly this technique pair: 0.32 ms/frame vs. 0.39 ms/frame, a real margin of
+17.9%, under SPEC §2's ~20% cap on real data, no retuning of any scenario dial required. The same
+paper also supplied a real, citable mathematical explanation for *why* the cheaper technique has a
+real visual defect (a weighted sum of rotation matrices need not have determinant 1 — provable by
+hand, strengthening the case's own determinant deliverable rather than just asserting the defect),
+and a real, documented limitation of the more expensive technique at more complex joints — a
+genuine, sourced, two-sided tension neither the original design nor a simple numeric retune could
+have produced. `case.json.status` remains `"researched"`; `margin_pct` = 17.9%. See
+`cases/the-rig-budget/RESEARCH_LOG.md` for the full retune history, the directions tried and
+rejected, and the complete source trail (S6/S7/S8).
+
+> **MOVED TO DRAFTING/RESEARCH 2026-09-01.** Written up and fully researched as
+> `cases/the-plaza-bid/`. Real sourced data: Stone & Tile Shoppe (stoneandtileshoppe.com), a live
+> named retailer, for both tile lines — Daltile Color Wheel Mosaic hexagon ($6.59/sq ft listed,
+> 11⅝″×10¼″ sheet) and Daltile Octagon & Dot ($9.69/sq ft, 12″×12″ sheet), same manufacturer, same
+> supplier, both fetched and confirmed 2026-09-01. Real research finding that inverted this
+> writeup's own initial framing: the octagon-and-square tile's manufactured sheet is a perfect
+> 1-sq-ft square that divides the plaza's whole-foot dimensions with zero grid waste, while the
+> hexagon's real sheet size does not — computed cut-waste is actually *higher* for the hexagon
+> (10.5%) than for the octagon-and-square (9.1%), the opposite of "minimal cut waste" as
+> hypothesized above. The regular hexagon still wins on total installed cost per square foot,
+> driven by its real 32%-cheaper listed tile price surviving both its own higher waste and a
+> stated labor premium. `case.json.status = "researched"`; `margin_pct` = 9.9%, real and modest,
+> well inside SPEC §2's ~20% cap, no retune needed. See `cases/the-plaza-bid/RESEARCH_LOG.md`.
+
 ---
 
 ### C6 — The Cold Start   ·   score 0.0   ·   quality 7/8 → sharpened   ·   tier T2
 **Sharpened 2026-08-24** (was generic "product analytics," now a concrete on-screen failure with
 a name and a deadline).
+**→ Moved to drafting 2026-09-01** — `cases/the-cold-start/`, case-write + case-research complete,
+`case.json.status: "researched"`, margin_pct 4.76 (real S1/S2/S3/S4 sources; MA3's modeled 2026
+dropout is the load-bearing retune — see RESEARCH_LOG.md).
 
 **Protagonist.** Priya Shah, Recommendation Systems Engineer at a mid-size streaming service. Her
 team just spent eight months and the platform's whole original-content budget on a prestige
@@ -288,6 +358,16 @@ rate — likely MEDIUM at best.
 ---
 
 ### C7 — The Rig Split   ·   score 0.0   ·   quality 7/8 → sharpened   ·   tier T2
+
+> **MOVED TO DRAFTING/RESEARCH 2026-09-01.** Written up and fully researched as
+> `cases/the-rig-split/`. Real sourced data: the U.S. EIA's final Drilling Productivity Report
+> (Permian 1,400 bbl/day/rig, Bakken 1,747 bbl/day/rig, June 2024 cutoff — the last month EIA
+> published before folding this series into STEO) and Baker Hughes' real weekly rig count by basin
+> for scale grounding. Relocation downtime (14 days) is a stated Modeling Assumption anchored to a
+> real, cited 1-4-week out-of-region rig-move range, as this concept's own writeup anticipated.
+> `case.json.status = "researched"`; `margin_pct` = 1.02% — a genuinely razor-thin margin from real
+> data, well inside SPEC §2's ~20% cap, no retune needed. See `cases/the-rig-split/RESEARCH_LOG.md`.
+
 **Sharpened 2026-08-24** (was generic "Basin 1 / Basin 2," now two real, named U.S. shale
 basins — both are separately tracked in the actual EIA Drilling Productivity Report and Baker
 Hughes Rig Count, so naming them is a real grounding improvement, not embellishment).
@@ -352,6 +432,19 @@ safety framing (keep it that way: this is a resource-allocation case, not a dril
 ### C8 — The Bot Farm   ·   score 0.0   ·   quality 7/8 → sharpened   ·   tier T2
 **Sharpened 2026-08-24** (was a generic weekend review, now tied to a specific traffic spike that
 raises the cost of being wrong in both directions at once).
+
+> **MOVED TO DRAFTING/RESEARCH 2026-09-01.** Written up and fully researched as
+> `cases/the-bot-farm/`. Uses only 3 of the Matrices group's 7 skills (matrix, matrix-dimension,
+> how-to-add-and-multiply-matrices), not all 7 — a disclosed scoping choice, see
+> `case.json.reinforcement_note`. Real sourced data: Varol et al. 2017 ("Online Human-Bot
+> Interactions," arXiv:1703.03107 — combined-system 0.95 AUC, real FP/FN rates 0.15/0.11, and the
+> real finding that connectivity features alone reach a lower standalone AUC than content/volume
+> features alone); Stanford SNAP's ego-Facebook dataset (4,039 nodes, 88,234 edges, 0.6055 average
+> local clustering coefficient); and X's real, current API rate-limit documentation. Per-cluster
+> false-positive rates (20% / 22.5%) are stated Modeling Assumptions derived from the real 0.15
+> baseline, as this concept's own writeup anticipated. `case.json.status = "researched"`;
+> `margin_pct` = 13.9%, well inside SPEC §2's ~20% cap on the first construction — no retune
+> needed. See `cases/the-bot-farm/RESEARCH_LOG.md`.
 
 **Protagonist.** Aisha Bello, Fraud Analyst on a mid-size social platform's Trust & Safety team.
 The platform's single biggest traffic weekend of the year starts in six hours — a major live

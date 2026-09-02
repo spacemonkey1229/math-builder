@@ -1,0 +1,1193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Bracket Cliff — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+  .cliffchart{width:100%;height:auto}
+  .cliffchart .axis{stroke:var(--sub);stroke-width:1.4}
+  .cliffchart .curve{stroke:var(--navy);stroke-width:3;fill:none}
+  .cliffchart .drop{stroke:var(--bad);stroke-width:2.4;stroke-dasharray:5 4;fill:none}
+  .cliffchart .pt{fill:var(--navy)}
+  .cliffchart .pt.open{fill:#fff;stroke:var(--navy);stroke-width:2.4}
+  .cliffchart text{font-family:var(--sans)}
+  .marginbar{width:100%;height:auto;margin-top:10px}
+  .marginbar rect{transition:width .4s ease}
+
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20V12"/></symbol>
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Bracket Cliff</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Calculus &middot; Limits &amp; Continuity &middot; Percent</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  <figure>
+  <svg class="cliffchart" viewBox="0 0 640 200" role="img" aria-label="An unlabeled cost curve that runs flat, then drops sharply at one point, then continues flat at a lower level.">
+    <line class="axis" x1="40" y1="170" x2="600" y2="170"/>
+    <line class="axis" x1="40" y1="20" x2="40" y2="170"/>
+    <path class="curve" d="M60,150 C120,146 220,140 300,135"/>
+    <circle class="pt" cx="300" cy="135" r="5"/>
+    <line class="drop" x1="300" y1="135" x2="300" y2="55"/>
+    <circle class="pt open" cx="300" cy="55" r="5"/>
+    <path class="curve" d="M300,55 C380,52 480,48 580,44"/>
+    <text x="280" y="192" font-size="12" fill="#5b6472">one exact income level</text>
+  </svg>
+  <figcaption>The chart pinned to Priya's cubicle wall &mdash; no numbers yet. That comes in the Appendices.</figcaption>
+</figure>
+
+  <p class="lede">Priya Nakamura has two draft memos open side by side on her monitor, cursor blinking at the end of neither. Pinned to the cubicle wall behind her is a single printed chart &mdash; a jagged line that falls off a cliff at one exact income level and never recovers &mdash; the same chart she has now stared at long enough that she could redraw it from memory. Her office in the state's health benefit exchange is quiet this late; the budget office cleared out an hour ago, but the calendar invite for tomorrow morning's markup meeting is still sitting unanswered in her inbox, subject line: <strong>RECOMMENDATION DUE.</strong></p>
+<p>Her phone buzzes, face-down on the desk, for the third time in ten minutes &mdash; the legislative aide, again, asking if she has a number yet. She doesn't answer it. Instead she opens a spreadsheet tab she has rebuilt from scratch twice already, one column for a household that does nothing different and falls straight through the gap in the chart, another for what it would cost the state to catch them. Both columns are still blank past the header row.</p>
+<p>She minimizes the spreadsheet. On her second monitor, the two memo drafts wait &mdash; one recommends spending nothing and living with the gap; the other recommends asking the legislature for real, ongoing money to close it. Both are addressed to the same committee. Both have her name at the bottom. She saves neither, and reaches for the keyboard.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  <p>Priya Nakamura is a senior policy analyst in a state health benefit exchange's policy office &mdash; the state-level office responsible for administering the exchange marketplace where residents buy individual health insurance and, where eligible, receive premium subsidies. She is accountable for the technical recommendation the exchange's director carries into the legislature's budget markup: whether the state should spend part of a one-time discretionary line item in this budget cycle to change how the exchange treats households whose income lands just above a specific federal eligibility line, before that line item is locked in for the year (see Appendix E).</p>
+<p>The federal government sets premium subsidies for marketplace insurance on a sliding scale tied to income, expressed as a percentage of the Federal Poverty Line (FPL). A temporary federal enhancement in effect from 2021 through 2025 removed the upper income cap on that sliding scale entirely, so no household lost its subsidy purely for earning too much. That enhancement was not extended, so for the current plan year the original rule is back in force: households at or below 400% of FPL receive a subsidy on the standard sliding scale; a household even one dollar above 400% of FPL receives no federal subsidy at all and must pay the full, unsubsidized premium (see Appendix A, Appendix B).</p>
+<p>Two options are before Priya. <strong>Hold The Cliff</strong> applies the federal formula exactly as published, at zero direct cost to the state, leaving the sliding scale to end abruptly at 400% of FPL. <strong>Build The Bridge</strong> would have the state fund its own wraparound subsidy &mdash; the same general approach several other states already fund for lower income bands (see Appendix D) &mdash; extending an income-scaled premium cap past 400% of FPL instead of letting it cut to zero. No state currently extends this kind of smoothing above 400% of FPL specifically; Build The Bridge is a genuine policy option grounded in what other states have already shown they are willing to fund, not a program that already exists anywhere in this exact form (see Appendix D).</p>
+<p>Every hard number this decision turns on &mdash; the exact income threshold, the dollar size of the gap a household falls into, and what it would cost the state to close that gap &mdash; is stated in the appendices, sourced or, where no public figure exists, disclosed openly as a Modeling Assumption (see Appendices A, B, C, D, E, G). The discretionary line item Priya is working against, and the legislature's budget markup deadline, are fixed (see Appendix E).</p>
+<p>The vocabulary and &ldquo;how to&hellip;&rdquo; skills this case will ask you to research are listed in Appendix F.</p>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Priya Nakamura, senior policy analyst at a state health benefit exchange. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Hold The Cliff</h4>
+      <p style="margin:0">Apply the federal subsidy formula exactly as published, at $0 in additional state cost, leaving the 400%-of-FPL cutoff in place.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Build The Bridge</h4>
+      <p style="margin:0">Have the state fund its own wraparound subsidy extending an income-scaled premium cap past 400% of FPL, at the state's own ongoing budget cost.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include the following: <strong>D1</strong> a piecewise definition of the net cost function plus both one-sided limits at the threshold, for Hold The Cliff; <strong>D2</strong> a continuity test at the threshold for Hold The Cliff, naming which part fails; <strong>D3</strong> the same two computations for Build The Bridge; <strong>D4</strong> a discontinuity-size-versus-cost table; <strong>D5</strong> a recommendation memo defended against the discretionary line item and the budget markup deadline. Use the Working Notebook below to check your arithmetic on each.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+<details open id="apx-a">
+<summary>Appendix A &mdash; 2026 Federal Poverty Line and the 400% Subsidy-Eligibility Threshold</summary>
+<div class="inner">
+<p>The 400%-of-FPL threshold is the income level at which a household's eligibility for the federal premium subsidy sliding scale ends entirely under the reinstated formula.</p>
+<table>
+<tr><th>Quantity</th><th>Value</th></tr>
+<tr><td>2026 federal poverty guideline basis this threshold is calculated from</td><td>ACA 2026 plan-year subsidy eligibility is fixed by statute to the HHS poverty guidelines published in January 2025 (household of 1: $15,650; household of 4: $32,150) &mdash; not the guidelines HHS published in January 2026 (household of 1: $15,960; household of 4: $33,000). See discrepancy note below.</td></tr>
+<tr><td>400%-of-FPL annual income threshold, single filer</td><td class="num">$62,600</td></tr>
+<tr><td>400%-of-FPL annual income threshold, family of four</td><td class="num">$128,600 &mdash; see discrepancy note below</td></tr>
+</table>
+<p class="side-note"><strong>Resolving the published discrepancy ($128,600 vs. $132,600/$132,000).</strong> Both figures are arithmetically correct &mdash; they are 400% of two different HHS poverty-guideline vintages. ACA subsidy eligibility for a given plan year uses the poverty guidelines HHS most recently published before that year's open enrollment begins. For 2026 coverage, the 2025 guidelines govern &mdash; 400% of the 2025 family-of-four guideline ($32,150) is $128,600. The $132,000 figure is 400% of the 2026 guideline ($33,000), which governs 2026-dated programs without a one-year lag, but not ACA marketplace subsidy determination for 2026 coverage. This case uses $128,600 throughout.</p>
+<p class="side-note">Referenced from Background and forces the threshold value in Challenges D1&ndash;D4.</p>
+</div>
+</details>
+
+<details id="apx-b">
+<summary>Appendix B &mdash; Hold The Cliff: Household Net Insurance Cost Near the Threshold</summary>
+<div class="inner">
+<p>Real worked examples of what a household actually pays for marketplace insurance just below and just above the 400%-of-FPL threshold under the reinstated federal formula (no state-funded bridge).</p>
+<table id="tblB">
+<tr><th>Quantity</th><th>Value</th></tr>
+<tr><td>Household 1 &mdash; annual income just below threshold, and its % of FPL</td><td class="num">$62,000/year &mdash; 396% FPL</td></tr>
+<tr><td>Household 1 &mdash; subsidized annual premium at that income</td><td class="num">$6,175/year</td></tr>
+<tr><td>Household 2 &mdash; annual income just above threshold, and its % of FPL</td><td class="num">$64,000/year &mdash; 409% FPL</td></tr>
+<tr><td>Household 2 &mdash; full unsubsidized annual premium at that income</td><td class="num">$14,931/year</td></tr>
+<tr><td>Second worked example &mdash; couple's annual income near 402% FPL</td><td class="num">$85,000/year (combined)</td></tr>
+<tr><td>Second worked example &mdash; that couple's annual premium without the enhanced formula</td><td class="num">&asymp;$21,250/year (derived, approximate &mdash; see note)</td></tr>
+</table>
+<figure>
+  <svg class="cliffchart" viewBox="0 0 640 240" role="img" aria-label="Household annual premium plotted against income near the 400 percent FPL threshold, with a filled point at 62000 income and 6175 premium, and an open point at 64000 income and 14931 premium.">
+    <line class="axis" x1="60" y1="200" x2="600" y2="200"/>
+    <line class="axis" x1="60" y1="20" x2="60" y2="200"/>
+    <text x="20" y="40" font-size="11" fill="#5b6472">$14,931</text>
+    <text x="20" y="140" font-size="11" fill="#5b6472">$6,175</text>
+    <text x="300" y="222" font-size="11" fill="#5b6472" text-anchor="middle">400% FPL threshold</text>
+    <line class="axis" x1="300" y1="20" x2="300" y2="200" stroke-dasharray="3 3"/>
+    <path class="curve" d="M90,150 C160,146 240,142 290,140"/>
+    <circle class="pt" cx="290" cy="140" r="5"/>
+    <text x="230" y="128" font-size="10" fill="var(--navy-dk)">HH1: $62,000 &rarr; $6,175</text>
+    <line class="drop" x1="300" y1="140" x2="300" y2="40"/>
+    <circle class="pt open" cx="310" cy="40" r="5"/>
+    <path class="curve" d="M310,40 C380,38 480,35 580,32"/>
+    <text x="330" y="55" font-size="10" fill="var(--navy-dk)">HH2: $64,000 &rarr; $14,931</text>
+  </svg>
+  <figcaption>Appendix B's own two worked-example points, plotted directly &mdash; no computed gap size shown here. Use the Working Notebook to compute the jump yourself.</figcaption>
+</figure>
+<p class="side-note">Referenced from Background and forces the D1 piecewise cost function and one-sided-limit values for Hold The Cliff. Household 1/2 (the $62,000/$64,000 pair) is the load-bearing example for D1's limit computation. The couple's second example is supplementary context; its premium figure is a derived approximation.</p>
+</div>
+</details>
+
+<details id="apx-c">
+<summary>Appendix C &mdash; Build The Bridge: The Continuous Premium-Cap Formula</summary>
+<div class="inner">
+<p>The 2021&ndash;2025 federal enhancement &mdash; the model Build The Bridge extends past 400% of FPL &mdash; capped a household's premium at a fixed percentage of income rather than cutting the subsidy to zero at a threshold.</p>
+<table id="tblC">
+<tr><th>Quantity</th><th>Value</th></tr>
+<tr><td>Income-scaled premium cap under the 2021&ndash;2025 enhanced formula, as a percentage of household income</td><td class="num">8.5% of household income</td></tr>
+<tr><td>Benchmark annual premium used to apply that cap for the Appendix B worked-example household(s)</td><td class="num">$14,931/year</td></tr>
+</table>
+<p class="side-note">Referenced from Background and forces the D3 piecewise cost function and one-sided-limit values for Build The Bridge.</p>
+</div>
+</details>
+
+<details id="apx-d">
+<summary>Appendix D &mdash; The Cost of Closing the Gap</summary>
+<div class="inner">
+<p>Real data on what removing this exact discontinuity has been scored to cost at the federal level, and what individual states already spend funding their own (lower-income-band) wraparound subsidies.</p>
+<table id="tblD">
+<tr><th>Quantity</th><th>Value</th></tr>
+<tr><td>10-year federal cost of permanently restoring the continuous, no-cutoff subsidy formula nationwide (FY2026&ndash;FY2035)</td><td class="num">&asymp;$350 billion</td></tr>
+<tr><td>States funding their own wraparound marketplace subsidies, count as of Sept. 2025</td><td class="num">10 (CA, CO, CT, MD, MA, NJ, NM, NY, VT, WA)</td></tr>
+<tr><td>Later count (Jan. 2026, after federal expiration, adds Oregon)</td><td class="num">11</td></tr>
+<tr><td>New Mexico state program cost (through June 30, 2026, up to 400% FPL)</td><td class="num">&asymp;$38.8 million</td></tr>
+<tr><td>Massachusetts added state ConnectorCare funding (plan year 2026, brings total to $600M)</td><td class="num">$250 million</td></tr>
+<tr><td>California state marketplace subsidy program cost, plan year 2026 / plan year 2027</td><td class="num">$190 million / $300 million</td></tr>
+<tr><td>National share of APTC-eligible enrollees with income over 400% FPL (PY2024 data)</td><td class="num">5%</td></tr>
+<tr><td>National share of 2025 plan selections in the 400&ndash;500% FPL band specifically</td><td class="num">3%</td></tr>
+</table>
+<p class="side-note">Referenced from Background and forces the D4 cost side of the discontinuity-versus-cost comparison.</p>
+</div>
+</details>
+
+<details id="apx-e">
+<summary>Appendix E &mdash; Priya's State: Enrollment, Budget Line, and Deadline</summary>
+<div class="inner">
+<p>The constraints specific to Priya's own state exchange and this budget cycle. None of these figures are publicly sourceable &mdash; Priya's state is illustrative, not a real named state &mdash; so all four rows are disclosed Modeling Assumptions.</p>
+<table id="tblE">
+<tr><th>Quantity</th><th>Value</th></tr>
+<tr><td>This state's total marketplace enrollment, most recent plan year (MA1)</td><td class="num">480,000</td></tr>
+<tr><td>Estimated share of this state's enrollees within reach of the 400%-FPL threshold (MA2)</td><td class="num">&asymp;3% (&asymp;14,400 households)</td></tr>
+<tr><td>Discretionary budget line item available to Priya's office this cycle (MA3)</td><td class="num">$8,000,000, one-time</td></tr>
+<tr><td>Days remaining until the legislature's budget markup locks the line item (MA4)</td><td class="num">21 days</td></tr>
+</table>
+<p class="side-note">Referenced from Background and Challenges D4 and D5. See the Modeling Assumptions block below for the basis and sensitivity of each.</p>
+</div>
+</details>
+
+<details id="apx-ma">
+<summary>Modeling Assumptions</summary>
+<div class="inner">
+<p>These figures are not sourced. They are stated scenario assumptions chosen by the case author because Priya's state and exchange are illustrative, not a real named state &mdash; but each is grounded in a real, cited anchor.</p>
+<table>
+<tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+<tr><td>MA1</td><td>This state's total marketplace enrollment</td><td class="num">480,000</td><td>Scaled to a real, comparably-sized state-based marketplace (Pennsylvania's Pennie, &asymp;486,000 enrollees).</td></tr>
+<tr><td>MA2</td><td>Share of enrollees within reach of the threshold</td><td class="num">3%</td><td>National 400&ndash;500% FPL band share, the nearest published proxy.</td></tr>
+<tr><td>MA3</td><td>Discretionary budget line item this cycle</td><td class="num">$8,000,000</td><td>Set below any real per-state wraparound program's ongoing annual cost.</td></tr>
+<tr><td>MA4</td><td>Days remaining until budget markup</td><td class="num">21</td><td>Illustrative narrative urgency; not a real legislative calendar.</td></tr>
+</table>
+</div>
+</details>
+
+<details id="apx-g">
+<summary>Appendix G &mdash; Sources</summary>
+<div class="inner">
+<table id="tblSources">
+<tr><th>#</th><th>Claim</th><th>Source</th><th>Date</th></tr>
+<tr><td>S1</td><td>2025 HHS poverty guidelines, household of 1 and 4, and their 400% multiples</td><td><a href="https://aspe.hhs.gov/sites/default/files/documents/dd73d4f00d8a819d10b2fdb70d254f7b/detailed-guidelines-2025.pdf" target="_blank" rel="noopener">HHS ASPE, 2025 Poverty Guidelines</a></td><td>2025-01</td></tr>
+<tr><td>S2</td><td>2026 HHS poverty guidelines, household of 4, and its 400% multiple</td><td><a href="https://aspe.hhs.gov/sites/default/files/documents/b1bfa16b20ae9b89d525bc35de7c1643/detailed-guidelines-2026.pdf" target="_blank" rel="noopener">HHS ASPE, 2026 Poverty Guidelines</a></td><td>2026-01</td></tr>
+<tr><td>S3</td><td>KFF worked example: 60-year-old, $62,000/$64,000 subsidized vs. unsubsidized premium</td><td><a href="https://www.kff.org/quick-insights/a-steep-subsidy-cliff-looms-for-older-middle-income-enrollees-if-aca-enhanced-tax-credits-expire/" target="_blank" rel="noopener">KFF Quick Takes</a></td><td>2025-10</td></tr>
+<tr><td>S4</td><td>KFF example: 60-year-old couple, $85,000 combined income</td><td><a href="https://www.kff.org/affordable-care-act/aca-marketplace-premium-payments-would-more-than-double-on-average-next-year-if-enhanced-premium-tax-credits-expire/" target="_blank" rel="noopener">KFF</a></td><td>2025-09</td></tr>
+<tr><td>S5</td><td>ARP/IRA enhanced ACA premium tax credit affordability cap</td><td><a href="https://www.healthinsurance.org/blog/how-sunsetting-arps-subsidy-enhancements-would-affect-aca-subsidy-amounts/" target="_blank" rel="noopener">healthinsurance.org</a></td><td>2021&ndash;2025</td></tr>
+<tr><td>S6</td><td>CBO cost estimate, permanent extension of enhanced ACA premium tax credit formula</td><td><a href="https://www.americanhealthlaw.org/content-library/health-law-weekly/article/d2c0bdbb-4d88-47c6-9631-d510b2ed31c3/cbo-pegs-cost-of-extending-enhanced-aca-premium-ta" target="_blank" rel="noopener">American Health Law Assoc.</a></td><td>2025</td></tr>
+<tr><td>S7</td><td>Count of states funding their own marketplace subsidy wraparounds</td><td><a href="https://www.kff.org/faqs/faqs-health-insurance-marketplace-and-the-aca/help-paying-marketplace-premiums-the-basics/which-states-offer-additional-financial-assistance-for-marketplace-plans/" target="_blank" rel="noopener">KFF FAQ</a></td><td>2025-09-29</td></tr>
+<tr><td>S8</td><td>Later count of states funding wraparounds, post-federal-expiration</td><td><a href="https://www.kff.org/affordable-care-act/state-based-efforts-will-provide-limited-relief-from-enhanced-tax-credit-expiration/" target="_blank" rel="noopener">KFF</a></td><td>2026-01-09</td></tr>
+<tr><td>S9</td><td>New Mexico state legislative appropriations</td><td><a href="https://www.governor.state.nm.us/2026/01/06/new-mexico-fills-gap-after-congress-lets-aca-tax-credits-expire-bewell-enrollees-shielded-from-premium-hikes-as-subsidies-lapse/" target="_blank" rel="noopener">Office of the Governor of New Mexico</a></td><td>2026-01-06</td></tr>
+<tr><td>S10</td><td>Corroboration of New Mexico appropriation figures</td><td><a href="https://www.ksfr.org/government/2025-12-30/state-of-new-mexico-picks-up-the-tab-for-expiring-federal-health-insurance-subsidies" target="_blank" rel="noopener">KSFR</a></td><td>2025-12-30</td></tr>
+<tr><td>S11</td><td>Massachusetts added state ConnectorCare funding</td><td><a href="https://www.mass.gov/news/governor-healey-details-strongest-plan-in-the-country-to-protect-against-president-trumps-aca-cost-hikes" target="_blank" rel="noopener">Mass.gov</a></td><td>2026-01-08</td></tr>
+<tr><td>S12</td><td>California 2026 state marketplace subsidy program cost</td><td><a href="https://www.coveredca.com/newsroom/news-releases/2026/02/26/as-enhanced-federal-subsidies-expire-covered-california-ends-open-enrollment-with-state-subsidies-keeping-renewals-steady-for-now-and-new-signups-down/" target="_blank" rel="noopener">Covered California</a></td><td>2026-02-26</td></tr>
+<tr><td>S13</td><td>California 2027 state marketplace subsidy program cost (finalized)</td><td><a href="https://calmatters.org/politics/2026/06/california-gavin-newsom-final-budget-deal/" target="_blank" rel="noopener">CalMatters</a></td><td>2026-06-29</td></tr>
+<tr><td>S14</td><td>National share of APTC-eligible enrollees with income over 400% FPL</td><td>CMS, 2025 QHP Premiums and Choice Report</td><td>2025</td></tr>
+<tr><td>S15</td><td>National share of 2025 plan selections in the 400&ndash;500% FPL band</td><td><a href="https://www.healthinsurance.org/blog/marketplace-enrollees-face-return-of-the-subsidy-cliff/" target="_blank" rel="noopener">healthinsurance.org</a></td><td>2025&ndash;2026</td></tr>
+<tr><td>S16</td><td>Real comparably-sized state marketplace enrollment (MA1 anchor)</td><td><a href="https://agency.pennie.com/one-in-five-pennie-enrollees-drop-health-coverage-due-to-expired-federal-tax-credits/" target="_blank" rel="noopener">PHIEA/Pennie</a></td><td>2026</td></tr>
+</table>
+</div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-01. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+<div class="stepbox">
+  <h4>Step 1 &mdash; D1: one-sided limits under Hold The Cliff</h4>
+  <div class="goal">Using Appendix B's Household 1/2 figures, what does <em>C(income)</em> approach from each side of the 400%-FPL threshold?</div>
+  <div class="fieldrow"><label for="d1left">Left-hand limit as income &rarr; 400%&#8315; ($)</label><input type="number" id="d1left"><button onclick="checkD1()">Check</button><span class="fb" id="fbD1left"></span></div>
+  <div class="fieldrow"><label for="d1right">Right-hand limit as income &rarr; 400%&#8314; ($)</label><input type="number" id="d1right"><span class="fb" id="fbD1right"></span></div>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; D2: continuity test for Hold The Cliff</h4>
+  <div class="goal">Compute the size of the jump between your two D1 limits, then say which part of the three-part continuity definition fails.</div>
+  <div class="fieldrow"><label for="d2jump">Jump size, |right limit &minus; left limit| ($)</label><input type="number" id="d2jump"><button onclick="checkD2()">Check</button><span class="fb" id="fbD2jump"></span></div>
+  <div class="fieldrow"><label for="d2part">Which part of the definition fails?</label>
+    <select id="d2part">
+      <option value="">choose one&hellip;</option>
+      <option value="exists">f(400%) is not defined</option>
+      <option value="limit">the two-sided limit does not exist (left &ne; right)</option>
+      <option value="equal">the limit exists but does not equal f(400%)</option>
+    </select>
+    <button onclick="checkD2part()">Check</button><span class="fb" id="fbD2part"></span>
+  </div>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; D3: Build The Bridge's continuous formula</h4>
+  <div class="goal">Apply Appendix C's 8.5% income cap to Household 2's $64,000 income, then find what the state must pay to bring that household down to the capped rate.</div>
+  <div class="fieldrow"><label for="d3cap">Household 2's capped payment (0.085 &times; income) ($)</label><input type="number" id="d3cap"><button onclick="checkD3cap()">Check</button><span class="fb" id="fbD3cap"></span></div>
+  <div class="fieldrow"><label for="d3cost">State's cost to bring HH2 to the capped rate ($)</label><input type="number" id="d3cost"><button onclick="checkD3cost()">Check</button><span class="fb" id="fbD3cost"></span></div>
+  <p class="side-note">If your D3 numbers show the left and right limits agreeing at the threshold under this formula, Build The Bridge passes the same continuity test Hold The Cliff failed in D2.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; D4: discontinuity size vs. Build The Bridge's cost</h4>
+  <div class="goal">Using your own D2 jump size and D3 state cost, compute how much <em>more</em> (or less) Build The Bridge costs than the harm it removes, as a percent.</div>
+  <div class="fieldrow"><label for="d4margin">Margin: (bridge cost &minus; jump size) / bridge cost &times; 100 (%)</label><input type="number" id="d4margin" step="0.01"><button onclick="checkD4()">Check &amp; draw chart</button><span class="fb" id="fbD4margin"></span></div>
+  <figure id="d4chartwrap" style="display:none">
+    <svg class="marginbar" id="d4chart" viewBox="0 0 560 140" role="img" aria-label="Bar chart comparing the discontinuity size to Build The Bridge's cost"></svg>
+    <figcaption>Drawn live from the numbers you entered above &mdash; not pre-computed.</figcaption>
+  </figure>
+</div>
+
+<div class="stepbox">
+  <h4>Step 5 &mdash; D5: is Build The Bridge fundable this cycle?</h4>
+  <div class="goal">Appendix E's one-time discretionary line item is $8,000,000. Appendix D's cheapest real comparable state-scale wraparound program cost is $38,800,000/year (New Mexico). Flex the line item below and see whether it clears that bar.</div>
+  <div class="sliderow">
+    <label for="d5slider">Line item ($)</label>
+    <input type="range" id="d5slider" min="4000000" max="12000000" step="500000" value="8000000" oninput="onD5Slide()">
+    <span class="val" id="d5sliderVal">$8,000,000</span>
+  </div>
+  <div class="fieldrow"><span>Fundable against a real state-scale program this cycle?</span><span class="fb" id="fbD5"></span></div>
+  <p class="side-note">This is a feasibility check, not a verdict on which option to recommend &mdash; D5's memo still has to weigh this against your D4 margin yourself.</p>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+<p>Appendix D's national data shows only about <strong>3&ndash;5% of subsidized marketplace enrollees</strong> nationally sit above &mdash; or within reach of &mdash; the 400%-FPL line at all. It's a small population.</p>
+<p>Does that change whether the state should fund a whole new wraparound program &mdash; or does it just tell you that &ldquo;small share of enrollees&rdquo; isn't the same question as &ldquo;small dollar harm per affected person&rdquo;? Try re-checking your Step 4 margin with the toggle below: does the population share change the per-household ratio at all?</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist to Step 4 (re-run the margin using the population-scaled totals instead of the per-household figures)</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+<li>KFF -- A Steep Subsidy Cliff Looms for Older Middle-Income Enrollees (2025-10)</li>
+<li>HHS ASPE -- 2025 Poverty Guidelines: 48 Contiguous States (2025-01)</li>
+<li>healthinsurance.org -- How sunsetting ARP's subsidy enhancements is affecting ACA subsidy amounts (2021-2025)</li>
+<li>CBO, via American Health Law Association -- cost of extending the enhanced ACA premium tax credit (2025)</li>
+<li>KFF FAQ -- Which states offer additional financial assistance for Marketplace plans? (2025-09-29)</li>
+<li>Full citation list: Appendix G above</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Bracket Cliff &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+/* Ported from cases/the-bracket-cliff/sensitivity_model.py.
+   Source-of-record case.md sha256 (per case.json.qa.case_md_sha256):
+   f49f4edcbe9bf111f08979df344d3711514b513eb61f879b937b7995bcc1d069
+   Raw, sourced inputs only -- no derived verdict (discontinuity, bridge
+   cost, or margin) is stored as a literal anywhere in this file. Every
+   derived figure below is computed at call time from PARAMS. */
+const PARAMS = {
+  unsubsidized_premium_usd: 14931,   // Appendix B / S3, Household 2, 409% FPL
+  subsidized_premium_usd: 6175,      // Appendix B / S3, Household 1, 396% FPL
+  threshold_income_usd: 64000,       // Appendix B, Household 2's income
+  cap_pct: 0.085,                    // Appendix C / S5
+  line_item_usd: 8000000,            // Appendix E, MA3
+  min_state_program_cost_usd: 38800000,  // Appendix D, cheapest real comparable (New Mexico)
+  enrollment: 480000,                // Appendix E, MA1
+  near_threshold_share: 0.03,        // Appendix E, MA2
+};
+const FLEX = ["line_item_usd"];   // Probe 5 flexes only the stated Modeling Assumption, MA3
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const discontinuity = p.unsubsidized_premium_usd - p.subsidized_premium_usd;
+  const cappedPayment = p.cap_pct * p.threshold_income_usd;
+  const bridgeCost = p.unsubsidized_premium_usd - cappedPayment;
+  return { A: -discontinuity, B: -bridgeCost, discontinuity, cappedPayment, bridgeCost };
+}
+function feasible_B(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  return p.line_item_usd >= p.min_state_program_cost_usd;
+}
+function evaluate_twist(params){
+  // The twist (Appendix D's 3-5% national near-threshold share) is a pure
+  // population scale factor -- it multiplies both option's TOTAL cost by
+  // the same number, so the per-household ratio in evaluate() is unchanged.
+  // This function makes that visible by also returning the scaled totals.
+  const base = evaluate(params);
+  const p = Object.assign({}, PARAMS, params || {});
+  const households = Math.round(p.enrollment * p.near_threshold_share);
+  return Object.assign({}, base, {
+    households,
+    totalDiscontinuity: base.discontinuity * households,
+    totalBridgeCost: base.bridgeCost * households,
+  });
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkD1(){
+  const left = parseFloat(val('d1left'));
+  const right = parseFloat(val('d1right'));
+  fb('fbD1left', near(left, PARAMS.subsidized_premium_usd, 1));
+  fb('fbD1right', near(right, PARAMS.unsubsidized_premium_usd, 1));
+}
+function checkD2(){
+  const left = parseFloat(val('d1left')) || PARAMS.subsidized_premium_usd;
+  const right = parseFloat(val('d1right')) || PARAMS.unsubsidized_premium_usd;
+  const stated = parseFloat(val('d2jump'));
+  const actual = evaluate({}).discontinuity;
+  fb('fbD2jump', near(stated, actual, 1));
+}
+function checkD2part(){
+  const choice = document.getElementById('d2part').value;
+  fb('fbD2part', choice === 'limit');
+}
+function checkD3cap(){
+  const stated = parseFloat(val('d3cap'));
+  fb('fbD3cap', near(stated, evaluate({}).cappedPayment, 1));
+}
+function checkD3cost(){
+  const stated = parseFloat(val('d3cost'));
+  fb('fbD3cost', near(stated, evaluate({}).bridgeCost, 1));
+}
+function checkD4(){
+  const e = evaluate({});
+  const trueMargin = 100 * (e.bridgeCost - e.discontinuity) / e.bridgeCost;
+  const stated = parseFloat(val('d4margin'));
+  fb('fbD4margin', near(stated, trueMargin, 0.5));
+  drawD4Chart(e.discontinuity, e.bridgeCost);
+}
+function drawD4Chart(discontinuity, bridgeCost){
+  const svg = document.getElementById('d4chart');
+  document.getElementById('d4chartwrap').style.display = 'block';
+  const maxVal = Math.max(discontinuity, bridgeCost) * 1.15;
+  const scale = v => 480 * (v / maxVal);
+  const barA = round(scale(discontinuity), 1);
+  const barB = round(scale(bridgeCost), 1);
+  svg.innerHTML = `
+    <text x="10" y="24" font-size="12" fill="#1f2530" font-family="var(--sans)">Hold The Cliff discontinuity</text>
+    <rect x="10" y="30" width="${barA}" height="26" fill="#a3312a"></rect>
+    <text x="${20+barA}" y="48" font-size="12" fill="#1f2530">$${discontinuity.toLocaleString()}</text>
+    <text x="10" y="84" font-size="12" fill="#1f2530" font-family="var(--sans)">Build The Bridge cost</text>
+    <rect x="10" y="90" width="${barB}" height="26" fill="#1a3a5c"></rect>
+    <text x="${20+barB}" y="108" font-size="12" fill="#1f2530">$${bridgeCost.toLocaleString()}</text>
+  `;
+}
+function onD5Slide(){
+  const v = parseInt(document.getElementById('d5slider').value, 10);
+  document.getElementById('d5sliderVal').textContent = '$' + v.toLocaleString();
+  fb('fbD5', feasible_B({ line_item_usd: v }));
+}
+onD5Slide();
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "the-bracket-cliff"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Piecewise net cost function C(income) plus both one-sided limits at the threshold, Hold The Cliff"],
+  ["D2", "Continuity test at the threshold for Hold The Cliff -- name which part fails"],
+  ["D3", "Same two computations for Build The Bridge -- does it pass where Hold The Cliff failed?"],
+  ["D4", "Discontinuity-size-versus-cost table"],
+  ["D5", "Recommendation memo, defended against the line item and the markup deadline"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Limit": {def: "The value a function's output approaches as its input gets closer and closer to some point, whether or not it actually reaches it there.",
+    url: "https://www.mathsisfun.com/calculus/limits.html"},
+  "One-Sided Limit": {def: "The value a function approaches as the input approaches a point from only the left side or only the right side.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-limits-new/ab-1-3/a/one-sided-limits-from-graphs"},
+  "Continuity": {def: "A function is continuous at a point when its limit there exists, the function is defined there, and the two are equal -- no jump, hole, or break.",
+    url: "https://www.mathsisfun.com/calculus/continuity.html"},
+  "Discontinuity": {def: "A point where a function is not continuous -- a jump, a hole, or an asymptote in its graph.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-limits-new/ab-1-14/a/types-of-discontinuities"},
+  "Piecewise Function": {def: "A function defined by different formulas over different intervals of its domain.",
+    url: "https://www.mathsisfun.com/sets/functions-piecewise.html"},
+  "How to evaluate a limit algebraically": {def: "Try direct substitution first; if that fails, simplify (factor, rationalize) until substitution works, or examine each one-sided limit separately.",
+    url: "https://www.mathsisfun.com/calculus/limits-evaluating.html"},
+  "How to determine whether a function is continuous at a point": {def: "Check all three parts: the function is defined there, the two-sided limit exists there, and the limit equals the function's value there.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-limits-new/ab-1-16/a/continuity-at-a-point"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+};
+const HOWTO = [
+  ["How to evaluate a limit algebraically", "How to evaluate a limit algebraically"],
+  ["How to determine whether a function is continuous at a point", "How to determine whether a function is continuous at a point"],
+  ["How to find the percent of a number", "Percent"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const box = document.getElementById('twistNarrative');
+  let note = document.getElementById('twistResultNote');
+  if(!note){
+    note = document.createElement('p');
+    note.id = 'twistResultNote';
+    note.style.fontWeight = '700';
+    box.appendChild(note);
+  }
+  if(!applied){ note.textContent = ''; return; }
+  const t = evaluate_twist({});
+  const base = evaluate({});
+  const trueMargin = 100 * (base.bridgeCost - base.discontinuity) / base.bridgeCost;
+  note.textContent = `Scaled to ${t.households.toLocaleString()} households: total discontinuity `
+    + `$${Math.round(t.totalDiscontinuity).toLocaleString()} vs. total Build The Bridge cost `
+    + `$${Math.round(t.totalBridgeCost).toLocaleString()} -- but the per-household margin is still `
+    + `${trueMargin.toFixed(2)}%, unchanged from before you applied the twist. The population factor `
+    + `cancels out of the ratio.`;
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

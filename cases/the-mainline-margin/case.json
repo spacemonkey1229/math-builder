@@ -1,0 +1,583 @@
+{
+  "id": "the-mainline-margin",
+  "title": "The Mainline Margin",
+  "tier": "T2",
+  "complexity": 2,
+  "band": [
+    "MS-core"
+  ],
+  "primary_metric": "TRUE (subsidy-free) total annualized cost -- amortized material+labor cost PLUS annual pump energy cost, with NO EQIP reimbursement term -- per acre-inch of water delivered. Reframed 2026-09-01 (see RESEARCH_LOG.md addendum): this isolates real engineering efficiency (pipe cost and pump energy alone). The net-of-subsidy figure (same cost, with the EQIP Practice 430 per-pound reimbursement included) is retained as an explicit SECONDARY metric -- it is what actually shows up on Denise's bid -- and is disclosed alongside the primary figure rather than blended into one number. See balance.margin_pct_note and sensitivity_model.py's evaluate() (primary) vs. evaluate_net_of_subsidy() (secondary).",
+  "options": {
+    "A": "The Lean Main — the smaller-diameter PVC mainline",
+    "B": "The Margin Main — the next-size-up PVC mainline"
+  },
+  "margin_pct": 1.3,
+  "sensitivity_disclosure": [
+    {
+      "param": "design_flow_gpm",
+      "category": "I",
+      "justification": "MA1 (Appendix A's stated design flow rate, 440 GPM) is a real, sourced case parameter, not a fictional or unresearchable one -- it is the case's own true fulcrum for the PRIMARY (true, subsidy-free) metric. Because Hazen-Williams friction loss scales with roughly diameter^-4.87 (S2/S3), the Margin Main's wider bore loses its pump-energy advantage faster than the Lean Main loses its material-cost advantage as flow drops, so a mechanical flex of design_flow_gpm alone flips the primary metric's winner from B to A at a threshold of about -5.9% (~414.0 GPM), well before the -50% Tier 2 probe 5 swept to. Given the primary margin is already a razor-thin ~1.3% real-world engineering toss-up (balance.margin_pct), this sensitivity is expected and reinforces the toss-up framing rather than undermining it -- see FACILITATOR.md's sensitivity note for the guide-facing disclosure."
+    },
+    {
+      "param": "annual_hours",
+      "category": "I",
+      "justification": "MA5 (Appendix A's stated annual operating hours, 1,200 hr/yr) is a real, sourced case parameter, not fictional. It scales annual pump energy cost linearly for both options (via _annual_energy_cost), and because the Margin Main's energy cost is much lower to start (~$56/yr vs. ~$229/yr at the stated value), reducing annual_hours shrinks B's one real advantage over A faster than it shrinks anything on A's side, flipping the primary metric's winner from B to A at a threshold of about -16.0% (~1,008.6 hr/yr), again well before the -50% probe sweep. As with design_flow_gpm, this is a genuine, disclosed fragility of an already-thin ~1.3% margin, not a hidden defect -- a verdict this close to a coin flip should be, and is, sensitive to its own stated inputs."
+    }
+  ],
+  "standards": [
+    "advanced-operations-variable",
+    "advanced-operations-constant",
+    "advanced-operations-coefficient",
+    "advanced-operations-term",
+    "advanced-operations-like-terms",
+    "advanced-operations-distributive-property",
+    "advanced-operations-how-to-evaluate-a-variable-expression-substitution-property",
+    "advanced-operations-how-to-add-and-subtract-an-expression-with-variables",
+    "advanced-operations-how-to-solve-a-one-step-equation",
+    "advanced-operations-how-to-solve-a-multi-step-equation-with-a-variable-on-one-side",
+    "advanced-operations-how-to-solve-a-multi-step-equation-with-a-variable-on-both-sides"
+  ],
+  "new_coverage": [],
+  "sources": [
+    {
+      "id": "S1",
+      "placeholder": "P16",
+      "claim": "NRCS Code 430 maximum plastic-pipe design velocity",
+      "value": "5",
+      "units": "ft/sec",
+      "as_of": "2024-11",
+      "org": "USDA NRCS",
+      "title": "Conservation Practice Standard, Irrigation Pipeline (Code 430), 430-CPS-2",
+      "url": "https://www.nrcs.usda.gov/sites/default/files/2024-12/Irrigation%20Pipeline%20(430)%20(Ft.)%20(11-24)%20Standard%20Document.pdf",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Confirmed identical in both the 2020R and current Nov 2024 revisions. Applies to plastic pipe (smooth, corrugated, or profile wall) at design capacity with valves or a flow control appurtenance present. Do not confuse with the 7 ft/sec figure, which belongs to the separate NRCS Code 443 standard, not Code 430."
+    },
+    {
+      "id": "S2",
+      "placeholder": "P17",
+      "claim": "Hazen-Williams friction-loss equation, English-unit, Q-based, solved for head loss",
+      "value": "h_f = 4.732(Q/C_HW)^1.85 (L/D^4.87)",
+      "units": "h_f in ft, Q in cfs, L in ft, D in ft",
+      "as_of": "2022-02",
+      "org": "USDA NRCS",
+      "title": "Title 210 National Engineering Handbook, Part 634 \"Hydraulics,\" Chapter 4 \"Pipe Flow,\" equation 4-28, p. 634-4.11 (210-634-H, 1st Ed.)",
+      "url": "https://directives.nrcs.usda.gov/sites/default/files2/1720463089/Chapter%204%20-%20Pipe%20Flow.pdf",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "One of five equivalent Hazen-Williams forms (eq. 4-21 through 4-30) given in this chapter; this is the Q-based form solved for head loss, matching what Code 430 requires for certification."
+    },
+    {
+      "id": "S3",
+      "placeholder": "P11, P15",
+      "claim": "Hazen-Williams roughness coefficient for PVC/PE/HDPE pipe",
+      "value": "150",
+      "units": "dimensionless (C_HW)",
+      "as_of": "2022-02",
+      "org": "USDA NRCS",
+      "title": "Title 210 National Engineering Handbook, Part 634, Chapter 4, Figure 4-8 \"Values of the Hazen-Williams coefficient\"",
+      "url": "https://directives.nrcs.usda.gov/sites/default/files2/1720463089/Chapter%204%20-%20Pipe%20Flow.pdf",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Same C-value applies to both options since both are PVC. The same table gives Aluminum = 120 (not 130, as an earlier concept note assumed) — moot here since neither option is aluminum pipe, but flagged for the record."
+    },
+    {
+      "id": "S4",
+      "placeholder": "P18",
+      "claim": "Standard EQIP cost-share payment rate ceiling",
+      "value": "75",
+      "units": "percent of estimated costs incurred",
+      "as_of": "current",
+      "org": "USDA / Code of Federal Regulations",
+      "title": "7 CFR § 1466.23(b)(1)(i), Environmental Quality Incentives Program — Payment rates",
+      "url": "https://www.ecfr.gov/current/title-7/subtitle-B/chapter-XIV/subchapter-B/part-1466/subpart-B/section-1466.23",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Historically underserved producers may receive up to 90% under 1466.23(b)(3); not applicable to this case's protagonist/client, who is not stated to qualify."
+    },
+    {
+      "id": "S5",
+      "placeholder": "P19",
+      "claim": "EQIP Practice 430 reimbursement rate, PVC pipe, standard (non-HU) rate",
+      "value": "4.22",
+      "units": "USD per pound",
+      "as_of": "2024-11 (FY2025)",
+      "org": "USDA NRCS Kansas",
+      "title": "Fiscal Year 2025 EQIP Payment Schedule (Rest of State), Practice 430 \"Irrigation Pipeline,\" row \"PVC, by the pound\"",
+      "url": "https://www.nrcs.usda.gov/sites/default/files/2024-11/FY25_EQIP_CostList_RestOfState.pdf",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "State-specific fixed schedule rate, paid regardless of actual installed cost per NRCS EQIP payment-schedule policy. The historically-underserved (HU) rate on the same schedule is $5.06/lb; not used here."
+    },
+    {
+      "id": "S6",
+      "placeholder": "P08, P09, P12, P13",
+      "claim": "PIP (plastic irrigation pipe) weight per linear foot, 6 in and 8 in nominal, DR 32.5 / 125 psi rating",
+      "value": "6 in: 2.40 lb/ft; 8 in: 4.16 lb/ft",
+      "units": "lb/ft",
+      "as_of": "undated",
+      "org": "JM Eagle",
+      "title": "\"Irrigation P.I.P.\" product catalog, \"Dimensions and Weights\" table, p. 7 (meets ASTM D2241 and/or NRCS 430-DD)",
+      "url": "http://web.archive.org/web/20260211155828/https://www.jmeagle.com/sites/default/files/Irrigation_web.pdf",
+      "accessed": "2026-09-01",
+      "confidence": "MEDIUM",
+      "derived": false,
+      "note": "Tier 2 probe 6 (2026-09-01) flagged this source's live URL as 404. Re-verified directly: the live URL (https://www.jmeagle.com/sites/default/files/Irrigation_web.pdf) in fact still serves the full 28-page current catalog with an identical 'Dimensions and Weights' table on p.9 (Rated 125 psi / SDR 32.5: 6 in = 2.40 lb/ft, 8 in = 4.16 lb/ft, matching this row exactly) -- a plain curl/bot-style request gets a 404 from JM Eagle's site, but a browser-like request gets 200, so the probe's automated fetch was almost certainly blocked by WAF/bot-detection rather than the file being genuinely gone. Cited URL updated to a confirmed archive.org snapshot (2026-02-11, status 200) of the same file for a stable, bot-detection-proof citation going forward; the original live URL is retained as a live cross-check in RESEARCH_LOG.md's 2026-09-01 addendum. No visible revision date within the PDF itself (contents-page table of contents places 'Dimensions and Weights' as section 04, p.8-9); dimensions conform to the fixed ASTM D2241 SDR series and are unlikely to have changed. Also establishes 6 in and 8 in as adjacent standard nominal PIP sizes, used to fix Appendix B/C's diameters."
+    },
+    {
+      "id": "S7",
+      "placeholder": "P10",
+      "claim": "6 in, 125 psi gasketed PVC irrigation pipe (PIP), price per foot",
+      "value": "5.10",
+      "units": "USD/ft",
+      "as_of": "current listing",
+      "org": "Direct Pivot Parts",
+      "title": "Online catalog, SKU 6PIPE125",
+      "url": "https://directpivotparts.com/products/6-Gasketed-PVC-Irrigation-Pipe-Per-Foot-Choose-PSI-/6PIPE125",
+      "accessed": "2026-09-01",
+      "confidence": "MEDIUM",
+      "derived": false,
+      "note": "Online retailer list price; page marks \"Limited Availability\" and invites a quote for confirmed current pricing. A regional/volume proxy for material cost, not a manufacturer mill price."
+    },
+    {
+      "id": "S8",
+      "placeholder": "P14",
+      "claim": "8 in, 125 psi gasketed PVC irrigation pipe (PIP), price per foot",
+      "value": "7.30",
+      "units": "USD/ft",
+      "as_of": "current listing",
+      "org": "Direct Pivot Parts",
+      "title": "Online catalog, SKU 8PIPE125",
+      "url": "https://directpivotparts.com/products/8-Gasketed-PVC-Irrigation-Pipe-Per-Foot-Choose-PSI-/8PIPE125",
+      "accessed": "2026-09-01",
+      "confidence": "MEDIUM",
+      "derived": false,
+      "note": "Same caveats as S7 — \"Starting at\" price, \"Limited Availability\"."
+    },
+    {
+      "id": "S9",
+      "placeholder": "P21",
+      "claim": "Water-horsepower-hours produced per unit of pumping energy, by fuel type (Nebraska Pumping Plant Performance Standards)",
+      "value": "Diesel: 12.5 whp-hr/gal; Gasoline: 8.55 whp-hr/gal; Electricity: 0.885 whp-hr/kWh; LP gas: 6.89 whp-hr/gal",
+      "units": "whp-hr per gal or per kWh",
+      "as_of": "reviewed 2012-06-22 (orig. 2009-06-25)",
+      "org": "University of Georgia CAES",
+      "title": "Field Report C965, \"Irrigation Pumping Plant Performance,\" Table 1 (republishing the Nebraska Pumping Plant Performance Criteria)",
+      "url": "https://fieldreport.caes.uga.edu/publications/C965/irrigation-pumping-plant-performance",
+      "accessed": "2026-09-01",
+      "confidence": "MEDIUM",
+      "derived": false,
+      "note": "Assumes 75% pump efficiency and 5% drive loss for non-electric units. Secondary republication of the original Nebraska test-lab criteria; review date is over a decade old, though this is the long-standing industry-standard reference and has not been superseded. Diesel figure corroborated independently by S10."
+    },
+    {
+      "id": "S10",
+      "placeholder": "P23",
+      "claim": "Brake-horsepower pump-sizing formula, denominator constant, and typical pump efficiency",
+      "value": "BHP = (GPM x TDH)/(3960 x E); E = 0.75 typical",
+      "units": "BHP; E dimensionless",
+      "as_of": "2021-03",
+      "org": "Texas A&M AgriLife Extension",
+      "title": "EB-6011, \"Calculating Horsepower Requirements and Sizing Irrigation Supply Pipelines,\" Guy Fipps",
+      "url": "https://gfipps.tamu.edu/files/2021/11/EB-6011-Sizing.pdf",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Worked example in the same document independently uses 12.5 WHP-hr/gal for diesel, corroborating S9."
+    },
+    {
+      "id": "S12",
+      "placeholder": "P22",
+      "claim": "U.S. average retail price of electricity, industrial sector",
+      "value": "9.17",
+      "units": "cents/kWh",
+      "as_of": "2026-06",
+      "org": "U.S. Energy Information Administration",
+      "title": "Electricity Monthly Update, end-use sector retail prices",
+      "url": "https://www.eia.gov/electricity/monthly/update/end-use.php",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "National average; used as a proxy for this farm's specific utility rate since no state- or utility-specific agricultural rate was pinned down."
+    }
+  ],
+  "_ext": "keys below are pipeline extensions, additive to SPEC §4",
+  "status": "published",
+  "studio": "Heroes Academy",
+  "protagonist": "Denise Okafor, irrigation systems designer",
+  "reinforcement_note": "Verified live against readmodel/standards_spine.json on 2026-09-01: NONE of this group's 11 skills are currently at n=0 — n values range from 1 (advanced-operations-like-terms, advanced-operations-distributive-property, advanced-operations-how-to-add-and-subtract-an-expression-with-variables, advanced-operations-how-to-solve-a-multi-step-equation-with-a-variable-on-one-side, advanced-operations-how-to-solve-a-multi-step-equation-with-a-variable-on-both-sides) up to 10 (advanced-operations-variable). The approved concept sheet (CONCEPTS_precal-second-pass_2026-08-30.md, C10 'The Mainline Margin') describes this as closing 'all five of the group's n=1 skills' — n=1, not n=0 — and current spine data confirms exactly those five ids sit at n=1 today (single-case coverage, the group's redundancy-risk skills), with the remaining six already reinforced further (n=2 to n=10). This is therefore NOT a real new-coverage case under SPEC §4/§7's n==0 test: new_coverage[] is correctly empty. Its actual pipeline purpose is redundancy reduction — moving five single-case-covered skills (like-terms, distributive property, add/subtract-expression how-to, both multi-step-equation how-tos) from n=1 to n=2, the same reinforcement logic used for concurrent concepts C7/C8/C9 in the same concept-log session. FLAG FOR HUMAN REVIEW: SPEC §7 states a case with empty new_coverage[] 'has no reason to exist,' and this skill's own step-12 validator script hard-stops on an empty new_coverage[] list. This case was written per explicit instruction with locked content regardless of this finding; whether to (a) accept it as a documented reinforcement case (a SPEC deviation requiring a DOCTRINE_LEDGER row per the SPEC preamble), (b) fold in a genuinely n=0 skill from an adjacent group to legitimize new_coverage[], or (c) shelve the concept, is a human decision this case-write pass does not make unilaterally.",
+  "deliverables": [
+    {
+      "id": "D1",
+      "text": "TWO total-annualized-cost expressions for each option, in terms of the farm's design flow rate and mainline run length: (i) the TRUE cost expression (material + labor + energy, no EQIP term) and (ii) the NET-OF-SUBSIDY expression (same, minus the EQIP reimbursement term). Label every variable/constant/coefficient/term in both, and apply the distributive property to expand the labor-plus-material portion shared by both expressions.",
+      "skills": [
+        "advanced-operations-variable",
+        "advanced-operations-constant",
+        "advanced-operations-coefficient",
+        "advanced-operations-term",
+        "advanced-operations-distributive-property"
+      ]
+    },
+    {
+      "id": "D2",
+      "text": "A substitution table evaluating each option's Hazen-Williams friction-loss result and D1's total-annualized-cost expression at the farm's actual flow rate, run length, diameter, and C-factor.",
+      "skills": [
+        "advanced-operations-how-to-evaluate-a-variable-expression-substitution-property"
+      ]
+    },
+    {
+      "id": "D3",
+      "text": "A simplified TRUE annualized-cost expression per option (material-cost and energy-cost terms combined, showing which are like terms) AND a simplified NET-OF-SUBSIDY expression per option (the same terms plus the EQIP-reimbursement term combined in), so both the subsidy-free and subsidy-included totals are each a single simplified expression.",
+      "skills": [
+        "advanced-operations-like-terms",
+        "advanced-operations-how-to-add-and-subtract-an-expression-with-variables"
+      ]
+    },
+    {
+      "id": "D4",
+      "text": "A certification check: solve a one-step equation to find each option's maximum flow rate before it crosses NRCS Code 430's velocity ceiling, and a pass/fail statement at the farm's actual required flow rate.",
+      "skills": [
+        "advanced-operations-how-to-solve-a-one-step-equation"
+      ]
+    },
+    {
+      "id": "D5",
+      "text": "A rearranged Hazen-Williams formula isolating pipe diameter via a multi-step equation with the variable on one side, used to find the minimum diameter under a stated energy-cost cap.",
+      "skills": [
+        "advanced-operations-how-to-solve-a-multi-step-equation-with-a-variable-on-one-side"
+      ]
+    },
+    {
+      "id": "D6",
+      "text": "A break-even calculation setting the two options' D3 TRUE cost-per-acre-inch expressions equal and solving the resulting multi-step equation with the variable on both sides, plus a final recommendation memo that must explicitly address BOTH figures: (1) the true, subsidy-free efficiency gap (D6's own break-even result) and (2) the net-of-subsidy gap that actually appears on Denise's bid -- state how many points the EQIP subsidy formula alone adds to the net figure versus the true figure, and defend the recommendation with the D4 certification result plus both D6 figures.",
+      "skills": [
+        "advanced-operations-how-to-solve-a-multi-step-equation-with-a-variable-on-both-sides"
+      ]
+    }
+  ],
+  "appendices": [
+    {
+      "letter": "A",
+      "title": "Denise's Bid Constraints and the Farm's Field Layout",
+      "referenced_from": [
+        "Background",
+        "Challenge D1",
+        "Challenge D2",
+        "Challenge D4",
+        "Challenge D6"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "B",
+      "title": "Option A — The Lean Main Spec Sheet",
+      "referenced_from": [
+        "Background",
+        "Challenge D2"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "C",
+      "title": "Option B — The Margin Main Spec Sheet",
+      "referenced_from": [
+        "Background",
+        "Challenge D2"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "D",
+      "title": "NRCS Conservation Practice Standard, Irrigation Pipeline (Code 430)",
+      "referenced_from": [
+        "Background",
+        "Challenge D4",
+        "Challenge D5"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "E",
+      "title": "EQIP Cost-Share Terms for Practice 430",
+      "referenced_from": [
+        "Background",
+        "Challenge D1",
+        "Challenge D3"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "F",
+      "title": "Pump Energy Cost Figures",
+      "referenced_from": [
+        "Background",
+        "Challenge D1",
+        "Challenge D5"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "G",
+      "title": "Sources",
+      "referenced_from": [
+        "Appendices A-F placeholders"
+      ],
+      "kind": "stub, empty at write time"
+    },
+    {
+      "letter": "H",
+      "title": "\"How To…\" Math Questions To Research",
+      "referenced_from": [
+        "Challenge 1"
+      ],
+      "kind": "mandatory standards bridge"
+    }
+  ],
+  "balance": {
+    "argument_a": "The Lean Main's pipe lists at $5.10/ft and 2.40 lb/ft (Appendix B) versus the Margin Main's $7.30/ft and 4.16 lb/ft (Appendix C) — at the case's 1,320 ft run (Appendix A) that is $6,732 of material against $9,636, a real $2,904 gap before labor is even added, and with the same $25/ft labor line on both (Appendix A) the Lean Main's full installed cost is $39,732 against $42,636. It wins outright on up-front material spend and requires a smaller total capital outlay before any reimbursement is even considered — the option that looks cheapest on the purchase-order line alone.",
+    "argument_b": "The Margin Main's wider cross-section keeps flow velocity comfortably under NRCS Code 430's ceiling and, because Hazen-Williams friction loss is steeply diameter-sensitive (roughly the diameter's -4.87 power), cuts annual pump energy cost enough (~$229/yr down to ~$56/yr) to more than offset its ~$2,904 higher installed cost even with NO subsidy counted at all -- the TRUE, subsidy-free annualized cost is $2,215.83/yr for the Lean Main against $2,188.27/yr for the Margin Main, a real but thin ~1.3% edge on energy efficiency alone. Layer in EQIP Practice 430's per-pound reimbursement (which pays the heavier pipe more, not the more efficient one) and the gap seen on Denise's actual bid balloons to ~50.3% -- most of that net-of-subsidy gap is the subsidy formula itself, not engineering efficiency.",
+    "margin_basis": "PRIMARY (true, subsidy-free) metric: total annualized cost per acre-inch = [(material + labor) / 20-yr pipeline life (Code 430's own stated minimum expected life)] + annual pump energy cost, all divided by annual acre-inches delivered (identical for both options, since both carry the same required 440 GPM) -- NO EQIP reimbursement term. At the sourced/assumed figures this computes to $2,215.83/yr (~$1.90/acre-inch) for Option A (Lean Main) and $2,188.27/yr (~$1.88/acre-inch) for Option B (Margin Main) -- B wins by only ~1.3%, i.e. essentially a real-world engineering toss-up once the subsidy is stripped out. SECONDARY (net-of-subsidy) metric: the same total, with each option's EQIP Practice 430 reimbursement subtracted (forfeited entirely if a design fails Code 430 certification, per Appendix E). Both options now certify -- Option A's velocity is ~4.99 ft/sec against the 5.0 ft/sec ceiling (S1), only ~0.16% under, a photo finish that requires D4's exact one-step-equation check -- so Option A keeps its ~$13,369 reimbursement and Option B keeps its larger ~$23,173 reimbursement (heavier pipe, bigger per-pound payment). Net of that subsidy, Option A computes to ~$1.33/acre-inch and Option B to ~$0.88/acre-inch -- a ~50.3% gap. The difference between the two metrics (~49.0 percentage points) is entirely attributable to the subsidy formula paying by weight rather than by efficiency. Full computation in RESEARCH_LOG.md, FACILITATOR.md, and sensitivity_model.py (evaluate() = primary/true metric; evaluate_net_of_subsidy() = secondary metric).",
+    "computed_on": "2026-09-01",
+    "winner": "B — The Margin Main (wins under BOTH the true and the net-of-subsidy metric)",
+    "margin_pct": 1.3,
+    "margin_pct_note": "REFRAMED 2026-09-01 (see RESEARCH_LOG.md addendum) -- this is a metric-framing change, not a re-retune of MA1/MA3/S1-S12. Prior to this reframe, the case's sole primary metric was net-of-subsidy cost/acre-inch, and it computed to a ~50.3% margin (Winner B) -- see the prior version of this note, preserved in RESEARCH_LOG.md, for the full record of the MA1 450->440 GPM / MA3 90->88 acre retune that produced that 50.3% figure. Recomputing WITHOUT the EQIP reimbursement term (true material+energy cost only) reveals that ~49.0 of those ~50.3 percentage points come from the EQIP Practice 430 subsidy formula itself, which pays per pound of pipe installed -- rewarding the heavier, LESS cost-efficient-per-dollar option, not true engineering efficiency. The true efficiency gap is only ~1.3%: Option B's much lower pump energy cost (Hazen-Williams friction loss scales with roughly diameter^-4.87) just barely outweighs its higher material/labor cost, even with zero subsidy counted. Because this true gap is meaningfully smaller than the net-of-subsidy gap, per this project's practice of exposing rather than blending structural facts, TRUE cost/acre-inch is now the case's primary metric and margin_pct (1.3%, computed on that metric). The net-of-subsidy figure (50.3%) is retained and explicitly disclosed as the case's secondary metric and its own twist -- see FACILITATOR.md's Twist section and D6's memo requirement. Note the previously-granted balance_test_waiver (MCS-46) was written against the old 50.3% primary metric exceeding SPEC §2's ~20% target; the new 1.3% primary margin does not need that waiver's rationale on its own terms, but the object is retained below for the historical record and superseded rather than deleted."
+  },
+  "needs_source": [
+    {
+      "token": "{{NEEDS_SOURCE: relationship between PVC pipe diameter and weight per linear foot, general reference}}",
+      "location": "Background, paragraph on The Lean Main",
+      "status": "DROPPED",
+      "resolution": "Decorative narrative reference; folded into Appendix B/C's now-sourced weight figures (S6). Text now reads '(SEE APPENDIX B, C)'."
+    },
+    {
+      "token": "{{NEEDS_SOURCE: representative agricultural mainline design flow rate for a mid-size irrigated field, GPM}}",
+      "location": "Appendix A, row 'Mainline design flow rate required at the field inlet'",
+      "status": "ASSUMPTION",
+      "resolution": "MA1, 440 GPM (retuned 2026-09-01 from 450 GPM — see RESEARCH_LOG.md addendum)"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: representative agricultural mainline run length for a mid-size irrigated field, ft}}",
+      "location": "Appendix A, row 'Total mainline run length'",
+      "status": "ASSUMPTION",
+      "resolution": "MA2, 1,320 ft"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: representative irrigated acreage served by a mid-size agricultural mainline}}",
+      "location": "Appendix A, row 'Acreage irrigated by this mainline'",
+      "status": "ASSUMPTION",
+      "resolution": "MA3, 88 acres (retuned 2026-09-01 from 90 acres, same 5 GPM/acre rate — see RESEARCH_LOG.md addendum)"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: typical agricultural PVC mainline installation labor cost, USD per linear foot}}",
+      "location": "Appendix A, row 'Installation labor rate'",
+      "status": "ASSUMPTION",
+      "resolution": "MA4, $25.00/ft"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: this case's own competing-bid figure — scenario constraint, not an external source}}",
+      "location": "Appendix A, row 'Competing contractor's total quoted price'",
+      "status": "ASSUMPTION",
+      "resolution": "MA6, $24,000"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: typical annual operating hours for a mid-size agricultural irrigation mainline}}",
+      "location": "Appendix A, row 'Annual hours the irrigation system operates'",
+      "status": "ASSUMPTION",
+      "resolution": "MA5, 1,200 hr/yr"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: Option A nominal PVC mainline diameter, in}}",
+      "location": "Appendix B, row 'Nominal pipe diameter'",
+      "status": "SOURCED",
+      "resolution": "S6, 6 in"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: PVC pipe weight per linear foot at Option A's diameter and pressure class}}",
+      "location": "Appendix B, row 'Weight per linear foot'",
+      "status": "SOURCED",
+      "resolution": "S6, 2.40 lb/ft"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: PVC pipe material cost per linear foot at Option A's diameter and pressure class}}",
+      "location": "Appendix B, row 'Material cost per linear foot'",
+      "status": "SOURCED",
+      "resolution": "S7, $5.10/ft"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: Hazen-Williams C-coefficient for PVC/plastic pipe per NRCS Code 430}}",
+      "location": "Appendix B, row 'Hazen-Williams roughness coefficient, C'",
+      "status": "SOURCED",
+      "resolution": "S3, C=150"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: Option B nominal PVC mainline diameter, in — next standard size up from Option A}}",
+      "location": "Appendix C, row 'Nominal pipe diameter'",
+      "status": "SOURCED",
+      "resolution": "S6, 8 in"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: PVC pipe weight per linear foot at Option B's diameter and pressure class}}",
+      "location": "Appendix C, row 'Weight per linear foot'",
+      "status": "SOURCED",
+      "resolution": "S6, 4.16 lb/ft"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: PVC pipe material cost per linear foot at Option B's diameter and pressure class}}",
+      "location": "Appendix C, row 'Material cost per linear foot'",
+      "status": "SOURCED",
+      "resolution": "S8, $7.30/ft"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: Hazen-Williams C-coefficient for PVC/plastic pipe per NRCS Code 430 (should match Appendix B's C-value — same pipe class)}}",
+      "location": "Appendix C, row 'Hazen-Williams roughness coefficient, C'",
+      "status": "SOURCED",
+      "resolution": "S3, C=150"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: NRCS Conservation Practice Standard Code 430 maximum design velocity ceiling, ft/sec}}",
+      "location": "Appendix D, row 'Maximum allowable pipeline flow velocity'",
+      "status": "SOURCED",
+      "resolution": "S1, 5 ft/sec — NOTE: differs from the 7 ft/sec figure assumed in the concept sheet, which belongs to NRCS Code 443, not Code 430. See Appendix G note."
+    },
+    {
+      "token": "{{NEEDS_SOURCE: Hazen-Williams friction-loss equation, exact form as published in NRCS Code 430 or the National Engineering Handbook}}",
+      "location": "Appendix D, row 'Hazen-Williams equation form'",
+      "status": "SOURCED",
+      "resolution": "S2"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: standard EQIP Practice 430 cost-share reimbursement rate, percent}}",
+      "location": "Appendix E, row 'Standard cost-share rate'",
+      "status": "SOURCED",
+      "resolution": "S4, 75%"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: EQIP Practice 430 payment schedule, reimbursement rate in USD per pound of pipe installed}}",
+      "location": "Appendix E, row 'Reimbursement rate per pound of pipe installed'",
+      "status": "SOURCED",
+      "resolution": "S5, $4.22/lb"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: this case's own scenario constraint — which fuel type the farm's pump uses}}",
+      "location": "Appendix F, row 'Pump power source'",
+      "status": "ASSUMPTION",
+      "resolution": "MA7, electricity"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: water-horsepower-hours per gallon of diesel, per gallon of gasoline, and per kWh of electricity, per university extension pumping-cost literature}}",
+      "location": "Appendix F, row 'Energy-cost conversion factor'",
+      "status": "SOURCED",
+      "resolution": "S9"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: local agricultural electricity or diesel fuel price used for irrigation pumping, USD per unit}}",
+      "location": "Appendix F, row 'Local price per unit of pump fuel or electricity'",
+      "status": "SOURCED",
+      "resolution": "S12, 9.17 cents/kWh"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: brake-horsepower irrigation pump-sizing formula constants (e.g., the 3960 denominator constant) and a typical pump efficiency, per Texas A&M AgriLife Extension EB-6011 or equivalent}}",
+      "location": "Appendix F, row 'Brake-horsepower sizing formula constants'",
+      "status": "SOURCED",
+      "resolution": "S10"
+    }
+  ],
+  "cohort_bands": [
+    {
+      "band": "Full (16-24)",
+      "note": "Run the full anchor ladder and 45-minute Socratic plan as drafted; both deep-conflict threads (sticker price vs. all-or-nothing reimbursement risk; smooth economic gap vs. cliff-edge eligibility risk)."
+    },
+    {
+      "band": "Compressed (8-15)",
+      "note": "Combine Anchors 2-3 into one pass. Run only one deep-conflict thread. Total runtime shortens proportionally; content does not."
+    },
+    {
+      "band": "1:1 / pair (1-2)",
+      "note": "No vote at Anchor 1 -- Denise's opening position is stated instead of voted. The guide plays devil's advocate directly. The twist still lands; 'who reverses' becomes 'would you reverse, and why.'"
+    }
+  ],
+  "modeling_assumptions": [
+    {
+      "id": "MA1",
+      "assumption": "Mainline design flow rate",
+      "value": "440 GPM (retuned 2026-09-01 from 450 GPM)",
+      "basis": "Center-pivot and mainline design capacities are commonly sized near 5 GPM per irrigated acre for full-season row-crop irrigation in the central Great Plains (published rule-of-thumb ranges run roughly 5-8 GPM/acre); paired with MA3's 88 acres (5 x 88 = 440), the same rate used before retuning, at a still-'mid-size' acreage.",
+      "sensitivity": "HIGH — the single most dilemma-flipping figure in the case. The Lean Main's certified maximum flow is ~440.7 GPM (Appendix D); 440 GPM sits only ~0.16% below that cutoff, so the Lean Main now certifies, but by a margin thin enough that D4's exact one-step-equation check is required to know it — eyeballing it is not enough. Retuned down from 450 GPM (which sat ~2% over the ceiling) specifically to bring the case's margin down from 115.8% toward SPEC §2's ~20% target while keeping this certification question genuinely close. See case.json's balance.margin_pct_note and RESEARCH_LOG.md's addendum for the full retune record."
+    },
+    {
+      "id": "MA2",
+      "assumption": "Total mainline run length",
+      "value": "1,320 ft",
+      "basis": "One quarter-mile — a common wellhead-to-field-inlet distance matching the standard U.S. Public Land Survey quarter-quarter-section grid.",
+      "sensitivity": "LOW-MODERATE — scales material cost, weight/EQIP reimbursement, and friction loss proportionally for both options at once; changes the size of the gap, not its direction."
+    },
+    {
+      "id": "MA3",
+      "assumption": "Acreage irrigated by this mainline",
+      "value": "88 acres (retuned 2026-09-01 from 90 acres)",
+      "basis": "Paired with MA1's 5 GPM/acre rate to produce 440 GPM; smaller than a full quarter-section pivot's ~125-130 acre footprint, consistent with 'mid-size,' and barely different from the original 90-acre figure.",
+      "sensitivity": "LOW — enters only the per-acre-inch denominator, identical for both options, so it cannot alone flip the recommendation."
+    },
+    {
+      "id": "MA4",
+      "assumption": "Installation labor rate",
+      "value": "$25.00/ft",
+      "basis": "Published trenching-cost ranges for underground utility/irrigation lines run ~$5-$12/ft (basic, shallow) up to $13-$40/ft (deeper, larger-diameter, complex); no ag-specific mainline contractor rate found publicly (see RESEARCH_LOG). $25/ft reflects the added complexity of a deeper, larger-diameter ag mainline.",
+      "sensitivity": "LOW — flat per-foot rate independent of diameter; identical dollar amount for both options at a given run length."
+    },
+    {
+      "id": "MA5",
+      "assumption": "Annual system operating hours",
+      "value": "1,200 hr/yr",
+      "basis": "General Great Plains extension guidance for a full-season system commonly cites ~1,000-1,500 hr/season; 1,200 used as a round mid-range figure. No mainline-specific (vs. whole-pivot-system) figure found (see RESEARCH_LOG).",
+      "sensitivity": "MODERATE — scales annual energy cost linearly for both options at once; widens/narrows the gap without changing its direction."
+    },
+    {
+      "id": "MA6",
+      "assumption": "Competing contractor's total quoted price, net of EQIP (USD)",
+      "value": "$24,000",
+      "basis": "This case's own scenario constraint (no real competing bid exists for a fictional farm); chosen to sit between the two options' realistic net installed costs so Denise's bid has real stakes on both designs.",
+      "sensitivity": "Sets the stakes for Denise's own bid — a business constraint distinct from the A-vs-B comparison the Challenges solve."
+    },
+    {
+      "id": "MA7",
+      "assumption": "Pump power source (fuel type)",
+      "value": "Electricity (grid-powered pump)",
+      "basis": "Lets the case cite a current, dated national reference price (EIA industrial rate, S12) rather than a regionally volatile diesel/propane price; grid power is common for stationary ag mainline/pivot pumps on grid-served farms.",
+      "sensitivity": "LOW — a different real fuel choice would change absolute annual energy-cost figures for both options together, but not which option has lower friction loss."
+    }
+  ],
+  "sensitivity_note": "MA1 (440 GPM design flow rate, retuned 2026-09-01 from 450 GPM) sits only ~0.16% below the Lean Main's certified maximum flow of ~440.7 GPM (computed from Appendix D's sourced 5 ft/sec ceiling and Appendix B's sourced 6 in diameter) -- it remains the single most load-bearing figure for CERTIFICATION (D4) and for the SECONDARY, net-of-subsidy metric, since a failed certification means a forfeited EQIP reimbursement. The Lean Main now certifies, but only by a hair-thin margin that D4's exact one-step-equation check must confirm. IMPORTANT (2026-09-01 reframe): MA1's certification-cliff sensitivity no longer drives the case's PRIMARY metric, because the primary (true, subsidy-free) cost comparison has no EQIP reimbursement term at all -- whether or not the Lean Main certifies, its true annualized cost is the same $2,215.83/yr, so MA1 cannot flip the primary metric's ~1.3% margin the way it flips the secondary (net-of-subsidy) metric's ~50.3% margin. Sensitivity sweeps in sensitivity_model.py's evaluate() (primary) show the true efficiency gap staying in the low single digits across the flow-rate range that keeps the Lean Main certified, while evaluate_net_of_subsidy() shows the secondary gap holding near 45-50% across that same range -- confirming the two metrics respond very differently to MA1. See FACILITATOR.md and sensitivity_model.py for the full computed margins.",
+  "qa": {
+    "state": "TIER2_PASS",
+    "verdict": "PASS",
+    "run_on": "2026-09-01",
+    "blockers_open": 0,
+    "gaps_open": 6,
+    "tier2": {
+      "P1": "PASS",
+      "P2": "PASS",
+      "P3": "PASS",
+      "P4": "PASS",
+      "P5": "PASS",
+      "P6": "PASS"
+    },
+    "tier3_runs": [],
+    "case_md_sha256": "98e9a80c24f51678891963ee5631d3df9e865bf6436f43dfbe1242b93e206585"
+  },
+  "authored_on": "2026-09-01",
+  "pipeline_version": "1.0",
+  "balance_test_waiver": {
+    "granted": true,
+    "reason": "Per MCS-46: the margin (50.3%) is real, honestly researched, and structurally driven by real, sourced figures (USDA NRCS Code 430, 7 CFR §1466.23, NRCS Kansas's FY2025 EQIP payment schedule, JM Eagle's PIP catalog, EIA electricity pricing -- S1-S12) -- the Margin Main's heavier pipe earning a larger EQIP reimbursement plus its much lower pump-energy cost, not a modeling shortcut. Waived because (1) the setup still forces genuine multi-step algebra regardless of which option wins: building and simplifying the total-annualized-cost expression with the distributive property (D1), evaluating it via substitution (D2), combining like terms (D3), solving a one-step certification-ceiling equation (D4), rearranging Hazen-Williams for diameter via a multi-step equation (D5), and solving the two-option break-even system (D6) are all real, non-trivial work independent of the final margin; and (2) the size of the gap is not guessable from the premise -- Option A (the Lean Main) certifies against Code 430's velocity ceiling by only ~0.16% headroom (4.99 ft/sec of a 5.0 ft/sec cap), a photo finish only D4's exact one-step check can resolve, and the case was already retuned once this session (MA1 lowered from 450 to 440 GPM) specifically to keep that certification question genuinely close rather than an all-or-nothing reimbursement-forfeiture cliff; the remaining 50.3% is the case's real, purely economic gap, only knowable by computing both options' full cost expressions. A genuine retune was attempted and exhausted this session (RESEARCH_LOG.md; QA_REPORT.md 'This session's retune attempt against the remaining 50.3%-vs-~20% gap'): swept the one genuinely movable lever (MA4, installation labor rate) and found the margin does not clear the ~20% cap until roughly $50/ft -- about double the already-cited real range's own high end ($5-$40/ft) -- and a live-fetched NRCS Kansas FY2025 EQIP schedule and WSU Extension irrigation publication found no sourced basis for a labor rate anywhere near that; the nearest comparable NRCS practice (516, Livestock Pipeline) instead argues MA4's existing $25/ft is already generous. No defensible, sourced retune brings the case under the SPEC §2 cap without fabricating a number, which SPEC §5 forbids. Per project owner: scoped narrowly to this case's own researched figures (the balance-test margin only, not the separate new_coverage[]/reinforcement question, which case.json's own reinforcement_note and QA_REPORT.md already document and downgrade to an accepted GAP via T1-10's reinforcement carve-out), not a general relaxation, and not retroactive to any other case.",
+    "ledger_ref": "MCS-46 (DOCTRINE_LEDGER.md)",
+    "approved_by": "manan.atit@gmail.com",
+    "date": "2026-09-01",
+    "superseded_note": "This waiver was granted against the case's ORIGINAL primary metric (net-of-subsidy cost/acre-inch, margin ~50.3%, exceeding SPEC §2's ~20% target). Following the 2026-09-01 metric reframe (see RESEARCH_LOG.md addendum and balance.margin_pct_note), the case's primary metric is now TRUE (subsidy-free) cost/acre-inch, margin ~1.3% -- comfortably inside SPEC §2's target on its own terms, with no waiver needed for the primary metric. This waiver object is retained, not deleted, as the historical record for why the (now-secondary) net-of-subsidy figure was accepted at ~50.3%; that figure is still disclosed in case.md/FACILITATOR.md as the explicit subsidy-driven secondary metric and twist, not as a number requiring a fresh balance-test judgment."
+  },
+  "published_on": "2026-09-01"
+}

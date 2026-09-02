@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Irregular Boundary — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Irregular Boundary</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Geometry &middot; Polygons</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  <p class="lede">Renata Suh drags the last vertex into place and the polygon on her screen finally closes &mdash; a lopsided shape with a bite taken out of one corner and a notch pushed into another, laid over a satellite photo of dark, tilled soil. Her coffee's gone cold next to the mouse. Two other windows sit minimized along the bottom of the screen: one is the bank's boundary-certification form, blinking a due date at the top in red. The other is an email thread with a neighboring farm's manager, tone gone from friendly to clipped over the last three messages, about whose fence line a certain pivot's outer wheel track actually crosses.</p>
+<p>She pulls up a second file &mdash; the same quarter-section, but drawn as a clean rectangle, corners left blank and unplanted, nowhere near the disputed strip. Two versions of the same field. Two different answers to the same question: where does the planted boundary actually go this year.</p>
+<p>Her cursor hovers between the two file names. Outside the window, the same field waits under an overcast sky, corn stubble from last season still flattened in rows. Renata's manager wants the recommendation memo by end of day &mdash; the bank meeting is tomorrow morning. She minimizes the email thread, opens both boundary files side by side, and reaches for her tablet to start the write-up.</p>
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  <p>Renata Suh is a GIS land-use analyst for a farm-management company operating corn and soybean quarter-sections across Nebraska's pivot-irrigation country. She finalizes the planted-boundary map her company files with the landowner and the landowner's lender each growing season &mdash; the map that sets how many acres of &ldquo;certified planted ground&rdquo; this field counts as, for both the lease and the loan collateral behind it.</p>
+<p>This 160-acre quarter-section (the standard unit these Nebraska fields are surveyed and leased on) sits under a center-pivot irrigation system, and its lease is up for renewal this year. The landlord's bank wants a locked planted-acreage figure to set next year's cash rent before it approves the renewal. At the same time, a neighboring farm's center-pivot has, for several seasons, swung its outermost &ldquo;tail&rdquo; span across the disputed corner of this property's line (<strong>see Appendix B</strong>). Under Nebraska law, ten years of open, continuous, adverse use of another's land can ripen into a legal right to keep using it &mdash; this is the season Renata's company wants the boundary settled on paper.</p>
+<p>Renata is weighing two ways to draw this year's planted boundary.</p>
+<div class="card">
+<p><strong>Option A &mdash; The Squared Block.</strong> A standard convex rectangular planted block, sized to the pivot's basic circle (<strong>see Appendix A</strong>), ceding the four corners of the quarter-section as unplanted ground. This block never touches the disputed strip the neighbor's pivot tail crosses.</p>
+<p style="margin:0"><strong>Option B &mdash; The Reclaimed Line.</strong> An irregular, partly concave planted boundary that reclaims corner acreage beyond the pivot's basic circle <em>and</em> asserts the property line up to the disputed strip, forcing the boundary question with the neighbor this season.</p>
+</div>
+<p>Both boundaries sit on the same parcel, irrigated by the same fixed pivot equipment (<strong>see Appendix A</strong>); no new hardware is under consideration. What changes is the boundary's shape &mdash; which vertices are convex and which are reflex (concave), and its total perimeter &mdash; because shape drives two real costs: guidance-line/fencing cost for a longer perimeter (<strong>see Appendix C and Appendix D</strong>), and turning-margin crop loss a combine eats at every concave notch (<strong>see Appendix E</strong>). Lease and rental-rate stakes are in <strong>Appendix F</strong>.</p>
+<p>Every hard number here is sourced with a citation or, absent a public figure, stated as a Modeling Assumption once research is complete (<strong>see Modeling Assumptions and Appendix G</strong>). One fact is settled now: the neighbor dispute above is fictional, built for this case, not a real property dispute.</p>
+<p>The vocabulary this case will ask you to research is listed in Appendix H &mdash; that is where Challenge 1 sends you.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Renata Suh. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Squared Block</h4>
+      <p style="margin:0">Draw a standard convex rectangular planted boundary, sized to the pivot's basic circle, ceding the four corners of the quarter-section as unplanted ground. Never touches the disputed strip.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Reclaimed Line</h4>
+      <p style="margin:0">Draw an irregular, partly concave planted boundary that reclaims the corner acreage beyond the pivot's basic circle and asserts the property line up to the disputed strip, forcing the boundary question this season.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include the following:
+    <ul style="margin-top:8px">
+      <li><strong>D1</strong> &mdash; A labeled diagram of the Squared Block (Option A): a to-scale sketch of the convex rectangular planted boundary using the pivot dimensions in Appendix A, every vertex marked, every interior angle shown, the shape explicitly labeled as a quadrilateral.</li>
+      <li><strong>D2</strong> &mdash; A labeled diagram of the Reclaimed Line (Option B): a to-scale sketch of the irregular, partly concave planted boundary from Appendix B, every vertex marked, each interior angle classified as convex or reflex (concave), the full shape labeled as an irregular polygon.</li>
+      <li><strong>D3</strong> &mdash; A disputed-strip classification note: identify the shape of the neighbor's pivot-tail crossing strip using the dimensions in Appendix B, and mark on your D2 diagram exactly where the Reclaimed Line boundary does or does not touch it.</li>
+      <li><strong>D4</strong> &mdash; A usable-acreage and perimeter comparison table: total planted acres inside each option's boundary, and total perimeter (feet) of each boundary.</li>
+      <li><strong>D5</strong> &mdash; A cost-and-loss comparison table: the added guidance-line/fencing cost of the Reclaimed Line over the Squared Block, and the harvest turning-margin crop loss at each reflex vertex.</li>
+      <li><strong>D6</strong> &mdash; A recommendation, stated in dollars per acre, combining your D4 acreage gain and D5 added costs into the case's primary metric, and stating which boundary Renata should finalize before tomorrow's bank meeting.</li>
+    </ul></li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  <details open>
+  <summary>Appendix A &mdash; Quarter-Section and Pivot Geometry Spec Sheet</summary>
+  <div class="inner">
+    <p>The 160-acre quarter-section this case is set on, and the fixed center-pivot irrigation equipment already installed on it. Neither option changes this equipment &mdash; only the planted-boundary line drawn around it.</p>
+    <table id="apxATable">
+      <tr><th>Quantity</th><th class="num">Value</th></tr>
+      <tr><td>Quarter-section total area, acres</td><td class="num">160 [S1]</td></tr>
+      <tr><td>Quarter-section side length, feet</td><td class="num">2,640 [S2]</td></tr>
+      <tr><td>Center-pivot basic circle radius, feet</td><td class="num">&asymp;1,373 [S4]</td></tr>
+      <tr><td>Center-pivot basic circle coverage, acres</td><td class="num">136 (85%) [S5]</td></tr>
+      <tr><td>Corner acreage outside the pivot's basic circle (unwatered under Option A), acres and percent</td><td class="num">up to 24 (15%) [S3]</td></tr>
+    </table>
+    <p class="side-note">Referenced from Background and forces the boundary math in Challenges D1 and D4.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix B &mdash; Boundary Survey Data: Option A vs. Option B, and the Disputed Strip</summary>
+  <div class="inner">
+    <p>Vertex-and-dimension data for both candidate planted boundaries, and for the neighbor's disputed pivot-tail crossing strip.</p>
+    <figure>
+<svg viewBox="0 0 700 300" role="img" class="boundary-diagram" aria-labelledby="boundarySvgTitle boundarySvgDesc">
+  <title id="boundarySvgTitle">Option A (Squared Block) next to Option B (Reclaimed Line), to scale</title>
+  <desc id="boundarySvgDesc">Two boundary polygons plotted from Appendix B's own vertex coordinates: a convex square on the left (Option A) and a 16-vertex irregular polygon with six reflex vertices on the right (Option B), marked in red.</desc>
+  <rect x="0" y="0" width="700" height="300" fill="#ffffff"/>
+  <!-- Option A: the 2,434 x 2,434 ft square, sized to the pivot circle, centered in the section -->
+  <polygon points="49.3,258.3 268.3,258.3 268.3,39.3 49.3,39.3" fill="#eef3f8" stroke="#1a3a5c" stroke-width="2.5"/>
+  <text x="158.8" y="285" text-anchor="middle" font-family="Arial" font-size="12" fill="#1a3a5c" font-weight="700">Option A &mdash; The Squared Block</text>
+  <text x="158.8" y="298" text-anchor="middle" font-family="Arial" font-size="9.5" fill="#5b6472">2,434 ft &times; 2,434 ft &middot; convex quadrilateral</text>
+  <!-- 4 vertex dots, Option A -->
+  <circle cx="49.3" cy="258.3" r="3.4" fill="#1a3a5c"/>
+  <circle cx="268.3" cy="258.3" r="3.4" fill="#1a3a5c"/>
+  <circle cx="268.3" cy="39.3" r="3.4" fill="#1a3a5c"/>
+  <circle cx="49.3" cy="39.3" r="3.4" fill="#1a3a5c"/>
+  <!-- Option B: full 2,640 x 2,640 ft section square, 3 inward notches, 16 vertices, 6 reflex -->
+  <polygon points="380.0,267.6 389.0,267.6 389.0,231.6 414.2,231.6 414.2,267.6 423.2,267.6 423.2,231.6 448.4,231.6 448.4,267.6 617.6,267.6 617.6,30.0 603.2,30.0 603.2,66.0 560.0,66.0 560.0,30.0 380.0,30.0" fill="#f7edcf" stroke="#1a3a5c" stroke-width="2.5"/>
+  <text x="498.8" y="285" text-anchor="middle" font-family="Arial" font-size="12" fill="#1a3a5c" font-weight="700">Option B &mdash; The Reclaimed Line</text>
+  <text x="498.8" y="298" text-anchor="middle" font-family="Arial" font-size="9.5" fill="#5b6472">2,640 ft &times; 2,640 ft section, 3 inward notches &middot; irregular polygon</text>
+  <!-- reflex vertices marked red -->
+  <circle cx="389.0" cy="231.6" r="4.2" fill="#a3312a"/>
+  <circle cx="414.2" cy="231.6" r="4.2" fill="#a3312a"/>
+  <circle cx="423.2" cy="231.6" r="4.2" fill="#a3312a"/>
+  <circle cx="448.4" cy="231.6" r="4.2" fill="#a3312a"/>
+  <circle cx="603.2" cy="66.0" r="4.2" fill="#a3312a"/>
+  <circle cx="560.0" cy="66.0" r="4.2" fill="#a3312a"/>
+  <!-- convex vertices, Option B -->
+  <circle cx="380.0" cy="267.6" r="3" fill="#1a3a5c"/>
+  <circle cx="380.0" cy="30.0" r="3" fill="#1a3a5c"/>
+  <circle cx="617.6" cy="267.6" r="3" fill="#1a3a5c"/>
+  <circle cx="617.6" cy="30.0" r="3" fill="#1a3a5c"/>
+  <!-- disputed strip callout: the top-right notch (near the section's NE corner) -->
+  <line x1="582.5" y1="48" x2="640" y2="15" stroke="#a3312a" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="641" y="14" font-family="Arial" font-size="9" fill="#a3312a">disputed strip notch</text>
+  <!-- legend -->
+  <circle cx="40" cy="12" r="4" fill="#a3312a"/>
+  <text x="49" y="15.5" font-family="Arial" font-size="9.5" fill="#5b6472">reflex (concave) vertex</text>
+  <circle cx="200" cy="12" r="3.4" fill="#1a3a5c"/>
+  <text x="209" y="15.5" font-family="Arial" font-size="9.5" fill="#5b6472">convex vertex</text>
+</svg>
+<figcaption>Both boundaries plotted to the same scale from Appendix B's own vertex coordinates (feet, origin at the quarter-section's southwest corner). Option A is a plain convex square. Option B keeps the same outer section footprint but dents inward at three places &mdash; the disputed-strip buffer near the NE corner, plus two smaller serrations along the south edge &mdash; each dent contributing two reflex (concave) vertices. Use this as a starting point for your own D1/D2 diagrams; label every vertex and interior angle yourself.</figcaption>
+</figure>
+    <table id="apxBTable">
+      <tr><th>Quantity</th><th class="num">Value</th></tr>
+      <tr><td>Option A (Squared Block) boundary vertex coordinates (feet, origin at the quarter-section's southwest corner)</td><td class="num">(103, 103), (2537, 103), (2537, 2537), (103, 2537) &mdash; a 2,434 ft &times; 2,434 ft square, centered in the section [MA3]</td></tr>
+      <tr><td>Option B (Reclaimed Line) boundary vertex coordinates, including each reflex (concave) vertex</td><td class="num">The full 2,640 ft &times; 2,640 ft section square with three inward notches (each goes <em>in</em>, <em>across</em>, and <em>back out</em>): (0,0), (100,0), (100,400)*, (380,400)*, (380,0), (480,0), (480,400)*, (760,400)*, (760,0), (2640,0), (2640,2640), (2480,2640), (2480,2240)*, (2000,2240)*, (2000,2640), (0,2640) &mdash; *reflex (concave) vertex [MA3]</td></tr>
+      <tr><td>Number of reflex (concave) vertices on the Option B boundary</td><td class="num">6 (two per notch, three notches) [MA3]</td></tr>
+      <tr><td>Disputed pivot-tail crossing strip &mdash; length along the property line, feet</td><td class="num">480 [MA3]</td></tr>
+      <tr><td>Disputed pivot-tail crossing strip &mdash; notch depth (buffer ceded beyond the strip's own width), feet</td><td class="num">400 [MA3]</td></tr>
+      <tr><td>Additional boundary notches beyond the disputed strip &mdash; count, width, depth</td><td class="num">2 notches, 280 ft wide &times; 400 ft deep each [MA3]</td></tr>
+    </table>
+    <p class="side-note">Field-boundary polygon shapes of this kind are documented at scale in the USDA NASS Crop Sequence Boundaries (CSB) dataset &mdash; a real, public, satellite-derived dataset of corn/soybean field boundaries &mdash; used here only to ground the general shape of a real pivot-irrigated field boundary, not as a source for this fictional property's specific line. Referenced from Background and forces Challenges D2, D3, and D4.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix C &mdash; Fencing Cost Basis</summary>
+  <div class="inner">
+    <p>Per-foot fencing cost data for marking the planted boundary on the ground.</p>
+    <table id="apxCTable">
+      <tr><th>Quantity</th><th class="num">Value</th></tr>
+      <tr><td>Woven-wire fencing cost per foot, materials and labor</td><td class="num">$1.51 [S6]</td></tr>
+      <tr><td>High-tensile electrified fencing cost per foot, materials and labor</td><td class="num">$0.70 [S7]</td></tr>
+      <tr><td>Labor rate used in the above figures, USD per hour</td><td class="num">$13.60 [S8]</td></tr>
+    </table>
+    <p class="side-note">Figures are from the October 2005 revision of Ag Decision Maker File B1-75; the December 2024 revision returned an access-denied error on every direct-fetch attempt during research (costs are in 2005 dollars and likely understate current cost). This case's D5/D6 primary fencing assumption is woven-wire &mdash; the pricier of the two real, sourced options. High-tensile electrified is a real, equally sourced alternative; your Working Notebook below lets you try both.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix D &mdash; GPS Guidance and RTK System Cost Basis</summary>
+  <div class="inner">
+    <p>Cost data for the guidance system needed to drive and maintain a longer, more complex planted-boundary line.</p>
+    <table id="apxDTable">
+      <tr><th>Quantity</th><th class="num">Value</th></tr>
+      <tr><td>Visual GPS guidance system cost, USD</td><td class="num">$10,000 (low end) [S9]</td></tr>
+      <tr><td>Automatic RTK steering system cost, USD</td><td class="num">$40,000 and up (high end) [S10]</td></tr>
+      <tr><td>Annual per-acre savings from GPS guidance adoption, USD per acre</td><td class="num">$15 (2.7% of production costs) [S11]</td></tr>
+      <tr><td>Guidance-line marking cost per added foot of irregular perimeter, USD per foot</td><td class="num">$0.50 [MA4]</td></tr>
+    </table>
+    <p class="side-note">Referenced from Background and forces Challenge D5.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix E &mdash; Harvest Turning-Margin Crop-Loss Basis</summary>
+  <div class="inner">
+    <p>Basis for the extra crop loss a combine driver incurs at each concave (reflex) vertex of an irregular field boundary, from peer-reviewed harvester path-planning research.</p>
+    <table id="apxETable">
+      <tr><th>Quantity</th><th class="num">Value</th></tr>
+      <tr><td>Extra double-cut turning margin required at a concave (reflex) boundary vertex</td><td class="num">one extra 30-ft header-width pass along the shorter notch edge at each reflex vertex [MA5]</td></tr>
+      <tr><td>Crop value lost per unit of double-cut turning-margin area, USD per acre</td><td class="num">$587.23 [S12]</td></tr>
+    </table>
+    <p class="side-note">Rahman et al. (2019) &mdash; &ldquo;Optimum harvesting area of convex and concave polygon field for path planning of robot combine harvester,&rdquo; <em>Intelligent Service Robotics</em> 12(2):167&ndash;179 &mdash; establishes that crop near a field boundary is manually cut twice or thrice for a safe turning margin, but does not publish a generalizable distance or area figure per reflex vertex. Referenced from Background and forces Challenge D5.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix F &mdash; Nebraska Farmland Value and Lease-Renewal Context</summary>
+  <div class="inner">
+    <p>Real, current market context for why the lease-renewal deadline in Background carries financial weight.</p>
+    <table id="apxFTable">
+      <tr><th>Quantity</th><th class="num">Value</th></tr>
+      <tr><td>Center-pivot irrigated cropland value trend, most recent reporting period, percent change</td><td class="num">-2% (statewide, 2026 vs. 2025) [S14]</td></tr>
+      <tr><td>Center-pivot irrigated cropland cash rental rate trend, most recent reporting period, percent change</td><td class="num">approximately -3.6% (average across Nebraska's eight reporting districts) [S15]</td></tr>
+    </table>
+    <p class="side-note">Referenced from Background; grounds the lease-renewal stakes in Renata's decision. Not itself an input to Challenge 3's calculations.</p>
+  </div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-01. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  <div class="stepbox">
+  <h4>Step 1 &mdash; Classify the boundaries (D1 / D2 / D3)</h4>
+  <div class="goal">Goal: count the reflex (concave) vertices on the Reclaimed Line (Option B), and classify the disputed strip's shape.</div>
+  <div class="fieldrow"><label for="s1_reflex">Reflex (concave) vertices you found in Option B</label>
+    <input type="number" id="s1_reflex" min="0" step="1"><span class="fb" id="fb1a"></span></div>
+  <div class="fieldrow"><label for="s1_strip">Shape of the disputed pivot-tail crossing strip (D3)</label>
+    <select id="s1_strip">
+      <option value="">choose one&hellip;</option>
+      <option value="Parallelogram">Parallelogram</option>
+      <option value="Triangle">Triangle</option>
+      <option value="Trapezoid">Trapezoid</option>
+      <option value="Irregular Polygon">Irregular Polygon</option>
+    </select><span class="fb" id="fb1b"></span></div>
+  <button onclick="checkClassification()">Check</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; Acreage and perimeter (D4)</h4>
+  <div class="goal">Goal: using Appendix A and Appendix B's own dimensions, compute total planted acres and total perimeter for each option.</div>
+  <div class="fieldrow"><label for="s2_area_a">Option A usable acres</label><input type="number" id="s2_area_a" step="0.01"><span class="fb" id="fb2a"></span></div>
+  <div class="fieldrow"><label for="s2_perim_a">Option A perimeter, feet</label><input type="number" id="s2_perim_a" step="1"><span class="fb" id="fb2b"></span></div>
+  <div class="fieldrow"><label for="s2_area_b">Option B usable acres</label><input type="number" id="s2_area_b" step="0.01"><span class="fb" id="fb2c"></span></div>
+  <div class="fieldrow"><label for="s2_perim_b">Option B perimeter, feet</label><input type="number" id="s2_perim_b" step="1"><span class="fb" id="fb2d"></span></div>
+  <button onclick="checkGeometry()">Check</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; Price the shape (D5)</h4>
+  <div class="goal">Goal: price the perimeter Option B adds over Option A, and the harvest turning-margin crop loss at every reflex vertex you found in Step 1.</div>
+  <div class="fieldrow"><label for="s3_fencing">Fencing choice (Appendix C)</label>
+    <select id="s3_fencing" onchange="renderCostContext()">
+      <option value="fencing_rate_woven_wire_usd_per_ft">Woven-wire ($1.51/ft) &mdash; case's primary assumption</option>
+      <option value="fencing_rate_high_tensile_usd_per_ft">High-tensile electrified ($0.70/ft) &mdash; disclosed alternative</option>
+    </select></div>
+  <div class="fieldrow"><label for="s3_fencing_cost">Added guidance-line/fencing cost, $</label><input type="number" id="s3_fencing_cost" step="0.01"><span class="fb" id="fb3a"></span></div>
+  <div class="fieldrow"><label for="s3_turning_cost">Harvest turning-margin crop loss, $</label><input type="number" id="s3_turning_cost" step="0.01"><span class="fb" id="fb3b"></span></div>
+  <button onclick="checkCosts()">Check</button>
+  <p class="side-note" id="costContext"></p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; The recommendation (D6)</h4>
+  <div class="goal">Goal: combine your D4 acreage gain and D5 added costs into the case's primary metric &mdash; net dollars gained by choosing B over A &mdash; and state a recommendation.</div>
+  <div class="fieldrow"><label for="s4_net_gain">Net dollar gain, Option B over Option A, $</label><input type="number" id="s4_net_gain" step="0.01"><span class="fb" id="fb4a"></span></div>
+  <div class="fieldrow"><label for="s4_margin">Net margin, % of gross revenue gain</label><input type="number" id="s4_margin" step="0.1"><span class="fb" id="fb4b"></span></div>
+  <div class="fieldrow"><label for="s4_recommend">Which boundary should Renata finalize?</label>
+    <select id="s4_recommend">
+      <option value="">choose one&hellip;</option>
+      <option value="A">A &mdash; The Squared Block</option>
+      <option value="B">B &mdash; The Reclaimed Line</option>
+    </select><span class="fb" id="fb4c"></span></div>
+  <button onclick="checkRecommendation()">Check</button>
+  <p class="side-note">This step doesn't tell you which option is &ldquo;right&rdquo; &mdash; it only checks whether your own arithmetic is internally consistent with the case's own sourced and stated figures, using whichever fencing choice you selected in Step 3. Your recommendation is still yours to defend.</p>
+</div>
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>Renata's own numbers depend on one more choice she hasn't made yet: which real fencing type her company specs for the Reclaimed Line. Appendix C gives two equally real, equally sourced options &mdash; woven-wire and high-tensile electrified &mdash; from the same Iowa State Extension document. They are not close to the same price per foot.</p>
+<p>This case's own recommendation has been built around the pricier of the two, woven-wire, as its primary scenario. That is a real, defensible choice a farm-management company might make given a live boundary dispute &mdash; not the only one. Go back to Step 3 of your Working Notebook, flip the fencing selector to high-tensile electrified, and re-run your own D5/D6 numbers.</p>
+<p>Does the fencing choice change <em>who wins</em> &mdash; or only <em>by how much</em>? What kind of company would plausibly choose the pricier option here, given the live boundary dispute?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Switch my Step 3/4 calculator to the high-tensile electrified fencing scenario</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li><a href="https://www.dmr.nd.gov/ndgs/documents/newsletter/2014Winter/Winter2014PLSS2.pdf" target="_blank" rel="noopener">[S1] North Dakota Geological Survey — Manz, "The Public Land Survey System (PLSS) – Part 2," Geo News</a></li>
+      <li><a href="https://www.ediblegeography.com/squaring-the-circle/" target="_blank" rel="noopener">[S3] Edible Geography, "Squaring the Circle"</a></li>
+      <li><a href="https://www.extension.iastate.edu/agdm/livestock/pdf/b1-75.pdf" target="_blank" rel="noopener">[S6/S7] Iowa State University Extension, Ag Decision Maker File B1-75, "Estimated Costs for Livestock Fencing"</a></li>
+      <li><a href="https://www.purdue.edu/uns/html4ever/2004/040413.Lowenberg.gps.html" target="_blank" rel="noopener">[S9/S10] Purdue University News, GPS guidance systems for agriculture</a></li>
+      <li><a href="https://www.ers.usda.gov/amber-waves/2016/may/cost-savings-from-precision-agriculture-technologies-on-u-s-corn-farms" target="_blank" rel="noopener">[S11] USDA Economic Research Service — Schimmelpfennig, "Cost Savings From Precision Agriculture Technologies on U.S. Corn Farms," Amber Waves</a></li>
+      <li><a href="https://cap.unl.edu/sites/unl.edu.ianr.agecon.center-for-ag-profitability/files/media/file/%23033%20Corn%2C%20Irrigated-Electric%20Pivot%2C%20No%20Till%2C%20after%20Beans_2026.pdf" target="_blank" rel="noopener">[S12] University of Nebraska-Lincoln, Center for Agricultural Profitability, "2026 UNL #033 Corn, Irrigated-Electric Pivot, No Till, after Beans"</a></li>
+      <li><a href="https://www.usda.gov/oce/commodity/wasde/wasde0826.pdf" target="_blank" rel="noopener">[S13] USDA WASDE, August 2026 report</a></li>
+      <li><a href="https://cap.unl.edu/sites/unl.edu.ianr.agecon.center-for-ag-profitability/files/media/file/ne-farm-real-estate_2026_prelim.pdf" target="_blank" rel="noopener">[S14/S15] University of Nebraska-Lincoln, Center for Agricultural Profitability — Jansen, "2026 Nebraska Farmland Values and Cash Rental Rates" (Preliminary)</a></li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Irregular Boundary &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported 1:1 from cases/the-irregular-boundary/sensitivity_model.py's PARAMS and
+// evaluate_detail()/evaluate() -- raw given data only, never a pre-computed verdict.
+const PARAMS = {
+  pivot_circle_coverage_ac: 136.0,          // S4/S5
+  option_a_side_ft: 2434.0,
+  section_side_ft: 2640.0,                  // S1/S2
+  notch_width_ft: 480.0,
+  notch_depth_ft: 400.0,
+  extra_notch_count: 2,
+  extra_notch_depth_ft: 400.0,
+  extra_notch_width_ft: 280.0,
+  guidance_rate_usd_per_ft: 0.50,           // MA4
+  fencing_rate_high_tensile_usd_per_ft: 0.70,  // S7
+  fencing_rate_woven_wire_usd_per_ft: 1.51,    // S6
+  header_pass_width_ft: 30.0,               // MA5
+  crop_margin_usd_per_ac: 587.23,           // S12
+};
+
+function shoelaceAreaFt2(vertices){
+  let total = 0;
+  const n = vertices.length;
+  for(let i = 0; i < n; i++){
+    const [x1,y1] = vertices[i];
+    const [x2,y2] = vertices[(i+1)%n];
+    total += x1*y2 - x2*y1;
+  }
+  return Math.abs(total) / 2.0;
+}
+function perimeterFt(vertices){
+  let total = 0;
+  const n = vertices.length;
+  for(let i = 0; i < n; i++){
+    const [x1,y1] = vertices[i];
+    const [x2,y2] = vertices[(i+1)%n];
+    total += Math.hypot(x2-x1, y2-y1);
+  }
+  return total;
+}
+function isReflex(prev, cur, nxt){
+  const ax = cur[0]-prev[0], ay = cur[1]-prev[1];
+  const bx = nxt[0]-cur[0], by = nxt[1]-cur[1];
+  const cross = ax*by - ay*bx;
+  return cross < 0;
+}
+function optionBPolygon(p){
+  const s = p.section_side_ft, w = p.notch_width_ft, d = p.notch_depth_ft;
+  const gapFromCorner = 160.0;
+  const xHi = s - gapFromCorner, xLo = xHi - w;
+  const northEdge = [[s,s],[xHi,s],[xHi,s-d],[xLo,s-d],[xLo,s],[0.0,s]];
+  const n = p.extra_notch_count, ed = p.extra_notch_depth_ft, ew = p.extra_notch_width_ft;
+  const gap = 100.0;
+  let southEdge = [[0.0,0.0]];
+  let x = gap;
+  for(let i = 0; i < n; i++){
+    const xLoS = x, xHiS = x + ew;
+    southEdge.push([xLoS,0.0],[xLoS,ed],[xHiS,ed],[xHiS,0.0]);
+    x = xHiS + gap;
+  }
+  southEdge.push([s,0.0]);
+  return southEdge.concat(northEdge);
+}
+function geometry(p){
+  const polyB = optionBPolygon(p);
+  const areaBAc = shoelaceAreaFt2(polyB) / 43560.0;
+  const perimB = perimeterFt(polyB);
+  const areaAAc = (p.option_a_side_ft ** 2) / 43560.0;
+  const perimA = 4.0 * p.option_a_side_ft;
+  const n = polyB.length;
+  const reflexIdx = [];
+  for(let i = 0; i < n; i++){
+    if(isReflex(polyB[(i-1+n)%n], polyB[i], polyB[(i+1)%n])) reflexIdx.push(i);
+  }
+  return { areaAAc, areaBAc, perimA, perimB, polyB, reflexIdx };
+}
+function turningMarginAc(p, geo){
+  const poly = geo.polyB, n = poly.length, header = p.header_pass_width_ft;
+  let totalAc = 0;
+  for(const i of geo.reflexIdx){
+    const prevV = poly[(i-1+n)%n], curV = poly[i], nextV = poly[(i+1)%n];
+    const e1 = Math.hypot(curV[0]-prevV[0], curV[1]-prevV[1]);
+    const e2 = Math.hypot(nextV[0]-curV[0], nextV[1]-curV[1]);
+    totalAc += (header * Math.min(e1,e2)) / 43560.0;
+  }
+  return totalAc;
+}
+function evaluateDetail(params, fencingKey){
+  fencingKey = fencingKey || "fencing_rate_high_tensile_usd_per_ft";
+  const p = Object.assign({}, PARAMS, params || {});
+  const geo = geometry(p);
+  const acresReclaimed = geo.areaBAc - p.pivot_circle_coverage_ac;
+  const perimAddedFt = geo.perimB - geo.perimA;
+  const turningMarginAcVal = turningMarginAc(p, geo);
+  const revenueGain = acresReclaimed * p.crop_margin_usd_per_ac;
+  const combinedRate = p[fencingKey] + p.guidance_rate_usd_per_ft;
+  const fencingCost = perimAddedFt * combinedRate;
+  const turningCost = turningMarginAcVal * p.crop_margin_usd_per_ac;
+  const netGain = revenueGain - fencingCost - turningCost;
+  const marginPct = revenueGain ? 100.0 * netGain / revenueGain : NaN;
+  return {
+    A: 0.0, B: netGain, acresReclaimed, perimAddedFt,
+    nReflexVertices: geo.reflexIdx.length, turningMarginAc: turningMarginAcVal,
+    revenueGainUsd: revenueGain, fencingCostUsd: fencingCost, turningCostUsd: turningCost,
+    netGainUsd: netGain, netGainUsdPerAcre: acresReclaimed ? netGain/acresReclaimed : NaN,
+    marginPct, winner: netGain > 0 ? 'B' : 'A',
+  };
+}
+function evaluate(params, fencingKey){
+  fencingKey = fencingKey || "fencing_rate_woven_wire_usd_per_ft";
+  const d = evaluateDetail(params, fencingKey);
+  return { A: d.A, B: d.B };
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkClassification(){
+  const geo = geometry(PARAMS);
+  fb('fb1a', parseInt(val('s1_reflex')) === geo.reflexIdx.length);
+  fb('fb1b', document.getElementById('s1_strip').value === 'Parallelogram');
+}
+function checkGeometry(){
+  const geo = geometry(PARAMS);
+  fb('fb2a', near(parseFloat(val('s2_area_a')), geo.areaAAc, 0.5));
+  fb('fb2b', near(parseFloat(val('s2_perim_a')), geo.perimA, 5));
+  fb('fb2c', near(parseFloat(val('s2_area_b')), geo.areaBAc, 0.5));
+  fb('fb2d', near(parseFloat(val('s2_perim_b')), geo.perimB, 5));
+}
+function renderCostContext(){
+  const key = document.getElementById('s3_fencing').value;
+  const rate = PARAMS[key];
+  document.getElementById('costContext').textContent =
+    'Combined rate for this choice: $' + rate.toFixed(2) + '/ft fencing + $' +
+    PARAMS.guidance_rate_usd_per_ft.toFixed(2) + '/ft guidance-line marking (Appendix D).';
+}
+function checkCosts(){
+  const key = document.getElementById('s3_fencing').value;
+  const d = evaluateDetail({}, key);
+  fb('fb3a', near(parseFloat(val('s3_fencing_cost')), d.fencingCostUsd, 25));
+  fb('fb3b', near(parseFloat(val('s3_turning_cost')), d.turningCostUsd, 10));
+}
+function checkRecommendation(){
+  const key = document.getElementById('s3_fencing').value;
+  const d = evaluateDetail({}, key);
+  fb('fb4a', near(parseFloat(val('s4_net_gain')), d.netGainUsd, 50));
+  fb('fb4b', near(parseFloat(val('s4_margin')), d.marginPct, 3));
+  fb('fb4c', document.getElementById('s4_recommend').value === d.winner);
+}
+renderCostContext();
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "the-irregular-boundary"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Labeled diagram of the Squared Block (Option A) -- convex quadrilateral"],
+  ["D2", "Labeled diagram of the Reclaimed Line (Option B) -- irregular polygon, reflex vertices classified"],
+  ["D3", "Disputed-strip classification note -- parallelogram, marked against D2"],
+  ["D4", "Usable-acreage and perimeter comparison table"],
+  ["D5", "Cost-and-loss comparison table -- fencing/guidance cost and turning-margin crop loss"],
+  ["D6", "Recommendation in dollars per acre"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Convex": {def: "A shape where every line segment connecting two points inside it stays entirely inside the shape -- it never curves inward on itself.",
+    url: "https://www.mathsisfun.com/definitions/convex.html"},
+  "Concave": {def: "A polygon with at least one interior angle greater than 180 degrees -- it has a notch or dent.",
+    url: "https://www.mathsisfun.com/definitions/concave.html"},
+  "Irregular Polygon": {def: "A polygon whose sides and angles are not all equal, unlike a regular polygon.",
+    url: "https://www.mathsisfun.com/geometry/polygons.html"},
+  "Quadrilateral": {def: "A polygon with exactly four straight sides.",
+    url: "https://www.mathsisfun.com/definitions/quadrilateral.html"},
+  "Parallelogram": {def: "A flat shape with opposite sides parallel and equal in length.",
+    url: "https://www.mathsisfun.com/geometry/parallelogram.html"},
+  "Vertex": {def: "A point where two or more line segments or edges meet -- a corner.",
+    url: "https://www.mathsisfun.com/definitions/vertex.html"},
+  "Perimeter": {def: "The total distance around the outside edge of a flat shape.",
+    url: "https://www.khanacademy.org/math/cc-third-grade-math/3rd-perimeter/imp-perimeter/a/perimeter-review"},
+  "Area": {def: "The amount of flat space a two-dimensional shape covers, in square units.",
+    url: "https://www.khanacademy.org/math/cc-seventh-grade-math/cc-7th-geometry/cc-7th-area-circumference/e/radius_diameter_and_circumference"}
+};
+const HOWTO = [
+  ["How to tell whether a polygon is convex", "Convex"],
+  ["How to identify a reflex (concave) vertex", "Concave"],
+  ["How to classify an irregular polygon", "Irregular Polygon"],
+  ["How to identify a quadrilateral", "Quadrilateral"],
+  ["How to identify a parallelogram", "Parallelogram"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const sel = document.getElementById('s3_fencing');
+  if(applied){ sel.value = 'fencing_rate_high_tensile_usd_per_ft'; }
+  else { sel.value = 'fencing_rate_woven_wire_usd_per_ft'; }
+  renderCostContext();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

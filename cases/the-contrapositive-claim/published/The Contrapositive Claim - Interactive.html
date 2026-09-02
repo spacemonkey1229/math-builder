@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Contrapositive Claim — Interactive</title>
+<!--
+  The Contrapositive Claim — interactive case study, built from
+  templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md.
+  Given data (Appendix A/E) transcribed from cases/the-contrapositive-claim/case.md;
+  the balance_test verdict (margin_pct, winner) is never printed as a static
+  literal anywhere in this file — the Step 4 calculator computes rates live
+  from the Hero's own classification of Appendix E, never the case's own answer.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Contrapositive Claim</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Discrete Math &middot; Formal Logic</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+<p class="lede">Marisol Aguon has the appeal open in one window and the denial letter open in the other, and the two of them don't agree with each other the way they're supposed to.</p>
+<p>The claimant's roof came apart in a windstorm, water got into the attic before anyone could get a tarp up, and the adjuster denied the whole thing under the flood exclusion &mdash; the clause that says if the damage was caused by flood, the loss isn't covered. Marisol has read that clause a thousand times. She's about to read the adjuster's reasoning for the thousand-and-first, and something about it keeps snagging.</p>
+<p>The adjuster didn't find flood damage and then deny the claim. He looked at the denial he wanted to write and worked backward &mdash; water got in, so it must have been the flood clause. That is not the same sentence read forward, and Marisol knows it isn't, even if she can't yet say cleanly why.</p>
+<p>She pulls up the audit-standard memo she's supposed to sign off on before her afternoon call &mdash; the one that tells the whole appeals team, going forward, exactly how to read every clause like this one. Two drafts sit open at the bottom of her screen: one where the standard stays exactly as written, and one where she rewrites it as its own logical mirror image, so the same clause can't be misread in the other direction again.</p>
+<p>Her manager's message is still sitting unread at the top of her inbox: <em>Need your call on the audit standard before the call.</em> Marisol's cursor sits between the two drafts, and the clock in the corner of her screen just ticked forward another minute.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+<p>Marisol Aguon is a senior claims auditor at a mid-size property and homeowners insurer. She reviews denied claims that policyholders have formally appealed, and she is responsible for setting the review standard the appeals team applies going forward &mdash; whichever standard she picks becomes the rule every adjuster in her group is trained to follow, and she answers for that choice to underwriting leadership and to the company's compliance office (see Appendix A).</p>
+<p>The clause at the center of this file is a standard flood-damage exclusion (see Appendix A): <em>if damage was caused by flood, the loss is not covered.</em> Adjusters are trained to apply that sentence literally &mdash; check the cause of loss first, deny coverage when flood is the cause. This case calls that standard the <strong>Plain-Text Standard</strong>. Marisol's alternative is to direct her team to apply the clause's logical contrapositive instead &mdash; <em>if coverage was not denied, damage was not caused by flood</em> &mdash; a standard this case calls the <strong>Mirror-Image Standard</strong>, built to catch appeals where an adjuster's reasoning ran in a direction the original clause never licensed.</p>
+<p>This is not a hypothetical problem. Company leadership has flagged that the appeals team's justified-complaint rate has moved sharply over the last reporting year, tracking a pattern the California Department of Insurance's own annual Consumer Complaint Study shows across several major homeowners carriers statewide (see Appendix B). The National Association of Insurance Commissioners' Market Conduct Annual Statement program collects a comparable claims-handling measure nationally, though &mdash; as Appendix C explains &mdash; it does not publish a complaint-specific rate for the homeowners line the way California does (see Appendix C). Neither source proves that adjusters are confusing the clause's converse with its true contrapositive &mdash; that specific mechanism is this case's own modeling premise, stated openly as a scenario assumption, not a documented finding &mdash; but the reasoning errors it describes have real, formally recognized names in logic and in law, and a pattern of wrongful denials carries real legal exposure for the company that lets it continue (see Appendix D).</p>
+<p>Marisol has one constructed log of past appeals to test both candidate standards against before she has to send her recommendation (see Appendix E), and a hard deadline she cannot move. Whatever she recommends becomes the appeals team's standing rule the moment she sends it.</p>
+<p>All figures in this case are either cited to a real source (Appendix G &mdash; Sources) or stated openly as a scenario modeling assumption (Appendix F &mdash; Modeling Assumptions) &mdash; never invented quietly.</p>
+
+<div class="card">
+  <strong>Quick facts</strong>
+  <div class="grid2" style="margin-top:10px">
+    <div>
+      <div class="side-note" style="border-top:none;padding-top:0"><strong>The clause (Appendix A)</strong></div>
+      <table style="margin:6px 0"><tbody>
+        <tr><td class="num" style="width:24px"><em>p</em></td><td>Damage was caused by flood</td></tr>
+        <tr><td class="num"><em>q</em></td><td>Coverage is denied</td></tr>
+      </tbody></table>
+    </div>
+    <div>
+      <div class="side-note" style="border-top:none;padding-top:0"><strong>Marisol's carrier (fictional, MA1)</strong></div>
+      <p style="margin:6px 0 0">250,000 policy exposures; 2024 justified-complaint ratio 18.5 per 100,000 exposures &mdash; a stated Modeling Assumption, not a sourced figure (see Appendix F).</p>
+    </div>
+  </div>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Marisol Aguon, senior claims auditor. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Plain-Text Standard</h4>
+      <p style="margin:0">Keep the appeals team applying the flood-damage clause literally, exactly as written &mdash; check the cause of loss first, deny coverage when flood is the cause. No retraining, no new review step.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Mirror-Image Standard</h4>
+      <p style="margin:0">Direct the appeals team to apply the clause's logical contrapositive as the new audit standard, built to catch appeals where an adjuster's reasoning ran in a direction the original clause never licensed.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include D1&ndash;D5: a logic reference sheet (D1), a compound-statement truth table covering all four candidate rules (D2), a negation table (D3), a classification memo for at least four Appendix E scenarios (D4), and a wrongly-denied-claims-caught count per 100 appeals for each standard (D5).</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+<details open id="apx-a">
+<summary>Appendix A &mdash; The Policy Clause</summary>
+<div class="inner">
+<p>The flood-damage exclusion clause under audit, reproduced from the standard ISO Homeowners 3 &mdash; Special Form (the most widely issued homeowners policy form in the United States), Section I &mdash; Exclusions, heading &ldquo;Water&rdquo; [S4][S5][S6]:</p>
+<blockquote><strong>SECTION I &mdash; EXCLUSIONS</strong><br>We do not insure for loss caused directly or indirectly by any of the following. Such loss is excluded regardless of any other cause or event contributing concurrently or in any sequence to the loss.<br><br><strong>3. Water</strong><br>a. Flood, surface water, waves, including tidal wave and tsunami, tides, tidal water, overflow of any body of water, or spray from any of these, all whether or not driven by wind, including storm surge.</blockquote>
+<p>For reference, the clause's antecedent (<em>p</em>) and consequent (<em>q</em>):</p>
+<table id="tblA"><thead><tr><th>Symbol</th><th>Statement</th></tr></thead><tbody>
+<tr><td>p</td><td>Damage was caused by flood</td></tr>
+<tr><td>q</td><td>Coverage is denied</td></tr>
+</tbody></table>
+<p class="side-note">The clause as written is the conditional statement p &rarr; q. Referenced from Background and Challenge D1.</p>
+</div>
+</details>
+
+<details id="apx-b">
+<summary>Appendix B &mdash; California DOI 2025 Consumer Complaint Study: Homeowners Justified-Complaint Ratios</summary>
+<div class="inner">
+<p>Units: justified complaints per 100,000 policy exposures, ranked over the three most recent reporting years [S1].</p>
+<table id="tblB"><thead><tr><th>Carrier</th><th>Approx. policy exposures (2024)</th><th>2022 ratio</th><th>2023 ratio</th><th>2024 ratio</th></tr></thead><tbody>
+<tr><td>State Farm General Insurance Company</td><td class="num">2,139,816</td><td class="num">1.4</td><td class="num">1.6</td><td class="num">11.9</td></tr>
+<tr><td>Farmers Insurance Exchange</td><td class="num">439,921</td><td class="num">4.5</td><td class="num">24.0</td><td class="num">40.2</td></tr>
+<tr><td>Mid-Century Insurance Company</td><td class="num">186,617</td><td class="num">4.5</td><td class="num">31.8</td><td class="num">51.4</td></tr>
+<tr><td>USAA General Indemnity Company</td><td class="num">159,197</td><td class="num">1.6</td><td class="num">1.4</td><td class="num">0.6</td></tr>
+<tr><td>Marisol's carrier (fictional, MA1)</td><td class="num">250,000</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">18.5</td></tr>
+</tbody></table>
+<figure>
+  <svg viewBox="0 0 620 260" role="img" aria-label="Bar chart of 2024 justified-complaint ratios per 100,000 policy exposures">
+    <text x="10" y="18" font-family="sans-serif" font-size="12" fill="#5b6472">2024 justified-complaint ratio (per 100,000 policy exposures)</text>
+    <!-- bars: value*5.2px, baseline y for each row -->
+    <g font-family="sans-serif" font-size="11" fill="#1f2530">
+      <text x="10" y="45">State Farm General</text>
+      <rect x="180" y="34" width="61.9" height="16" fill="#1a3a5c"></rect>
+      <text x="246" y="45">11.9</text>
+
+      <text x="10" y="75">Farmers Insurance Exch.</text>
+      <rect x="180" y="64" width="209.0" height="16" fill="#1a3a5c"></rect>
+      <text x="394" y="75">40.2</text>
+
+      <text x="10" y="105">Mid-Century Insurance</text>
+      <rect x="180" y="94" width="267.3" height="16" fill="#1a3a5c"></rect>
+      <text x="452" y="105">51.4</text>
+
+      <text x="10" y="135">USAA General Indemnity</text>
+      <rect x="180" y="124" width="3.1" height="16" fill="#1a3a5c"></rect>
+      <text x="188" y="135">0.6</text>
+
+      <text x="10" y="165">Marisol's carrier (MA1)</text>
+      <rect x="180" y="154" width="96.2" height="16" fill="#c9a227"></rect>
+      <text x="281" y="165">18.5</text>
+    </g>
+    <text x="10" y="200" font-family="sans-serif" font-size="10" fill="#5b6472">Source: California DOI 2025 Consumer Complaint Study &mdash; Home [S1]. Gold bar = Modeling Assumption MA1, not sourced.</text>
+  </svg>
+  <figcaption>Three of the four named carriers show the same real, dramatic pattern: a small single-digit ratio in 2022&ndash;2023 that jumps sharply in 2024. USAA General Indemnity is the counter-example: its ratio actually fell over the same period.</figcaption>
+</figure>
+<p class="side-note">Referenced from Background and Challenge D5.</p>
+</div>
+</details>
+
+<details id="apx-c">
+<summary>Appendix C &mdash; NAIC Market Conduct Annual Statement (MCAS)</summary>
+<div class="inner">
+<p>The NAIC's Market Conduct Annual Statement program collects standardized claims-handling data from 715 participating homeowners insurers nationwide (2024 data year) [S2]. MCAS collects a raw complaint count [S3] but does not publish a complaints-per-policy rate for the homeowners line; this appendix reports two ratios the public 2024 homeowners scorecard does publish for California instead [S2]:</p>
+<table id="tblC"><thead><tr><th>Metric (NAIC MCAS 2024 Homeowners Scorecard, California)</th><th>Value</th></tr></thead><tbody>
+<tr><td>Claims closed without payment, as a share of all claims closed (Ratio 1)</td><td class="num">34.9%</td></tr>
+<tr><td>Lawsuits opened during the period, as a share of claims closed without payment (Ratio 7)</td><td class="num">1.9%</td></tr>
+</tbody></table>
+<p class="side-note">Referenced from Background.</p>
+</div>
+</details>
+
+<details id="apx-d">
+<summary>Appendix D &mdash; Legal &amp; Regulatory Context</summary>
+<div class="inner">
+<p>Two real, formally recognized reasoning errors bear directly on Marisol's decision: <strong>affirming the consequent</strong> (treating a conditional's converse as if it were logically equivalent to the original statement) and <strong>denying the antecedent</strong> (treating a conditional's inverse the same way). Both are standard, textbook fallacy names in formal logic [S7].</p>
+<p>First-party bad-faith claim handling is a real, litigated cause of action under California law &mdash; California Civil Jury Instructions No. 2332 [S8] &mdash; with real governing precedent (<em>Hangarter v. Provident Life and Accident Insurance Co.</em>, 373 F.3d 998, Ninth Circuit, 2004) [S9]. A documented pattern of wrongly-denied claims, if the review standard behind it can be shown to be unsound, is the mechanism by which an audit-standard choice like Marisol's becomes exposure that reaches well past any single appeal file.</p>
+<p class="side-note">Referenced from Background.</p>
+</div>
+</details>
+
+<details open id="apx-e">
+<summary>Appendix E &mdash; Constructed Appeals File Log</summary>
+<div class="inner">
+<p>A log of past appeal files, constructed to test the Plain-Text Standard and the Mirror-Image Standard against the same set of cases (Modeling Assumption MA2 &mdash; a constructed scenario dataset, not sourced; see Appendix F). For each file: the cause of loss the adjuster's denial reasoning was built on, and the cause of loss a full post-review investigation later established.</p>
+<table id="tblE"><thead><tr><th>ID</th><th>Reported facts</th><th>Adjuster's stated denial reasoning</th><th>Ground-truth cause of loss (post-review)</th></tr></thead>
+<tbody id="apxETableBody"></tbody>
+</table>
+<p class="side-note">Referenced from Challenges D4 and D5. This log is populated from the case's own JS data block below (same 14 rows as case.md, so it can never silently drift).</p>
+</div>
+</details>
+
+<details id="apx-f">
+<summary>Appendix F &mdash; Modeling Assumptions</summary>
+<div class="inner">
+<blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author, because no real insurer publishes an individual employee's book of appeal files or the internal policy-exposure count behind a fictional carrier.</blockquote>
+<table id="tblF"><thead><tr><th>#</th><th>Assumption</th><th>Value used</th></tr></thead><tbody>
+<tr><td>MA0</td><td>Adjusters have, in a real but unquantified share of cases, misapplied the flood-damage clause by reasoning from its converse rather than its true contrapositive.</td><td>Not a number &mdash; a scenario premise.</td></tr>
+<tr><td>MA1</td><td>Marisol's carrier (fictional): policy exposure count and 2024 justified-complaint ratio.</td><td>250,000 exposures; 18.5 per 100,000 (2024)</td></tr>
+<tr><td>MA2</td><td>Appendix E's full 14-row constructed appeals log.</td><td>See Appendix E</td></tr>
+</tbody></table>
+<p class="side-note">Referenced from Appendix A, B, E, and Challenges D1&ndash;D5.</p>
+</div>
+</details>
+
+<details id="apx-g">
+<summary>Appendix G &mdash; Sources</summary>
+<div class="inner">
+<table id="tblG"><thead><tr><th>id</th><th>Org / Title</th><th>Link</th></tr></thead><tbody>
+<tr><td>S1</td><td>California DOI, 2025 Consumer Complaint Study &mdash; Home</td><td><a href="https://www.insurance.ca.gov/01-consumers/120-company/03-concmplt/upload/2025-Consumer-Complaint-Study-Home.pdf" target="_blank" rel="noopener">PDF</a></td></tr>
+<tr><td>S2</td><td>NAIC, MCAS State Ratio Distribution Report, Data Year 2024 &mdash; Homeowners</td><td><a href="https://content.naic.org/sites/default/files/inline-files/industry_mcas_2024_scorecard_ho_all-no%20Citizens%20FL_0.xlsx" target="_blank" rel="noopener">XLSX</a></td></tr>
+<tr><td>S3</td><td>NAIC, MCAS Data Call &mdash; Homeowners, version 2023.0.1</td><td><a href="https://content.naic.org/sites/default/files/inline-files/MCAS%20Data%20Call%20HO%202023.0.1.pdf" target="_blank" rel="noopener">PDF</a></td></tr>
+<tr><td>S4</td><td>United Policyholders, White Paper &mdash; ISO Changes Water Damage Exclusion in HO3</td><td><a href="https://uphelp.org/wp-content/uploads/2014/02/ISO-CHANGES-WATER-DAMAGE-EXCLUSION-IN-HO3.pdf" target="_blank" rel="noopener">PDF</a></td></tr>
+<tr><td>S5</td><td>Property Insurance Coverage Law Blog / IRMI, Homeowners Exception to Overflow of Water</td><td><a href="https://www.propertyinsurancecoveragelaw.com/wp-content/uploads/2024/11/Homeowners-Exception-to-Overflow-of-Water-Exclusion-2.c.6.pdf" target="_blank" rel="noopener">PDF</a></td></tr>
+<tr><td>S6</td><td>Property Insurance Coverage Law Blog, Anti-Concurrent Clause Enforced</td><td><a href="https://www.propertyinsurancecoveragelaw.com/blog/anti-concurrent-clause-enforced-where-loss-was-caused-by-covered-and-non-covered-perils/" target="_blank" rel="noopener">Article</a></td></tr>
+<tr><td>S7</td><td>9th Cir., Carver v. Lehman, No. 06-35176 (2008)</td><td><a href="https://cdn.ca9.uscourts.gov/datastore/opinions/2008/12/22/0635176.pdf" target="_blank" rel="noopener">Opinion PDF</a></td></tr>
+<tr><td>S8</td><td>Judicial Council of California, CACI No. 2332</td><td><a href="https://courts.ca.gov/partners/california-jury-instructions/civil-jury-instructions-resource-center/civil-jury-instructions" target="_blank" rel="noopener">CACI resource center</a></td></tr>
+<tr><td>S9</td><td>Wikipedia, Hangarter v. Provident</td><td><a href="https://en.wikipedia.org/wiki/Hangarter_v._Provident" target="_blank" rel="noopener">Summary</a></td></tr>
+</tbody></table>
+<p class="side-note">Referenced from Appendix A, C, D, F.</p>
+</div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-01. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+<div class="stepbox">
+  <h4>Step 1 &mdash; Build the four rules (D1)</h4>
+  <div class="goal">Goal: from p = &ldquo;Damage was caused by flood&rdquo; and q = &ldquo;Coverage is denied,&rdquo; correctly build the Converse, Inverse, and Contrapositive.</div>
+  <div class="fieldrow"><label>Converse: If ___</label>
+    <select id="convAnt"><option value="">choose</option><option value="p">p</option><option value="q">q</option><option value="np">not p</option><option value="nq">not q</option></select>
+    <label>then</label>
+    <select id="convCons"><option value="">choose</option><option value="p">p</option><option value="q">q</option><option value="np">not p</option><option value="nq">not q</option></select>
+  </div>
+  <div class="fieldrow"><label>Inverse: If ___</label>
+    <select id="invAnt"><option value="">choose</option><option value="p">p</option><option value="q">q</option><option value="np">not p</option><option value="nq">not q</option></select>
+    <label>then</label>
+    <select id="invCons"><option value="">choose</option><option value="p">p</option><option value="q">q</option><option value="np">not p</option><option value="nq">not q</option></select>
+  </div>
+  <div class="fieldrow"><label>Contrapositive: If ___</label>
+    <select id="ctpAnt"><option value="">choose</option><option value="p">p</option><option value="q">q</option><option value="np">not p</option><option value="nq">not q</option></select>
+    <label>then</label>
+    <select id="ctpCons"><option value="">choose</option><option value="p">p</option><option value="q">q</option><option value="np">not p</option><option value="nq">not q</option></select>
+  </div>
+  <button onclick="checkD1()">Check My Rules</button> <span id="fbD1" class="fb"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; One compound truth table (D2)</h4>
+  <div class="goal">Goal: fill T/F for all four rules, across all four combinations of p and q.</div>
+  <div id="ttContainer"></div>
+  <button onclick="checkD2()">Check My Table</button> <span id="fbD2" class="fb"></span>
+  <p class="side-note">Written note: which columns are logically identical to each other? Which are not?</p>
+  <textarea id="d2note" placeholder="Type your answer here (not auto-graded)" style="width:100%;min-height:50px;font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px"></textarea>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; Negate each rule's conclusion (D3)</h4>
+  <div class="goal">Goal: give the correct negation of each rule's conclusion.</div>
+  <div class="fieldrow"><label>Negation of the original's conclusion (q):</label>
+    <select id="negOrig"><option value="">choose</option><option value="p">p</option><option value="q">q</option><option value="np">not p</option><option value="nq">not q</option></select></div>
+  <div class="fieldrow"><label>Negation of the converse's conclusion (p):</label>
+    <select id="negConv"><option value="">choose</option><option value="p">p</option><option value="q">q</option><option value="np">not p</option><option value="nq">not q</option></select></div>
+  <div class="fieldrow"><label>Negation of the inverse's conclusion (not q):</label>
+    <select id="negInv"><option value="">choose</option><option value="p">p</option><option value="q">q</option><option value="np">not p</option><option value="nq">not q</option></select></div>
+  <div class="fieldrow"><label>Negation of the contrapositive's conclusion (not p):</label>
+    <select id="negCtp"><option value="">choose</option><option value="p">p</option><option value="q">q</option><option value="np">not p</option><option value="nq">not q</option></select></div>
+  <button onclick="checkD3()">Check My Negations</button> <span id="fbD3" class="fb"></span>
+  <p class="side-note">Written note: why is negating a conditional statement not the same operation as forming its inverse?</p>
+  <textarea id="d3note" placeholder="Type your answer here (not auto-graded)" style="width:100%;min-height:50px;font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px"></textarea>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; Classify Appendix E and tally (D4 / D5)</h4>
+  <div class="goal">Goal: work through Appendix E's 14 rows yourself (above), decide for each row whether the Plain-Text Standard catches it on appeal and whether the Mirror-Image Standard catches it, then enter your own totals below. This calculator does the arithmetic for you &mdash; it does not tell you whether your classification is right, and it will never show you the case's own verdict.</div>
+  <div class="fieldrow"><label for="ptCount">Wrongly-denied rows YOU classified as caught by the Plain-Text Standard (0&ndash;14):</label>
+    <input type="number" id="ptCount" min="0" max="14" step="1"></div>
+  <div class="fieldrow"><label for="miCount">Wrongly-denied rows YOU classified as caught by the Mirror-Image Standard (0&ndash;14):</label>
+    <input type="number" id="miCount" min="0" max="14" step="1"></div>
+  <label class="chk" style="display:flex"><input type="checkbox" id="twistAdjust" onchange="computeTally()"><span>I'm applying the Twist &mdash; treat row 14 as unresolvable by either standard (divide by 13 instead of 14)</span></label>
+  <button onclick="computeTally()">Compute My Rates</button>
+  <div id="tallyResult" class="card" style="display:none;margin-top:10px"></div>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+<p><strong>Appendix E, row 14.</strong> Water staining is found inside an exterior wall shortly after a regional storm &mdash; no active leak, opening, or standing water visible anywhere at the time of the appeal review, and the reported facts name no specific point of entry. It looks, on its face, like exactly the kind of file the Mirror-Image Standard's &ldquo;actively check for a competing cause&rdquo; habit should catch.</p>
+<p>It doesn't. The true cause &mdash; a slow, unrelated plumbing pinhole leak &mdash; is only discovered months later, during an unrelated remodel that happens to open the same wall. Nothing in the file available at review time disclosed it.</p>
+<p>If you've convinced yourself that the Mirror-Image Standard is simply &ldquo;the more careful standard,&rdquo; row 14 is the file that tests that belief: logical equivalence and an explicit non-flood-cause checklist protect against a specific <em>kind</em> of reasoning error, not against every possible misjudgment on appeal. A file can be genuinely ambiguous at review time regardless of which standard the reviewer was trained on &mdash; neither standard can classify a fact that is not yet in the file.</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the Twist: treat row 14 as unresolvable by either standard in my D5 tally</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+<li>California Department of Insurance, <a href="https://www.insurance.ca.gov/01-consumers/120-company/03-concmplt/upload/2025-Consumer-Complaint-Study-Home.pdf" target="_blank" rel="noopener">2025 Consumer Complaint Study &mdash; Home</a> [S1]</li>
+<li>NAIC, <a href="https://content.naic.org/sites/default/files/inline-files/industry_mcas_2024_scorecard_ho_all-no%20Citizens%20FL_0.xlsx" target="_blank" rel="noopener">MCAS 2024 Homeowners Scorecard</a> [S2][S3]</li>
+<li>United Policyholders, <a href="https://uphelp.org/wp-content/uploads/2014/02/ISO-CHANGES-WATER-DAMAGE-EXCLUSION-IN-HO3.pdf" target="_blank" rel="noopener">ISO HO3 Water Exclusion White Paper</a> [S4]</li>
+<li>Property Insurance Coverage Law Blog, <a href="https://www.propertyinsurancecoveragelaw.com/wp-content/uploads/2024/11/Homeowners-Exception-to-Overflow-of-Water-Exclusion-2.c.6.pdf" target="_blank" rel="noopener">Homeowners Exception to Overflow of Water</a> [S5][S6]</li>
+<li>9th Circuit, <a href="https://cdn.ca9.uscourts.gov/datastore/opinions/2008/12/22/0635176.pdf" target="_blank" rel="noopener">Carver v. Lehman</a> [S7]</li>
+<li>Judicial Council of California, <a href="https://courts.ca.gov/partners/california-jury-instructions/civil-jury-instructions-resource-center/civil-jury-instructions" target="_blank" rel="noopener">CACI No. 2332</a> [S8]</li>
+<li>Wikipedia, <a href="https://en.wikipedia.org/wiki/Hangarter_v._Provident" target="_blank" rel="noopener">Hangarter v. Provident</a> [S9]</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Contrapositive Claim &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Given data, transcribed from cases/the-contrapositive-claim/case.md (Appendix A, E, F) as of
+// case_md_sha256 recorded in MANIFEST.json. Raw case data only -- never a pre-computed verdict.
+const P_LABEL = "Damage was caused by flood";
+const Q_LABEL = "Coverage is denied";
+
+// Appendix E -- the full 14-row constructed appeals log. groundTruthIsFlood is taken directly
+// from the case's own "Ground-truth cause of loss" column -- already fully visible to the
+// student in case.md/the Data.xlsx workbook, not a hidden answer.
+const APPEALS = [
+  {id:1,  facts:"A windstorm tore a section of shingles and the underlying roof deck loose above the primary bedroom. Rain began roughly two hours later and entered through the exposed roof deck before a tarp could be secured, soaking the attic insulation, the bedroom ceiling, and the carpet below.", reasoning:"Water was found in the attic and bedroom ceiling; under the flood exclusion, coverage is denied.", groundTruth:"Wind-driven rain entering through a wind-created roof opening -- not flood.", groundTruthIsFlood:false},
+  {id:2,  facts:"A creek roughly two blocks from the property overflowed its banks during a multi-day regional storm system; neighbors reported standing water across the street and yard for several hours before it reached the foundation and entered through crawlspace vents.", reasoning:"Neighborhood-wide creek overflow reached the property before the storm subsided; flood exclusion applies, coverage denied.", groundTruth:"Overflow of a body of water -- flood, per Appendix A's own definition.", groundTruthIsFlood:true},
+  {id:3,  facts:"Two weeks of below-freezing nights caused ice to build up along the roof's lower edge; meltwater backed up under the shingles and leaked into the attic and an upstairs closet, days after the last storm had passed.", reasoning:"Water intrusion found in the attic and closet; treated as a flood-type loss, coverage denied.", groundTruth:"Ice-dam meltwater backup through roofing -- not flood.", groundTruthIsFlood:false},
+  {id:4,  facts:"A coastal storm system pushed a wall of seawater onto the property; the ground floor was submerged for several hours before the water receded.", reasoning:"Storm surge is explicitly listed under the policy's Water exclusion definition of flood; coverage denied.", groundTruth:"Storm surge -- flood, explicitly named in Appendix A's own definition.", groundTruthIsFlood:true},
+  {id:5,  facts:"A municipal sewer line serving the block backed up into the basement floor drain during an ordinary dry week, with no rain in the area for eleven days.", reasoning:"Basement flooding found; flood exclusion applies, coverage denied.", groundTruth:"Municipal sewer backup during dry weather -- not flood.", groundTruthIsFlood:false},
+  {id:6,  facts:"A retaining wall on the hillside behind the property failed after weeks of saturated soil; runoff pooled against the foundation and seeped through a foundation crack into the basement over several days.", reasoning:"Surface water runoff following heavy regional rainfall entered the basement; flood exclusion (surface water) applies, coverage denied.", groundTruth:"Surface water pooling and seepage -- flood, explicitly named in Appendix A's own definition.", groundTruthIsFlood:true},
+  {id:7,  facts:"The HVAC unit's condensate drain line, installed without a proper trap, clogged with debris; condensate backed up and dripped through the hallway ceiling for roughly two weeks before it was noticed.", reasoning:"Ongoing water staining found in the ceiling; treated as a flood-type loss, coverage denied.", groundTruth:"HVAC condensate drain clog -- not flood.", groundTruthIsFlood:false},
+  {id:8,  facts:"An upstream dam released water after a period of unusually heavy snowmelt; the adjacent lake rose and overflowed into the neighborhood, reaching the property's lower level.", reasoning:"Lake overflow following the dam release reached the property; flood exclusion applies, coverage denied.", groundTruth:"Overflow of a body of water -- flood, per Appendix A's own definition.", groundTruthIsFlood:true},
+  {id:9,  facts:"A garden-level sump pump failed during an ordinary evening rain shower -- well short of any regional storm warning -- and the unpumped water backed up through the sump basin into the finished basement.", reasoning:"Basement water damage found following rainfall; flood exclusion applies, coverage denied.", groundTruth:"Sump pump mechanical failure during ordinary rainfall -- not flood.", groundTruthIsFlood:false},
+  {id:10, facts:"A levee upstream from the property failed during a sustained multi-day storm, sending a wall of floodwater through the neighborhood that reached the first floor within twenty minutes.", reasoning:"Levee-failure flash flood reached the property; flood exclusion applies, coverage denied.", groundTruth:"Flash flood following levee failure -- flood, per Appendix A's own definition.", groundTruthIsFlood:true},
+  {id:11, facts:"The water heater's tank corroded through and ruptured overnight in the utility closet, releasing its full tank contents across the utility room and hallway before it was discovered the next morning.", reasoning:"Extensive interior water damage found; treated as a flood-type loss, coverage denied.", groundTruth:"Water heater tank rupture -- not flood.", groundTruthIsFlood:false},
+  {id:12, facts:"The property sits in a mapped coastal flood zone; an unusually high spring tide combined with an onshore wind pushed tidal water across the yard and into the ground-level garage.", reasoning:"Tidal water inundation reached the garage; flood exclusion (tidal water) applies, coverage denied.", groundTruth:"Tidal water -- flood, explicitly named in Appendix A's own definition.", groundTruthIsFlood:true},
+  {id:13, facts:"A window-mounted air conditioning unit was reinstalled slightly out of level after a repair visit; rainwater from an ordinary evening shower seeped around the gap into the wall cavity below the window over the following month.", reasoning:"Water damage found in the wall below the window; treated as a flood-type loss, coverage denied.", groundTruth:"Improperly sealed window air conditioning unit -- not flood.", groundTruthIsFlood:false},
+  {id:14, facts:"Water staining was found inside an exterior wall cavity shortly after a regional storm passed through; no active leak, opening, or standing water was visible anywhere on the property at the time of the appeal review, and the reported facts did not identify any specific point of entry.", reasoning:"Water staining found in an exterior wall following a storm in the area; flood exclusion applies, coverage denied.", groundTruth:"A slow pinhole leak in an interior supply line, discovered only months later -- not flood, but nothing in the reported facts at review time identified this competing cause.", groundTruthIsFlood:false},
+];
+
+// evaluate(): boolean truth-functional evaluator for the four candidate rules, given p and q
+// truth values -- generic conditional-logic arithmetic, not case-specific. Mirrors the
+// sensitivity_model.py <-> JS-port contract's spirit (a single source of computed truth every
+// checker calls into) even though this case's "model" is formal logic, not a numeric ledger.
+function evaluate(pVal, qVal){
+  return {
+    original:   (!pVal || qVal),          // p -> q
+    converse:   (!qVal || pVal),          // q -> p
+    inverse:    (pVal || !qVal),          // ~p -> ~q
+    contrapositive: (qVal || !pVal),      // ~q -> ~p
+  };
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkD1(){
+  const ok = val('convAnt')==='q' && val('convCons')==='p' &&
+             val('invAnt')==='np' && val('invCons')==='nq' &&
+             val('ctpAnt')==='nq' && val('ctpCons')==='np';
+  fb('fbD1', ok);
+}
+
+const TT_ROWS = [[true,true],[true,false],[false,true],[false,false]];
+const TT_COLS = ['original','converse','inverse','contrapositive'];
+function buildTTTable(){
+  const el = document.getElementById('ttContainer');
+  let html = '<table id="ttTable"><thead><tr><th>p</th><th>q</th>' +
+    TT_COLS.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+  TT_ROWS.forEach((row, ri) => {
+    html += `<tr><td>${row[0]?'T':'F'}</td><td>${row[1]?'T':'F'}</td>`;
+    TT_COLS.forEach(c => {
+      html += `<td><select id="tt_${ri}_${c}"><option value="">?</option><option value="T">T</option><option value="F">F</option></select></td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+buildTTTable();
+function checkD2(){
+  let ok = true;
+  TT_ROWS.forEach((row, ri) => {
+    const res = evaluate(row[0], row[1]);
+    TT_COLS.forEach(c => {
+      const key = c === 'original' ? 'original' : c;
+      const chosen = val(`tt_${ri}_${c}`);
+      const correct = res[key] ? 'T' : 'F';
+      if (chosen !== correct) ok = false;
+    });
+  });
+  fb('fbD2', ok);
+}
+
+function checkD3(){
+  const ok = val('negOrig')==='nq' && val('negConv')==='np' &&
+             val('negInv')==='q' && val('negCtp')==='p';
+  fb('fbD3', ok);
+}
+
+function computeTally(){
+  const pt = parseFloat(val('ptCount'));
+  const mi = parseFloat(val('miCount'));
+  const div = document.getElementById('tallyResult');
+  if (isNaN(pt) || isNaN(mi) || pt < 0 || mi < 0 || pt > 14 || mi > 14) {
+    div.style.display = 'block';
+    div.innerHTML = '<span class="fb bad">Enter a count from 0 to 14 for each standard first.</span>';
+    return;
+  }
+  const denom = document.getElementById('twistAdjust').checked ? 13 : 14;
+  const ptRate = round(100 * pt / denom, 1);
+  const miRate = round(100 * mi / denom, 1);
+  const marginPct = ptRate > 0 ? round(100 * Math.abs(miRate - ptRate) / ptRate, 1) : null;
+  div.style.display = 'block';
+  div.innerHTML = `
+    <strong>Your computed rates</strong> (out of ${denom} appeals${denom===13?', Twist applied':''})
+    <div class="row" style="display:flex;justify-content:space-between;padding:4px 0"><span>Plain-Text Standard</span><span>${ptRate} caught per 100 appeals reviewed</span></div>
+    <div class="row" style="display:flex;justify-content:space-between;padding:4px 0"><span>Mirror-Image Standard</span><span>${miRate} caught per 100 appeals reviewed</span></div>
+    <div class="row" style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px dashed var(--line);margin-top:4px"><span>Your % margin between them</span><span>${marginPct===null ? 'n/a (Plain-Text = 0)' : marginPct+'%'}</span></div>
+    <p class="side-note">This is arithmetic on YOUR classification, not a check against the case's own answer &mdash; two Heroes who classified Appendix E differently will see different numbers here, on purpose.</p>`;
+}
+
+// Render Appendix E's table body from the same APPEALS array the calculator uses, so the
+// printed appendix and the notebook can never silently drift apart.
+function renderAppendixE(){
+  const tbody = document.getElementById('apxETableBody');
+  if(!tbody) return;
+  tbody.innerHTML = APPEALS.map(a => `<tr><td>${a.id}</td><td>${a.facts}</td><td>${a.reasoning}</td><td>${a.groundTruth}</td></tr>`).join('');
+}
+renderAppendixE();
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "the-contrapositive-claim"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Logic reference sheet: the clause and its converse, inverse, and true contrapositive"],
+  ["D2", "One compound-statement truth table covering all four candidate rules"],
+  ["D3", "Negation table for each rule's conclusion"],
+  ["D4", "Classification memo for at least four Appendix E scenarios"],
+  ["D5", "Wrongly-denied-claims-caught count per 100 appeals, both standards"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Conjunction": {def: "A compound statement joining two statements with \"and,\" true only when both parts are true.",
+    url: "https://www.cuemath.com/data/compound-statements/"},
+  "Disjunction": {def: "A compound statement joining two statements with \"or,\" true when at least one part is true.",
+    url: "https://www.cuemath.com/data/compound-statements/"},
+  "Negation": {def: "The denial of a statement -- if p is true, its negation (not p) is false, and vice versa.",
+    url: "https://www.cuemath.com/data/compound-statements/"},
+  "Conditional Statement": {def: "An \"if p, then q\" statement, where p is the hypothesis (antecedent) and q is the conclusion (consequent).",
+    url: "https://www.cuemath.com/data/conditional-statement/"},
+  "Truth Table": {def: "A table listing every combination of true/false values for a statement's parts, and the resulting truth value of the whole statement.",
+    url: "https://www.cuemath.com/data/compound-statements/"},
+  "Converse": {def: "A statement made by swapping a conditional's hypothesis and conclusion: from \"if p then q\" to \"if q then p.\"",
+    url: "https://www.cuemath.com/data/converse-statement/"},
+  "Inverse": {def: "A statement made by negating a conditional's hypothesis and conclusion: from \"if p then q\" to \"if not p then not q.\"",
+    url: "https://www.cuemath.com/data/converse-statement/"},
+  "Contrapositive": {def: "A statement made by both swapping and negating a conditional's parts: from \"if p then q\" to \"if not q then not p\" -- always logically equivalent to the original.",
+    url: "https://www.cuemath.com/data/converse-statement/"},
+};
+const HOWTO = [
+  ["How to construct a truth table for a compound statement", "Truth Table"],
+  ["How to determine the converse, inverse, and contrapositive of a conditional statement", "Contrapositive"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  computeTally();
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

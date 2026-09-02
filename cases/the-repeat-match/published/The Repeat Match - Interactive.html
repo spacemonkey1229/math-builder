@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Repeat Match — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md.
+  Source of record: cases/the-repeat-match/case.json / case.md.
+  case_md_sha256 (recorded in case.json.qa.case_md_sha256):
+  da3cc3e9016619c67cb5eceec307494282ef45d140c41a8e90d46c47263a4d1e
+
+  HARD LINE (MCS-37): this file never prints case.json.balance.margin_pct (17.0) or the
+  derived Mirror-Match/Same-Grain dollar totals as a static literal anywhere outside a
+  <script> tag's live computation. The Working Notebook's fabric-cost calculator (Step 4)
+  requires the reader to choose their own with-nap premium value from the sourced 15-25%
+  range and compute both totals themselves -- nothing is pre-filled with the case's own
+  chosen figure.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC — coordinate-plane diagram */
+  .coordfig{background:#fbfcfd}
+  .coordfig .axis{stroke:#9aa6b3;stroke-width:1}
+  .coordfig .grid{stroke:#e6eaee;stroke-width:1}
+  .coordfig .pt{fill:var(--navy)}
+  .coordfig .pt2{fill:#a3312a}
+  .coordfig .pt3{fill:#1f7a4d}
+  .coordfig .lbl{font-family:var(--sans);font-size:11px;fill:var(--ink)}
+  .coordfig .arrow{stroke-width:2;fill:none;marker-end:url(#arrowhead)}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 8.5L21 21"/><path d="M8.5 15.5L21 3"/></symbol>
+  <symbol id="icon-shirt" viewBox="0 0 24 24"><path d="M8 2l4 2 4-2 4 4-3 3v11H7V9L4 6z"/></symbol>
+  <symbol id="icon-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Repeat Match</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Geometry &amp; Transformations</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Yuki Alvarez has the CAD file open on two monitors, and neither version agrees with the other. On the left screen sits the master chevron motif — the client calls it "the arrow," and it does point one way, printed in three shades of blue across a brushed softshell that has real nap, the raised fiber running downhill toward the hem. On the right screen sits the same motif, twice: once rotated ninety degrees and then mirrored, once mirrored and then rotated the same ninety degrees. Same starting shape. Same two moves. Two different files.</p>
+  <p>She drags the little green crosshair — the registration point, the exact pixel the rotary screen locks the print to the cut line by — and watches it land in two different places depending on which order she built the transformation in. One version puts that crosshair exactly where the center-front zipper seam's chevron-match line actually sits. The other puts it somewhere the seam will never touch.</p>
+  <p>Down the hall, the engraving room is waiting on her final file before they cut screens that can't be uncut. Two doors past that, the cutting-room foreman has a marker layout pulled up on his own screen — one version lets pieces flip freely across the fabric to save yardage, the other locks every piece facing the same way so the nap never runs backward on a finished sleeve. He's asked her twice already this morning which layout to load.</p>
+  <p>Yuki minimizes the CAD window, opens the layout-comparison spreadsheet her ops lead sent over, and lines both decisions up side by side on her screen.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Yuki Alvarez is the print-repeat engineer at a mid-size garment-print converter — a company that prints and finishes greige (undyed) fabric to order for apparel brands — and she owns the CAD file that a rotary-screen print run and the downstream cutting marker both depend on. Once the engraving room cuts screens from her file, the motif's position on the fabric is fixed for the entire yardage run; once the cutting room cuts fabric from a marker layout, that fabric cannot be uncut. Both decisions are hers to make and hers to defend.</p>
+  <p>The current job is a directional chevron border print for a softshell jacket line, printed on a brushed ("napped") softshell face fabric whose raised fiber surface runs in one direction. The chevron motif itself is not symmetric under reflection — it points one way, like an arrow — which means every mirrored copy of it is a genuinely different-looking image from the original, not an identical twin (SEE APPENDIX A). The jacket's front is two mirror-image panels that must meet at a center-front zipper seam with the chevron matching exactly; a separate back-yoke seam mirrors the same family of motif across a horizontal seam instead of a vertical one (SEE APPENDIX A). To build the mirrored panel's CAD artwork from the master motif, Yuki applies a rotation (to align the motif to the marker's cutting angle) and a reflection (to produce the mirror image) — and the order she applies them in is not interchangeable, because rotation and reflection do not commute in general (SEE APPENDIX A).</p>
+  <p>That geometric fact collides with a second, independent constraint. Reflecting the motif to build a mirrored panel also reverses which way the fabric's nap runs on that panel — a defect the trade's own napped-fabric guidance warns against by name (SEE APPENDIX D). The only way to guarantee every panel's nap runs the same direction is to forbid reflection across the whole marker and cut every piece facing the same way, which costs real, sourced extra yardage over a layout that is free to flip pieces (SEE APPENDICES D and E). The print house's rotary screen printer can also adjust its repeat length within a documented range, which matters once this same motif gets reused on a second printer that has a different adjustable range of its own — resizing the motif there means dilating it by a scale factor, not just moving it into place (SEE APPENDIX B). A separate, real patent on marker-alignment buffers for pattern-matched fabrics shows this is not a novelty problem unique to Yuki's shop — the same registration challenge has a documented industrial history (SEE APPENDIX C).</p>
+  <p>Yuki's recommendation must be defended on one number: total fabric cost for this production run under whichever marker layout policy she recommends (SEE APPENDICES D, E and F). Every sourced and assumed figure in this case is listed in the appendices and the Modeling Assumptions section — full source citations for every sourced figure are in <strong>APPENDIX H</strong> — and the vocabulary and "how to…" skills this case will ask of you are listed in <strong>APPENDIX G</strong> — that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Yuki Alvarez. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Same-Grain Marker</h4>
+      <p style="margin:0">Lock every piece to face the same direction so the nap never reverses, and pay the real yardage premium that requires.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Mirror-Match Marker</h4>
+      <p style="margin:0">Allow the mirrored front and back-yoke panels to save yardage, provided your CAD file's rotate/reflect composition order puts the registration point exactly where the seam's match line actually sits.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include six deliverables: two coordinate-plane diagrams tracing the front panel's and back-yoke panel's registration points through both composition orders (D1, D2, with a 180-degree-rotation orientation check on D2), a symmetry analysis of the master motif showing why it has no line of symmetry (D3), a repeat-tiling diagram at the printer's minimum and maximum adjustable settings (D4), a congruent-vs-similar comparison with a computed dilation scale factor for the second printer (D5), and a marker-layout total-fabric-cost comparison table with your final recommendation (D6).</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Panel Geometry &amp; the Registration Point</summary>
+    <div class="inner">
+      <p>The registration point is the exact pixel the rotary screen locks the print to the cut line by. A <span class="gterm" data-term="Rotation">rotation</span> applied before a <span class="gterm" data-term="Reflection">reflection</span> and a reflection applied before that same rotation do not, in general, send the registration point to the same place.</p>
+      <table id="apxA"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Front-panel registration point coordinates (local CAD panel coordinate system)</td><td>(4, 6), in inches, origin at the panel's bottom-left corner [MA1]</td></tr>
+      <tr><td>Front seam axis (center-front zipper seam) orientation</td><td>Vertical — coincides with the panel's local y-axis [MA2]</td></tr>
+      <tr><td>Marker cutting-angle rotation applied to the front panel</td><td>90&deg; counterclockwise [MA3]</td></tr>
+      <tr><td>Back-yoke registration point coordinates</td><td>(5, 3), in inches, origin at the panel's bottom-left corner [MA4]</td></tr>
+      <tr><td>Back-yoke seam axis orientation</td><td>Horizontal — coincides with the panel's local x-axis [MA5]</td></tr>
+      <tr><td>Rotation applied to the third, non-mirrored marker panel referenced in D2</td><td>180&deg; [MA6]</td></tr>
+      </table>
+      <p class="side-note"><em>Every value in this appendix is a stated Modeling Assumption — these figures live only inside Yuki's own CAD file, and no outside source could ever report them. See Modeling Assumptions below.</em></p>
+
+      <figure class="coordfig">
+        <svg viewBox="0 0 460 340" role="img" aria-label="Coordinate-plane diagram of the front panel's registration point under both composition orders">
+          <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#5b6472"/></marker>
+          </defs>
+          <!-- grid -->
+          <g class="grid">
+            <line x1="30" y1="20" x2="30" y2="320" class="axis"/>
+            <line x1="30" y1="170" x2="450" y2="170" class="axis"/>
+          </g>
+          <!-- axis ticks every 20px = 2in, origin at (230,170) -->
+          <g transform="translate(230,170)">
+            <!-- gridlines -->
+            <g stroke="#e6eaee">
+              <line x1="-200" y1="-150" x2="-200" y2="150"/><line x1="-160" y1="-150" x2="-160" y2="150"/>
+              <line x1="-120" y1="-150" x2="-120" y2="150"/><line x1="-80" y1="-150" x2="-80" y2="150"/>
+              <line x1="-40" y1="-150" x2="-40" y2="150"/><line x1="40" y1="-150" x2="40" y2="150"/>
+              <line x1="80" y1="-150" x2="80" y2="150"/><line x1="120" y1="-150" x2="120" y2="150"/>
+              <line x1="160" y1="-150" x2="160" y2="150"/><line x1="200" y1="-150" x2="200" y2="150"/>
+              <line x1="-200" y1="-120" x2="200" y2="-120"/><line x1="-200" y1="-80" x2="200" y2="-80"/>
+              <line x1="-200" y1="-40" x2="200" y2="-40"/><line x1="-200" y1="40" x2="200" y2="40"/>
+              <line x1="-200" y1="80" x2="200" y2="80"/><line x1="-200" y1="120" x2="200" y2="120"/>
+            </g>
+            <line x1="-210" y1="0" x2="210" y2="0" stroke="#9aa6b3" stroke-width="1.4"/>
+            <line x1="0" y1="-160" x2="0" y2="160" stroke="#9aa6b3" stroke-width="1.4"/>
+            <text x="205" y="-6" class="lbl">x</text>
+            <text x="8" y="-150" class="lbl">y</text>
+            <text x="-6" y="14" class="lbl">0</text>
+            <!-- master point P(4,6): scale 20px/in -->
+            <circle cx="80" cy="-120" r="5" class="pt"/>
+            <text x="88" y="-124" class="lbl">P (4, 6) — master front registration point</text>
+            <!-- rotate-then-reflect result (6,4) -->
+            <circle cx="120" cy="-80" r="5" class="pt2"/>
+            <text x="128" y="-84" class="lbl">Rotate&rarr;Reflect result (6, 4)</text>
+            <!-- reflect-then-rotate result (-6,-4) -->
+            <circle cx="-120" cy="80" r="5" class="pt3"/>
+            <text x="-116" y="96" class="lbl">Reflect&rarr;Rotate result (&minus;6, &minus;4)</text>
+            <!-- dashed guide lines to axes -->
+            <g stroke="#c9a227" stroke-dasharray="3,3" stroke-width="1">
+              <line x1="80" y1="-120" x2="80" y2="0"/><line x1="80" y1="-120" x2="0" y2="-120"/>
+            </g>
+          </g>
+        </svg>
+        <figcaption>Front panel's registration point P = (4, 6) in, rotated 90&deg; counterclockwise [MA3] about the origin and reflected across the vertical front seam axis [MA2], worked in both orders. Rotate-then-reflect lands at (6, 4); reflect-then-rotate lands at (&minus;6, &minus;4) &mdash; two different points from the same starting point and the same two moves, worked out step by step in the <a href="#notebook">Working Notebook</a>'s Step 1 calculator. Check this against your own D1 diagram &mdash; don't just copy it.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; EFI Reggiani UNICA Rotary Screen Printer &amp; a Second Printer's Repeat Range</summary>
+    <div class="inner">
+      <p>The primary printer's repeat length is electronically adjustable, which is exactly what makes the motif reusable across more than one machine — provided it is resized correctly.</p>
+      <table id="apxB"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Primary printer (EFI Reggiani UNICA) minimum adjustable print repeat length</td><td>25 in / 640 mm [S1]</td></tr>
+      <tr><td>Primary printer (EFI Reggiani UNICA) maximum adjustable print repeat length</td><td>40 in / 1018 mm [S1]</td></tr>
+      <tr><td>Master motif's native repeat length, as designed</td><td>30 in / 762 mm [MA7]</td></tr>
+      <tr><td>Second printer's electronically adjustable repeat length range</td><td>20-30 in / 508-762 mm [MA8]</td></tr>
+      </table>
+      <p class="side-note">A genuine attempt to source a second, real rotary-screen printer model with a meaningfully different adjustable repeat range could not confirm one — every manufacturer spec sheet found (SPGPrints Palm and RD8, Stork, MHM) cites the same standardized screen-circumference family the whole industry shares. [MA8] is a stated Modeling Assumption for a hypothetical second machine, chosen inside that same real family.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; US Patent 5,333,111, Marker-Alignment Buffer Language</summary>
+    <div class="inner">
+      <p>US Patent 5,333,111, "Garment cutting system having computer assisted pattern alignment," describes why plaid- and stripe-matching fabrics historically required a skilled worker to align patterns by hand, and states that a marker must leave a buffer around any garment segment that requires matching "often as much as half a fabric design repeat."</p>
+      <table id="apxC"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Patent's stated maximum pattern-alignment buffer, as a fraction of one design repeat</td><td>One-half (1/2) of one fabric design repeat [S2]</td></tr>
+      <tr><td>Buffer size in inches, using Appendix B's repeat-length range</td><td>12.5-20 in <em>(derived: 1/2 &times; 25 in and 1/2 &times; 40 in, from [S1] and [S2])</em></td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Sewing &amp; Craft Alliance Guideline 4.120, Napped Fabrics</summary>
+    <div class="inner">
+      <p>The Sewing &amp; Craft Alliance's own guideline on napped/directional fabrics states that pattern pieces must be laid out so the nap runs the same direction on every piece, or the finished garment shows visibly uneven color shading, and that this same-direction requirement costs extra fabric.</p>
+      <table id="apxD"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Extra yardage required for a with-nap (same-direction-only) layout vs. a without-nap (flip-allowed) layout</td><td>15-25% [S3][S4], consistent with Guideline 4.120's own qualitative confirmation that a with-nap layout "generally requires" extra fabric [S5]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; UCSB Bren School Marker-Efficiency Data</summary>
+    <div class="inner">
+      <p>Real measured factory data on marker material utilization, from a 2024 university capstone report on cut-and-sew apparel supply-chain waste, gives this case a real baseline efficiency band to compare the same-grain layout's yardage penalty against.</p>
+      <table id="apxE"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Average marker material utilization, measured Vietnam-factory data (Patagonia 2022 seasons)</td><td>82% [S6]</td></tr>
+      <tr><td>Measured marker waste range, same report</td><td>16-21% [S7]</td></tr>
+      <tr><td>686 Technical Apparel's own publicly disclosed cutting efficiency</td><td>87% [S8]</td></tr>
+      <tr><td>Broader literature baseline, pre-consumer cutting waste</td><td>10-15% [S9]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Production Run &amp; Fabric Cost</summary>
+    <div class="inner">
+      <table id="apxF"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Brushed/napped softshell face fabric cost</td><td>$39.00 / yard [S10]</td></tr>
+      <tr><td>Jacket line total production run size</td><td>5,000 units [MA9]</td></tr>
+      <tr><td>Base fabric yardage required per finished unit (flip-allowed baseline, before any nap penalty)</td><td>3.0 yd / unit [MA10]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <p>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion — that is a legitimate move.</p>
+      <table id="apxMA"><tr><th>#</th><th>Assumption</th><th>Value used</th></tr>
+      <tr><td>MA1</td><td>Front-panel registration point coordinates</td><td>(4, 6) in</td></tr>
+      <tr><td>MA2</td><td>Front seam axis orientation</td><td>Vertical (y-axis)</td></tr>
+      <tr><td>MA3</td><td>Marker cutting-angle rotation, front panel</td><td>90&deg; CCW</td></tr>
+      <tr><td>MA4</td><td>Back-yoke registration point coordinates</td><td>(5, 3) in</td></tr>
+      <tr><td>MA5</td><td>Back-yoke seam axis orientation</td><td>Horizontal (x-axis)</td></tr>
+      <tr><td>MA6</td><td>Rotation on the third, non-mirrored panel (D2)</td><td>180&deg;</td></tr>
+      <tr><td>MA7</td><td>Master motif's native repeat length</td><td>30 in / 762 mm</td></tr>
+      <tr><td>MA8</td><td>Second printer's adjustable repeat range</td><td>20-30 in / 508-762 mm</td></tr>
+      <tr><td>MA9</td><td>Jacket line total production run size</td><td>5,000 units</td></tr>
+      <tr><td>MA10</td><td>Base fabric yardage required per finished unit</td><td>3.0 yd/unit</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix H &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxH"><tr><th>#</th><th>Claim</th><th>Source</th></tr>
+      <tr><td>S1</td><td>EFI Reggiani UNICA adjustable print repeat length</td><td><a href="https://www.efi.com/products/textile/efi-reggiani-analog-printers/efi-reggiani-unica-rotary-screen-printer/" target="_blank" rel="noopener">EFI, Reggiani UNICA product page</a></td></tr>
+      <tr><td>S2</td><td>US Patent 5,333,111, stated maximum pattern-alignment buffer</td><td><a href="https://patents.google.com/patent/US5333111A/en" target="_blank" rel="noopener">USPTO / Google Patents, US5333111A</a></td></tr>
+      <tr><td>S3</td><td>Extra yardage for nap/directional fabric layouts</td><td><a href="https://sewingwithease.com/fabrics/fabric-yardage-calculator/" target="_blank" rel="noopener">Sewing With Ease, Fabric Yardage Calculator</a></td></tr>
+      <tr><td>S4</td><td>Extra yardage for directional print, nap, velvet, or pile layouts</td><td><a href="https://www.canvasetc.com/fabric-yardage-calculator/" target="_blank" rel="noopener">Canvas Etc., Fabric Yardage Calculator</a></td></tr>
+      <tr><td>S5</td><td>Trade-association confirmation, with-nap layout requires extra fabric</td><td><a href="https://www.sewing.org/files/guidelines/4_120_napped_fabrics.pdf" target="_blank" rel="noopener">Sewing &amp; Craft Alliance, Guideline 4.120</a></td></tr>
+      <tr><td>S6</td><td>Average marker material utilization, Patagonia Vietnam factories</td><td><a href="https://bren.ucsb.edu/sites/default/files/2024-04/Examining%20Cut-and-Sew%20Textile%20Waste%20within%20the%20Apparel%20Supply%20Chain%204.10.24.pdf" target="_blank" rel="noopener">UCSB Bren School, Cut-and-Sew Textile Waste report</a></td></tr>
+      <tr><td>S7</td><td>Measured marker waste range, same report</td><td><a href="https://bren.ucsb.edu/sites/default/files/2024-04/Examining%20Cut-and-Sew%20Textile%20Waste%20within%20the%20Apparel%20Supply%20Chain%204.10.24.pdf" target="_blank" rel="noopener">UCSB Bren School, same report</a></td></tr>
+      <tr><td>S8</td><td>686 Technical Apparel's disclosed cutting efficiency</td><td><a href="https://bren.ucsb.edu/sites/default/files/2024-04/Examining%20Cut-and-Sew%20Textile%20Waste%20within%20the%20Apparel%20Supply%20Chain%204.10.24.pdf" target="_blank" rel="noopener">Cited in UCSB Bren School report, p.9</a></td></tr>
+      <tr><td>S9</td><td>Rissanen (2005) baseline pre-consumer cutting-room waste</td><td><a href="https://bren.ucsb.edu/sites/default/files/2024-04/Examining%20Cut-and-Sew%20Textile%20Waste%20within%20the%20Apparel%20Supply%20Chain%204.10.24.pdf" target="_blank" rel="noopener">Cited in UCSB Bren School report, p.9</a></td></tr>
+      <tr><td>S10</td><td>Brushed-face technical softshell fabric, retail price</td><td><a href="https://discoveryfabrics.com/collections/softshells" target="_blank" rel="noopener">Discovery Fabrics, Softshells collection</a></td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-01. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Front panel: does rotate-then-reflect equal reflect-then-rotate? (D1)</h4>
+    <div class="goal">Front registration point P = (4, 6) in [MA1]. Rotate 90&deg; counterclockwise about the origin [MA3], and reflect across the vertical front seam axis [MA2]. Compute the result BOTH ways &mdash; rotate-then-reflect, and reflect-then-rotate &mdash; and enter your two coordinate pairs.</div>
+    <div class="fieldrow"><label for="s1_rr_x">Rotate&rarr;Reflect result, x</label><input type="number" id="s1_rr_x" step="0.01" placeholder="in inches"><label for="s1_rr_y" style="min-width:20px">y</label><input type="number" id="s1_rr_y" step="0.01" placeholder="in inches"></div>
+    <div class="fieldrow"><label for="s1_fr_x">Reflect&rarr;Rotate result, x</label><input type="number" id="s1_fr_x" step="0.01" placeholder="in inches"><label for="s1_fr_y" style="min-width:20px">y</label><input type="number" id="s1_fr_y" step="0.01" placeholder="in inches"></div>
+    <button onclick="checkStep1()">Check</button><span class="fb" id="fb1"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Back-yoke panel: same question, horizontal seam (D2)</h4>
+    <div class="goal">Back-yoke registration point P = (5, 3) in [MA4], back-yoke seam axis horizontal [MA5]. Using the same 90&deg; cutting-angle rotation [MA3] but reflecting across the HORIZONTAL back-yoke seam axis instead of the front's vertical one, compute both composition orders.</div>
+    <div class="fieldrow"><label for="s2_rr_x">Rotate&rarr;Reflect result, x</label><input type="number" id="s2_rr_x" step="0.01" placeholder="in inches"><label for="s2_rr_y" style="min-width:20px">y</label><input type="number" id="s2_rr_y" step="0.01" placeholder="in inches"></div>
+    <div class="fieldrow"><label for="s2_fr_x">Reflect&rarr;Rotate result, x</label><input type="number" id="s2_fr_x" step="0.01" placeholder="in inches"><label for="s2_fr_y" style="min-width:20px">y</label><input type="number" id="s2_fr_y" step="0.01" placeholder="in inches"></div>
+    <button onclick="checkStep2()">Check</button><span class="fb" id="fb2"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Dilation scale factor for the second printer (D5)</h4>
+    <div class="goal">The master motif's native repeat is 30 in [MA7]. Pick a target repeat length inside the second printer's range (20-30 in [MA8]) and compute the dilation scale factor needed to resize the motif to fit it: scale factor = target repeat &divide; native repeat.</div>
+    <div class="fieldrow"><label for="s3_target">Your target repeat (in), within the second printer's range</label><input type="number" id="s3_target" step="0.1" placeholder="inches, within Appendix B's range"></div>
+    <div class="fieldrow"><label for="s3_scale">Your computed scale factor</label><input type="number" id="s3_scale" step="0.0001" placeholder="a decimal, e.g. a ratio"></div>
+    <button onclick="checkStep3()">Check</button><span class="fb" id="fb3"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Marker-layout fabric cost comparison (D6)</h4>
+    <div class="goal">Total production-run fabric cost = base yardage/unit &times; fabric cost/yd &times; run size. Same-Grain adds a with-nap yardage premium (Appendix D's sourced 15-25% range) on top of that same base. Choose a premium value inside the sourced range and compute BOTH options' totals yourself.</div>
+    <div class="fieldrow"><label for="s4_base">Base yardage/unit (yd)</label><input type="number" id="s4_base" step="0.01" value="3.0"></div>
+    <div class="fieldrow"><label for="s4_cost">Fabric cost ($/yd)</label><input type="number" id="s4_cost" step="0.01" value="39.00"></div>
+    <div class="fieldrow"><label for="s4_run">Production run size (units)</label><input type="number" id="s4_run" step="1" value="5000"></div>
+    <div class="fieldrow"><label for="s4_premium">With-nap premium, your choice, within Appendix D's sourced range (%)</label><input type="number" id="s4_premium" step="0.1" placeholder="a percent, within the sourced range"></div>
+    <div class="fieldrow"><label for="s4_mirror">Your Mirror-Match total ($)</label><input type="number" id="s4_mirror" step="1" placeholder="your computed total"></div>
+    <div class="fieldrow"><label for="s4_same">Your Same-Grain total ($)</label><input type="number" id="s4_same" step="1" placeholder="your computed total"></div>
+    <button onclick="checkStep4()">Check</button><span class="fb" id="fb4"></span>
+    <div class="side-note" id="s4_readout"></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-scissors"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>New information just came in from the cutting-room foreman. He ran a test cut of the Mirror-Match layout on the older of the shop's two markers this morning — and on that older marker, the cutting-angle rotation is not quite what Yuki's CAD file assumed. The registration point that was supposed to land on the seam's match line landed noticeably off it instead.</p>
+      <p>That is the case's own geometric point turned into a live moment: the composition order that is correct for one cutting-angle assumption is not automatically correct for a different one. Use the slider below to see, for yourself, how far a small error in the assumed cutting angle can move the front panel's registration point — using the SAME rotate-then-reflect math as Step 1, just with a different angle plugged in.</p>
+      <div class="sliderow">
+        <label for="twistAngle" style="font-family:var(--sans);min-width:170px">Assumed cutting angle (&deg;, CCW)</label>
+        <input type="range" id="twistAngle" min="70" max="110" value="90" step="1" oninput="onTwistToggle()">
+        <span class="val" id="twistAngleVal">90&deg;</span>
+      </div>
+      <p class="side-note" id="twistReadout" style="color:#cdd9e6"></p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">I've compared the drifted registration point above to my Step&nbsp;1 answer, and I understand why "the correct build order" depends on the cutting angle actually being what Appendix A says it is.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] EFI, Reggiani UNICA rotary screen printer product page &amp; brochure, efi.com, 2023.</li>
+      <li>[S2] US Patent 5,333,111, "Garment cutting system having computer assisted pattern alignment," USPTO/Google Patents, 1994.</li>
+      <li>[S3] Sewing With Ease, Fabric Yardage Calculator, sewingwithease.com, 2026.</li>
+      <li>[S4] Canvas Etc., Fabric Yardage Calculator, canvasetc.com, 2026.</li>
+      <li>[S5] Sewing &amp; Craft Alliance, Guideline 4.120 "Napped Fabrics," sewing.org, 2006.</li>
+      <li>[S6][S7][S8][S9] UC Santa Barbara Bren School, "Examining Cut-and-Sew Textile Waste within the Apparel Supply Chain," Final Report, 2024-03-22.</li>
+      <li>[S10] Discovery Fabrics, Softshells collection, discoveryfabrics.com, 2026.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Repeat Match &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from case.json /
+   case.md (case_md_sha256 da3cc3e9016619c67cb5eceec307494282ef45d140c41a8e90d46c47263a4d1e).
+   Ports sensitivity_model.py's PARAMS/FLEX/evaluate() naming contract.
+   NOTE: with_nap_premium is deliberately NOT included as a fixed
+   constant here -- Appendix D only discloses the sourced 15-25% RANGE
+   to students (same as case.md), and the case's own chosen value
+   (case.json.balance.margin_basis) is never reproduced in this file.
+   Step 4's calculator requires the reader to supply their own chosen
+   premium and compute both totals live.
+   ================================================================ */
+const GEOM = {
+  frontPoint: {x: 4, y: 6},        // MA1
+  frontRotationDeg: 90,            // MA3, CCW
+  backPoint: {x: 5, y: 3},         // MA4
+  thirdPanelRotationDeg: 180,      // MA6
+  nativeRepeatIn: 30,              // MA7
+  secondPrinterMinIn: 20,          // MA8
+  secondPrinterMaxIn: 30,          // MA8
+  primaryPrinterMinIn: 25,         // S1
+  primaryPrinterMaxIn: 40,         // S1
+};
+const PARAMS = {
+  fabric_cost_per_yd_usd: 39.00,   // S10
+  base_yd_per_unit: 3.0,           // MA10
+  run_size_units: 5000,            // MA9
+};
+// Probe-5-style FLEX list, matching sensitivity_model.py's FLEX[] --
+// the two genuine stated Modeling Assumptions that cancel out of the
+// percentage margin (disclosed in FACILITATOR.md's Data Deep Dive).
+const FLEX = ["base_yd_per_unit", "run_size_units"];
+
+function rotateCCW(p, deg){
+  const r = deg * Math.PI / 180;
+  return { x: p.x * Math.cos(r) - p.y * Math.sin(r), y: p.x * Math.sin(r) + p.y * Math.cos(r) };
+}
+function reflectAcrossY(p){ return { x: -p.x, y: p.y }; }   // mirror across a vertical axis
+function reflectAcrossX(p){ return { x: p.x, y: -p.y }; }   // mirror across a horizontal axis
+
+// evaluate(): total production-run fabric cost under each option, given a
+// caller-supplied with_nap_premium (a fraction, e.g. 0.20). Mirrors
+// sensitivity_model.py's evaluate() exactly; the premium is a REQUIRED
+// argument here (no default) so this function can never silently reproduce
+// the case's own chosen figure without the reader supplying one themselves.
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const mirrorMatchTotal = p.base_yd_per_unit * p.fabric_cost_per_yd_usd * p.run_size_units;
+  const sameGrainTotal = p.base_yd_per_unit * (1 + p.with_nap_premium) * p.fabric_cost_per_yd_usd * p.run_size_units;
+  return { A: -sameGrainTotal, B: -mirrorMatchTotal, mirrorMatchTotal, sameGrainTotal };
+}
+</script>
+<script>
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  const rr = reflectAcrossY(rotateCCW(GEOM.frontPoint, GEOM.frontRotationDeg));
+  const fr = rotateCCW(reflectAcrossY(GEOM.frontPoint), GEOM.frontRotationDeg);
+  const ok = near(+val('s1_rr_x'), rr.x, 0.05) && near(+val('s1_rr_y'), rr.y, 0.05)
+          && near(+val('s1_fr_x'), fr.x, 0.05) && near(+val('s1_fr_y'), fr.y, 0.05);
+  fb('fb1', ok);
+}
+function checkStep2(){
+  const rr = reflectAcrossX(rotateCCW(GEOM.backPoint, GEOM.frontRotationDeg));
+  const fr = rotateCCW(reflectAcrossX(GEOM.backPoint), GEOM.frontRotationDeg);
+  const ok = near(+val('s2_rr_x'), rr.x, 0.05) && near(+val('s2_rr_y'), rr.y, 0.05)
+          && near(+val('s2_fr_x'), fr.x, 0.05) && near(+val('s2_fr_y'), fr.y, 0.05);
+  fb('fb2', ok);
+}
+function checkStep3(){
+  const target = +val('s3_target');
+  const inRange = target >= GEOM.secondPrinterMinIn && target <= GEOM.secondPrinterMaxIn;
+  const expectedScale = target / GEOM.nativeRepeatIn;
+  const ok = inRange && near(+val('s3_scale'), expectedScale, 0.001);
+  fb('fb3', ok);
+}
+function checkStep4(){
+  const premiumPct = +val('s4_premium');
+  const premium = premiumPct / 100;
+  const params = {
+    base_yd_per_unit: +val('s4_base'),
+    fabric_cost_per_yd_usd: +val('s4_cost'),
+    run_size_units: +val('s4_run'),
+    with_nap_premium: premium,
+  };
+  const inRange = premiumPct >= 15 && premiumPct <= 25;
+  const r = evaluate(params);
+  const ok = inRange && near(+val('s4_mirror'), r.mirrorMatchTotal, 1) && near(+val('s4_same'), r.sameGrainTotal, 1);
+  fb('fb4', ok);
+  const readout = document.getElementById('s4_readout');
+  if(ok){
+    readout.textContent = 'Your two totals check out. Try a different premium value inside 15-25% to see how the gap between the two options moves.';
+  } else if(!inRange){
+    readout.textContent = 'Pick a with-nap premium between 15 and 25 percent -- that is the sourced range in Appendix D.';
+  } else {
+    readout.textContent = '';
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-repeat-match";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Front-panel registration point traced through both composition orders"],
+  ["D2", "Back-yoke panel build + 180-degree orientation check"],
+  ["D3", "Symmetry analysis of the master chevron motif"],
+  ["D4", "Repeat-tiling diagram at the printer's min and max settings"],
+  ["D5", "Congruent-vs-similar comparison with computed dilation scale factor"],
+  ["D6", "Marker-layout total fabric cost comparison and recommendation"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, allowlisted).
+   ================================================================ */
+const GLOSSARY = {
+  "Congruent": {def: "When one shape can become another using only turns, flips, and slides -- same size, same shape.",
+    url: "https://www.mathsisfun.com/geometry/congruent.html"},
+  "Similar": {def: "When one shape can become another after a resize, flip, slide, or turn -- same shape, not necessarily same size.",
+    url: "https://www.mathsisfun.com/geometry/similar.html"},
+  "Translation": {def: "Moving a shape in a straight line without rotating, resizing, or flipping it -- every point travels the same distance in the same direction.",
+    url: "https://www.mathsisfun.com/geometry/translation.html"},
+  "Symmetry": {def: "When a shape looks exactly the same after a flip, slide, or turn.",
+    url: "https://www.mathsisfun.com/geometry/symmetry.html"},
+  "Line Of Symmetry": {def: "A line that divides a shape into two mirror-image halves that match exactly if you fold along it.",
+    url: "https://www.mathsisfun.com/geometry/symmetry-line-plane-shapes.html"},
+  "Dilation": {def: "A transformation that resizes a figure bigger or smaller by a scale factor, keeping its shape the same.",
+    url: "https://www.mathsisfun.com/geometry/resizing.html"},
+  "Scale Factor": {def: "The ratio by which a figure is enlarged or reduced in a dilation or similarity transformation.",
+    url: "https://www.mathsisfun.com/geometry/similar.html"},
+  "Transformation": {def: "A change to a figure's position, size, or orientation -- rotation, reflection, translation, or resizing.",
+    url: "https://www.mathsisfun.com/geometry/transformations.html"},
+  "Reflection": {def: "A flip of a figure over a line, so every point lands the same distance from that line on the opposite side.",
+    url: "https://www.mathsisfun.com/geometry/reflection.html"},
+  "Rotation": {def: "Turning a figure around a fixed center point -- every point stays the same distance from that center.",
+    url: "https://www.mathsisfun.com/geometry/rotation.html"},
+  "Clockwise": {def: "Moving in the same direction the hands of a clock travel around its face.",
+    url: "https://www.mathsisfun.com/definitions/clockwise.html"},
+  "Counter-Clockwise": {def: "Moving in the opposite direction from the hands of a clock -- the reverse of clockwise.",
+    url: "https://www.mathsisfun.com/definitions/counterclockwise.html"},
+};
+const HOWTO = [
+  ["How to translate a figure on the coordinate plane", "Translation"],
+  ["How to reflect a figure across the X-Axis", "Reflection"],
+  ["How to reflect a figure across the Y-Axis", "Reflection"],
+  ["How to rotate a figure on the coordinate plane 90 degrees counterclockwise", "Rotation"],
+  ["How to rotate a figure on the coordinate plane 180 degrees", "Rotation"],
+  ["How to dilate a figure on the coordinate plane given a scale factor", "Dilation"],
+  ["How to find the scale factor of a dilation", "Scale Factor"],
+  ["How to rotate a figure on the coordinate plane 90 degrees clockwise", "Rotation"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link glossary terms in prose.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — twist reveal/apply gating. The angle slider
+   recomputes Step 1's rotate-then-reflect math live at a drifted
+   cutting angle, illustrating (not asserting a specific measured
+   value for) how far a wrong cutting-angle assumption can move the
+   registration point.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const angle = +document.getElementById('twistAngle').value;
+  document.getElementById('twistAngleVal').textContent = angle + '°';
+  const assumed = reflectAcrossY(rotateCCW(GEOM.frontPoint, GEOM.frontRotationDeg));
+  const drifted = reflectAcrossY(rotateCCW(GEOM.frontPoint, angle));
+  const dx = drifted.x - assumed.x, dy = drifted.y - assumed.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const readout = document.getElementById('twistReadout');
+  readout.textContent = `At ${angle}° the registration point lands at (${round(drifted.x,2)}, ${round(drifted.y,2)}) instead of your Step 1 answer for 90° -- a drift of ${round(dist,2)} in.`;
+}
+onTwistToggle();
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

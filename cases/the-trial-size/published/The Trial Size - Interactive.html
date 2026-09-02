@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Trial Size — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (DOCTRINE_LEDGER MCS-37/MCS-39).
+  Rebuilt 2026-09-02 for the EPI precision-vs-n reframe (D5 added; case.md sha256 recomputed
+  at publish time — see cases/the-trial-size/QA_REPORT.md and MANIFEST.json, MCS-11). This file
+  never prints case.json.balance.margin_pct or the winner as a static literal anywhere outside a
+  <script> computation — the Working Notebook computes it live from the case's own sourced
+  numbers (S1-S8), the same way the student does on paper.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-map" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14"/><path d="M15 6v14"/></symbol>
+  <symbol id="icon-vial" viewBox="0 0 24 24"><path d="M9 2h6"/><path d="M10 2v8l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V2"/><path d="M7 15h10"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Adventure</div>
+        <h1>Case Study: The Trial Size</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Statistics &amp; Probability / Algebra</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Dr. Amara Kondwani has the budget spreadsheet open on one half of her laptop screen and the district immunity map on the other. Motorbike engines idle outside the district health office, and a field coordinator leans in the doorway holding two cooler boxes and a clipboard, waiting on her sign-off before the vials go on ice. The rains are coming — after that, half these roads flood out for the season, and the sampling window closes with them. On the map, one district glows in an unbroken block of color where no measles case has touched a school-age child in years. Nobody on her team actually knows whether that means the population there is protected, or just never checked. Her serosurvey is the only real evidence the vaccination campaign will have before doses get allocated district by district.</p>
+  <p>The two draft designs open in her other tab spend the same survey money completely differently. One pours the entire allotment into the villages her team is already staffed, permitted, and present in, buying the tightest possible read on exactly those communities. The other pulls back inside those same villages and reroutes what's left into territory the map has never covered at all. Her supervisor wants a number by end of day. The coordinator is still standing in the doorway, waiting.</p>
+  <p>She minimizes the spreadsheet, opens the tab where both budgets sit side by side, and starts reading.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Dr. Amara Kondwani is the field lead for a Ministry of Health measles-and-rubella serosurvey ahead of a supplemental immunization campaign in a rural health district. Her job is to draw a cluster sample of children across a fixed set of already-established survey clusters, test each sample for immunity, and report a seroprevalence estimate precise enough to tell campaign planners which age cohorts, in which clusters, are under-immunized and need targeted follow-up doses. She reports to the campaign's national planning office and is accountable for spending the survey's entire allocated budget before results are due — there is no mechanism to request more money mid-survey.</p>
+  <p>The survey answers to one hard limit: a fixed total budget of $68,558 (SEE APPENDIX A). Every dollar spent testing participants or opening new clusters comes out of that one number, and nothing is added to it later. Running the existing cluster infrastructure — staff, cold-chain transport, lab processing capacity — costs a fixed amount before a single blood sample is ever drawn; each additional participant tested inside a cluster that is already open costs a real, published marginal amount on top of that fixed cost (SEE APPENDIX A); and each entirely new cluster opened in a currently unsurveyed district costs a separate, larger marginal amount (SEE APPENDIX C). All figures in this case are sourced from a real published costing study of a measles-and-rubella serosurvey (SEE APPENDIX E); the vocabulary and "how to…" skills this case will ask of you are listed in APPENDIX F.</p>
+  <p>Kondwani's team has narrowed the plan to two named designs. Both fit inside the same $68,558 ceiling, and both start from the same 16 already-open clusters:</p>
+  <ul>
+    <li><strong>Full Precision</strong> tests as many participants as the entire budget can buy inside the existing clusters, maximizing statistical precision on the seroprevalence estimate for the district her team already has access to.</li>
+    <li><strong>Reserve And Expand</strong> tests only the smaller sample size the source study itself certifies as statistically adequate for the same clusters (SEE APPENDIX A), and reroutes whatever budget that frees into opening brand-new clusters in a currently unsurveyed district instead.</li>
+  </ul>
+  <p>Both plans spend the same total money. Neither is free of a trade-off: Full Precision buys the tightest possible read on the district already mapped; Reserve And Expand buys wider geographic reach at the cost of a looser read on that original district (SEE APPENDICES A, B AND C).</p>
+  <p>Precision itself is not a vague feeling here — it is a real, published, computable quantity. The worldwide standard for how many children a cluster survey must sample to hit a given precision traces back to a single classic paper (SEE APPENDIX D): for a 95% confidence interval no wider than a stated percentage, published survey methodology gives a direct formula linking sample size to half-width, using an assumed "design effect" that accounts for testing children in clusters rather than one at a time across the whole district. Applying that real formula to Kondwani's own real sample sizes is what finally lets Full Precision and Reserve And Expand be judged on the very same ruler — not dollars per cluster, but the actual precision, in percentage points, that each plan's data delivers wherever it collects data at all (SEE APPENDIX D).</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Dr. Amara Kondwani. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Full Precision</h4>
+      <p style="margin:0">Spend the entire survey budget testing participants inside the existing clusters.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Reserve And Expand</h4>
+      <p style="margin:0">Test only the certified-adequate minimum and reroute the freed budget into new clusters.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which design you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> — a two-point cost table showing the real total cost of the Full Precision design and the real cost of the certified-adequate minimum design, with the linear cost equation Cost(n) = (fixed cost) + (marginal cost)&middot;n derived algebraically from those two points, shown step by step; <strong>D2</strong> — a graph of the Cost(n) line, spanning at least from n = 0 through the Full Precision sample size, with both designs' cost points labeled; <strong>D3</strong> — a written linear equation for the Budget-Remaining line read directly off the Appendix B graph, plus its x-intercept and what it represents; <strong>D4</strong> — an algebraic system-of-equations solution comparing the "spend the full budget" plan against the "reserve budget for new clusters" plan, showing the break-even sample size where the two plans cost the same, solved without graphing; <strong>D5</strong> — using the real, sourced precision formula d = z&middot;&radic;(deff&middot;p(1&minus;p)/n) from Appendix D (z = 1.96, deff = 2, p = 0.5), compute the 95% CI half-width d yourself, showing substitution and evaluation step by step, for all three real sample sizes: n = 658 (Full Precision's existing-district sample), n = 192 (Reserve And Expand's existing-district sample), and n = 96 (Reserve And Expand's new-district sample, Appendix C). Then, using your three computed values, state — with reference to the WHO's own published &plusmn;10% acceptable-precision target (Appendix D) — which design(s) clear that target, in which district(s), and which do not.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; The Real Serosurvey Cost Data</summary>
+    <div class="inner">
+      <table id="apxA">
+        <tr><th>Design</th><th>Sample size tested (n)</th><th>Total cost (USD)</th><th>Resulting 95% CI half-width (Appendix D)</th></tr>
+        <tr><td>Full Precision</td><td class="num">658 [S1]</td><td class="num">$68,558 [S1]</td><td class="num">&plusmn;5.4% [S7, S8]</td></tr>
+        <tr><td>Reserve And Expand (certified-adequate minimum, existing clusters only)</td><td class="num">192 [S3]</td><td class="num">derive it &mdash; D1</td><td class="num">&plusmn;10.0% [S7, S8]</td></tr>
+        <tr><td>Marginal cost per additional participant (within an existing cluster)</td><td class="num">&mdash;</td><td class="num">$30 [S4]</td><td class="num">&mdash;</td></tr>
+      </table>
+      <p class="side-note"><strong>Modeling note.</strong> The fixed cost of running the existing cluster infrastructure before any participant is tested is not itself a number the source study states directly. It must be derived algebraically from the two real data points above &mdash; that derivation is D1's required calculation, not a pre-solved figure handed to you. The CI half-width column is explained fully in Appendix D and handed to you here pre-computed only so the Dilemma's stakes are groundable from the outset &mdash; Challenge 3's D5 then requires you to reproduce these same figures (and the &plusmn;14.1% new-district figure from Appendix C) yourself, from the sourced formula.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; The Budget-Remaining Line</summary>
+    <div class="inner">
+      <p>The Budget-Remaining line is R(n) = (Total Fixed Survey Budget) &minus; Cost(n): how much of the survey budget is left after testing n participants, using the Cost(n) equation from Appendix A.</p>
+      <figure>
+        <svg viewBox="0 0 460 260" width="100%">
+          <line x1="40" y1="20" x2="40" y2="220" stroke="#5b6472" stroke-width="1.5"/>
+          <line x1="40" y1="220" x2="440" y2="220" stroke="#5b6472" stroke-width="1.5"/>
+          <text x="10" y="18" font-family="sans-serif" font-size="11" fill="#5b6472">R(n), USD</text>
+          <text x="410" y="238" font-family="sans-serif" font-size="11" fill="#5b6472">n</text>
+          <line x1="40" y1="220" x2="420" y2="30" stroke="#1a3a5c" stroke-width="2.5"/>
+          <text x="60" y="200" font-family="sans-serif" font-size="10" fill="#5b6472">n = 0</text>
+          <text x="380" y="45" font-family="sans-serif" font-size="10" fill="#5b6472">n = 700</text>
+        </svg>
+        <figcaption>R(n) vs. n, axis range n = 0 to 700 &mdash; chosen to span past the Full Precision sample size of n = 658 so the line's x-intercept falls within the plotted range. Slope and intercept are for you to determine from Appendix A (D1/D3) &mdash; this sketch shows the shape, not the graded values.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Cluster Expansion Parameters</summary>
+    <div class="inner">
+      <table id="apxC">
+        <tr><th>Parameter</th><th>Value</th></tr>
+        <tr><td>Existing survey clusters already staffed and permitted</td><td class="num">16 [S2]</td></tr>
+        <tr><td>Marginal cost per additional new cluster opened</td><td class="num">$1,620 [S5]</td></tr>
+        <tr><td>Total fixed survey budget</td><td class="num">$68,558 [S1]</td></tr>
+        <tr><td>Participants tested per newly opened cluster (Modeling Assumption: same per-cluster density as the certified-adequate design, 192 &divide; 16)</td><td class="num">12/cluster</td></tr>
+        <tr><td>Total new clusters opened by Reserve And Expand's freed budget</td><td class="num">8 (floor of $13,980 &divide; $1,620/cluster; $1,020 unspent)</td></tr>
+        <tr><td>Resulting 95% CI half-width for the new, currently unsurveyed district (Appendix D)</td><td class="num">&plusmn;14.1% [S7, S8]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix D &mdash; The Real Precision-vs-Sample-Size Relationship</summary>
+    <div class="inner">
+      <p>Statistical precision for a cluster survey is a published, formula-driven relationship between how many children get sampled and how tight the resulting 95% confidence interval is. The classic reference is Henderson RH, Sundaresan T, "Cluster sampling to assess immunization coverage: a review of experience with a simplified sampling method," <em>Bulletin of the World Health Organization</em> 60(2): 253&ndash;260 (1982) [S7] &mdash; the paper that established the classic "30 clusters &times; 7 participants" (n&nbsp;=&nbsp;210) design used worldwide, built to hit a two-sided 95% confidence interval no wider than &plusmn;10 percentage points, assuming a design effect (deff) of 2.</p>
+      <p>A 2026 peer-reviewed review of that same methodology [S8] states the exact derivation: an unclustered effective sample size of 96 (at p = 0.5, the maximum-variance assumption used whenever the true rate is unknown) is inflated by the deff of 2 to an actual required sample size of 192 &mdash; then rounded up slightly to the familiar 30&times;7 = 210 design.</p>
+      <p style="text-align:center;font-weight:700;font-size:1.05rem;color:var(--navy)">d = z &middot; &radic;(deff &middot; p(1&minus;p) / n)</p>
+      <p>where d is the 95% CI half-width (as a decimal), z = 1.96 (95% confidence), deff = 2, p = 0.5, and n is the real sample size actually tested. Applying this real formula to Kondwani's own real, Carcelen-et-al.-sourced sample sizes (Appendix A) is what produces the CI half-width figures in Appendices A and C &mdash; no invented conversion factor, only a real formula applied to real n's.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxE">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Total nested measles-rubella serosurvey cost and participant count, Southern Province, Zambia</td><td>$68,558 for n = 658</td><td><a href="https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0240734" target="_blank" rel="noopener">Carcelen et al. 2020, PLOS ONE</a></td><td>2020-10-15</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Number of survey clusters in the nested design</td><td>16 clusters</td><td><a href="https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0240734" target="_blank" rel="noopener">Carcelen et al. 2020, PLOS ONE</a></td><td>2020-10-15</td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>Certified-adequate minimum sample size for the same 16 clusters</td><td>192 children</td><td><a href="https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0240734" target="_blank" rel="noopener">Carcelen et al. 2020, PLOS ONE</a></td><td>2020-10-15</td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Marginal cost of adding one participant within an existing cluster</td><td>$30/participant</td><td><a href="https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0240734" target="_blank" rel="noopener">Carcelen et al. 2020, PLOS ONE</a></td><td>2020-10-15</td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>Marginal cost of including one additional cluster</td><td>$1,620/cluster</td><td><a href="https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0240734" target="_blank" rel="noopener">Carcelen et al. 2020, PLOS ONE</a></td><td>2020-10-15</td><td>HIGH</td></tr>
+        <tr><td>S6</td><td>Corroborating cost-per-participant order of magnitude (context only, not load-bearing)</td><td>n/a</td><td><a href="https://www.frontiersin.org/journals/public-health/articles/10.3389/fpubh.2026.1897118/full" target="_blank" rel="noopener">Brenzel et al., Frontiers in Public Health</a></td><td>2026</td><td>MEDIUM</td></tr>
+        <tr><td>S7</td><td>Classic cluster-survey precision design: 30&times;7 (n=210) method, &plusmn;10% precision target, deff=2</td><td>deff = 2; target d = &plusmn;10%; design n = 210</td><td><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC2535957/" target="_blank" rel="noopener">Henderson &amp; Sundaresan 1982, Bull WHO</a></td><td>1982</td><td>HIGH</td></tr>
+        <tr><td>S8</td><td>Explicit numeric derivation: effective n=96 &rarr; actual n=192 &rarr; design n=210</td><td>effective n=96 &rarr; n=192 &rarr; n=210</td><td><a href="https://academic.oup.com/jssam/article/13/5/587/8417582" target="_blank" rel="noopener">Rhoda et al. 2026, J Survey Stat Methodol</a></td><td>2026</td><td>HIGH</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="side-note">These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+      <table id="apxMA">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>p = 0.5 (maximum-variance assumption) used in the CI half-width formula for both districts</td><td class="num">p = 0.5</td><td>The true seroprevalence in the new, unsurveyed district is unknown; p = 0.5 is the same conservative convention Henderson &amp; Sundaresan's 1982 design used.</td><td>Produces the widest CI half-width for any given n, in both options equally &mdash; does not favor either design and does not affect margin_pct.</td></tr>
+        <tr><td>MA2</td><td>Newly opened clusters tested at the same per-cluster density as the certified-adequate design (192/16 = 12 participants/cluster)</td><td class="num">12/cluster (96 new-district participants)</td><td>Carcelen et al. 2020 never opened new clusters, so no per-new-cluster sample size is stated; reusing the study's own certified-adequate density is the most conservative, best-disclosed choice available.</td><td>Directly determines the new district's CI half-width (&plusmn;14.1%) and therefore the case's primary metric and margin &mdash; see case.json's balance_test_waiver for the retune analysis.</td></tr>
+      </table>
+      <p class="side-note">Every other figure in this case is a real, directly cited value from Appendix E's sources &mdash; this case uses no undisclosed assumptions.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-01. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Derive the fixed cost and the Cost(n) equation</h4>
+    <div class="goal">Use the two real data points in Appendix A (n=658, cost=$68,558; marginal cost $30/participant) to solve for the fixed cost F in Cost(n) = F + 30n.</div>
+    <div class="fieldrow"><label>Your fixed cost F (USD)</label><input type="number" id="d1F"><button onclick="checkD1()">Check</button><span class="fb" id="d1Fb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: Evaluate Cost(n) at the Reserve And Expand sample size</h4>
+    <div class="goal">Using your Cost(n) equation from Step 1, evaluate the cost of testing only the certified-adequate minimum (n = 192, Appendix A/S3) within the existing 16 clusters.</div>
+    <div class="fieldrow"><label>Cost(192), existing clusters only (USD)</label><input type="number" id="d2Cost"><button onclick="checkD2()">Check</button><span class="fb" id="d2Fb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: The Budget-Remaining line's x-intercept</h4>
+    <div class="goal">R(n) = (Total Budget) &minus; Cost(n). Find the x-intercept of R(n) &mdash; the sample size at which the entire budget would be spent on participants alone.</div>
+    <div class="fieldrow"><label>x-intercept (participants)</label><input type="number" id="d3X"><button onclick="checkD3()">Check</button><span class="fb" id="d3Fb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: Break-even system of equations</h4>
+    <div class="goal">Set Cost(n) = F + 30n equal to the Reserve And Expand plan's committed spend within the existing clusters (your Step 2 answer). Solve for n without graphing &mdash; this is the sample size where continuing to spend on participants alone would cost exactly the same as Reserve And Expand's existing-cluster commitment.</div>
+    <div class="fieldrow"><label>Break-even n (participants)</label><input type="number" id="d4N"><button onclick="checkD4()">Check</button><span class="fb" id="d4Fb"></span></div>
+    <div class="fieldrow"><label>New clusters Reserve And Expand can fund with the freed budget</label><input type="number" id="d4Clusters"><button onclick="checkD4Clusters()">Check</button><span class="fb" id="d4ClustersFb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; D5: Substitute and evaluate the real CI half-width formula</h4>
+    <div class="goal">Using d = z&middot;&radic;(deff&middot;p(1&minus;p)/n) from Appendix D (z = 1.96, deff = 2, p = 0.5), substitute each real sample size and evaluate d as a percentage (95% CI half-width).</div>
+    <div class="fieldrow"><label>d at n = 658 (Full Precision, existing district)</label><input type="number" id="d5n658" step="0.01"><button onclick="checkD5(658,'d5n658','d5n658b')">Check</button><span class="fb" id="d5n658b"></span></div>
+    <div class="fieldrow"><label>d at n = 192 (Reserve And Expand, existing district)</label><input type="number" id="d5n192" step="0.01"><button onclick="checkD5(192,'d5n192','d5n192b')">Check</button><span class="fb" id="d5n192b"></span></div>
+    <div class="fieldrow"><label>d at n = 96 (Reserve And Expand, new district)</label><input type="number" id="d5n96" step="0.01"><button onclick="checkD5(96,'d5n96','d5n96b')">Check</button><span class="fb" id="d5n96b"></span></div>
+    <div class="side-note">Then, in your own write-up (not graded here): using your three computed values, state &mdash; with reference to the WHO's own published &plusmn;10% acceptable-precision target &mdash; which design(s) clear that target, in which district(s), and which do not.</div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-vial"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>The &plusmn;14.1% new-district figure depends entirely on a disclosed Modeling Assumption: that new clusters get tested at the same 12-participants/cluster density as the certified-adequate existing design (8 clusters &times; 12 = 96 total new-district participants). Reserve And Expand's whole argument for opening 8 new clusters instead of fewer, bigger ones assumed this density.</p>
+      <p>What if the freed budget were instead spent on fewer new clusters, tested proportionally deeper, so the <em>total</em> new-district n stayed exactly 96? Use the slider below to pick a different number of new clusters (from 1 to 8) at the same total n = 96 spread across them, and watch what happens to the new district's CI half-width.</p>
+      <div class="sliderow">
+        <label for="twistSlider" style="min-width:220px">New clusters opened (total new-district n held at 96)</label>
+        <input type="range" id="twistSlider" min="1" max="8" step="1" value="8" oninput="onTwistToggle()">
+        <span class="val" id="twistVal">8 clusters</span>
+      </div>
+      <div class="fieldrow"><label>Participants per cluster at this split</label><span class="fb ok" id="twistDensityOut">&mdash;</span></div>
+      <div class="fieldrow"><label>Resulting new-district CI half-width</label><span class="fb ok" id="twistClustersOut">&mdash;</span></div>
+      <p class="side-note" style="color:#c7cfda;border-top-color:#444">Notice the CI half-width never changes as you move the slider &mdash; the formula only depends on total n, not on how it's split across clusters. But deff = 2 already prices in the extra variability from testing fewer, bigger clusters, so in reality splitting the same total n across fewer clusters would violate the same deff assumption the whole formula relies on. The real lever is total n, not cluster count &mdash; and total n is capped by the same $1,620/cluster marginal cost either way.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>Carcelen AC, Hayford K, Moss WJ, et al., "How much does it cost to measure immunity? A costing analysis of a measles and rubella serosurvey in southern Zambia," PLOS ONE 15(10): e0240734 (2020) — S1&ndash;S5</li>
+      <li>Brenzel L, Saxenian H, Stahley K, Dansereau E, "Cost of immunization coverage surveys in low- and middle-income countries," Frontiers in Public Health (2026) — S6, context only</li>
+      <li>Henderson RH, Sundaresan T, "Cluster sampling to assess immunization coverage: a review of experience with a simplified sampling method," Bulletin of the World Health Organization 60(2): 253&ndash;260 (1982) — S7</li>
+      <li>Rhoda DA, Soofi S, Hussain I, et al., "Sample Size Parameters for Vaccination Coverage Cluster Surveys&mdash;Insights from Pakistan," Journal of Survey Statistics and Methodology 13(5): 587&ndash;614 (2026) — S8</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Trial Size &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   Given data, copied verbatim from cases/the-trial-size/case.json /
+   sensitivity_model.py. Raw sourced inputs only (S1-S5) — no verdict,
+   no margin_pct, no winner is ever hardcoded below or anywhere else
+   in this file.
+   ================================================================ */
+const PARAMS = {
+  total_budget: 68558.0,
+  n_full: 658.0,
+  marginal_participant_cost: 30.0,
+  cert_min_n: 192.0,
+  existing_clusters: 16.0,
+  marginal_cluster_cost: 1620.0,
+  new_cluster_density: 12.0,
+  z: 1.96,
+  deff: 2.0,
+  p_var: 0.5,
+};
+
+function fixedCost(p){ return p.total_budget - p.marginal_participant_cost * p.n_full; }
+
+// Real, sourced Henderson & Sundaresan (1982) precision formula: d = z*sqrt(deff*p(1-p)/n).
+// Returns the 95% CI half-width as a percentage (matches Appendix A/C/D's own units).
+function ciHalfWidth(n, params){
+  const p = Object.assign({}, PARAMS, params || {});
+  return 100 * p.z * Math.sqrt(p.deff * p.p_var * (1 - p.p_var) / n);
+}
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const F = fixedCost(p);
+  const aCost = p.total_budget;
+  const aClusters = p.existing_clusters;
+  const bExisting = F + p.marginal_participant_cost * p.cert_min_n;
+  const freed = p.total_budget - bExisting;
+  const newClusters = Math.max(0, Math.floor(freed / p.marginal_cluster_cost));
+  const bCost = bExisting + newClusters * p.marginal_cluster_cost;
+  const bClusters = p.existing_clusters + newClusters;
+  return {
+    F, aCost, aClusters, aPerCluster: aCost/aClusters,
+    bExisting, freed, newClusters, bCost, bClusters, bPerCluster: bCost/bClusters,
+  };
+}
+
+/* ================================================================
+   Generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title, 'Heroes Academy Math Builder case study', '', 'Sources:', ...srcLis, '', location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   Working Notebook check functions — D1 through D4.
+   ================================================================ */
+function checkD1(){
+  const F = fixedCost(PARAMS);
+  fb('d1Fb', near(val('d1F'), F, 1));
+}
+function checkD2(){
+  const e = evaluate({});
+  fb('d2Fb', near(val('d2Cost'), e.bExisting, 1));
+}
+function checkD3(){
+  const F = fixedCost(PARAMS);
+  const xIntercept = (PARAMS.total_budget - F) / PARAMS.marginal_participant_cost;
+  fb('d3Fb', near(val('d3X'), xIntercept, 1));
+}
+function checkD4(){
+  const F = fixedCost(PARAMS);
+  const e = evaluate({});
+  const breakEvenN = (e.bExisting - F) / PARAMS.marginal_participant_cost;
+  fb('d4Fb', near(val('d4N'), breakEvenN, 1));
+}
+function checkD4Clusters(){
+  const e = evaluate({});
+  fb('d4ClustersFb', near(val('d4Clusters'), e.newClusters, 0.5));
+}
+function checkD5(n, inputId, fbId){
+  const d = ciHalfWidth(n, {});
+  fb(fbId, near(val(inputId), d, 0.15));
+}
+
+/* ================================================================
+   Dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-trial-size";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+const DELIVERABLES = [
+  ["D1", "Two-point cost table and the Cost(n) = fixed + marginal&middot;n derivation"],
+  ["D2", "Graph of the Cost(n) line, both designs' cost points labeled"],
+  ["D3", "Budget-Remaining line, its x-intercept, and what it represents"],
+  ["D4", "Break-even system of equations, solved without graphing"],
+  ["D5", "Substitute and evaluate the real CI half-width formula for n=658, 192, and 96, and state which design(s) clear the WHO &plusmn;10% target"],
+];
+
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   Glossary content (MCS-39: >=8 terms, allowlisted domains).
+   ================================================================ */
+const GLOSSARY = {
+  "X-Intercept": {def: "The point where a line crosses the x-axis -- where y equals zero.",
+    url: "https://www.cuemath.com/geometry/x-intercept/"},
+  "Y-Intercept": {def: "The value of y where a line crosses the y-axis, i.e. where x = 0.",
+    url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:forms-of-linear-equations/x2f8bb11595b61c86:intro-to-slope-intercept-form/v/slope-intercept-form"},
+  "Slope": {def: "How steeply a line rises or falls -- the change in y for every one unit of change in x.",
+    url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:forms-of-linear-equations/x2f8bb11595b61c86:intro-to-slope-intercept-form/v/slope-intercept-form"},
+  "System Of Equations": {def: "Two or more equations considered together; their solution is the point (or points) that satisfy all of them at once.",
+    url: "https://www.khanacademy.org/math/algebra-basics/alg-basics-systems-of-equations"},
+  "Marginal Cost": {def: "The extra cost of producing or doing one more unit of something -- one more participant, one more cluster.",
+    url: "https://www.mathsisfun.com/money/marginal-cost.html"},
+  "Linear Equation": {def: "An equation whose graph is a straight line, often written y = mx + b.",
+    url: "https://www.mathsisfun.com/equation_of_line.html"},
+  "Fixed Cost": {def: "A cost that stays the same no matter how many units (participants, clusters) you add.",
+    url: "https://www.mathsisfun.com/money/index.html"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Substitution Property": {def: "Replace each variable in an expression with its given value, then evaluate the result -- exactly what D5 asks you to do with z, deff, p, and n.",
+    url: "https://www.mathsisfun.com/algebra/substitution.html"},
+};
+const HOWTO = [
+  ["How to identify the slope of a line given a set of data, a graph, or its equation", "Slope"],
+  ["How to write a linear equation given a set of data", "Linear Equation"],
+  ["How to write a linear equation given a graph of a line", "Y-Intercept"],
+  ["How to draw a line of a set of data given its linear equation", "Slope"],
+  ["How to solve a system of linear equations", "System Of Equations"],
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   Twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const clusters = val('twistSlider');
+  const totalNewN = 96; // fixed: Reserve And Expand's real new-district total n
+  const density = totalNewN / clusters;
+  document.getElementById('twistVal').textContent = clusters + (clusters===1 ? ' cluster' : ' clusters');
+  document.getElementById('twistDensityOut').textContent = round(density,1) + ' participants/cluster';
+  const d = ciHalfWidth(totalNewN, {});
+  document.getElementById('twistClustersOut').textContent = '±' + round(d,1) + '%';
+}
+onTwistToggle();
+
+/* ================================================================
+   Tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>
