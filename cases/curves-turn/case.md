@@ -29,7 +29,7 @@ case rate *and* for test positivity — and states plainly that these ranges are
 fixed cutoffs, and that the actual call is made locally, by health officials and school
 administrators working with their own community, not handed down by CDC itself. Real thresholds
 also vary by jurisdiction and by how severe the disease in question is — a rule written for one
-county in one outbreak is not a rule for every county in every outbreak. The board's level in
+county in one outbreak is not a rule for every county in every outbreak. The board's own closure threshold in
 (SEE APPENDIX C) works the same way: it is this case's own stated scenario constraint for a
 fictional board (SEE APPENDIX F, MA2), not a published real-world standard.
 
