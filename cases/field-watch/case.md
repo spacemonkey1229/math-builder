@@ -15,21 +15,39 @@ insurer's own claim file is waiting on.
 
 Talia has two ways to answer that question, built from the same three pictures. One trusts the
 field's whole recent history. The other trusts only its most recent, most alarming stretch. They
-don't agree with each other — and only one of them gets solved and reported before the file closes.
+don't agree with each other — and by the time the file closes this afternoon, she has to put just
+one of them in it.
 
 She opens a blank page, writes down the numbers from all three passes, and starts building the
 equation that will actually decide this.
 
 ## Background
 
+When a farmer's crop is damaged, the insurance payout isn't automatic — a claim file first has to
+be verified: someone has to confirm, with evidence, that real loss actually happened before the
+insurer cuts a check. This is a real mechanism, not a plot device. Crop insurance in the U.S. is
+heavily backed by the USDA's Federal Crop Insurance Program, administered by the Risk Management
+Agency (RMA), and the RMA has genuinely used satellite-based remote sensing — including the same
+kind of optical imagery this case relies on — to check claims against what the ground actually
+shows ([NASA reports on this directly](https://science.nasa.gov/missions/landsat/saving-millions-in-government-dollars-landsat-helps-fight-crop-insurance-fraud/); SEE APPENDIX G). Both sides have
+something real at stake in getting the verification right: the farmer is waiting on money to cover
+a genuine loss, and the insurer has to avoid paying out on a claim the evidence doesn't support,
+without unfairly stalling or denying one that's real. Talia's satellite analysis is the objective
+number both sides are counting on.
+
 Talia Brennan is a remote-sensing analyst for a crop-insurance claims service, verifying a damage
-claim on a wheat field in Nebraska using nothing but publicly available satellite imagery. Optical
-satellites like Sentinel-2 and Landsat measure a real, standard quantity called the Normalized
-Difference Vegetation Index (NDVI) — a number between roughly 0 (bare ground) and 1 (dense, healthy
-vegetation) computed from how a surface reflects red and near-infrared light. As real vegetation
-comes under real stress — drought, disease, fire — its NDVI genuinely declines, which is exactly why
-insurers use it as evidence (SEE APPENDIX A; for further reading on how NDVI works and how real
-insurers use it, SEE APPENDIX G).
+claim on a wheat field in Nebraska using nothing but publicly available satellite imagery. Her
+readings come from [Sentinel-2](https://sentinels.copernicus.eu/copernicus/sentinel-2), a real,
+free-to-use European Space Agency optical satellite system — ordinary multispectral imagery (a
+handful of separately-measured light bands, including red and near-infrared), not the specialized
+"hyperspectral" sensors sometimes marketed for agriculture. From just those two ordinary bands,
+optical satellites like Sentinel-2 and Landsat compute a real, standard quantity called the
+Normalized Difference Vegetation Index (NDVI) — a number between roughly 0 (bare ground) and 1
+(dense, healthy vegetation), essentially a ratio comparing how much near-infrared light a surface
+reflects to how much red light it reflects ([NASA's own explainer](https://science.nasa.gov/earth/earth-observatory/measuring-vegetation-ndvi-evi/)
+walks through the formula; SEE APPENDIX A). As real vegetation comes under real stress — drought,
+disease, fire — its NDVI genuinely declines, which is exactly why insurers use it as evidence (SEE
+APPENDIX A; for further reading on how NDVI works and how real insurers use it, SEE APPENDIX G).
 
 Three real satellite passes exist for this field, spaced the way Sentinel-2 actually revisits the
 same ground — every 5 days at the equator, with two satellites in orbit (SEE APPENDIX A). The
@@ -48,8 +66,11 @@ though as APPENDIX E shows, there is no single universal NDVI damage threshold i
 insurer sets its own, calibrated to the crop and region, so this case states its own value as a
 modeling assumption (SEE APPENDIX D). Whichever model Talia trusts, she has to solve it — as an
 actual equation, not a guess — for the exact day the field's NDVI is predicted to cross that
-threshold. The model that predicts an *earlier* crossing day gives more safety buffer before the
-claim file's real filing deadline (SEE APPENDIX D).
+threshold. Solve both, and a Hero will find something worth noticing: both models predict the field
+crosses the threshold with real safety buffer left before the claim file's real filing deadline —
+this isn't a race against missing that deadline. The actual dilemma is which prediction Talia can
+defend in the file: the model anchored in the field's longer, more established history, or the
+model that captures its most recent, most alarming stretch (SEE APPENDIX C, D).
 
 All figures in this case are sourced in APPENDIX E, or stated as explicit modeling assumptions in
 APPENDIX F where no public figure exists. The vocabulary and the "how to…" skills this case will ask

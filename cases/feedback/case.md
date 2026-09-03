@@ -30,10 +30,21 @@ She opens a blank sheet of graph paper and starts plotting.
 ## Background
 
 Priya Nakamura is the front-of-house sound engineer for tonight's performance at the Ridgeline
-Playhouse, a mid-sized community theater. She owns the mix for the evening and is the person the
-house manager will come find if the show gets stopped by a feedback squeal mid-song. With the
-second monitor amp channel down (SEE APPENDIX A), she has to commit the lead vocal's floor wedge
-to one of exactly two physical positions before the doors open:
+Playhouse, a mid-sized community theater. At a full-size touring show, mixing what the audience
+hears (front-of-house) and mixing what performers hear through their own monitors are two separate
+jobs, usually done by two different engineers. Ridgeline is small enough that Priya runs both
+tonight — which is exactly why this call is hers alone to make. She owns the mix for the evening
+and is the person the house manager will come find if the show gets stopped by a feedback squeal
+mid-song. (The house manager is a different job again, and not a sound job at all: the person
+responsible for the audience-facing side of the building itself — seating, ushers, doors, safety.
+Tonight the house manager's only connection to this decision is who comes looking for Priya if it
+goes wrong.) With the second monitor amp channel down (SEE APPENDIX A), she has to commit the lead
+vocal's floor wedge to one of exactly two physical positions before the doors open.
+
+Here is why that is a forced, single choice rather than "use both": each monitor amp channel
+powers exactly one floor wedge. Tonight only one channel is alive, which means only one wedge
+position can carry any monitor sound at all — whichever one Priya commits to gets the lead
+vocal's entire monitor mix for the whole show, and the other stays silent all night.
 
 **House-Left** — the wedge position the crew has used by default for years, roughly in front of
 the mic and somewhat off to one side (SEE APPENDIX A).
@@ -45,15 +56,20 @@ APPENDIX A).
 The risk both positions share is the same one every live sound engineer manages: a floor monitor
 is a loudspeaker sitting near an open, live microphone, and if too much of the monitor's own sound
 finds its way back into that microphone, the system re-amplifies its own signal until it
-squeals — audio feedback. How close a mix can be pushed before that happens is called the **gain
-before feedback**, and it depends on exactly two things once the loudspeaker's own output is
-fixed: how far the monitor sits from the mic, and how sensitive the mic actually is in the
-*direction* the monitor sits in (SEE APPENDIX D). The lead vocal mic is a directional, cardioid
-model — most sensitive straight ahead, and built to reject sound from other angles by different
-amounts depending on how far off-axis that angle is (SEE APPENDIX B). A monitor that sits closer
-but nearly out of the mic's pickup pattern can, in principle, be safer than one that sits farther
-away but more in line with it — which is exactly why the two candidate positions are not an easy
-call by eye.
+squeals — audio feedback, one of the most notorious failure modes in live sound. An uncontrolled
+feedback loop is not a small mistake: it is a sudden, piercing howl that can hurt performers' and
+audience members' ears at close range, damage speakers, and force whoever is running the board to
+kill the channel and stop the number cold, sometimes mid-line. How close a mix can be pushed before
+that happens is called the **gain before feedback**, and it depends on exactly two things once the
+loudspeaker's own output is fixed: how far the monitor sits from the mic, and how sensitive the mic
+actually is in the *direction* the monitor sits in (SEE APPENDIX D). Picture the mic "listening"
+hardest in a heart-shaped zone pointing straight out in front of it, and listening less and less as
+a sound source moves off to the side or behind it — that heart shape is exactly what "cardioid"
+means. The lead vocal mic is a directional, cardioid model — most sensitive straight ahead, and
+built to reject sound from other angles by different amounts depending on how far off-axis that
+angle is (SEE APPENDIX B). A monitor that sits closer but nearly out of the mic's pickup pattern
+can, in principle, be safer than one that sits farther away but more in line with it — which is
+exactly why the two candidate positions are not an easy call by eye.
 
 The lead vocalist, Dana Voss, sings the opening verse standing at a fixed mic stand — but during
 the bridge, she picks up the same mic handheld and crosses the stage to hit a new mark for the
@@ -254,5 +270,49 @@ and House-Right different.
 - How to convert a point between rectangular and polar coordinates
 - How to graph a polar equation
 - How to eliminate the parameter to find a rectangular equation
+
+**Story vocabulary** — this case also uses real live-sound / audio-engineering terms that are
+not math vocabulary but that a reader who has never worked a show may not know. None of these
+change any number in this case; they are here so the engineering itself makes sense.
+
+- **Front-of-House (FOH)** — the audience-side mixing position and job; the separate job from the
+  monitor mixer, who runs what performers hear onstage. Priya is doing both tonight. See
+  [Wikipedia, "Front of house"](https://en.wikipedia.org/wiki/Front_of_house).
+- **House Manager** — a different job again, and not a sound job at all: the person responsible
+  for the audience-facing side of the theater building itself — seating, ushers, doors, safety.
+  Not the same person as the front-of-house sound engineer, even though both work "front of
+  house." See [StageAgent, "House Manager"](https://stageagent.com/learn/5vl6lgfwoc8llxxp6pxsij/house-manager).
+- **Fault Light** — an indicator LED on a piece of gear (here, a monitor amp) that lights up when
+  that piece of gear detects something has failed. See [Wikipedia, "Indicator
+  light"](https://en.wikipedia.org/wiki/Indicator_light).
+- **Multimeter** — a basic electrical test tool that measures voltage, current, and resistance;
+  Priya uses one to confirm the amp channel is actually dead rather than guessing. See [Wikipedia,
+  "Multimeter"](https://en.wikipedia.org/wiki/Multimeter).
+- **Candidate Spot / Candidate Position** — one of the two physical floor locations under
+  consideration for tonight's one working wedge (House-Left or House-Right).
+- **Floor Wedge** — a wedge-shaped stage monitor speaker laid on the floor and angled up at a
+  performer, so they can hear their own mix without the speaker blocking the audience's view. See
+  [Wikipedia, "Stage monitor system"](https://en.wikipedia.org/wiki/Stage_monitor_system).
+- **Amp Channel** — one independent output on a multi-channel power amplifier; each channel drives
+  its own loudspeaker, so losing one channel silences only the speaker wired to it. See
+  [Wikipedia, "Audio power amplifier"](https://en.wikipedia.org/wiki/Audio_power_amplifier).
+- **Audio Feedback** — not this case's title, but the real, physical phenomenon: a live microphone
+  picking up too much of a loudspeaker's own sound and re-amplifying it in a loop until the system
+  squeals. See [Shure, "How to Control Feedback in a Sound
+  System"](https://www.shure.com/en-US/insights/how-to-control-feedback-in-a-sound-system).
+- **Cardioid** — a directional microphone shape, most sensitive to sound arriving from straight
+  ahead and progressively less sensitive off to the sides and rear. See [DPA Microphones,
+  "Cardioid Microphone"](https://www.dpamicrophones.com/dict/cardioid-microphone/).
+- **Off-Axis** — any angle away from a microphone's most-sensitive "on-axis" heading; a directional
+  mic picks up less of what's off-axis. See [DPA Microphones, "How to Read Microphone
+  Specifications"](https://www.dpamicrophones.com/mic-university/technology/how-to-read-microphone-specifications/).
+- **Gain Before Feedback** — how much a live mix can be turned up before a mic-and-speaker loop
+  starts to squeal; the real engineering quantity this case's math is modeling. See [Wikipedia,
+  "Gain before feedback"](https://en.wikipedia.org/wiki/Gain_before_feedback).
+- **Polar Pattern** — a real microphone spec: literally a polar-coordinate plot of how sensitive a
+  mic is at each angle around it. Not the same thing as this case's math "polar coordinates," even
+  though it's built the same way — same tool, a different real object. See [DPA Microphones, "How
+  to Read Microphone
+  Specifications"](https://www.dpamicrophones.com/mic-university/technology/how-to-read-microphone-specifications/).
 
 <!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

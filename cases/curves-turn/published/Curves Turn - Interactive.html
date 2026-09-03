@@ -9,6 +9,7 @@
     --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
     --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
     --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --story:#1f7a6f; --story-lt:#e3f3f0;
     --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box}
@@ -142,6 +143,18 @@
   .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
   .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
   .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--story);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--story-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--story);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .story-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .story-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--story);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
 
   /* CASE-SPECIFIC: curve figure */
   .curvewrap{display:flex;justify-content:center;padding:6px 0}
@@ -464,6 +477,15 @@ Tripwire    = Total - [ X(tB) + X(tB+1) + e &times; sum of X(t) over every horiz
         <li><a href="https://en.wikipedia.org/wiki/COVID-19_pandemic_in_Vermont" target="_blank" rel="noopener">COVID-19 pandemic in Vermont &mdash; Wikipedia</a> &mdash; statewide background beyond the single county this case follows.</li>
       </ul>
       <p class="gloss-source">Links verified working 2026-08-18.</p>
+    </div>
+  </details>
+
+  <details open id="apx-story-glossary">
+    <summary>Story Vocabulary &mdash; Public-Health &amp; School-Policy Terms</summary>
+    <div class="inner">
+      <p class="side-note">This case also uses real public-health and epidemiology vocabulary you may not have met in a math class. Hover any term below (or its first appearance in the case) for a plain-English definition; click it for a real source. This is separate from the math vocabulary in Appendix H.</p>
+      <div class="story-grid" id="storyVocab"></div>
+      <p class="gloss-source">Links verified working 2026-09-03.</p>
     </div>
   </details>
 
@@ -1074,6 +1096,50 @@ const HOWTO = [
 ];
 
 /* ================================================================
+   CASE-SPECIFIC — story-glossary content (public-health / school-
+   policy vocabulary, separate from the math GLOSSARY above). Every
+   url is https:// to an authoritative public-health source, each
+   fetched and confirmed live in this session (2026-09-03). "Case
+   Rate" and "Secondary Attack Rate" both cite the same CDC self-
+   study course page (different sections of one source, legitimate
+   per MCS-21). "Sensitivity" and "Specificity" both cite the same
+   NCBI Bookshelf page, which defines both terms side by side.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Case Rate": {def: "How many new cases show up relative to the size of the population -- usually per 100,000 people over a set time like a week. Unlike a raw case count, a rate lets you compare different places or times fairly.",
+    url: "https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson3/section2.html"},
+  "Revised": {def: "Early case reports get corrected as more complete information reaches health departments -- a week's count reported today is often adjusted up or down in the weeks that follow.",
+    url: "https://archive.cdc.gov/www_cdc_gov/coronavirus/2019-ncov/covid-data/faq-surveillance.html"},
+  "Community Transmission Level": {def: "CDC's four-tier scale -- low, moderate, substantial, high -- for how much a virus is spreading in a county, based on new cases per 100,000 residents in the past 7 days.",
+    url: "https://www.cdc.gov/mmwr/volumes/70/wr/mm7030e2.htm"},
+  "Secondary Attack Rate": {def: "The share of a known case's close contacts (classmates, housemates) who go on to catch the disease themselves -- a measure of how easily something spreads once it is already inside a group.",
+    url: "https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson3/section2.html"},
+  "Sensitivity": {def: "How often a test correctly flags someone who truly has the infection -- a highly sensitive test misses few real cases.",
+    url: "https://www.ncbi.nlm.nih.gov/books/NBK605677/"},
+  "Specificity": {def: "How often a test correctly clears someone who does not have the infection -- a highly specific test gives few false alarms. No test is perfect at both.",
+    url: "https://www.ncbi.nlm.nih.gov/books/NBK605677/"},
+  "Epidemic Curve": {def: "A chart of new cases over time showing the shape of an outbreak as it rises, peaks and falls -- the exact kind of chart Appendices A and B are built from.",
+    url: "https://en.wikipedia.org/wiki/Epidemic_curve"},
+};
+
+/* ================================================================
+   CASE-AGNOSTIC — story-glossary renderer (parallel to gtermHTML/
+   renderGlossary above, kept separate so the two vocabularies never
+   collide in the same lookup table).
+   ================================================================ */
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyVocab');
+  if(el) el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+/* ================================================================
    CASE-AGNOSTIC — glossary renderer.
    ================================================================ */
 function gtermHTML(label, textOverride){
@@ -1144,6 +1210,67 @@ function autoLinkGlossaryTerms(containerSelectors){
   });
 }
 autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link the first plain-prose occurrence of
+   each story-glossary concept, mirroring autoLinkGlossaryTerms
+   above but over STORY_GLOSSARY/.sterm instead of GLOSSARY/.gterm
+   so the two vocabularies can never tag the same span. Also skips
+   inside existing <a> tags (unlike the math version) so a term
+   that only appears inside another link's own text (e.g. a Learn
+   More entry) is left to that link rather than nested inside it.
+   ================================================================ */
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#apx-story-glossary')) linked.add(a.dataset.sterm);
+  });
+
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, a, .gterm, .sterm, #apx-story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
 autoAddCSVButtons(CASE_ID);
 updateSensitivity();
 

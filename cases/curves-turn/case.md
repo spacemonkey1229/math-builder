@@ -23,6 +23,26 @@ Two plans are on the table, and one standing board rule constrains both. The boa
 
 Vance is judged on one number, and the board has written that down too: chain-weighted in-school transmissions per one thousand students across the board's stated evaluation horizon (SEE APPENDIX D). The prevention model, the transmission coefficient and the chain multiplier that turn a county case rate into that number are all set out there. The vocabulary and the "how to…" skills this case will ask of you are listed in (SEE APPENDIX H) — that is where Challenge 1 sends you. For real, freely available background reading on epidemic curves, school testing programmes and the county itself, beyond what the case requires, (SEE APPENDIX G).
 
+In the real world, no single number tells every district when to close. The U.S. CDC's own 2020
+framework for school operating-status decisions sets several risk-tiered ranges at once — for
+case rate *and* for test positivity — and states plainly that these ranges are guideposts, not
+fixed cutoffs, and that the actual call is made locally, by health officials and school
+administrators working with their own community, not handed down by CDC itself. Real thresholds
+also vary by jurisdiction and by how severe the disease in question is — a rule written for one
+county in one outbreak is not a rule for every county in every outbreak. The board's level in
+(SEE APPENDIX C) works the same way: it is this case's own stated scenario constraint for a
+fictional board (SEE APPENDIX F, MA2), not a published real-world standard.
+
+The shape behind both plans — cases rising, then rising faster, then turning and falling away — is
+not unique to this county either. Epidemiologists call a chart like Appendices A and B an epidemic
+curve, and outbreaks of this kind typically climb steeply and decline more gradually, for reasons
+epidemiology itself explains: transmission chains usually wane after a few generations, either
+because the number of people left to infect falls below what is needed to sustain spread, or
+because the response measures already under way start working. Finding the week a real curve like
+this stops accelerating — the week its concavity flips from turning-upward to turning-over — is
+exactly the technique real epidemiologists and public-health analysts use to spot a wave's turn
+before its peak, which is what Appendix D's model and Challenge D4 ask you to do here.
+
 ## Dilemma
 
 You are Dr. Renata Vance.
@@ -250,7 +270,7 @@ open instead (MA6) and tells you what happens to the answer when it is wrong.
 | # | Assumption | Value used | Basis | Sensitivity |
 |---|---|---|---|---|
 | MA1 | Birchmont Unified School District, Dr. Renata Vance, the board and its rules | invented | The county, the weekly series [S1] and the population denominator [S2] are real and cited. The district, the officer and the decision are not, and the case says so in Background rather than implying a real body made this call. | Not numeric. Governs how every other row should be read: real data, invented governance. |
-| MA2 | The board's own written closure level (the Tripwire's trigger) | **500** reported cases per 100,000 per week | No public "Birchmont board threshold" exists. CDC's four-level national scale [S4] tops out at "100 or more", and Chittenden County sat above that top tier in every week of Appendix B — so a district needing an *escalation* trigger has to set one above the top of the national scale. 500 is five times the CDC high-transmission floor, and sits between the two plans' computed closure weeks rather than on top of either. | **The single most consequential number in the case, and deliberately not swept in the ±50% sensitivity run** — halving a plan's own written trigger produces a different Option B, not a sensitivity test. It is swept and disclosed anyway: at 250 the Tripwire fires the same week the Early Brake would, and the two plans then differ only by the screening removal rate; at 750 the model's forecast never reaches it inside the horizon and the Tripwire never fires at all. Recompute the metric at both levels and see what happens to your recommendation. Argue about this number; it is where the case actually lives. |
+| MA2 | The board's own written closure level (the Tripwire's trigger) | **500** reported cases per 100,000 per week | No public "Birchmont board threshold" exists. CDC's four-level national scale [S4] tops out at "100 or more", and Chittenden County sat above that top tier in every week of Appendix B — so a district needing an *escalation* trigger has to set one above the top of the national scale. 500 is five times the CDC high-transmission floor, and sits between the two plans' computed closure weeks rather than on top of either. Real school-closure thresholds are not a single universal number either — CDC's own 2020 school-decision framework (see Background and Appendix G) publishes several risk-tiered ranges at once and leaves the actual call to local officials, which is the same reason this board's own written level has to be stated here as a scenario assumption rather than looked up. | **The single most consequential number in the case, and deliberately not swept in the ±50% sensitivity run** — halving a plan's own written trigger produces a different Option B, not a sensitivity test. It is swept and disclosed anyway: at 250 the Tripwire fires the same week the Early Brake would, and the two plans then differ only by the screening removal rate; at 750 the model's forecast never reaches it inside the horizon and the Tripwire never fires at all. Recompute the metric at both levels and see what happens to your recommendation. Argue about this number; it is where the case actually lives. |
 | MA3 | Closure budget | **two weeks** (ten instructional days), once per term | A real board constraint of this shape existed in many districts, but no public document fixes a number for a fictional district. Fixing it at two weeks makes the two plans cost the same, which is what lets the primary metric compare what the budget *buys* rather than what it costs. | Not swept: three weeks or one week is a different board rule, not a different estimate. It cancels out of the comparison as long as both plans spend the same budget. |
 | MA4 | Evaluation horizon | the **six** weeks after the decision week | Chosen to be long enough for the chain multiplier to differ meaningfully across the horizon and short enough that a board would actually score it. | Not swept, for the same reason as MA3. A longer horizon raises every chain multiplier and widens the gap between the plans; a shorter one narrows it. |
 | MA5 | Instructional days per horizon week | **five**, every week | The district's real calendar has a winter break inside this horizon, and this case ignores it. That is a simplification, not an oversight. | Does not enter the primary metric at all — both plans spend the same closure budget, so instructional days never appear in the arithmetic. It would matter immediately if the metric charged days, and a Hero who raises it has found a real edge of the model. |
@@ -266,10 +286,44 @@ go beyond what the Dilemma and Challenges require, these are real, freely availa
 the subject the case is built from — reading them is optional and does not affect any grade.
 
 - [Epidemic curve — Wikipedia](https://en.wikipedia.org/wiki/Epidemic_curve) — a plain-language overview of what an epidemic curve is and how epidemiologists read its shape, the same kind of chart Appendices A and B are built from.
+- [Principles of Epidemiology in Public Health Practice, Lesson 1, Section 11 — CDC](https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson1/section11.html) — CDC's own training material on why epidemic curves have the shape they do: a steep rise and a more gradual decline, and the two real reasons a wave typically turns over.
 - [Concavity introduction — Khan Academy](https://www.khanacademy.org/math/differential-calculus/derivative-applications/concavity-inflection-points/v/concavity-concave-upwards-and-concave-downwards-intervals) — a short video walking through what it means for a curve to be concave up or down, the exact idea behind "the curve's turn."
 - [Operational Guidance for K-12 Schools and Early Care and Education Programs — CDC](https://archive.cdc.gov/www_cdc_gov/coronavirus/2019-ncov/community/schools-childcare/k-12-childcare-guidance.html) — the CDC's own guidance on when and how schools used diagnostic and screening testing, the real-world basis for the Tripwire's testing programme.
+- [CDC Releases Indicators for Dynamic School Decision-Making — CDC](https://archive.cdc.gov/www_cdc_gov/media/releases/2020/s0915-dynamic-school-decision-making.html) — CDC's real 2020 framework of risk-tiered case-rate and test-positivity ranges for school operating status, and its own statement that the decision is made locally, not by CDC.
 - [Chittenden County, Vermont — COVID-19 data, USAFacts](https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/state/vermont/county/chittenden-county/) — a public dashboard of the same county's reported case and death totals referenced in Appendices A, B and E.
 - [COVID-19 pandemic in Vermont — Wikipedia](https://en.wikipedia.org/wiki/COVID-19_pandemic_in_Vermont) — background on how the pandemic unfolded statewide, for context beyond the single county this case follows.
+
+## Story Vocabulary — Public-Health & School-Policy Terms
+
+This case also uses real public-health and epidemiology vocabulary you may not have met in a math
+class. These terms appear in the Overview, Background and Appendices above; each is defined here in
+plain English, with a real source if you want to read further. This is separate from the math
+vocabulary in Appendix H.
+
+- **Case rate** — how many new cases show up relative to the size of the population, usually per
+  100,000 people over a set time like a week. Unlike a raw case count, a rate lets you compare
+  different places or times fairly. [CDC, Principles of Epidemiology in Public Health Practice, Lesson 3](https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson3/section2.html)
+- **Revised (data)** — early case reports get corrected as more complete information reaches health
+  departments; a week's count reported today is often adjusted up or down in the weeks that follow,
+  which is why the Overview calls the reported line "reported, revised, ragged." [CDC, FAQ: COVID-19 Data and Surveillance](https://archive.cdc.gov/www_cdc_gov/coronavirus/2019-ncov/covid-data/faq-surveillance.html)
+- **Community transmission level** — CDC's four-tier scale (low, moderate, substantial, high) for
+  how much a virus is spreading in a county, based on new cases per 100,000 residents in the past 7
+  days. [CDC, MMWR: Guidance for Implementing COVID-19 Prevention Strategies](https://www.cdc.gov/mmwr/volumes/70/wr/mm7030e2.htm)
+- **Secondary attack rate** — the share of a known case's close contacts (classmates, housemates)
+  who go on to catch the disease themselves — a measure of how easily something spreads once it is
+  already inside a group. [CDC, Principles of Epidemiology in Public Health Practice, Lesson 3](https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson3/section2.html)
+- **Sensitivity (test accuracy)** — how often a test correctly flags someone who truly has the
+  infection; a highly sensitive test misses few real cases. [NCBI Bookshelf, Measures of Diagnostic Performance](https://www.ncbi.nlm.nih.gov/books/NBK605677/)
+- **Specificity (test accuracy)** — how often a test correctly clears someone who does not have the
+  infection; a highly specific test gives few false alarms. No test is perfect at both. [NCBI Bookshelf, Measures of Diagnostic Performance](https://www.ncbi.nlm.nih.gov/books/NBK605677/)
+- **Epidemic curve** — a chart of new cases over time showing the shape of an outbreak as it rises,
+  peaks and falls — the exact kind of chart Appendices A and B are built from. [Epidemic curve — Wikipedia](https://en.wikipedia.org/wiki/Epidemic_curve)
+- **Closure threshold** — the specific case-rate or test-positivity number a real policy writes
+  down to trigger a change in school operating status. Real frameworks publish several such ranges
+  as guideposts rather than one universal cutoff, and the actual call is made by local health
+  officials and school administrators, not by a national health agency — which is why this case's
+  own board level (Appendix C, Appendix F MA2) is stated as a scenario assumption rather than a
+  looked-up fact. [CDC Releases Indicators for Dynamic School Decision-Making](https://archive.cdc.gov/www_cdc_gov/media/releases/2020/s0915-dynamic-school-decision-making.html)
 
 ## Appendix H — "How To…" Math Questions To Research
 

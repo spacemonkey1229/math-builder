@@ -30,7 +30,24 @@ that both designs and builds its own projects. He is responsible for producing t
 crew can cut directly from — which means every angle on the plan has to be one a framer can
 actually mark and cut, not just something that looks right on the elevation drawing.
 
-The job is a single rectangular addition, **24 feet wide by 52 feet long**, framed at a **6-in-12
+A framing plan is a handoff, not a picture. What Colton actually sends to the truss shop is a set
+of rafter lengths and cut angles the crew can lay out on real lumber with a **speed square** — a
+triangular layout tool with degree markings and a built-in rafter scale (invented by Albert
+Swanson in 1925 and still standard on every job site) that lets a carpenter align a pitch number,
+scribe one line, and repeat that exact mark down eighty rafters without measuring an angle twice.
+A **common rafter**'s cuts — the **birdsmouth** seat cut at the eave and the plumb cut at the
+ridge — are both single-bevel cuts: one angle, marked once, cut the same way on every rafter in
+the run. A **hip** or **jack rafter**'s cut is a **compound angle**: two bevels laid out at once
+(the plumb cut and a second "cheek" cut across the board's face), because the rafter is climbing
+the roof slope *and* crossing the building corner at 45 degrees at the same time. That second
+bevel can't be read off a speed square the way a common rafter's single angle can — it has to be
+laid out with a hip-valley scale or a saw set to two angles simultaneously, then test-fit before
+the final cut. That is the real reason a compound cut takes a crew longer per rafter than a simple
+one: not that the wood is harder to cut, but that marking the cut correctly the first time takes
+more setup, more checking, and more chances to have to re-mark it.
+
+The job is a single rectangular addition, **24 feet wide by 52 feet long** — one uninterrupted
+rectangle in plan, no wings, no offsets, no jogs in the exterior wall — framed at a **6-in-12
 roof pitch** (a rise of 6 inches for every 12 inches of horizontal run) on both roof options under
 consideration, so the comparison isn't muddied by two different slopes (SEE APPENDIX B). Two roof
 plans are on the table for the same footprint.
@@ -56,7 +73,11 @@ crew labor time at the shop's carpenter wage rate (SEE APPENDIX D).
 
 The client's email is the only real pressure driving Option B: a hip roof sheds wind and rain off
 every wall instead of concentrating it at two gable ends, and it's the look they specifically asked
-for. Whether that's worth what the compound cuts actually cost — in lumber, and in the crew's
+for. The mechanism is simple geometry, not opinion — a gable roof only slopes over its two long
+walls; the two short **eave**-less end walls run straight up to the ridge with no roof plane
+above them at all, so wind-driven rain hits those walls directly. A hip roof wraps all four
+walls in a sloped plane, so every wall — including both ends — sits under its own eave. Whether
+that's worth what the compound cuts actually cost — in lumber, and in the crew's
 time — is the number Colton has to work out and defend before the truss shop cutoff. All figures in
 this case are sourced in APPENDIX F, or stated as an explicit modeling assumption in APPENDIX E
 where no public figure exists. The vocabulary and the "how to…" skills this case will ask of you
@@ -192,7 +213,10 @@ the challenges require.
 
 - [Hip roof — Wikipedia](https://en.wikipedia.org/wiki/Hip_roof) — background on hip roof geometry, wind performance, and why builders choose it over a gable roof.
 - [Framing square — Wikipedia](https://en.wikipedia.org/wiki/Framing_square) — the traditional layout tool carpenters use to mark rafter and hip cut angles by hand, including the "hip and valley" scale referenced in Appendix E.
+- [Speed square — Wikipedia](https://en.wikipedia.org/wiki/Speed_square) — the triangular rafter-layout tool referenced throughout this case's Background; how its pitch scale turns a repeated common-rafter cut into a fast, one-line-per-rafter operation.
+- [Birdsmouth joint — Wikipedia](https://en.wikipedia.org/wiki/Birdsmouth_joint) — the seat-cut-plus-heel-cut notch every common rafter in both options needs at the eave.
 - [Rafter — Wikipedia](https://en.wikipedia.org/wiki/Rafter) — background on common, hip, and jack rafters and how they frame a roof together.
+- [Hip-Roof Framing Made Easier — Fine Homebuilding](https://www.finehomebuilding.com/project-guides/framing/hip-roof-framing-made-easier) — a working carpenter's account of laying out the compound angles a hip roof's hip and jack rafters actually require.
 - [Board foot — Wikipedia](https://en.wikipedia.org/wiki/Board_foot) — the lumber-volume unit used throughout Appendices C and D.
 
 ## Appendix H — "How To…" Math Questions To Research
