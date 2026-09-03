@@ -1,0 +1,421 @@
+{
+  "id": "the-rig-budget",
+  "overview_numerals_cleared": [
+    {
+      "numeral": "9",
+      "why": "'9 AM' -- the performance lab's opening time, texture only, never used in any calculation (D1-D5 never reference a time of day)"
+    }
+  ],
+  "title": "The Rig Budget",
+  "tier": "T2",
+  "complexity": 2,
+  "band": [
+    "MS-core"
+  ],
+  "primary_metric": "GPU skin-deformation compute time required per rendered frame, for the hero rig's mesh at a multi-bone blend zone (milliseconds) -- the real, published, head-to-head benchmark cost of the two skin-blending algorithms Dana is choosing between",
+  "options": {
+    "A": "The Direct Blend — blend a multi-bone vertex's transform by directly summing the influencing bones' weighted matrices (linear blend skinning), applied once per vertex",
+    "B": "The Quaternion Blend — blend a multi-bone vertex's transform by converting each influencing bone's rotation to a quaternion, blending the quaternions, and converting the result back to a matrix before applying it (direct quaternion blending)"
+  },
+  "margin_pct": 17.9,
+  "standards": [
+    "pre-calculus-matrix",
+    "pre-calculus-matrix-dimension",
+    "pre-calculus-determinant",
+    "pre-calculus-identity-matrix",
+    "pre-calculus-how-to-add-and-multiply-matrices",
+    "pre-calculus-how-to-find-the-determinant-of-a-2x2-matrix",
+    "pre-calculus-how-to-solve-a-system-of-equations-using-a-matrix"
+  ],
+  "new_coverage": [],
+  "sources": [
+    {
+      "id": "S1",
+      "placeholder": "Appendix A, row 'Hero rig bone count'; Appendix G",
+      "claim": "Recommended maximum bone count for a mobile character rig",
+      "value": "Ideally, keep the number below thirty for mobile devices, and don't go too far above thirty for desktop games.",
+      "units": "bones",
+      "as_of": "legacy manual, undated",
+      "org": "Unity Technologies",
+      "title": "Modeling characters for optimal performance (Unity 5.6 Manual)",
+      "url": "https://docs.unity3d.com/560/Documentation/Manual/ModelingOptimizedCharacters.html",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Primary vendor documentation. Exact quote confirmed directly against the page's raw HTML (not just a search snippet or fetch-tool summary). Anchors MA1 (28 bones, just under the real 30-bone mobile ceiling)."
+    },
+    {
+      "id": "S2",
+      "placeholder": "Appendix A, row 'Hero mesh polygon count'; Appendix G",
+      "claim": "Recommended polygon count per mesh for a mobile character",
+      "value": "For mobile devices, somewhere between 300 and 1500 polygons per mesh will give good results, whereas for desktop platforms the ideal range is about 1500 to 4000.",
+      "units": "polygons per mesh",
+      "as_of": "legacy manual, undated",
+      "org": "Unity Technologies",
+      "title": "Modeling characters for optimal performance (Unity 5.6 Manual)",
+      "url": "https://docs.unity3d.com/560/Documentation/Manual/ModelingOptimizedCharacters.html",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Same page as S1, exact quote confirmed directly against raw HTML. Anchors MA2 (300 polygons, the real low end of the cited mobile range) and, via MA2/MA1, MA3's 10-vertices-per-bone figure."
+    },
+    {
+      "id": "S3",
+      "placeholder": "Appendix A, row 'Frame time budget'; Appendix F; Appendix G",
+      "claim": "Frame time budget at 60 fps and 30 fps for mobile games",
+      "value": "For 60fps mobile, you have about 16.6ms per frame total. Aim for a CPU budget of 8-10ms and a GPU budget of 8-10ms, with 2-3ms of headroom for thermal throttling and OS overhead. For 30fps, double those numbers.",
+      "units": "ms per frame",
+      "as_of": "undated page",
+      "org": "Ocean View Games",
+      "title": "Frame Budget Calculator for Unity Game Development",
+      "url": "https://gamedevcheatsheet.com/frame-budget",
+      "accessed": "2026-09-01",
+      "confidence": "MEDIUM",
+      "derived": false,
+      "note": "Real, named studio's published guidance page; exact quote confirmed directly against raw HTML. Page carries no visible publication or last-updated date. Used as context (Appendix F), not as a load-bearing figure in the primary-metric arithmetic (Appendix D)."
+    },
+    {
+      "id": "S4",
+      "placeholder": "Appendix A, row 'Target frame rate'; Appendix G",
+      "claim": "Which target frame rate real published guidance recommends for an action mobile game",
+      "value": "60fps - Required for action games, competitive multiplayer, and any game where input responsiveness is critical. Demands aggressive optimization across all systems. 30fps - Acceptable for turn-based strategy, puzzles, narrative games, and educational titles.",
+      "units": "fps (policy guidance)",
+      "as_of": "2026-02-07",
+      "org": "Ocean View Games",
+      "title": "Mobile Game Optimization: A Unity Developer's Checklist",
+      "url": "https://dev.to/oceanviewgames/mobile-game-optimization-a-unity-developers-checklist-dnk",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Same publisher family as S3 (Ocean View Games). Exact quote confirmed directly against raw HTML, dated article. Justifies MA4 (60 fps), since Fenwick's game is an action combat game."
+    },
+    {
+      "id": "S5",
+      "placeholder": "Appendix E",
+      "claim": "A real, published worked example of CPU-side per-vertex transform (skinning) cost exceeding a 60 fps frame budget",
+      "value": "Skinning 100 characters with 50 bones and 5000 vertices each on CPU requires 25M vertex transformations per frame at 60fps = 1.5B transforms/sec. At 100 cycles/transform = 150B cycles = 60ms on a 2.5GHz CPU, exceeding 16.67ms budget by 3.6x.",
+      "units": "ms per frame (worked example)",
+      "as_of": "repository created 2025-11-15",
+      "org": "raduacg (GitHub)",
+      "title": "53. GPU Skinning (Skeletal Animation), game-mechanics-optimizations",
+      "url": "https://github.com/raduacg/game-mechanics-optimizations/blob/main/53_gpu_skinning.md",
+      "accessed": "2026-09-01",
+      "confidence": "MEDIUM",
+      "derived": false,
+      "note": "Real, dated, fetched-and-confirmed (via raw.githubusercontent.com and the GitHub API) repository -- a personal collection of technique notes rather than a peer-reviewed benchmark; its 100 cycles/transform and 2.5GHz figures are stated as round illustrative numbers within the source itself. Used only as documented precedent (Appendix E), not as a load-bearing figure in Appendix D's own operation-count arithmetic."
+    },
+    {
+      "id": "S6",
+      "placeholder": "Appendix D, row 'Real measured GPU cost, Direct Blend vs Quaternion Blend'; Appendix G",
+      "claim": "Real, published, head-to-head measured GPU runtime cost of linear blend skinning (LBS) vs. direct quaternion blending (DQB), on a comparably-rigged character mesh",
+      "value": "Figure 11 (GeForce 6600 GT column): average GPU runtime for skin deformation of a 5002-vertex, 54-joint character model -- LBS = 0.32 ms, DQB = 0.39 ms, DLB (dual quaternion linear blending) = 0.46 ms.",
+      "units": "ms per frame (measured GPU runtime)",
+      "as_of": "2007 (SI3D '07 proceedings)",
+      "org": "Trinity College Dublin / Czech Technical University in Prague (L. Kavan, S. Collins, J. Zara, C. O'Sullivan)",
+      "title": "Skinning with Dual Quaternions (Proceedings of the 2007 ACM SIGGRAPH/Eurographics Symposium on Interactive 3D Graphics and Games)",
+      "url": "https://users.cs.utah.edu/~ladislav/kavan07skinning/kavan07skinning.pdf",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Peer-reviewed, published graphics-research paper; PDF fetched directly and the full text (including Figure 11's exact reported values) confirmed by direct read, not just a search snippet or fetch-tool summary. This is the load-bearing source for the case's primary metric and margin_pct after the 2026-09-01 balance redesign -- see RESEARCH_LOG.md. Disclosed limitation: the benchmark mesh (5002 vertices, 54 joints) and GPU (GeForce 6600 GT, a 2007-era desktop part) differ in scale and hardware generation from Fenwick's own fictional mobile hero rig (28 bones, 300 polygons, S1/S2) -- this case uses the real measured RELATIVE cost (17.9% more for DQB) as the primary metric's load-bearing figure, not a claim that Fenwick's own mobile device would show these exact absolute millisecond values (see MA7)."
+    },
+    {
+      "id": "S7",
+      "placeholder": "Appendix B, row 'Why a directly-summed blend matrix can distort the mesh'; Appendix G",
+      "claim": "Real, published mathematical explanation of why linear blend skinning's per-vertex blended matrix can fail to be a valid rigid transformation, causing visible mesh distortion",
+      "value": "\"The vertex position in the mesh deformed by linear blend skinning is then computed as: v' = (sum of wi*Cji) v, that is, taking a linear combination of joint transformation matrices... This explains the skin collapsing artifacts -- the blended matrix (sum of wi*Cji) is no longer a rigid transformation, but a general affine one (potentially containing scale and shear factors). Formally speaking, the skin collapsing effects visualize the fact that the set of orthonormal matrices is not closed under addition.\"",
+      "units": "n/a (mathematical claim, quoted directly)",
+      "as_of": "2007 (SI3D '07 proceedings)",
+      "org": "Trinity College Dublin / Czech Technical University in Prague (L. Kavan, S. Collins, J. Zara, C. O'Sullivan)",
+      "title": "Skinning with Dual Quaternions (Proceedings of the 2007 ACM SIGGRAPH/Eurographics Symposium on Interactive 3D Graphics and Games), Section 3.1",
+      "url": "https://users.cs.utah.edu/~ladislav/kavan07skinning/kavan07skinning.pdf",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Same paper as S6, same direct full-text confirmation. This is the real, published grounding for Deliverable D3's determinant check on the blend-zone's directly-summed matrix (det = 0.5, not 1) -- the case's own hand-computed example is a concrete instance of exactly the mechanism this quote describes, not an invented analogy."
+    },
+    {
+      "id": "S8",
+      "placeholder": "Appendix C, row 'Real documented limitation of the Quaternion Blend'; Appendix G",
+      "claim": "Real, published, documented limitation of direct quaternion blending (DQB): it fixes the blended transform's center of rotation, which works correctly at simple two-bone joints but produces a different real artifact at more complex multi-bone joint regions",
+      "value": "\"This is the principle of [Hejl 2004]: the vertices rotate around the nearest joint. In cases similar to that of the elbow (two bones connected by a joint), this works perfectly. However, for more complex joint influences, such as those usually occurring around the armpit or dorsum, artifacts result from the fact that the center of rotation is fixed and does not adapt to the actual posture.\"",
+      "units": "n/a (qualitative claim, quoted directly)",
+      "as_of": "2007 (SI3D '07 proceedings)",
+      "org": "Trinity College Dublin / Czech Technical University in Prague (L. Kavan, S. Collins, J. Zara, C. O'Sullivan)",
+      "title": "Skinning with Dual Quaternions (Proceedings of the 2007 ACM SIGGRAPH/Eurographics Symposium on Interactive 3D Graphics and Games), Section 3.1",
+      "url": "https://users.cs.utah.edu/~ladislav/kavan07skinning/kavan07skinning.pdf",
+      "accessed": "2026-09-01",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Same paper as S6/S7, same direct full-text confirmation. This is the real, disclosed qualitative counterweight to Option B's cost premium: it is not a strictly-better fix, it trades one real defect (LBS's determinant-collapse) for a different real defect at more complex joint regions -- grounds argument_a/argument_b's genuine two-sided tension and the case's Deep Conflict threads."
+    }
+  ],
+  "_ext": "keys below are pipeline extensions, additive to SPEC §4",
+  "status": "published",
+  "studio": "Adventure",
+  "protagonist": "Dana Ruiz, Technical Artist / Rigger, Fenwick Games (fictional small mobile-game studio)",
+  "year": "2026-27",
+  "concept_source": "cases/_concepts/CONCEPTS_formal-logic-vectors-matrices-numbertheory_2026-08-23.md, C3 -- The Rig Budget (approved, not re-litigated).",
+  "reinforcement_note": "The concept sheet's own write-up claims this case 'thickens the entire Matrices group from n=1 to n=2 ... currently covered by exactly one case (The Multiplier Recruit)'. That line is stale as of case-research: readmodel/standards_spine.json's Matrices group already shows n=2 for all 7 skills (covered_by: ['The Multiplier Recruit', 'The Skin Pack Atlas']), confirmed by direct grep of readmodel/standards_spine.json at authoring time. This case therefore thickens the group from n=2 to n=3, not n=1 to n=2 as scored in the concept sheet -- new_coverage[] is correctly [] either way (no skill is at n=0), but the concept sheet's framing should be corrected by the concept-log maintainer. Same pattern as the-course-correction's own disclosed correction to its concept sheet's stale coverage count (see that case's RESEARCH_LOG.md).",
+  "deliverables": [
+    {
+      "id": "D1",
+      "text": "The rotation matrix R and the stretch (scale) matrix S for the hero's elbow bone (a single-bone rig segment, unaffected by the blend-technique choice) at the sample animation keyframe, written as explicit 2x2 matrices with dimensions stated.",
+      "skills": [
+        "pre-calculus-matrix",
+        "pre-calculus-matrix-dimension"
+      ]
+    },
+    {
+      "id": "D2",
+      "text": "The elbow bone's combined matrix M = R*S, computed by hand with every entry shown as an arithmetic step of 2x2 matrix multiplication -- AND the shoulder blend-zone's Direct-Blend matrix M_blend = w1*R1 + w2*R2, computed by hand with every entry shown as an arithmetic step of scalar matrix multiplication and matrix addition.",
+      "skills": [
+        "pre-calculus-how-to-add-and-multiply-matrices"
+      ]
+    },
+    {
+      "id": "D3",
+      "text": "The determinant of the elbow bone's M, computed by hand using the 2x2 determinant formula, compared to the identity matrix's determinant -- AND the determinant of the shoulder blend-zone's M_blend, compared to the same identity-matrix baseline, with an explanation of what M_blend's determinant (less than 1) reveals about the Direct Blend's real, documented visual defect at that seam.",
+      "skills": [
+        "pre-calculus-determinant",
+        "pre-calculus-identity-matrix",
+        "pre-calculus-how-to-find-the-determinant-of-a-2x2-matrix"
+      ]
+    },
+    {
+      "id": "D4",
+      "text": "Recovering the shoulder blend-zone's M_blend by solving the system of linear equations produced by two known point-mappings logged by the engine, using matrix methods, and confirming the answer matches D2/D3's M_blend.",
+      "skills": [
+        "pre-calculus-how-to-solve-a-system-of-equations-using-a-matrix"
+      ]
+    },
+    {
+      "id": "D5",
+      "text": "The Skin-Blend Cost & Determinant Table (real measured GPU ms per frame for both algorithms, plus each algorithm's determinant/artifact behavior at the shoulder blend-zone, plus what share of the frame budget each consumes) built from Appendix D's real sourced figures, plus a recommendation memo.",
+      "skills": [
+        "pre-calculus-matrix-dimension",
+        "pre-calculus-how-to-add-and-multiply-matrices"
+      ]
+    }
+  ],
+  "appendices": [
+    {
+      "letter": "A",
+      "title": "Fenwick Games' Hero Rig & Device Performance Constraints",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "B",
+      "title": "Option A -- The Direct Blend (Linear Blend Skinning)",
+      "referenced_from": [
+        "Background",
+        "Dilemma",
+        "Challenges D1, D2, D3, D4"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "C",
+      "title": "Option B -- The Quaternion Blend (Direct Quaternion Blending)",
+      "referenced_from": [
+        "Background",
+        "Dilemma"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "D",
+      "title": "Skin-Blend Cost & Determinant Model",
+      "referenced_from": [
+        "Background",
+        "Challenges D5"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "E",
+      "title": "Documented Precedent -- CPU Skinning Cost at Scale",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "F",
+      "title": "How the Frame Budget Applies (Context, Not Load-Bearing)",
+      "referenced_from": [
+        "Appendix A"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "G",
+      "title": "Sources",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "H",
+      "title": "\"How To…\" Math Questions To Research",
+      "referenced_from": [
+        "Challenges 1"
+      ],
+      "kind": "standards-bridge"
+    }
+  ],
+  "balance": {
+    "argument_a": "The Direct Blend (linear blend skinning) has a real, measured GPU cost of 0.32 ms per frame for a comparably-rigged character mesh (S6) -- the cheapest of the two options on this metric, and it is the de facto industry-standard technique. But a weighted SUM of the influencing bones' rigid-transform matrices is not itself guaranteed to be a rigid transformation (S7); the case's own hand-computed shoulder blend-zone matrix M_blend = 0.5*R1 + 0.5*R2 has determinant 0.5, not 1 -- a real, provable instance of the documented 'candy-wrapper' collapse artifact that has made this technique's cheapness a known trade-off in the graphics industry for two decades.",
+    "argument_b": "The Quaternion Blend (direct quaternion blending) has a real, measured GPU cost of 0.39 ms per frame for the same comparably-rigged mesh (S6) -- 17.9% more than The Direct Blend -- but it always converts back into a valid rigid transformation, eliminating the determinant-collapse problem D3 demonstrates. Per the same real source, it 'works perfectly' at simple two-bone joints like this exact shoulder seam (S8). Its real, documented cost is not on the compute metric: at more complex multi-bone joint regions elsewhere on the rig (the underarm, the cape's mounting point), the same fixed-rotation-center mechanism produces a different real, documented artifact (S8) -- so Option B is a different trade-off, not a strictly better fix.",
+    "margin_basis": "Compare real, published, head-to-head GPU skin-deformation runtime for a comparably-rigged character mesh (S6, Figure 11, GeForce 6600 GT): The Direct Blend (LBS) = 0.32 ms/frame. The Quaternion Blend (DQB) = 0.39 ms/frame. margin_pct = (0.39-0.32)/0.39 x 100.",
+    "margin_pct": 17.9,
+    "margin_note": "COMPUTED 2026-09-01 (balance redesign, superseding the 2026-09-01 case-research pass's 45.0% figure -- see RESEARCH_LOG.md for the full retune history). Per frame, for a comparably-rigged mesh: Option A (The Direct Blend / LBS) = 0.32 ms (S6, real measured GPU runtime). Option B (The Quaternion Blend / DQB) = 0.39 ms (S6). margin_pct = (0.39-0.32)/0.39 x 100 = (0.07/0.39) x 100 = 17.94871...% ~ 17.9%. WINNER on the raw metric: Option A. THIS MARGIN IS UNDER SPEC Sec 2's ~20% cap -- no waiver needed. Disclosed limitation (MA7): S6's benchmark mesh (5002 vertices, 54 joints, GeForce 6600 GT, a 2007-era desktop GPU) differs in scale and hardware generation from Fenwick's own fictional mobile hero rig (28 bones, 300 polygons, S1/S2). This case uses the real measured RELATIVE cost (DQB costs 17.9% more than LBS) as the primary metric's load-bearing figure -- the best available real, published, head-to-head measurement of these two specific skin-blending techniques -- not a claim that Fenwick's own mobile device would show these exact absolute millisecond values. Both real measured values are a small fraction of Fenwick's own real, sourced 16.6ms/frame budget (S3) -- about 1.9% (A) and 2.4% (B) of the frame budget -- so this is a genuine 'which costs less, by how much, and what do you get for the difference' dilemma, not a 'does it fit' blowout on either side."
+  },
+  "needs_source": [
+    {
+      "token": "{{NEEDS_SOURCE: recommended maximum bone count for a mobile character rig, from published game-engine rigging guidance}}",
+      "location": "Appendix A, row 'Hero rig bone count'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: recommended polygon/vertex density per mesh for a mobile character, from published game-engine rigging guidance}}",
+      "location": "Appendix A, row 'Hero mesh polygon count'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: stated blend weights for the shoulder blend-zone's two-bone influence at the sample keyframe}}",
+      "location": "Appendix B, row 'Blend weights w1, w2 at the shoulder blend-zone'",
+      "status": "ASSUMPTION"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: a real, published, head-to-head performance comparison of two skinning-blend algorithms}}",
+      "location": "Appendix D, row 'Real measured GPU cost, Direct Blend vs Quaternion Blend'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: a real, documented mathematical explanation of why summing bone matrices directly can distort the mesh}}",
+      "location": "Appendix B, row 'Why a directly-summed blend matrix can distort the mesh'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: a real, documented limitation of the alternative (quaternion-based) blending technique}}",
+      "location": "Appendix C, row 'Real documented limitation of the Quaternion Blend'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: real published guidance on choosing a target frame rate (30 vs 60 fps) for a mobile action game}}",
+      "location": "Appendix A, row 'Target frame rate'",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: real published mobile frame-time budget in ms at 60 fps and 30 fps}}",
+      "location": "Appendix A, row 'Frame time budget at 60 fps'; Appendix F",
+      "status": "SOURCED"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: stated in-scenario deadline, days from case launch to certification pass}}",
+      "location": "Appendix A, row 'Days from case launch to the certification pass'",
+      "status": "ASSUMPTION"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: stated in-scenario sample rotation and stretch matrices for the shoulder-bone keyframe}}",
+      "location": "Appendix B, rows 'Rotation matrix R' and 'Stretch (scale) matrix S'",
+      "status": "ASSUMPTION"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: a real, published worked example of CPU-side per-vertex skinning cost exceeding a stated frame budget, to ground why this arithmetic matters at production scale}}",
+      "location": "Appendix E",
+      "status": "SOURCED"
+    }
+  ],
+  "modeling_assumptions": [
+    {
+      "id": "MA1",
+      "claim": "Hero rig bone count",
+      "value": "28 bones",
+      "basis": "Anchored to Unity's real published guidance: 'Ideally, keep the number below thirty for mobile devices' (S1). 28 sits just under that real ceiling. Context only after the 2026-09-01 balance redesign -- see MA7.",
+      "sensitivity": "No longer load-bearing for margin_pct (which is now taken directly from S6's real measured GPU comparison). Retained for Appendix A's rig-scale context."
+    },
+    {
+      "id": "MA2",
+      "claim": "Hero mesh polygon count",
+      "value": "300 polygons",
+      "basis": "Anchored to the real, published low end of Unity's mobile mesh-density guidance: 'somewhere between 300 and 1500 polygons per mesh' (S2). Context only after the 2026-09-01 balance redesign -- see MA7.",
+      "sensitivity": "No longer load-bearing for margin_pct. Retained for Appendix A's rig-scale context."
+    },
+    {
+      "id": "MA3",
+      "claim": "Target frame rate",
+      "value": "60 fps",
+      "basis": "Fenwick's game is a real-time action combat game; real published guidance states 60 fps is 'required for action games, competitive multiplayer, and any game where input responsiveness is critical' (S4).",
+      "sensitivity": "Scales both options' per-second GPU-busy-time totals by the same factor; does not change margin_pct. Used in Appendix D/F to show what share of the real 16.6ms/frame budget (S3) each option consumes."
+    },
+    {
+      "id": "MA4",
+      "claim": "Days from case launch to certification pass",
+      "value": "1 day",
+      "basis": "Matches the Overview's 'the performance lab picks up the build at 9 AM' framing.",
+      "sensitivity": "None -- flavor only, not load-bearing."
+    },
+    {
+      "id": "MA5",
+      "claim": "Sample elbow-bone R and S matrices at the stated keyframe",
+      "value": "R = [[0.8,-0.6],[0.6,0.8]], S = [[1.5,0],[0,0.5]]",
+      "basis": "Illustrative -- chosen so R is an exact rotation matrix (det = 1, a 3-4-5-triangle angle for clean arithmetic) and S is a simple diagonal stretch. Not meant to represent any real animation data. The elbow is a single-bone rig segment, unaffected by the Direct-Blend-vs-Quaternion-Blend choice (that choice only matters at multi-bone blend zones like the shoulder -- see MA6).",
+      "sensitivity": "None for the primary metric -- D1/D2/D3 use these numbers only to practice ordinary single-bone matrix mechanics; they do not feed Appendix D's real measured cost figures."
+    },
+    {
+      "id": "MA6",
+      "claim": "The shoulder blend-zone's two influencing bones' rotation matrices and blend weights at the stated keyframe",
+      "value": "R1 = [[1,0],[0,1]] (upper-arm bone, at rest / 0 degrees), R2 = [[0,-1],[1,0]] (torso/shoulder-blade bone, rotated 90 degrees), weights w1 = w2 = 0.5 (the sample vertex is influenced equally by both bones)",
+      "basis": "Illustrative -- chosen to give clean by-hand arithmetic (R1 = identity makes the blend sum easy to check entry-by-entry) while still being a genuine instance of S7's documented mechanism: summing two real rotation matrices with real weights does not, in general, produce a matrix with determinant 1. Equal weighting (0.5/0.5) is the simplest, most defensible choice for a vertex sitting on the seam midway between two bones -- not sourced (Fenwick's animation data does not exist), but stated as a clearly-labeled scenario premise, matching this project's convention for in-scenario figures.",
+      "sensitivity": "This IS load-bearing for D2/D3's determinant demonstration (det(M_blend) = 0.5, not 1) -- see case.md Appendix B. It does not feed Appendix D's real measured margin_pct (17.9%), which comes directly from S6 and does not depend on which specific weights or rotation angles this worked example uses."
+    },
+    {
+      "id": "MA7",
+      "claim": "Treating S6's real, measured relative GPU-cost ratio (DQB costs 17.9% more than LBS) as representative of Fenwick's own mobile pipeline choice",
+      "value": "17.9% relative overhead, taken directly from S6, used as the case's margin_pct without independent rescaling to Fenwick's own (fictional) mobile hardware",
+      "basis": "S6's benchmark used a 5002-vertex, 54-joint mesh on a GeForce 6600 GT (a 2007-era desktop GPU) -- a different scale and a different, older hardware generation than Fenwick's fictional mobile hero rig (28 bones, 300 polygons, S1/S2) and target device. No real, published, mobile-specific head-to-head benchmark of LBS vs. DQB was found during this redesign's research pass (see RESEARCH_LOG.md). Rather than fabricate a rescaling factor to convert S6's numbers to 'Fenwick's device,' this case uses S6's real measured RELATIVE cost directly, the same way Appendix E already uses S5 as documented precedent rather than a Fenwick-specific measurement.",
+      "sensitivity": "This is the redesign's central honesty disclosure. If a genuinely mobile-GPU-specific LBS-vs-DQB benchmark is found in a future pass, it should replace S6/MA7 as the primary metric's source; until then, margin_pct = 17.9% is real, sourced, and defensible as 'the best available real, published, head-to-head measurement of these two techniques,' not as a literal claim about Fenwick's own phone."
+    }
+  ],
+  "sensitivity_note": "margin_pct (17.9%) is taken directly from S6's real, measured, published GPU-runtime comparison (LBS = 0.32 ms, DQB = 0.39 ms) and is NOT derived from Appendix A's bone-count/mesh-density model -- MA1/MA2 (bone count, polygon count) are context only after the 2026-09-01 balance redesign and no longer feed the primary metric's arithmetic at all (contrast the original case-research pass, where margin_pct was derived from those two figures and stayed structurally over SPEC Sec 2's cap at every value in their real range -- see RESEARCH_LOG.md for the full history). The only real sensitivity left in margin_pct is MA7's disclosed scale/hardware mismatch between S6's benchmark and Fenwick's own mobile rig, which is a source-quality caveat, not a retunable modeling lever.",
+  "cohort_bands": [
+    {
+      "band": "12-18 (Full)",
+      "note": "The size the case was authored for. Socratic plan and Anchor timings run as written (45 minutes, all 4 anchors, full twist, threaded deep conflict)."
+    },
+    {
+      "band": "6-9 (Compressed)",
+      "note": "Anchors 2-3 combine into one pass; the twist still drops at the same relative point but only one deep-conflict thread runs (recommend thread 1, 'the aggregate hides per-bone variation,' since Appendix D's per-bone math is directly checkable in the room); total runtime shortens to roughly 30 minutes, content held constant."
+    },
+    {
+      "band": "1-2 (1:1 / pair)",
+      "note": "No vote to take at Anchor 1 -- the learner states an initial position instead. The facilitator plays devil's advocate directly rather than cold-calling. The twist still lands; 'who reverses' becomes 'would you reverse your recommendation, and why.'"
+    }
+  ],
+  "qa": {
+    "state": "TIER2_PASS",
+    "verdict": "PASS",
+    "run_on": "2026-09-01",
+    "blockers_open": 0,
+    "gaps_open": 2,
+    "case_md_sha256": "3071ceceefadf952052aaf2a82369faa596240cf3711ab553dbf37d5756a91f1",
+    "tier2": {
+      "P1": "PASS",
+      "P2": "PASS",
+      "P3": "PASS",
+      "P4": "PASS",
+      "P5": "PASS (manually reconfirmed, harness sign-convention caveat)",
+      "P6": "PASS (live fetch)"
+    },
+    "tier3_runs": []
+  },
+  "authored_on": "2026-09-01",
+  "pipeline_version": "1.0",
+  "published_on": "2026-09-01"
+}

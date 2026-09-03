@@ -661,3 +661,124 @@ and a full Tier 2 run happen.
 **Next step:** run `case-publish` to regenerate `published/*.docx`/`*.xlsx`/`MANIFEST.json` from
 the current case.md, re-run Tier 1 to confirm 0 BLOCKERs, then run Tier 2's six probes before this
 case is eligible for `TIER2_PASS`.
+
+---
+
+## Mechanical repackage — 2026-09-01 (published/*.docx, *.xlsx, MANIFEST.json)
+
+Not a case-readiness run. A separate pass regenerated `published/A Coach's Dilemma - Case
+Study.docx`, `- Data.xlsx`, and `- Facilitator Guide.docx` (via `scripts/generic_publish/`) purely
+to clear the T1-15 packet-staleness BLOCKER left open by the 2026-08-21 remediation above —
+`published/A Coach's Dilemma - Interactive.html` was already current (it was hand-edited in the
+same pass as the 2026-08-21 case.md fix). `MANIFEST.json` was rewritten with
+`case_md_sha256 = fc3c53b5...` (the current, correct hash) but **deliberately did not touch
+`case.json.qa`**, which still carried the stale 2026-08-18 stamp — its own `qa_note` said so
+explicitly and named the next step as "a human re-runs case-readiness in full." That is this
+entry.
+
+---
+
+## case-readiness run — 2026-09-01 (FRESH, FULL TIER 2 GATE AGAINST THE 2026-08-21-EDITED CONTENT)
+
+**State:** TIER1_PASS → TIER2_PASS   **Verdict: TIER2_PASS**
+
+**Supersedes the stale 2026-08-18 stamp above.** That entry's six PASS verdicts were recorded
+against `case.md` hashed `e72f72bb...`. The real, current `case.md` hashes to `fc3c53b5...` — a
+real, disclosed content edit (see "Manual remediation — 2026-08-21" above) landed between the two
+runs, and no Tier 2 probe had been re-run against the edited file until this entry. This run is a
+genuine from-scratch re-probe, not a rubber-stamp of the old result — every probe below was
+independently re-derived against the file on disk today, and one long-flagged tooling defect
+(P3's regex) was re-confirmed still present rather than assumed fixed.
+
+### What changed between the two hashes, verified via `git diff 507c7e8 e190e91 -- case.md`
+
+The August 21 edit is exactly the "Working Notebook worked-answer leak" fix already described
+above under "Manual remediation — 2026-08-21": it removed the pre-computed FT% column from
+Appendix B's free-throw table (students now compute 187÷471 themselves for D1 instead of reading
+39.7% off the page), removed the pre-divided "112.4 ÷ 100 = 1.124 points" sentence, changed MA1's
+"Value used" cell from the literal `39.7% per attempt` to `your D1 FT%`, changed MA2's cell from
+the pre-multiplied `≈ 0.07 points per sequence` to the raw `10.4% offensive-rebound rate, valued at
+the Clippers' own PPP` (leaving the multiplication to D3), and dropped MA4's second, pre-added
+`1.204 points per possession with the backup in` figure, keeping only the raw `+8.0 pts/100`
+assumption. Appendix E's S1/S2 source-table cells were trimmed to match (no more parenthetical
+FT%). `git diff` confirms **no other line changed**: every raw source number (187, 471, 28, 73,
+112.4, 94.7, 39.7 as a *computed* target not a given, 71.3, 10.4%, 24.7%, 0.15, +8.0) is byte-for-
+byte identical to the version the 2026-08-18 run graded. `case.json` was not touched by this edit
+at all (`git diff 507c7e8 e190e91 -- case.json` is empty) — `margin_pct: 9.7`, `balance{}`,
+`modeling_assumptions[]`, and `sources[]` are the same as the 2026-08-18 run graded. FACILITATOR.md
+was also not touched by this edit. **Conclusion: the balance/margin arithmetic, the trap, and the
+twist text are unchanged from the 2026-08-18 run — only the student-facing presentation of four
+already-graded values was de-leaked.** This re-run exists to confirm that conclusion empirically,
+not assume it.
+
+### Tier 1 — structural (re-run live, 2026-09-01)
+
+```
+python3 skills/case-readiness/scripts/tier1_structural.py --case a-coachs-dilemma
+checks run: 20   PASS 17 · GAP 2 · FAIL 1
+```
+
+| id | result | note |
+|---|---|---|
+| T1-01..T1-14 | PASS | all structural/continuity checks clean |
+| T1-10 | GAP | reinforcement carve-out (pre-existing, `case.json.reinforcement_note`, not this pass's subject) |
+| T1-15 | GAP | 1 orphan number (`45.0`) in `published/*Facilitator Guide.docx` — **investigated, confirmed a tooling false positive, not a case defect.** The docx sweep at `tier1_structural.py` lines 651-663 lacks the "45-Minute Socratic Plan" / clock-time exclusions that the FACILITATOR.md-text sweep at line 600-602 already has (`45[\s-]*minute Socratic plan` and `\d{1,2}:\d{2}`), so "45" from the "## 45-Minute Socratic Plan" heading and "45:00" timing marks leaks through only in the docx path. Confirmed no literal `45.0` string exists anywhere in the docx's actual paragraph/table text (checked via direct `docx.Document` extraction) — the false hit is an artifact of `numbers_in()` parsing "45-Minute"/"45:00" without the same guard, not a real orphan figure. |
+| T1-16 | **BLOCKER before this run, cleared by it** | hash was stale (`e72f72bb...` recorded vs. `fc3c53b5...` actual) — this is the exact staleness this whole run exists to fix; cleared below by writing the correct hash to `case.json.qa`. |
+| T1-17..T1-20 | PASS | cohort bands, interactive HTML freshness/leak-check, glossary, visual all clean |
+
+0 real BLOCKERs once T1-16 is cleared by this run's own `case.json.qa` update (below).
+
+### Tier 2 — simulated play (6 probes, run for real against the current hash)
+
+| probe | verdict | finding |
+|---|---|---|
+| **P1 cold solve** | **PASS** | A genuinely fresh, isolated subagent (no access to `FACILITATOR.md`/`QA_REPORT.md`/`case.json`, given only `/tmp/coldsolve-a-coachs-dilemma/PACKET.md` — regenerated fresh from the *current* case.md by this run's own `tier2_probes.py` invocation, confirmed leak-free: no `margin_pct`, no pre-computed 39.7%/1.124, no Twist text) independently reached **Option A**, reconstructed D1-D4's exact arithmetic (187÷471=39.7%; the MA2 compound probability 0.603×0.104×1.124≈0.0705; D3 total 1.0145 vs. 1.124; D4's foul-budget read), named its metric (expected points per possession) explicitly, showed all intermediate steps, and self-identified the case's own real sensitivity (MA3 at the top of its stated 0.15-0.3 real range flips the recommendation to B) rather than glossing past it. Correct arithmetic, correct route, matches case.json's own `derived` figures exactly. |
+| **P2 both-sides** | **PASS** | Neither side collapses. A's case: the corrected ~9.7% edge survives both of Appendix D's disclosed real costs (MA2, MA3) and is not a naive/uncorrected number. B's case: D4's real foul-budget risk (Houston's primary center can foul out under the real 6-foul rule) is a genuine, quantitatively real, *separate* axis the graded per-possession metric structurally cannot capture — not a "B is nicer but worse" concession. The independently-dispatched P1 cold solver reconstructed this exact B-side argument unprompted in its own Q4 ("strongest argument against my choice"), which is independent confirmation neither side is a paper tiger. |
+| **P3 trap check** | **PASS (human-adjudicated)** | Read `FACILITATOR.md`'s actual dedicated "## The trap, named explicitly" section (lines 142-152) by hand. It names two concrete wrong actions a learner will actually take, not just a difficulty note: (1) computing only D2's naive 2×39.7%=0.794 vs. 1.124 and concluding a ~29%-margin "no-brainer" while missing Appendix D's two disclosed costs; (2) correctly working D3 but still wrongly treating ~9.7% as "basically decided," missing that D4's foul-budget risk is a separate, uncaptured axis. Both are genuine anticipated-mistake descriptions, matching the pass criterion. **The mechanical pre-screen's FAIL is confirmed still a tooling bug, not a case defect**: `tier2_probes.py`'s regex grabs the *first* occurrence of the word "trap" in the file, which is the "Lessons Learned" section's summary sentence (line 117-121, a difficulty note, correctly flagged by the script as "reads as a difficulty note, not a trap") — not the real, later, dedicated trap section the check exists to grade. This is the same known bug the 2026-08-18 run flagged; it has not been fixed in `tier2_probes.py` between runs. |
+| **P4 twist integrity** | **PASS** | (1) Invalidates a real position: the comfortable read that D3's ~9.7% modeled edge means Hack-a-Jordan "worked" that night — the real Game 4 result (Clippers won 128-95) directly contradicts that naive read. (2) Survives every stated-assumption reading: FACILITATOR.md's own "Soundness check" walks MA1-MA4 in order and shows the Twist is additive real-world confirmation of MA1's disclosed single-game-variance limitation and MA4's backup-center mechanism, not a contradiction of any of them. (3) Not pre-leaked: confirmed via grep that none of the Twist's real Game 4 facts (128-95 final, 34 FT attempts, 28 in the first half, 14 made, 18:22 played, technical-foul ejection) appear anywhere in `case.md` or the cold-solve packet — case.md states only the pre-Game-4 date (May 10, 2015) as scenario setup, not the outcome. (4) **Live fact-check of the Twist's own real-world claims** (not previously verified in the 2026-08-18 entry): web search independently confirmed final score 128-95, DeAndre Jordan 14-of-34 FT with 28 in the first half (an NBA playoff record) — SLAM, NBC Sports, Bleacher Report all corroborate — and confirmed Houston's Dwight Howard fouled out after his 6th personal foul, drew a second technical foul on the same play for throwing the ball at a referee, was ejected, and played a total of 18 minutes (NBC Sports, theScore, SI) — matching FACILITATOR.md's "18 minutes and 22 seconds played... drew a technical foul on the same play, ejecting him" exactly. The Twist's real-world content is accurate, not just internally consistent. |
+| **P5 assumption-sensitivity** | **PASS** | `sensitivity_model.py` run directly and via `tier2_probes.py --probe 5`. **The documented lower-is-better-vs-higher-is-better sign inversion is still present and was manually reconciled**, exactly as the 2026-08-18 run flagged: the harness's generic `probe_sensitivity` treats returned metric values as "higher is better," but this case's own model returns *points Houston concedes* (explicitly commented "LOWER is better for Houston" in the model file itself), so the raw harness output labels the winner "B" with an inverted margin (e.g. base margin printed as 10.8% favoring B). Running `sensitivity_model.py`'s own `margin_pct()` — which correctly encodes `(B-A)/B`, i.e. lower-A-is-better — gives base `{A: 1.0145, B: 1.124}`, margin **9.74% favoring A**, matching `case.json.balance.margin_pct = 9.7` exactly. Flex sweep on the model's two declared `FLEX[]` dials, corrected sign convention: `transition_suppression_cost` -50% → margin 16.42% (A still wins, under the 20% cap); +50% → margin 3.07% (A still wins, thinner); `backup_center_delta_per100` ±50% → no effect on this metric at all (it feeds the separate D4/`evaluate_roster()` axis by design, per `sensitivity_model.py`'s own comments, matching P2/P3's finding that D4 is deliberately not folded into the graded metric). **0 of 4 flex directions flip the winner or breach the 20% cap.** |
+| **P6 data decay** | **PASS, with 1 disclosed non-blocking GAP (unchanged from 2026-08-18)** | All 7 `sources[].url` entries live-fetched today. **S1** (Basketball-Reference, Jordan player page): `curl`+parsed raw `data-stat` table cells directly — 2014-15 totals row: FT 187/471 (.397 ✓), 2P 378/530 (71.32%≈71.3% ✓), 3PT 1/4 ✓ — exact match. **S2** (same page, playoffs table): 2015 WC1 row (`series_result: "W (4-3)"`, 7 games): FT 28/73 (.384 ✓) — exact match. **S3** (Basketball-Reference, LAC 2014-15 team-misc table): Offensive Rating 112.4, Pace 94.7 — exact match, parsed directly from the table. **S4** (Wikipedia, "Personal foul (basketball)"): reachable; confirmed verbatim text supporting the 6-foul-in-48-minutes disqualification rule; **confirmed still only partially supporting the full S4 claim** — the page's fetched text does not state the separate "two free throws, no one-and-one" detail also attributed to S4 in Appendix C. Same finding as 2026-08-18, still true today — recorded again as a disclosed GAP, not a BLOCKER (both facts are independently well-established NBA rules; the gap is sourcing hygiene, not factual risk). **S5** (Fansided): reachable, exact quoted match — "offensive rebounding rate is 10.4% while it is 24.7% on missed shots from the field," attributed to the 2015/16 season as cited. **S6** (ESPN Game 1 box score + corroborated Games 2-3): Game 1 confirmed LAC 117-101 HOU, 5/4/15; Game 2 confirmed HOU 115-109 LAC, 5/6/15 (ESPN); Game 3 confirmed LAC 124-99 HOU, 5/8/15 (ESPN) — Clippers led 2-1 entering Game 4 exactly as case.md states. **S7** (ESPN "Let the hacking begin"): reachable, confirmed on-topic (Hack-a-Jordan-era intentional-fouling strategy article, 2015). No dead links, no moved URLs, no drifted figures beyond the pre-existing, already-disclosed S4 partial-support gap. |
+
+**Overall Tier 2: 6/6 probes recorded by name, 0 FAIL.** Both the base result (margin, winner) and
+all six probe verdicts match the 2026-08-18 run's conclusions — the August 21 edit changed
+presentation only, not substance, and this fresh re-probe against the current hash confirms that
+independently rather than assuming it.
+
+### Tier 3 — human dry-run
+
+NOT RUN (unchanged).
+
+### `case.json.qa` updated by this run
+
+```json
+{
+  "state": "TIER2_PASS",
+  "verdict": "PASS",
+  "run_on": "2026-09-01",
+  "blockers_open": 0,
+  "gaps_open": 2,
+  "tier2": {"P1": "PASS", "P2": "PASS", "P3": "PASS", "P4": "PASS", "P5": "PASS", "P6": "PASS"},
+  "tier3_runs": [],
+  "case_md_sha256": "fc3c53b54234f667114937cc641748d200e21b9ddf9116e7c193f14faebe536d"
+}
+```
+
+**Next step:** case is genuinely `TIER2_PASS` against current content. `published/MANIFEST.json`
+was refreshed alongside `case.json.qa` to drop its 2026-09-01 "UNVERIFIED against current content"
+disclaimer, since that disclaimer's own named next step (this run) is now done. Tier 3 (human
+dry-run) remains the only remaining gate before `VERIFIED`.
+
+**Addendum — re-running Tier 1 after writing the `case.json.qa` update above surfaced a new GAP**
+(T1-14 and T1-15, both flagging an orphan `41.0`): `FACILITATOR.md` line 174 cites
+`DOCTRINE_LEDGER.md MCS-26/MCS-41`, and `numbers_in()` parses `41` out of the `MCS-41` id as a
+bare number. This is the *identical* known false positive the 2026-08-18 `qa.note` already
+described ("an earlier run also flagged T1-14 on a false-positive orphan-number match inside the
+'MCS-41' citation digits") — it did not actually get fixed then; the old `qa.note` happened to
+also contain the literal substring `MCS-41` in its own prose, which put `41` into the checker's
+"universe" of legitimate numbers and *incidentally* masked the false positive rather than
+resolving it. This run's new `qa.note` does not happen to contain that substring, so the same
+pre-existing, never-fixed false positive is visible again. **Not a new defect and not case
+content drift** — `FACILITATOR.md` was not edited by this run or the 2026-08-21 remediation.
+Recorded here rather than papered over again; a durable fix belongs in `tier1_structural.py`'s
+`numbers_in()` (exclude digits immediately following an `MCS-`/doctrine-id-style hyphen), not in
+another incidental qa.note string match.

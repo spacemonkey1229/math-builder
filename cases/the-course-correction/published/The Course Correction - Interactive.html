@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Course Correction — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Course Correction</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier 2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Vectors &middot; Dot Product</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are the officer of the watch. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The True Line</h4>
+      <p style="margin:0">Correct the heading for the measured current's cross-track effect, using vector math to find the exact boat speed and heading that gets to the buoy inside the weather window.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Steady Burn</h4>
+      <p style="margin:0">Hold the cheapest point on the real fuel curve and accept the current's drift, correcting course only at the end.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include: <strong>D1</strong> the rendezvous vector, and the current vector resolved into components; <strong>D2</strong> Option A's required boat speed and heading (vector subtraction); <strong>D3</strong> Option B's along-track/cross-track decomposition (dot product) and the resulting extra distance; <strong>D4</strong> a $/nm cost comparison using Appendix C/D's fuel curve and price; <strong>D5</strong> a recommendation memo.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  <details><summary>Appendix A &mdash; The Rendezvous Geometry</summary><div class="inner"><table><thead><tr><th>Quantity</th><th>Value</th></tr></thead><tbody><tr><td>Rendezvous point</td><td>NDBC Data Buoy 44090, Cape Cod Bay, MA — 41.840° N, 70.329° W [S1]</td></tr><tr><td>Distance from the <em>Coastal Aster</em>'s position to Buoy 44090 at the start of the watch</td><td>27.0 nm [MA1]</td></tr><tr><td>True course (bearing) from the ship's position to Buoy 44090</td><td>250.0° T [MA1]</td></tr><tr><td>Hours remaining in the closing weather window, from the start of the watch</td><td>3.0 hr [MA2]</td></tr><tr><td>The Steady Burn's heading (uncorrected — pointed directly at the charted bearing)</td><td>250.0° T</td></tr><tr><td>The True Line's required speed-over-ground along the course line, to close the full 27.0 nm inside the weather window</td><td>27.0 nm ÷ 3.0 hr = <strong>9.000 kt</strong></td></tr></tbody></table>
+<p><em>Note: the</em> Coastal Aster *is a scenario construction for this case, styled on a real coastal</p>
+<p>research-vessel class (SEE APPENDIX C) — there is no real vessel by this name. NDBC Data Buoy</p>
+<p>44090 is real; its position above is the buoy's own published station coordinates [S1].*</p></div></details>
+<details><summary>Appendix B &mdash; The Measured Current at Buoy 44090</summary><div class="inner"><p>NDBC reports ocean current direction as the direction the current is flowing <strong>toward</strong> (the</p>
+<p>opposite convention from how NDBC reports wind, which is reported as the direction it blows</p>
+<p><strong>from</strong>) [S4]. Current speed is reported in centimeters per second.</p>
+<table><thead><tr><th>Quantity</th><th>Value</th></tr></thead><tbody><tr><td>Station</td><td>NDBC 44090 — Cape Cod Bay, MA [S1]</td></tr><tr><td>Depth of reading (shallowest bin)</td><td>1 meter [S1]</td></tr><tr><td>Observation time</td><td>2026-09-01, 21:30 UTC [S1]</td></tr><tr><td>Current direction (toward)</td><td>340° T [S1]</td></tr><tr><td>Current speed</td><td>27 cm/s [S1]</td></tr><tr><td>Current speed, converted to knots</td><td>27 cm/s ÷ 51.4444 cm/s per kt = <strong>0.5248 kt</strong> (1 kt = 1 nm/hr = 1,852 m/hr = 51.4444 cm/s)</td></tr></tbody></table>
+<p><strong>How to read this table for D1.</strong> A current "toward 340 at 0.5248 kt" is a vector of magnitude</p>
+<p>0.5248 kt pointed on a bearing of 340° true. Resolved into east/north components (east =</p>
+<p>magnitude × sin(bearing), north = magnitude × cos(bearing)): east ≈ <strong>−0.1795 kt</strong>, north ≈</p>
+<p><strong>+0.4932 kt</strong> — a westward-and-north-flowing set.</p></div></details>
+<details><summary>Appendix C &mdash; Vessel Speed and Fuel Consumption</summary><div class="inner"><p>The <em>Coastal Aster</em> is styled on a real coastal research-vessel class, using the published</p>
+<p>speed/fuel-consumption figures of a real 110-foot fisheries research vessel of that class [S2].</p>
+<table><thead><tr><th>Speed through the water (kt)</th><th>RPM</th><th>Fuel consumption (gal/hr)</th></tr></thead><tbody><tr><td>8.5</td><td>1250</td><td>19 [S2]</td></tr><tr><td>9.5</td><td>1460</td><td>32 [S2]</td></tr><tr><td>~11.5 (near top speed)</td><td>—</td><td>60 [S2]</td></tr></tbody></table>
+<p>*The 8.5 kt / 19 gal/hr setting is the ship's economical cruising throttle — the lowest fuel burn</p>
+<p>of any speed in this table. Fuel consumption between the published points is not a straight</p>
+<p>percent-for-percent trade with speed: raising speed from 8.5 to 9.5 kt (+11.8%) raises fuel burn</p>
+<p>from 19 to 32 gal/hr (+68.4%); raising it again to ~11.5 kt (+21.1%) raises fuel burn to 60 gal/hr</p>
+<p>(+87.5%). A speed between two published points uses the straight-line (linear) interpolation</p>
+<p>between them — see Appendix E, MA3.*</p></div></details>
+<details><summary>Appendix D &mdash; Fuel Price</summary><div class="inner"><table><thead><tr><th>Quantity</th><th>Value</th></tr></thead><tbody><tr><td>Diesel price used for this case</td><td>$5.599 per US gallon — U.S. No. 2 Diesel Retail Price, weekly series, week ending <strong>2026-08-31</strong> [S3]</td></tr><tr><td>"As of" cutoff for the price</td><td>2026-08-31, the most recent week carrying a published value in the series at the time this case was written. Every dollar figure in this case is frozen at this same cutoff.</td></tr></tbody></table></div></details>
+<details><summary>Appendix E &mdash; Modeling Assumptions</summary><div class="inner"><p>> These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case</p>
+<p>> author, each with a real basis named below. A Hero may challenge them in discussion — that is a</p>
+<p>> legitimate move, and APPENDIX H names the skills a Hero would need to test one.</p>
+<table><thead><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr></thead><tbody><tr><td>MA1</td><td>The <em>Coastal Aster</em>'s distance and bearing to Buoy 44090 at the start of the watch</td><td>27.0 nm, on a true course of 250.0°</td><td>The <em>Coastal Aster</em> is fictional, so no real ship position exists to source; chosen to put the buoy a realistic few hours' steaming away and to place the measured current (Appendix B) at a working angle across the course — neither dead ahead nor dead abeam — so that both a real along-track effect and a real cross-track effect show up in the vector math.</td><td><strong>HIGH on distance, MODERATE on bearing</strong> (`sensitivity_model.py`). The distance, paired with MA2, sets Option A's required speed-over-ground (27.0 nm ÷ 3.0 hr = 9.000 kt) — the single most load-bearing derived number in the case, since it decides which part of Appendix C's fuel curve Option A has to buy. Flexing distance alone ±25%/±50% (holding the window fixed) flips the cheaper-per-nm winner from B to A outside roughly −20% to +20% around the stated value. Flexing the bearing alone ±25°/±50° (holding distance and window fixed) does <strong>not</strong> flip the winner in that tested range — it moves margin_pct between about 3% and 28% by changing how much of the current's effect is along-track versus cross-track.</td></tr><tr><td>MA2</td><td>Hours remaining in the closing weather window</td><td>3.0 hr</td><td>Matches the Overview's "front now stacking up on the western horizon" framing — a stated scenario deadline, the same kind of narrative constraint Wind Triangle and other cases in this project use for a closing operational window.</td><td><strong>HIGH</strong> (`sensitivity_model.py`). Enters Option A's required speed-over-ground inversely (9.0 kt = 27.0 nm ÷ window_hr). Loosening the window (+25%/+50%) flips the $/nm winner to Option A (a looser deadline lets Option A throttle down); tightening it (−25%/−50%) keeps Option B ahead on $/nm by a wider margin (57.6%–71.7%) while making Option B's schedule miss worse. The 3.0 hr base case sits close to the flip boundary on the loosening side — a genuinely sensitive constraint, disclosed rather than hidden.</td></tr><tr><td>MA3</td><td>Fuel consumption at a boat speed between two published Appendix C data points is found by straight-line (linear) interpolation</td><td>Applied to The True Line's required ~9.015 kt setting</td><td>No published data point exists at exactly the speed The True Line's correction requires; linear interpolation between the two nearest real, sourced points (8.5 kt/19 gal/hr and 9.5 kt/32 gal/hr) is the most conservative estimate available without inventing a new curve shape.</td><td><strong>LOW-MODERATE.</strong> The required speed (9.015 kt) sits only 1.6% of the way from the 8.5 kt anchor toward the 9.5 kt anchor, so the interpolated fuel rate (25.70 gal/hr) is close to the low end regardless of curve shape. A convex (accelerating) curve between the two real points — plausible, since the jump from 9.5 kt to ~11.5 kt in Appendix C is itself convex — would raise the interpolated rate by at most a few gal/hr here, changing metric_A by a few percent, not enough on its own to close the 16.9-point gap to Option B.</td></tr><tr><td>MA4</td><td>On The Steady Burn, the final short leg from the current-drifted position to the buoy is sailed at the same 8.5 kt economical throttle, and the current's effect on that short final leg is not separately modeled</td><td>Applied to The Steady Burn's D5 fuel total</td><td>A simplification stated openly, matching how Wind Triangle holds one wind vector constant per leg rather than modeling continuous drift — the final leg is short enough (1.67 nm out of a 27.0 nm transit, about 6% of the total path) that re-solving the vector triangle for it changes the total by a small fraction of a gallon.</td><td><strong>LOW.</strong> The un-modeled leg is under 2 nm out of 27 nm; even a full re-solve of that leg under the same current changes Option B's total time/fuel, and therefore margin_pct, by well under one percentage point.</td></tr></tbody></table></div></details>
+<details><summary>Appendix F &mdash; Sources</summary><div class="inner"><table><thead><tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr></thead><tbody><tr><td>S1</td><td>Measured ocean current, direction and speed, at NDBC Data Buoy 44090 (Cape Cod Bay, MA, 41.840° N, 70.329° W), shallowest depth bin</td><td>Direction (toward) 340° T; speed 27 cm/s; observed 2026-09-01, 21:30 UTC, at 1 m depth</td><td>NOAA National Data Buoy Center, real-time ADCP data file for station 44090 (<a href="https://www.ndbc.noaa.gov/data/realtime2/44090.adcp" target="_blank" rel="noopener">link</a>); station location confirmed at the <a href="https://www.ndbc.noaa.gov/station_page.php?station=44090" target="_blank" rel="noopener">station page</a></td><td>2026-09-01</td><td>HIGH — live, directly fetched real-time federal ocean-observation data, re-confirmed at the station page for location</td></tr><tr><td>S2</td><td>Speed/fuel-consumption figures for a real 110-foot coastal fisheries research vessel</td><td>8.5 kt (1250 RPM) = 19 gal/hr; 9.5 kt (1460 RPM) = 32 gal/hr; ~11.5 kt (near top speed) = 60 gal/hr</td><td>Alaska Department of Fish and Game, "Medeia cuts fuel consumption 30 percent," Wildlife News (<a href="https://www.adfg.alaska.gov/index.cfm?adfg=wildlifenews.view_article&articles_id=413" target="_blank" rel="noopener">link</a>)</td><td>2008-12</td><td>MEDIUM — real, named, government-published vessel-operations figures for the R/V Medeia, a genuine 110-ft state fisheries research vessel; used as the sourced speed/fuel basis for the fictional <em>Coastal Aster</em>'s "coastal research-vessel class" spec (the case does not claim the <em>Coastal Aster</em> is the Medeia). Article is 2008-dated; no more recent public fuel-curve figure for a comparable vessel class was found (see RESEARCH_LOG.md)</td></tr><tr><td>S3</td><td>U.S. retail diesel fuel price</td><td>$5.599 per US gallon, week ending 2026-08-31</td><td>U.S. Energy Information Administration, <em>U.S. No. 2 Diesel Retail Prices</em>, weekly series (<a href="https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=pet&s=emd_epd2d_pte_nus_dpg&f=w" target="_blank" rel="noopener">link</a>)</td><td>2026-08-31</td><td>HIGH — live federal price series, most recent published week at time of writing; on-highway/retail diesel used as a proxy for this vessel's marine diesel price, since no marine-specific bunker price at this small a vessel scale is publicly quoted (see RESEARCH_LOG.md)</td></tr><tr><td>S4</td><td>Whether NDBC reports ocean current direction as the direction the current flows <em>from</em> or <em>toward</em></td><td>Toward — "The direction the ocean current is flowing toward. 0-360 degrees, 360 is due north, 0 means no measurable current."</td><td>NOAA National Data Buoy Center, <em>Nonstandard Meteorological/Ocean Data Measurement Descriptions</em> (<a href="https://www.ndbc.noaa.gov/faq/measdes.shtml" target="_blank" rel="noopener">link</a>)</td><td>current page</td><td>HIGH — official NDBC documentation, confirms the convention is the opposite of how the agency reports wind direction</td></tr></tbody></table></div></details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-01. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Resolve the current vector into components (D1)</h4>
+    <div class="goal">Appendix B gives the real measured current's speed and direction it flows TOWARD. Using standard nautical-bearing components (x = speed &times; sin(bearing), y = speed &times; cos(bearing)), resolve the current into its x/y components, first converting its speed from cm/s to knots (Appendix B/S4, 1 kt = 51.4444 cm/s).</div>
+    <div class="fieldrow"><label for="s1cx">Current x-component (kt)</label><input type="number" id="s1cx" step="0.001"><span id="fb1a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1cy">Current y-component (kt)</label><input type="number" id="s1cy" step="0.001"><span id="fb1b" class="fb"></span></div>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Cost per nautical mile, both options (D2&ndash;D5)</h4>
+    <div class="goal">Option A: subtract the current vector from the required over-ground velocity vector to find the boat's own required heading vector, then its speed &mdash; look up the fuel rate at that speed (Appendix C) and compute cost per nm. Option B: hold Appendix C's economical speed and heading, use the dot product to split the resultant velocity into along-track and cross-track components, find the extra distance/time the cross-track drift costs, and compute cost per nm the same way.</div>
+    <div class="fieldrow"><label for="s2costA">Option A: $/nm</label><input type="number" id="s2costA" step="0.001"><span id="fb2a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2costB">Option B: $/nm</label><input type="number" id="s2costB" step="0.001"><span id="fb2b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2margin">Percent margin</label><input type="number" id="s2margin" step="0.01"><span id="fb2c" class="fb"></span></div>
+    <button onclick="checkStep2()">Check</button>
+    <p class="side-note">Does Option B's schedule still make the weather window, or does the cross-track drift push it past 3 hours?</p>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p>New forecast update: the closing weather window isn't 3.0 hours anymore &mdash; conditions are worsening faster than expected, and the window is now 2.0 hours.</p>
+      <p>Recompute Step 2 for both options under the tighter window. Does the $/nm winner change? What happens to Option B's chance of actually making it in time?</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Recompute using a 2.0-hour weather window instead of 3.0</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] NOAA National Data Buoy Center &mdash; <a href="https://www.ndbc.noaa.gov/data/realtime2/44090.adcp" target="_blank" rel="noopener">Real-time ADCP data, station 44090</a> (2026-09-01)</li>
+<li>[S2] Alaska Department of Fish and Game &mdash; <a href="https://www.adfg.alaska.gov/index.cfm?adfg=wildlifenews.view_article&articles_id=413" target="_blank" rel="noopener">"Medeia cuts fuel consumption 30 percent" (Wildlife News)</a> (2026-09-01)</li>
+<li>[S3] U.S. Energy Information Administration &mdash; <a href="https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=pet&s=emd_epd2d_pte_nus_dpg&f=w" target="_blank" rel="noopener">U.S. No. 2 Diesel Retail Prices, weekly series</a> (2026-09-01)</li>
+<li>[S4] NOAA National Data Buoy Center &mdash; <a href="https://www.ndbc.noaa.gov/faq/measdes.shtml" target="_blank" rel="noopener">Nonstandard Meteorological/Ocean Data Measurement Descriptions</a> (2026-09-01)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Course Correction &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+const GAL_PER_KT_KTS = 51.4444;
+const PARAMS = {
+  distance_nm: 27.0, course_deg: 250.0, window_hr: 3.0,
+  current_speed_cm_s: 27.0, current_toward_deg: 340.0,
+  boat_speed_b_kt: 8.5,
+  fuel_pt_lo_kt: 8.5, fuel_pt_lo_gph: 19.0,
+  fuel_pt_mid_kt: 9.5, fuel_pt_mid_gph: 32.0,
+  fuel_pt_hi_kt: 11.5, fuel_pt_hi_gph: 60.0,
+  price_per_gal: 5.599,
+};
+function vecOf(mag, deg){
+  const r = deg * Math.PI / 180;
+  return [mag * Math.sin(r), mag * Math.cos(r)];
+}
+function dotOf(a, b){ return a[0]*b[0] + a[1]*b[1]; }
+function interpFuelGph(vKt, p){
+  const pts = [[p.fuel_pt_lo_kt,p.fuel_pt_lo_gph],[p.fuel_pt_mid_kt,p.fuel_pt_mid_gph],[p.fuel_pt_hi_kt,p.fuel_pt_hi_gph]].sort((a,b)=>a[0]-b[0]);
+  let v1,f1,v2,f2;
+  if(vKt <= pts[0][0]){ [v1,f1]=pts[0]; [v2,f2]=pts[1]; }
+  else if(vKt >= pts[2][0]){ [v1,f1]=pts[1]; [v2,f2]=pts[2]; }
+  else {
+    for(let i=0;i<2;i++){ if(pts[i][0]<=vKt && vKt<=pts[i+1][0]){ [v1,f1]=pts[i]; [v2,f2]=pts[i+1]; break; } }
+  }
+  const slope = (f2-f1)/(v2-v1);
+  return f1 + slope*(vKt-v1);
+}
+function currentComponents(p){
+  const Vc = p.current_speed_cm_s / GAL_PER_KT_KTS;
+  return vecOf(Vc, p.current_toward_deg);
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  const D = p.distance_nm, theta = p.course_deg, T = p.window_hr, price = p.price_per_gal;
+  const currentVec = currentComponents(p);
+  const u = vecOf(1.0, theta);
+  const rTheta = theta * Math.PI/180;
+  const uPerp = [Math.cos(rTheta), -Math.sin(rTheta)];
+
+  // Option A
+  const Rreq = D / T;
+  const Ru = [Rreq*u[0], Rreq*u[1]];
+  const H = [Ru[0]-currentVec[0], Ru[1]-currentVec[1]];
+  const boatSpeedA = Math.hypot(H[0], H[1]);
+  const fuelRateA = interpFuelGph(boatSpeedA, p);
+  const timeA = D / Rreq;
+  const costA = fuelRateA * timeA * price;
+  const metricA = costA / D;
+
+  // Option B
+  const boatSpeedB = p.boat_speed_b_kt;
+  const headingVecB = vecOf(boatSpeedB, theta);
+  const resultantB = [headingVecB[0]+currentVec[0], headingVecB[1]+currentVec[1]];
+  const alongB = dotOf(resultantB, u);
+  const crossB = dotOf(resultantB, uPerp);
+  const t1 = D / alongB;
+  const crossOffset = crossB * t1;
+  const extraLeg = Math.abs(crossOffset);
+  const tExtra = extraLeg / boatSpeedB;
+  const totalTimeB = t1 + tExtra;
+  const fuelRateB = p.fuel_pt_lo_gph;
+  const costB = fuelRateB * totalTimeB * price;
+  const metricB = costB / D;
+
+  return {A: -metricA, B: -metricB};
+}
+function evaluate_twist(params){
+  return evaluate(Object.assign({window_hr: 2.0}, params||{}));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkStep1(){
+  const cv = currentComponents(PARAMS);
+  fb('fb1a', near(parseFloat(val('s1cx')), cv[0], 0.02));
+  fb('fb1b', near(parseFloat(val('s1cy')), cv[1], 0.02));
+}
+function checkStep2(){
+  const p = window.__TWIST_APPLIED__ ? Object.assign({}, PARAMS, {window_hr: 2.0}) : PARAMS;
+  const r = evaluate(p);
+  const costA = -r.A, costB = -r.B;
+  const margin = 100 * Math.abs(costA - costB) / Math.max(costA, costB);
+  fb('fb2a', near(parseFloat(val('s2costA')), costA, 0.02));
+  fb('fb2b', near(parseFloat(val('s2costB')), costB, 0.02));
+  fb('fb2c', near(parseFloat(val('s2margin')), margin, 1.0));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "course-correction"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [["D1", "Rendezvous and current vectors, resolved into components"], ["D2", "Option A's required boat speed and heading"], ["D3", "Option B's along-track/cross-track decomposition (dot product)"], ["D4", "$/nm cost comparison, both options"], ["D5", "Recommendation memo"]];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Vector": {def: "A quantity with both magnitude (size) and direction, usually drawn as an arrow.",
+    url: "https://www.mathsisfun.com/algebra/vectors.html"},
+  "Magnitude": {def: "The length or size of a vector, ignoring its direction.",
+    url: "https://www.mathsisfun.com/algebra/vectors.html"},
+  "Unit Vector": {def: "A vector with a magnitude of exactly 1, used to describe pure direction.",
+    url: "https://www.mathsisfun.com/algebra/vectors.html"},
+  "Dot Product": {def: "A way of multiplying two vectors that produces a single number, useful for finding one vector's component along another.",
+    url: "https://www.mathsisfun.com/algebra/vectors-dot-product.html"},
+  "Rate": {def: "A ratio that compares two quantities with different units, like gallons per hour.",
+    url: "https://www.khanacademy.org/math/pre-algebra/pre-algebra-ratios-rates"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Distance": {def: "How far apart two points or places are.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"}
+};
+const HOWTO = [
+  ["how to find the magnitude and direction of a vector", "Vector"],
+  ["how to add and subtract vectors", "Vector"],
+  ["how to find the dot product of two vectors", "Dot Product"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  window.__TWIST_APPLIED__ = document.getElementById('applyTwist').checked;
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

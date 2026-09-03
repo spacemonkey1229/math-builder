@@ -245,9 +245,21 @@ def main():
             s = s[4:]
         return s.casefold()
 
+    # Same class of drift as LEGACY_TITLE_ALIASES above, but between a concept
+    # sheet's working title and the finished case.json's title, where the
+    # words themselves (not just a leading article or accent) changed during
+    # authoring. Found 2026-09-01: C9 "Redrawing the Lines" was written and
+    # published as cases/redrawing-lines/ with title "Redrawing Lines" (an
+    # internal "the" dropped, not a leading one norm_title already strips) --
+    # this left a real, already-published case showing as an unwritten
+    # concept on the board.
+    CONCEPT_TITLE_ALIASES = {
+        "redrawing the lines": "redrawing lines",
+    }
     written_titles_norm = {norm_title(t) for t in written_titles}
     concepts_out = [c for c in concepts_all
-                    if norm_title(c["title"]) not in written_titles_norm]
+                    if CONCEPT_TITLE_ALIASES.get(norm_title(c["title"]), norm_title(c["title"]))
+                    not in written_titles_norm]
     concepts_out.sort(key=lambda c: -c["score"])
 
     pipeline_published_ids = {c["id"] for c in cases_out}
