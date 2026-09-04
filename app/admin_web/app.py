@@ -556,6 +556,19 @@ def class_review_page():
     return render_class_review_html(rows, case_id, case_titles)
 
 
+@app.route('/class-review/export')
+def class_review_export():
+    case_id = request.args.get('case_id')
+    if not case_id:
+        return jsonify({"error": "case_id is required"}), 400
+    try:
+        text = admin_core.do_export_case_debrief_bundle(get_store(), case_id)
+    except admin_core.ApiError as e:
+        return f"<p>{_html.escape(e.msg)}</p>", e.code
+    return Response(text, mimetype='text/plain; charset=utf-8', headers={
+        'Content-Disposition': f'attachment; filename="{case_id}-submissions.txt"'})
+
+
 @app.route('/api/class-review', methods=['POST'])
 @json_api
 def api_class_review():

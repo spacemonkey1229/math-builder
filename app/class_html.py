@@ -156,9 +156,12 @@ def render_class_review_html(rows, case_id=None, case_titles=None):
                           reverse=True)
         body = "".join(
             f'<section style="margin-bottom:22px">'
-            f'<h2 style="font-size:16px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--rule)">'
-            f'{_html.escape(case_titles.get(cid, cid))} '
-            f'<span class="det" style="font-weight:400">&middot; {len(group_rows)} submission{"s" if len(group_rows) != 1 else ""}</span></h2>'
+            f'<h2 style="font-size:16px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+            f'<span>{_html.escape(case_titles.get(cid, cid))} '
+            f'<span class="det" style="font-weight:400">&middot; {len(group_rows)} submission{"s" if len(group_rows) != 1 else ""}</span></span>'
+            f'<a href="/class-review/export?case_id={_html.escape(cid)}" '
+            f'style="font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none">'
+            f'&#8595; Export for debrief</a></h2>'
             + "".join(_card(r) for r in group_rows)
             + '</section>'
             for cid, group_rows in ordered

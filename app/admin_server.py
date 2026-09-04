@@ -177,6 +177,22 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             return self.wfile.write(body)
+        if p.path == '/class-review/export':
+            qs = urllib.parse.parse_qs(p.query)
+            case_id = (qs.get('case_id') or [None])[0]
+            if not case_id:
+                return self._json(400, {"error": "case_id is required"})
+            try:
+                text = admin_core.do_export_case_debrief_bundle(STORE, case_id)
+            except admin_core.ApiError as e:
+                return self._json(e.code, {"error": e.msg})
+            body = text.encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain; charset=utf-8')
+            self.send_header('Content-Disposition', f'attachment; filename="{case_id}-submissions.txt"')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         m = re.match(r'^/class-photo/(.+)$', urllib.parse.unquote(p.path))
         if m:
             data = STORE.get_submitted_file(m.group(1))

@@ -1121,3 +1121,49 @@ def do_list_class_submissions(store, case_id=None):
 
 def do_review_class_submission(store, submission_id, review_note, reviewed_by):
     store.review_class_submission(submission_id, review_note, reviewed_by)
+
+
+def _extract_pdf_text(pdf_bytes):
+    """Best-effort text extraction from a submitted PDF. The "Submit" button
+    produces these via the browser's own print-to-PDF on the student's typed
+    Working Notebook, so the text layer is normally real and selectable, not
+    a scanned image -- but a student's own screenshots/handwriting pasted
+    into the notebook, or a device whose print-to-PDF behaves oddly, can
+    still yield a PDF with little or no extractable text. Never raises: a
+    bad/unusual PDF degrades to an empty string with a note, so one broken
+    submission can't take down the whole class's export."""
+    try:
+        import pypdf
+        reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
+        pages = [(p.extract_text() or "").strip() for p in reader.pages]
+        text = "\n\n".join(p for p in pages if p)
+        return text or "(PDF has no extractable text -- likely a scanned image or photo; open the PDF directly to read it.)"
+    except Exception as e:
+        return f"(Could not read this PDF automatically: {type(e).__name__}. Open it directly to read it.)"
+
+
+def do_export_case_debrief_bundle(store, case_id):
+    """One plain-text bundle of every submission for a case: real extracted
+    PDF text plus any typed answer/note, per student -- built so a guide can
+    download it once and hand it to a reader (human or Claude) instead of
+    opening submissions one at a time. Never touches review status; this is
+    read-only, same spirit as do_list_class_submissions."""
+    case = get_case_brief(case_id)
+    rows = store.list_class_submissions(case_id)
+    lines = [f"# {case['title']} — submission bundle for debrief prep",
+             f"# {len(rows)} submission(s), exported {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}",
+             ""]
+    for r in sorted(rows, key=lambda r: r['submitted_on'] or ''):
+        lines.append(f"## {r['student_name']}  ({r['submitted_on'] or 'no timestamp'})")
+        if r.get('pdf_path'):
+            pdf_bytes = store.get_submitted_file(r['pdf_path'])
+            lines.append(_extract_pdf_text(pdf_bytes) if pdf_bytes else
+                         "(PDF was recorded but the file itself is missing from storage.)")
+        else:
+            lines.append("(No PDF submitted.)")
+        if r.get('answer_text'):
+            lines.append(f"\n**Their own typed note/answer:** {r['answer_text']}")
+        if r.get('reviewed_on'):
+            lines.append(f"\n_Already reviewed by {r.get('reviewed_by') or 'guide'}: {r.get('review_note') or ''}_")
+        lines.append("\n---\n")
+    return "\n".join(lines)
