@@ -119,23 +119,50 @@ document.getElementById('submit-btn').onclick = async function() {{
 </body></html>"""
 
 
-def render_class_review_html(rows, case_id=None):
-    body = "".join(
-        '<div class="sub-panel" style="margin-bottom:10px;padding:10px;border:1px solid var(--rule);border-radius:8px">'
-        f'<strong>{_html.escape(r["student_name"])}</strong> '
-        f'<span class="det">&middot; {_html.escape(r["case_id"])} &middot; {_html.escape(r["submitted_on"] or "")}</span>'
-        + (f'<p>{_html.escape(r["answer_text"])}</p>' if r.get('answer_text') else '')
-        + (f'<p><a href="/class-photo/{_html.escape(r["pdf_path"])}" target="_blank">View PDF</a></p>'
-           if r.get('pdf_path') else '')
-        + (f'<p><a href="/class-photo/{_html.escape(r["photo_path"])}" target="_blank">View photo</a></p>'
-           if r.get('photo_path') else '')
-        + (f'<p class="det">Reviewed by {_html.escape(r["reviewed_by"] or "")}: {_html.escape(r["review_note"] or "")}</p>'
-           if r.get('reviewed_on') else
-           '<div class="row"><input type="text" placeholder="review note" id="note-' + r["id"] + '" style="flex:1;margin-right:6px">'
-           '<button class="btn ghost" data-review="' + r["id"] + '">Mark reviewed</button></div>')
-        + '</div>'
-        for r in rows
-    ) or '<p class="det">No submissions yet.</p>'
+def render_class_review_html(rows, case_id=None, case_titles=None):
+    """case_titles: optional {case_id: title} map so groups can show a real
+    title instead of the bare slug. A case_id missing from the map (e.g. a
+    since-unpublished case) falls back to the slug itself -- never hidden."""
+    case_titles = case_titles or {}
+
+    def _card(r):
+        return (
+            '<div class="sub-panel" style="margin-bottom:10px;padding:10px;border:1px solid var(--rule);border-radius:8px">'
+            f'<strong>{_html.escape(r["student_name"])}</strong> '
+            f'<span class="det">&middot; {_html.escape(r["submitted_on"] or "")}</span>'
+            + (f'<p>{_html.escape(r["answer_text"])}</p>' if r.get('answer_text') else '')
+            + (f'<p><a href="/class-photo/{_html.escape(r["pdf_path"])}" target="_blank">View PDF</a></p>'
+               if r.get('pdf_path') else '')
+            + (f'<p><a href="/class-photo/{_html.escape(r["photo_path"])}" target="_blank">View photo</a></p>'
+               if r.get('photo_path') else '')
+            + (f'<p class="det">Reviewed by {_html.escape(r["reviewed_by"] or "")}: {_html.escape(r["review_note"] or "")}</p>'
+               if r.get('reviewed_on') else
+               '<div class="row"><input type="text" placeholder="review note" id="note-' + r["id"] + '" style="flex:1;margin-right:6px">'
+               '<button class="btn ghost" data-review="' + r["id"] + '">Mark reviewed</button></div>')
+            + '</div>'
+        )
+
+    if not rows:
+        body = '<p class="det">No submissions yet.</p>'
+    else:
+        groups = {}
+        for r in rows:
+            groups.setdefault(r['case_id'], []).append(r)
+        # Sort groups by each group's most recent submission (newest case
+        # activity first), same "what needs attention" ordering the rest of
+        # this project's dashboards use -- not alphabetical by slug.
+        ordered = sorted(groups.items(),
+                          key=lambda kv: max((row['submitted_on'] or '') for row in kv[1]),
+                          reverse=True)
+        body = "".join(
+            f'<section style="margin-bottom:22px">'
+            f'<h2 style="font-size:16px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--rule)">'
+            f'{_html.escape(case_titles.get(cid, cid))} '
+            f'<span class="det" style="font-weight:400">&middot; {len(group_rows)} submission{"s" if len(group_rows) != 1 else ""}</span></h2>'
+            + "".join(_card(r) for r in group_rows)
+            + '</section>'
+            for cid, group_rows in ordered
+        )
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>Class submissions — Math Builder</title>
 <style>
@@ -144,7 +171,7 @@ body{{font-family:-apple-system,sans-serif;max-width:720px;margin:24px auto;padd
 input{{padding:6px 8px;border:1px solid #DED8CC;border-radius:6px}}
 .btn.ghost{{background:none;border:1px solid #22406B;color:#22406B;padding:5px 10px;border-radius:6px;cursor:pointer}}
 </style></head><body>
-<h1>Class submissions{' — ' + _html.escape(case_id) if case_id else ''}</h1>
+<h1>Class submissions{' — ' + _html.escape(case_titles.get(case_id, case_id)) if case_id else ''}</h1>
 {body}
 <script>
 document.querySelectorAll('[data-review]').forEach(function(b) {{

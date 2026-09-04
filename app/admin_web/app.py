@@ -543,7 +543,17 @@ def api_class_submit():
 def class_review_page():
     case_id = request.args.get('case_id') or None
     rows = admin_core.do_list_class_submissions(get_store(), case_id)
-    return render_class_review_html(rows, case_id)
+    # Real titles for the group headers -- get_case_brief() raises on a
+    # since-unpublished/renamed case, so a lookup miss falls back to the bare
+    # slug (handled by render_class_review_html itself) rather than 500ing
+    # the whole review page over one stale case_id.
+    case_titles = {}
+    for cid in {r['case_id'] for r in rows}:
+        try:
+            case_titles[cid] = admin_core.get_case_brief(cid)['title']
+        except admin_core.ApiError:
+            pass
+    return render_class_review_html(rows, case_id, case_titles)
 
 
 @app.route('/api/class-review', methods=['POST'])

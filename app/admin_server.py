@@ -165,7 +165,13 @@ class Handler(BaseHTTPRequestHandler):
             qs = urllib.parse.parse_qs(p.query)
             case_id = (qs.get('case_id') or [None])[0]
             rows = admin_core.do_list_class_submissions(STORE, case_id)
-            body = render_class_review_html(rows, case_id).encode('utf-8')
+            case_titles = {}
+            for cid in {r['case_id'] for r in rows}:
+                try:
+                    case_titles[cid] = admin_core.get_case_brief(cid)['title']
+                except admin_core.ApiError:
+                    pass
+            body = render_class_review_html(rows, case_id, case_titles).encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
