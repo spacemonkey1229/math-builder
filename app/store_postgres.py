@@ -81,6 +81,10 @@ _MIGRATIONS = (
     )""",
     "CREATE INDEX IF NOT EXISTS class_submissions_case_idx ON class_submissions(case_id)",
     "ALTER TABLE class_submissions ADD COLUMN IF NOT EXISTS pdf_path text",
+    """CREATE TABLE IF NOT EXISTS app_settings (
+        key   text PRIMARY KEY,
+        value text
+    )""",
 )
 
 
@@ -396,6 +400,29 @@ class PostgresStore:
                     (reviewed_by, review_note, submission_id))
                 if cur.rowcount == 0:
                     raise ApiError(404, f"class submission {submission_id} not found")
+            conn.commit()
+
+    # ------------------------------------------------------------ settings -
+    # A tiny key/value store for the handful of things an admin needs to set
+    # and have stick without a code change or redeploy -- e.g. this week's
+    # debrief-prep link. Deliberately not folded into the four MUTABLE_DOCS
+    # (roster/submissions/overrides/demoted-criteria): those are whole-doc
+    # read-model files this store already has a dedicated shape for, and a
+    # single freeform string doesn't fit that pattern or need it.
+    def get_setting(self, key):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT value FROM app_settings WHERE key = %s", (key,))
+                row = cur.fetchone()
+        return row[0] if row else None
+
+    def set_setting(self, key, value):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO app_settings (key, value) VALUES (%s, %s)
+                       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value""",
+                    (key, value))
             conn.commit()
 
     # --------------------------------------------------- scoring bridge ----

@@ -171,7 +171,8 @@ class Handler(BaseHTTPRequestHandler):
                     case_titles[cid] = admin_core.get_case_brief(cid)['title']
                 except admin_core.ApiError:
                     pass
-            body = render_class_review_html(rows, case_id, case_titles).encode('utf-8')
+            weekly_debrief = admin_core.do_get_weekly_debrief(STORE)
+            body = render_class_review_html(rows, case_id, case_titles, weekly_debrief).encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
@@ -328,6 +329,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"ok": True})
             elif p.path == '/api/class-review':
                 admin_core.do_review_class_submission(STORE, b['submission_id'], b.get('review_note'), 'guide')
+                self._json(200, {"ok": True})
+            elif p.path == '/api/weekly-debrief':
+                admin_core.do_set_weekly_debrief(STORE, b.get('label'), b.get('url'))
                 self._json(200, {"ok": True})
             else:
                 self._json(404, {"error": "not found"})

@@ -1123,6 +1123,26 @@ def do_review_class_submission(store, submission_id, review_note, reviewed_by):
     store.review_class_submission(submission_id, review_note, reviewed_by)
 
 
+_WEEKLY_DEBRIEF_KEY = "weekly_debrief"
+
+
+def do_get_weekly_debrief(store):
+    """{label, url} for the current week's debrief-prep page, or None if
+    nothing has been set yet. Stored as one JSON string under a single
+    settings key -- see get_setting()/set_setting() on each store."""
+    raw = store.get_setting(_WEEKLY_DEBRIEF_KEY)
+    return json.loads(raw) if raw else None
+
+
+def do_set_weekly_debrief(store, label, url):
+    label, url = (label or "").strip(), (url or "").strip()
+    if not url:
+        raise ApiError(400, "a link is required")
+    if not (url.startswith("http://") or url.startswith("https://")):
+        raise ApiError(400, "link must start with http:// or https://")
+    store.set_setting(_WEEKLY_DEBRIEF_KEY, json.dumps({"label": label or "This week's debrief", "url": url}))
+
+
 def _extract_pdf_text(pdf_bytes):
     """Best-effort text extraction from a submitted PDF. The "Submit" button
     produces these via the browser's own print-to-PDF on the student's typed

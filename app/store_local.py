@@ -85,3 +85,21 @@ class LocalFileStore:
         # Nothing to bridge -- the real project directory already has everything
         # score_submission.py / guide_confirm.py need to read and write.
         yield self.project
+
+    # ------------------------------------------------------------ settings -
+    def _load_settings(self):
+        path = os.path.join(self.project, 'readmodel', 'app_settings.json')
+        if not os.path.isfile(path):
+            return {}
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)
+
+    def get_setting(self, key):
+        return self._load_settings().get(key)
+
+    def set_setting(self, key, value):
+        settings = self._load_settings()
+        settings[key] = value
+        path = os.path.join(self.project, 'readmodel', 'app_settings.json')
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(settings, f, indent=2)

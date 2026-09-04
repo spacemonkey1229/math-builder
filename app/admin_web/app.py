@@ -553,7 +553,16 @@ def class_review_page():
             case_titles[cid] = admin_core.get_case_brief(cid)['title']
         except admin_core.ApiError:
             pass
-    return render_class_review_html(rows, case_id, case_titles)
+    weekly_debrief = admin_core.do_get_weekly_debrief(get_store())
+    return render_class_review_html(rows, case_id, case_titles, weekly_debrief)
+
+
+@app.route('/api/weekly-debrief', methods=['POST'])
+@json_api
+def api_set_weekly_debrief():
+    b = request.get_json(force=True) or {}
+    admin_core.do_set_weekly_debrief(get_store(), b.get('label'), b.get('url'))
+    return {"ok": True}
 
 
 @app.route('/class-review/export')

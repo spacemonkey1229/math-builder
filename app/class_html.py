@@ -119,11 +119,33 @@ document.getElementById('submit-btn').onclick = async function() {{
 </body></html>"""
 
 
-def render_class_review_html(rows, case_id=None, case_titles=None):
+def render_class_review_html(rows, case_id=None, case_titles=None, weekly_debrief=None):
     """case_titles: optional {case_id: title} map so groups can show a real
     title instead of the bare slug. A case_id missing from the map (e.g. a
-    since-unpublished case) falls back to the slug itself -- never hidden."""
+    since-unpublished case) falls back to the slug itself -- never hidden.
+    weekly_debrief: optional {label, url} for the current debrief-prep page,
+    surfaced as a banner at the top so it's one click from the review list
+    instead of something the guide has to go dig up from chat history."""
     case_titles = case_titles or {}
+
+    debrief_banner = (
+        '<div style="margin-bottom:18px;padding:12px 16px;border:1px solid var(--rule);border-radius:8px;'
+        'background:#EFF4EF;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+        + (f'<a href="{_html.escape(weekly_debrief["url"])}" target="_blank" rel="noopener" '
+           f'style="font-weight:600;color:var(--accent);text-decoration:none">&#8599; {_html.escape(weekly_debrief["label"])}</a>'
+           if weekly_debrief else
+           '<span class="det">No debrief link set for this week yet.</span>')
+        + '<a href="#set-debrief" style="font-size:12.5px;color:var(--muted)" '
+          'onclick="document.getElementById(\'debrief-form\').style.display=\'flex\';return false;">'
+        + ('Change' if weekly_debrief else 'Set one') + '</a></div>'
+        '<form id="debrief-form" style="display:none;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center">'
+        '<input type="text" id="debrief-label" placeholder="Label, e.g. Week 2 Debrief" '
+        f'value="{_html.escape(weekly_debrief["label"]) if weekly_debrief else ""}" style="flex:1;min-width:160px">'
+        '<input type="url" id="debrief-url" placeholder="https://claude.ai/code/artifact/..." '
+        f'value="{_html.escape(weekly_debrief["url"]) if weekly_debrief else ""}" style="flex:2;min-width:240px">'
+        '<button type="button" class="btn ghost" id="save-debrief-btn">Save</button>'
+        '</form>'
+    )
 
     def _card(r):
         return (
@@ -169,12 +191,14 @@ def render_class_review_html(rows, case_id=None, case_titles=None):
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>Class submissions — Math Builder</title>
 <style>
+:root{{--rule:#DED8CC;--accent:#22406B;--muted:#5F594E}}
 body{{font-family:-apple-system,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;background:#FAF8F4;color:#16140F}}
 .det{{color:#5F594E;font-size:12.5px}} .row{{display:flex;align-items:center;margin-top:6px}}
 input{{padding:6px 8px;border:1px solid #DED8CC;border-radius:6px}}
 .btn.ghost{{background:none;border:1px solid #22406B;color:#22406B;padding:5px 10px;border-radius:6px;cursor:pointer}}
 </style></head><body>
 <h1>Class submissions{' — ' + _html.escape(case_titles.get(case_id, case_id)) if case_id else ''}</h1>
+{debrief_banner}
 {body}
 <script>
 document.querySelectorAll('[data-review]').forEach(function(b) {{
@@ -186,5 +210,15 @@ document.querySelectorAll('[data-review]').forEach(function(b) {{
     if (res.ok) location.reload(); else alert('Failed to save review.');
   }};
 }});
+var saveDebriefBtn = document.getElementById('save-debrief-btn');
+if (saveDebriefBtn) {{
+  saveDebriefBtn.onclick = async function() {{
+    var label = document.getElementById('debrief-label').value;
+    var url = document.getElementById('debrief-url').value;
+    var res = await fetch('/api/weekly-debrief', {{method:'POST', headers:{{'Content-Type':'application/json'}},
+      body: JSON.stringify({{label: label, url: url}})}});
+    if (res.ok) location.reload(); else alert('Failed to save -- check the link starts with http:// or https://');
+  }};
+}}
 </script>
 </body></html>"""
