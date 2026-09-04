@@ -2,9 +2,12 @@
 """
 TIER 2 — SIMULATED PLAY  (machine + model, blocking)
 
-Six probes.  Modelled on the HIGH GRADE murder-mystery kit's six simulated-play
-probes, which is also the kit that proves why Tier 2 is not enough: it passed
-all thirteen structural checks and all six probes and still failed live.
+Seven probes.  P1-P6 are modelled on the HIGH GRADE murder-mystery kit's six
+simulated-play probes, which is also the kit that proves why Tier 2 is not
+enough: it passed all thirteen structural checks and all six probes and still
+failed live. P7 (MCS-48) is new: P1-P6 test mathematical/sourcing soundness
+for a capable, patient reader -- none of them test whether a reader with ZERO
+background in the case's real-world SETTING can follow it at all.
 
     python3 skills/case-readiness/scripts/tier2_probes.py --case cold-chain
     python3 skills/case-readiness/scripts/tier2_probes.py --case cold-chain --probe 5
@@ -22,6 +25,9 @@ WHAT THIS SCRIPT DOES AND DOES NOT DO
                           No model => NOT RUN, which is a real answer, not a pass.
   P6 data decay        -> emits the fetch worklist + source ages.  The fetch itself
                           is delegated (the QA sandbox has no outbound network).
+  P7 accessibility     -> machine pre-screen (sketch/graph deliverables vs real
+                          visuals) + PRINTS THE PROMPT for a fresh, zero-context
+                          subagent cold-read of real-world (non-math) vocabulary.
 
 Exit 0 = every probe that CAN run mechanically passed.  Exit 1 = a mechanical probe
 failed.  Exit 2 = probes are pending model/subagent adjudication.  Tier 2 is not
@@ -36,6 +42,7 @@ PROBES = {
     4: "twist-integrity",
     5: "assumption-sensitivity",
     6: "data-decay",
+    7: "accessibility-cold-read",
 }
 
 
@@ -469,6 +476,101 @@ def probe_decay(project, cid, c, out, today=None):
     })
 
 
+# ---------------------------------------------------------------- probe 7 ----
+# Neither Tier 1 nor probes P1-P6 test whether a reader with ZERO background in
+# the case's real-world SETTING (not its math) can follow the story well enough
+# to do the work -- Tier 1's T1-21 checks that a story glossary MECHANISM
+# exists and clears a term-count floor, and P1-P6 test mathematical/sourcing
+# soundness for a capable, patient reader who already knows what a "claim
+# file" or a "speed square" is. A deep human review of five already-published,
+# genuinely TIER2_PASS cases (apron-order, field-watch, roofline-call,
+# feedback, curves-turn) found real, substantive accessibility gaps in every
+# one anyway -- unexplained domain vocabulary and missing diagrams for a
+# Challenge that explicitly asks a student to sketch/graph something hard to
+# picture. MCS-48 makes this a real, gated probe rather than a chance "polish"
+# pass. Two independent checks, same two-stage shape as probe_trap (P3):
+#   (a) mechanical pre-screen -- does every deliverable that asks a student to
+#       sketch/draw/graph/plot/diagram something have a real visual (an <img>
+#       with a non-placeholder src, or an inline <svg> with actual shape
+#       content) anywhere in the published Interactive HTML? A student asked
+#       to produce a diagram they were never shown a comparable example of is
+#       a real, mechanically-checkable gap.
+#   (b) model-judged cold-read -- a genuinely fresh subagent, told nothing
+#       about the setting, reads the student packet and lists every
+#       real-world (non-math) term or concept it could not picture well
+#       enough to proceed. 2+ such findings is a FAIL regardless of whether
+#       T1-21 mechanically passed, because T1-21 only proves a glossary
+#       MECHANISM exists and clears a floor -- not that coverage is complete.
+VISUAL_KEYWORD_RE = re.compile(r'\b(sketch|diagram|graph of|draw|plot)\w*\b', re.I)
+
+
+def probe_accessibility(project, cid, c, md, out):
+    cdir = os.path.join(project, 'cases', cid)
+    pub = os.path.join(cdir, 'published')
+
+    # ---- (a) mechanical pre-screen: sketch/graph deliverables vs real visuals ----
+    matched = [d.get('id') for d in (c.get('deliverables') or [])
+               if VISUAL_KEYWORD_RE.search(d.get('text') or '')]
+
+    n_visuals = 0
+    if os.path.isdir(pub):
+        for fn in os.listdir(pub):
+            if not fn.lower().endswith('.html'):
+                continue
+            txt = open(os.path.join(pub, fn), encoding='utf-8', errors='ignore').read()
+            body_only = re.sub(r'(?is)<script.*?</script>|<style.*?</style>', ' ', txt)
+            imgs = re.findall(r'<img\b[^>]*\bsrc=["\']([^"\']+)["\']', body_only)
+            real_imgs = [s for s in imgs if s and 'placeholder' not in s.lower()
+                        and not s.strip().startswith('data:image/gif;base64,R0lGOD')]
+            n_visuals += len(real_imgs)
+            svg_blocks = re.findall(r'(?is)<svg\b[^>]*>(.*?)</svg>', txt)
+            n_visuals += sum(1 for blk in svg_blocks
+                             if re.search(r'(?is)<(path|circle|rect|line|polygon|polyline|ellipse)\b', blk))
+
+    machine = []
+    if matched and n_visuals == 0:
+        machine.append(f"MCS-48 — deliverable(s) {matched} ask for a sketch/diagram/graph/drawing/"
+                       f"plot, and published/ has NO real visual (no <img> with a real src, no "
+                       f"<svg> with actual shape content) anywhere. A student asked to produce a "
+                       f"diagram was never shown a comparable example -- this is a real, mechanical "
+                       f"gap distinct from the qualitative cold-read below.")
+    elif matched and n_visuals < len(matched):
+        machine.append(f"MCS-48 — {len(matched)} deliverable(s) ask for a sketch/diagram/graph/"
+                       f"drawing/plot ({matched}) but only {n_visuals} real visual(s) were found in "
+                       f"published/ HTML. Mechanical count only -- a human should confirm each "
+                       f"listed deliverable actually has its own comparable worked example, not "
+                       f"just that SOME visual exists somewhere in the file.")
+
+    # ---- (b) model-judged cold-read: dispatch a genuinely fresh subagent ----
+    pkt_dir = os.path.join('/tmp', f'coldsolve-{cid}')
+    os.makedirs(pkt_dir, exist_ok=True)
+    pkt = os.path.join(pkt_dir, 'PACKET.md')
+    open(pkt, 'w', encoding='utf-8').write(md)
+
+    setting = (c.get('protagonist') or c.get('title') or cid)
+    metric = c.get('primary_metric') or ''
+
+    out.append({
+        "probe": 7, "name": PROBES[7],
+        "machine_status": 'FAIL' if any('NO real visual' in m for m in machine) else 'READY',
+        "findings": machine,
+        "matched_deliverables": matched, "n_visuals_found": n_visuals,
+        "packet": pkt,
+        "prompt": (
+            f"Dispatch a genuinely fresh subagent with ZERO extra context. Give it the packet path "
+            f"({pkt}) and this exact instruction:\n\n"
+            f"  'You have no background in {setting}"
+            f"{(' -- the real-world setting is centered on ' + metric) if metric else ''}. "
+            f"Read this case as a student would. List every real-world term or concept you could "
+            f"NOT picture or understand well enough to proceed, without looking anything up outside "
+            f"this document.'\n\n"
+            f"PASS CRITERIA (do not show these to the subagent): a finding that names 2 or more "
+            f"genuinely unexplained real-world (non-math) concepts is a FAIL -- the glossary/"
+            f"explanation coverage is insufficient regardless of whether Tier 1's T1-21 mechanically "
+            f"passed. 0-1 named concepts is a PASS; some irreducible unfamiliarity is fine."),
+    })
+
+
 # ------------------------------------------------------------------ main ----
 def main():
     ap = argparse.ArgumentParser()
@@ -505,12 +607,14 @@ def main():
     if 4 in want: probe_twist(a.project, a.case, c, fac, model, out)
     if 5 in want: probe_sensitivity(a.project, a.case, c, model, a.flex, out, a.flex_all)
     if 6 in want: probe_decay(a.project, a.case, c, out)
+    if 7 in want: probe_accessibility(a.project, a.case, c, md, out)
 
     print(f"TIER 2 — SIMULATED PLAY   case: {a.case}   "
           f"model: {mpath if model else 'NONE (probe 5 cannot run)'}")
     for r in out:
         print(f"\n--- P{r['probe']} {r['name']}  [{r['machine_status']}]")
-        for k in ('base', 'base_winner', 'base_margin_pct', 'scope', 'trap', 'twist', 'packet', 'computed'):
+        for k in ('base', 'base_winner', 'base_margin_pct', 'scope', 'trap', 'twist', 'packet',
+                  'computed', 'matched_deliverables', 'n_visuals_found'):
             if r.get(k):
                 print(f"    {k}: {r[k]}")
         for f in r.get('findings', []) + r.get('leaks', []):
@@ -529,7 +633,7 @@ def main():
     pending = [r['probe'] for r in out if r['machine_status'] in ('READY', 'DELEGATED', 'NOT RUN')]
     print(f"\nMECHANICAL RESULT: {len(failed)} probe(s) FAILED mechanically -> {failed or '-'}")
     print(f"PENDING adjudication (subagent / fetch / missing model): {pending or '-'}")
-    print("Tier 2 is NOT clean until all six verdicts are written into QA_REPORT.md by name.")
+    print("Tier 2 is NOT clean until all seven verdicts are written into QA_REPORT.md by name.")
     if a.json:
         json.dump({"case": a.case, "probes": out}, open(a.json, 'w'), indent=1)
     sys.exit(1 if failed else (2 if pending else 0))

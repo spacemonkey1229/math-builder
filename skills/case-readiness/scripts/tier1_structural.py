@@ -33,6 +33,7 @@ CHECK REGISTER  (name them by id in the QA report)
   T1-18  interactive HTML present, fresh, leak-free         MCS-37      [NEW]
   T1-19  hover+hyperlink glossary, verified domains         MCS-39      [NEW]
   T1-20  visual asset present, image sources cited          advisory    [NEW]
+  T1-21  hover+hyperlink STORY-vocabulary glossary          MCS-47      [NEW, GAP not BLOCKER]
 """
 import argparse, json, os, re, sys, hashlib, unicodedata
 
@@ -936,6 +937,90 @@ def run(project, cid):
         R.ok('T1-20')
     else:
         R.polish('T1-20', "no published/ directory yet — T1-20 has nothing to check")
+
+    # ---- T1-21 hover+hyperlink STORY-vocabulary glossary (MCS-47) -----------
+    # A deep human review of five already-published cases that had all reached
+    # genuine TIER2_PASS (apron-order, field-watch, roofline-call, feedback,
+    # curves-turn) found real, substantive gaps in every one anyway: unexplained
+    # real-world domain vocabulary (a "claim file," a "speed square," a "wedge,"
+    # "chalking" fabric) that T1-19's math-only glossary never covers and that
+    # no Tier 2 probe (all of which assume a capable, patient reader who already
+    # knows the setting) ever tests either. The fix landed in those five cases
+    # as a SEPARATE parallel mechanism, deliberately shaped so it can never
+    # collide with or be miscounted by T1-19's math-only regex:
+    #   - a distinct data-object NAME, STORY_GLOSSARY (not GLOSSARY)
+    #   - distinct FIELD NAMES, {desc, link} (not {def, url}) -- this is the
+    #     load-bearing difference: T1-19's data_entries regex matches ANY
+    #     `"Label": {def: "...", url: "https://...")}"` pattern anywhere in the
+    #     file, not just inside the math GLOSSARY object, so a STORY_GLOSSARY
+    #     that reused def/url got its own real-world links (Wikipedia, trade
+    #     sites) swept into T1-19's ALLOWLIST_DOMAINS check and BLOCKED for a
+    #     reason that had nothing to do with the math glossary at all. Found
+    #     as a live, real bug on 3 of the 5 cases this check was modelled on
+    #     (roofline-call, apron-order, curves-turn all currently BLOCKED on
+    #     T1-19 for exactly this reason before their STORY_GLOSSARY objects
+    #     were corrected to desc/link) and fixed at the source rather than
+    #     worked around here.
+    #   - a distinct class, "sterm" (not "gterm"), for the hand-authored
+    #     static-anchor style, same duality T1-19 already supports.
+    # Deliberately a GAP, not a BLOCKER, unlike T1-19's identical mechanism for
+    # math vocabulary. This is a brand-new requirement being retrofitted onto
+    # a corpus of 100+ already-published cases that have never been checked
+    # against it; making it an instant BLOCKER corpus-wide would be doctrinally
+    # consistent with T1-19's own bar but would flip most of the corpus to
+    # BLOCKED overnight with no remediation yet scoped or approved. See the
+    # corpus-wide scan recorded in QA_REPORT.md / the change log entry for
+    # MCS-47 for the actual numbers this trade-off is based on.
+    STORY_ALLOWLIST_EXCLUDE = ALLOWLIST_DOMAINS  # never let a gamed duplicate of
+                                                  # T1-19's own math domains count here
+    MIN_STORY_GLOSSARY_TERMS = 4
+    if os.path.isdir(pub):
+        html_files = [fn for fn in os.listdir(pub) if fn.lower().endswith('.html')]
+        for fn in html_files:
+            txt = open(os.path.join(pub, fn), encoding='utf-8', errors='ignore').read()
+
+            static_terms = re.findall(r'class="sterm"[^>]*href="([^"]+)"', txt)
+            static_terms += re.findall(r'href="([^"]+)"[^>]*class="sterm"', txt)
+            static_terms = [u for u in static_terms if '${' not in u]
+
+            # Same source-of-truth rule as T1-19: a JS-rendered STORY_GLOSSARY
+            # object is authoritative for both the count and the URLs, since
+            # the anchors themselves don't exist as static text until the
+            # browser runs the render function. {desc, link} field names only
+            # -- {def, url} is the math glossary's shape and is exactly the
+            # collision this check exists to avoid ever counting.
+            data_entries = re.findall(
+                r'"[^"]+":\s*\{desc:\s*"(?:[^"\\]|\\.)*"\s*,\s*link:\s*"(https://[^"]+)"',
+                txt)
+
+            all_urls = data_entries if data_entries else static_terms
+            n_terms = len(data_entries) if data_entries else len(static_terms)
+            has_wiring = bool(re.search(r'STORY_GLOSSARY\s*=|class="sterm"', txt))
+
+            if not has_wiring:
+                R.gap('T1-21', f"MCS-47 — {fn} has no STORY_GLOSSARY / class=\"sterm\" story-"
+                               f"vocabulary glossary at all. A student with zero background in "
+                               f"this case's real-world setting has nothing explaining the "
+                               f"domain-specific terms the story actually uses.")
+            elif n_terms < MIN_STORY_GLOSSARY_TERMS:
+                R.gap('T1-21', f"MCS-47 — {fn} defines only {n_terms} story-glossary term(s), "
+                               f"needs >= {MIN_STORY_GLOSSARY_TERMS}. Presence of the mechanism "
+                               f"alone isn't enough -- the term coverage itself is thin.")
+            else:
+                bad = [u for u in all_urls if not (u.startswith('https://')
+                                                    and not any(d in u for d in STORY_ALLOWLIST_EXCLUDE))]
+                if bad:
+                    R.gap('T1-21', f"MCS-47 — {fn} has {len(bad)} story-glossary link(s) that "
+                                   f"are not real https:// URLs, or that duplicate one of T1-19's "
+                                   f"own math-education domains {STORY_ALLOWLIST_EXCLUDE} under a "
+                                   f"different class name: {bad[:5]}. Real domain diversity is the "
+                                   f"point of this check -- story vocabulary should trace to a real "
+                                   f"source in ITS OWN domain (crop insurance -> NASA/USDA/ESA, "
+                                   f"carpentry -> Wikipedia/Fine Homebuilding, etc.), not memory "
+                                   f"and not a gamed duplicate of the math allowlist.")
+        R.ok('T1-21')
+    else:
+        R.polish('T1-21', "no published/ directory yet — MCS-47 has nothing to check")
 
     return R, h
 

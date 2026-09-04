@@ -108,6 +108,56 @@ MUTATIONS = [
      "the digit-in-placeholder rule must not fire on a digit glued to a letter (D2, MA2, MA3) — "
      "that's a cross-reference to another step's label, not a numeric worked example, and A "
      "Coach's Dilemma's own D3 total field legitimately uses this placeholder style"),
+
+    # ---- MCS-47 / T1-21 -- story-vocabulary glossary (GAP, not BLOCKER) ----
+    ("no STORY_GLOSSARY / class=\"sterm\" mechanism at all", 'field-watch',
+     lambda p: {**p, 'html': (p['html'] or '')
+                .replace('STORY_GLOSSARY', 'STORY_GLOSSARY_DISABLED_FOR_TEST')
+                .replace('class="sterm"', 'class="sterm-disabled-for-test"')},
+     True,
+     [r"T1-21.*MCS-47.*no STORY_GLOSSARY.*class=\"sterm\""],
+     "a case with no story-vocabulary glossary mechanism at all leaves a student with zero "
+     "background in the case's real-world setting nothing explaining the domain-specific terms — "
+     "this is the case T1-21 exists to catch, same shape as T1-19's has_wiring check"),
+
+    ("story glossary defines fewer than 4 real terms", 'field-watch',
+     lambda p: {**p, 'html': re.sub(
+         r'const STORY_GLOSSARY = \{.*?\n\};',
+         'const STORY_GLOSSARY = {\n'
+         '  "Test Term One": {desc: "a placeholder definition long enough to look real",\n'
+         '    link: "https://en.wikipedia.org/wiki/Test_One"},\n'
+         '  "Test Term Two": {desc: "a second placeholder definition",\n'
+         '    link: "https://en.wikipedia.org/wiki/Test_Two"}\n'
+         '};',
+         p['html'] or '', count=1, flags=re.S)},
+     True,
+     [r"T1-21.*MCS-47.*defines only 2 story-glossary term"],
+     "presence of the STORY_GLOSSARY mechanism alone is not enough if term coverage is thin — "
+     "needs >= 4 real terms, a deliberately lower floor than T1-19's math-glossary bar of 8 "
+     "because not every case's setting is equally jargon-heavy"),
+
+    ("story glossary link duplicates one of T1-19's own math-education domains", 'field-watch',
+     lambda p: {**p, 'html': (p['html'] or '').replace(
+         'link: "https://science.nasa.gov/missions/landsat/saving-millions-in-government-dollars-'
+         'landsat-helps-fight-crop-insurance-fraud/"',
+         'link: "https://www.khanacademy.org/fake-story-lesson-for-test"', 1)},
+     True,
+     [r"T1-21.*MCS-47.*story-glossary link\(s\) that are not real"],
+     "a story-glossary link that just duplicates a math-education domain from T1-19's own "
+     "allowlist under the sterm class is exactly the gaming path T1-21's broader-than-curated "
+     "'not a math domain' rule (rather than a second curated allowlist) exists to catch"),
+
+    ("story glossary with a genuine, diverse real-world source (must NOT gap)", 'field-watch',
+     lambda p: {**p, 'html': re.sub(
+         r'(const STORY_GLOSSARY = \{\n)',
+         r'\1  "Selftest Added Term": {desc: "a genuinely added term with a real external source",\n'
+         '    link: "https://en.wikipedia.org/wiki/Precision_agriculture"},\n',
+         p['html'] or '', count=1)},
+     False,
+     [r"T1-21.*MCS-47"],
+     "a clean story glossary already clearing the term-count floor with real https:// links to "
+     "real, diverse (non-math-education) domains must not be flagged — T1-21 should be silent on "
+     "field-watch's own already-shipped, correct glossary"),
 ]
 
 

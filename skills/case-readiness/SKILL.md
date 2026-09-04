@@ -77,7 +77,7 @@ python3 skills/case-readiness/scripts/tier1_structural.py --case <id>
 python3 skills/case-readiness/scripts/tier1_structural.py --case <id> --json /tmp/t1.json
 ```
 
-Exit 0 = `TIER1_PASS`. Exit 1 = `BLOCKED`. Twenty checks:
+Exit 0 = `TIER1_PASS`. Exit 1 = `BLOCKED`. Twenty-one checks:
 
 | id | Check | Authority |
 |---|---|---|
@@ -101,6 +101,22 @@ Exit 0 = `TIER1_PASS`. Exit 1 = `BLOCKED`. Twenty checks:
 | T1-18 | interactive HTML present, fresh, leak-free | MCS-37 |
 | T1-19 | hover+hyperlink math glossary, verified domains | MCS-39 |
 | T1-20 | visual asset present (chart/map/diagram/photo); image sources cited | advisory, never blocks |
+| T1-21 | hover+hyperlink STORY-vocabulary glossary (real-world domain terms, not math) | MCS-47, **GAP not BLOCKER** (see below) |
+
+**T1-21 is deliberately a GAP, not a BLOCKER, unlike T1-19's identical mechanism for math
+vocabulary.** T1-19 sets a hard bar because SPEC already requires the case to teach the math it
+uses; T1-21 is a brand-new requirement being retrofitted onto a corpus of 100+ already-published
+cases that have never been checked against it. Matching T1-19's BLOCKER severity would be
+doctrinally consistent but would flip most of the corpus to `BLOCKED` overnight with no
+remediation plan yet scoped or approved — see MCS-47's change-log entry in `DOCTRINE_LEDGER.md`
+for the actual corpus-wide numbers this call is based on. It detects the same `STORY_GLOSSARY`
+data-object / `class="sterm"` static-anchor duality T1-19 already supports for `GLOSSARY`/`gterm`,
+deliberately shaped `{desc, link}` (not `{def, url}`) so it can never collide with or be
+miscounted by T1-19's math-only regex — three of the five real cases this check was modelled on
+(`roofline-call`, `apron-order`, `curves-turn`) originally shipped their `STORY_GLOSSARY` with
+`{def, url}` field names, which really did get swept into T1-19's own domain-allowlist check and
+BLOCKED those cases for a reason that had nothing to do with math vocabulary — fixed at the
+source as part of landing this check, not worked around in the checker.
 
 ## The three defects this fixes
 
@@ -292,9 +308,11 @@ python3 skills/case-readiness/scripts/tier2_probes.py --case <id>
 python3 skills/case-readiness/scripts/tier2_probes.py --case <id> --probe 5 --flex 0.5
 ```
 
-Six probes, modelled on the HIGH GRADE kit's six simulated-play probes. The script runs the
-mechanical half of each, builds the packets and prompts, and **prints what a model or a subagent
-must do**. A probe with no recorded verdict is `NOT RUN`, which is a real state and not a pass.
+Seven probes. P1-P6 are modelled on the HIGH GRADE kit's six simulated-play probes. The script
+runs the mechanical half of each, builds the packets and prompts, and **prints what a model or a
+subagent must do**. A probe with no recorded verdict is `NOT RUN`, which is a real state and not a
+pass. P7 (MCS-48) is new, and tests something none of P1-P6 test: whether a reader with **zero
+background in the case's real-world setting** — not its math — can follow the story at all.
 
 ### P1 · Cold solve
 
@@ -428,6 +446,43 @@ carries the figure is worse**, because nothing else in the pipeline would ever n
 older than 365 days are flagged automatically. Per MCS-21, report NOT FOUND rather than guessing —
 a fabricated URL is the worst failure available.
 
+### P7 · Accessibility cold-read
+
+A deep human review of five already-published cases that had all reached genuine `TIER2_PASS` —
+Tier 1 clean, all six Tier 2 probes PASS — found real, substantive accessibility gaps in every
+single one: unexplained real-world domain vocabulary (a "claim file," a "speed square," a "wedge,"
+"chalking" fabric) and, in one case, a missing diagram for something a Challenge explicitly asked
+the student to sketch. The diagnosis: Tier 1 checks structure and Tier 2 checks mathematical/
+sourcing soundness for a **capable, patient reader** — neither ever asks whether a student with
+**zero background in the story's real-world setting** can follow it at all. P7 makes that a real,
+non-optional gate (MCS-48).
+
+Two stages, the same "machine pre-screen, then a fresh model judges quality" shape as P3:
+
+1. **Mechanical pre-screen.** Scans `case.json.deliverables[]` for any deliverable whose `text`
+   contains a real drawing/graphing request (`sketch`, `diagram`, `graph of`, `draw`, `plot` —
+   case-insensitive, word-boundary matched so "graphical" doesn't false-positive). For every match,
+   checks the published Interactive HTML for a real visual anywhere in the file (a genuine `<img>`
+   with a non-placeholder `src`, or an inline `<svg>` with actual `<path>`/`<circle>`/`<rect>`/etc.
+   content, not an empty stub). Zero visuals against one or more matching deliverables is a
+   mechanical FAIL — a deliverable asking a student to produce a diagram they were never shown a
+   comparable worked example of is a real, checkable gap, distinct from the qualitative read below.
+2. **Model-judged cold-read.** Same human-in-the-loop mechanism as P1/P3/P4: the script writes the
+   student packet and prints an explicit dispatch instruction —
+
+   > **Dispatch a genuinely fresh subagent with ZERO extra context.** Give it the packet path and
+   > this instruction: "You have no background in [the case's real-world setting, pulled from
+   > `case.json`'s protagonist/primary_metric]. Read this case as a student would. List every
+   > real-world term or concept you could NOT picture or understand well enough to proceed,
+   > without looking anything up outside this document."
+
+**Pass criterion: both (a) zero missing-visual findings from the mechanical pre-screen, AND (b)
+the cold-reader names 0-1 unexplained concepts.** A finding of 2 or more is a FAIL — the
+glossary/explanation coverage is insufficient **regardless of whether Tier 1's T1-21 mechanically
+passed**, because T1-21 only proves a glossary mechanism exists and clears a term-count floor, not
+that coverage is actually complete. Some irreducible unfamiliarity is fine; this is not a
+zero-tolerance bar.
+
 ---
 
 # TIER 3 — HUMAN DRY-RUN (blocking for VERIFIED, not for PUBLISHED)
@@ -472,12 +527,12 @@ evidence):
 ## case-readiness run — <date>
 **State:** DRAFT → TIER1_PASS → ...   **Verdict:** <state reached>
 
-### Tier 1 — structural (17 checks)
+### Tier 1 — structural (21 checks)
 | id | result | note |
 ...
 BLOCKER / GAP / POLISH lists, verbatim from the script.
 
-### Tier 2 — simulated play (6 probes)
+### Tier 2 — simulated play (7 probes)
 | probe | verdict | finding |
 | P1 cold solve | PASS/FAIL | did the fresh solver reach a defensible position for the right reasons? |
 | P2 both-sides | PASS/FAIL | which side collapses, at which question |
@@ -485,6 +540,7 @@ BLOCKER / GAP / POLISH lists, verbatim from the script.
 | P4 twist | PASS/FAIL | does it survive the case's own assumptions |
 | P5 sensitivity | PASS/FAIL/NOT RUN | which dial flips the verdict |
 | P6 data decay | PASS/FAIL | dead links, drifted figures, refresh dates |
+| P7 accessibility | PASS/FAIL | missing visuals for sketch/graph deliverables; unexplained real-world concepts named by a zero-context cold-read |
 
 ### Tier 3 — human dry-run
 NOT RUN / filed at cases/<id>/runs/RUN_<date>.md / <n> artifact-attributed findings
@@ -492,7 +548,7 @@ NOT RUN / filed at cases/<id>/runs/RUN_<date>.md / <n> artifact-attributed findi
 
 Then set `case.json.qa`:
 `{"state": "...", "verdict": "...", "run_on": "...", "blockers_open": n, "gaps_open": n,
-"tier2": {"P1": "...", ..., "P6": "..."}, "tier3_runs": [...], "case_md_sha256": "..."}`
+"tier2": {"P1": "...", ..., "P7": "..."}, "tier3_runs": [...], "case_md_sha256": "..."}`
 and `status: "qa"`. **Nothing else in `case.json` may be modified by this skill.**
 
 ## Report back
