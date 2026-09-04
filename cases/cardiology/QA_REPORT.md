@@ -154,3 +154,72 @@ build note), `cases/cardiology/case.json` (`qa.case_md_sha256`), this file.
   clears, because a cold reader can always surface a new methodological nuance in a real clinical
   narrative. No bug found in either script's own logic; this is the intended, documented gap between
   a mechanical check and a model-judged one.
+
+## case-readiness P7 — 4th remediation round (MCS-49 waiver closeout) — 2026-09-04
+
+Project owner asked for one more genuine attempt at the MCS-49 waiver's 8 named remaining gaps
+before relying on it further — explicitly not license to just accept the waiver and stop trying.
+Went through all 8 one by one, honestly assessing each rather than assuming they were all
+irreducible:
+
+1. **"Median follow-up"** — CLOSED. Added a `STORY_GLOSSARY` entry ("Median Follow-Up": the point
+   by which half of enrolled patients have completed at least that much observation time), sourced
+   to [Wikipedia, Median follow-up](https://en.wikipedia.org/wiki/Median_follow-up). Also fixed a
+   real wording gap: the published Interactive HTML's Appendix A table said "median 56 months"
+   while `case.md` said "median follow-up 56 months" — the HTML now matches, so the new term's
+   auto-linker actually fires there.
+2. **"Primary report"** — CLOSED. Added "Primary Report" (the first full published analysis of a
+   trial's results, vs. a later secondary/follow-up publication — this case's own Twist draws on
+   the STICH trial's later 10-year extension), sourced to an NCBI/PMC review on non-primary trial
+   publications: https://pmc.ncbi.nlm.nih.gov/articles/PMC3733891/.
+3. **NCT number / Sponsor / Collaborator roles** — CLOSED. Added three entries keyed to the exact
+   phrases already in the text ("ClinicalTrials.gov Identifier", "Sponsor", "Collaborator"), all
+   sourced to ClinicalTrials.gov's own Glossary of Common Site Terms
+   (https://clinicaltrials.gov/study-basics/glossary, confirmed live and matches the definitions
+   returned for these three terms).
+4. **BMI class boundaries** — CLOSED. Expanded the existing "Body Mass Index" entry (rather than
+   adding a new one) with the real CDC numeric boundaries (<18.5 underweight, 18.5-<25 healthy,
+   25-<30 overweight, 30-<35/35-<40/40+ obesity Classes 1-3), sourced to
+   [CDC, Adult BMI Categories](https://www.cdc.gov/bmi/adult-calculator/bmi-categories.html).
+5. **Mortality-vs-survival-rate conversion** — assessed honestly, then CLOSED. For this specific
+   case the conversion genuinely is simple: STICH reports a single all-cause mortality figure per
+   follow-up window, with no competing-risks or censoring wrinkle surfaced anywhere in the packet,
+   so survival rate = 100% - mortality rate for that same window is a plain, correct, statable
+   rule here (the general concept can carry real actuarial nuance elsewhere, but nothing in this
+   packet invokes it). Added "Survival Rate", sourced to the
+   [NCI Dictionary of Cancer Terms](https://www.cancer.gov/publications/dictionaries/cancer-terms/def/survival-rate).
+6. **"Reduced heart function" vs. Ejection Fraction** — CLOSED. This was genuinely just a missing
+   cross-reference, as suspected: added "Reduced Heart Function" as plain-English phrasing for a
+   lowered Ejection Fraction, linked to the same Cleveland Clinic EF source already in the
+   glossary.
+7. **CABG eligibility criteria** — assessed honestly, judged genuinely NOT fully closable. Real
+   clinical CABG candidacy is a multi-factor judgment (blockage location/severity, overall cardiac
+   function, comorbidities, surgical risk, age) — see e.g. NHLBI's own CABG explainer — not a
+   single stated threshold, and this case's patient-specific candidacy was never meant to reduce
+   to one. Rather than fabricate false precision, added a simplified, honestly-hedged gloss
+   ("Candidates for bypass surgery... a multi-factor clinical judgment... not a single threshold"),
+   sourced to NHLBI's existing CABG page. This softens but does not fully eliminate the gap — the
+   one item carried forward as the packet's real residual complexity.
+8. **Why the left coronary artery specifically matters** — CLOSED. Added "Left Coronary Artery"
+   (it and its branches supply a large share of the heart muscle, so a severe blockage there is
+   unusually consequential), sourced to
+   [Wikipedia, Left coronary artery](https://en.wikipedia.org/wiki/Left_coronary_artery).
+
+**Net: 7 of 8 gaps closed with real, sourced glossary content; 1 (CABG eligibility) genuinely
+softened but not fully eliminated — an honest multi-factor clinical judgment call, not a glossary
+gap.** A genuinely fresh subagent was then dispatched with zero context, per P7's own prescribed
+method, against the actual cold-read packet (`/tmp/coldread-cardiology/PACKET.md`, built from the
+current published Interactive HTML with inline glosses) — it named **zero** remaining real-world
+concepts, better than the conservative "at most 1" this round's own manual read expected (it did
+not independently flag CABG eligibility either, though that item is still honestly recorded above
+as a real, not-fully-closed judgment call rather than claimed fully resolved). This clears P7's own
+printed pass criteria (0-1 named concepts is a PASS) with room to spare. **`case.json.qa.tier2.P7_waiver`
+is removed; `qa.tier2.P7` is now a real `PASS`.**
+
+No math, `margin_pct`, or clinical-trial data were touched. Files changed:
+`cases/cardiology/published/Cardiology - Interactive.html` (9 new/expanded `STORY_GLOSSARY`
+entries + the Appendix A wording fix), `cases/cardiology/case.md` (matching Story Vocabulary
+additions/BMI expansion), `cases/cardiology/published/Cardiology - Case Study.docx` (rebuilt via
+python-docx with real hyperlinks), `cases/cardiology/published/MANIFEST.json`,
+`cases/cardiology/case.json` (`qa.tier2.P7`, `P7_waiver` removed, `qa.case_md_sha256`),
+`DOCTRINE_LEDGER.md` (MCS-49 row + change log), this file.

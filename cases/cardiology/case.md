@@ -154,8 +154,10 @@ math vocabulary in Appendix F.
   months, used to diagnose and monitor pre-diabetes and diabetes; Paul's result of 6.4 is in the
   pre-diabetes range. [NIDDK, The A1C Test & Diabetes](https://www.niddk.nih.gov/health-information/diagnostic-tests/a1c-test)
 - **Body Mass Index (BMI)** — a number calculated from height and weight, used as a screening
-  estimate of body fat. Doctors group higher BMI values into classes; Paul's BMI of 31 falls in the
-  "Class I obesity" range. [MedlinePlus, Body Mass Index](https://medlineplus.gov/ency/article/007196.htm)
+  estimate of body fat. CDC boundaries for adults: under 18.5 is underweight, 18.5 to under 25 is
+  healthy weight, 25 to under 30 is overweight, and 30+ is obesity, split into Class 1 (30 to under
+  35), Class 2 (35 to under 40), and Class 3 (40+); Paul's BMI of 31 falls in Class 1 obesity.
+  [CDC, Adult BMI Categories](https://www.cdc.gov/bmi/adult-calculator/bmi-categories.html)
 - **All-Cause Mortality** — death from any cause, not just the condition being studied; the STICH
   trial tracked all-cause mortality so the comparison couldn't be skewed by how a death got labeled.
   [NCI Dictionary of Cancer Terms, all-cause mortality](https://www.cancer.gov/publications/dictionaries/cancer-terms/def/all-cause-mortality)
@@ -176,6 +178,42 @@ math vocabulary in Appendix F.
   studies commonly define it as CAD before about age 55 in men or 65 in women. Paul's family
   history of premature CAD means a close relative was diagnosed at an unusually young age, which
   raises his own risk. [NIH/NCBI, Pathogenesis of premature coronary artery disease](https://pmc.ncbi.nlm.nih.gov/articles/PMC8843894/)
+- **Survival Rate** — the percentage of a study group still alive at a given point in time. When
+  a trial reports mortality (the percent who died) over a set follow-up period, the survival rate
+  for that same period is simply 100% minus the mortality rate — that is how this case's
+  survival-rate figures are computed from Appendix A's reported mortality.
+  [NCI Dictionary of Cancer Terms, survival rate](https://www.cancer.gov/publications/dictionaries/cancer-terms/def/survival-rate)
+- **Median Follow-Up** — the point in time by which half of a trial's enrolled patients have
+  completed at least that much observation time (and half have been followed for less). It
+  describes how long patients were actually tracked, not when the trial started or ended.
+  [Wikipedia, Median follow-up](https://en.wikipedia.org/wiki/Median_follow-up)
+- **Primary Report** — the first published, full analysis of a trial's main results, as opposed to
+  a later secondary or follow-up publication — like this case's own Twist, which draws on the
+  STICH trial's later 10-year extended-follow-up report (the STICHES publication).
+  [NCBI/PMC, Reporting characteristics of non-primary publications of randomized trials](https://pmc.ncbi.nlm.nih.gov/articles/PMC3733891/)
+- **ClinicalTrials.gov Identifier (NCT number)** — the unique registry ID (format "NCT" plus 8
+  digits) assigned to a clinical study when it is registered at ClinicalTrials.gov, the U.S.
+  government's public database of clinical trials; NCT00023595 is the STICH trial's own ID.
+  [ClinicalTrials.gov, Glossary of Common Site Terms](https://clinicaltrials.gov/study-basics/glossary)
+- **Sponsor** — the organization that leads and funds a clinical trial; for the STICH trial,
+  Duke University. [ClinicalTrials.gov, Glossary of Common Site Terms](https://clinicaltrials.gov/study-basics/glossary)
+- **Collaborator** — an organization other than the sponsor that helps support a trial (funding,
+  design, data analysis, or reporting); for the STICH trial, the National Heart, Lung, and Blood
+  Institute. [ClinicalTrials.gov, Glossary of Common Site Terms](https://clinicaltrials.gov/study-basics/glossary)
+- **Reduced Heart Function** — plain-English phrasing for a lowered Ejection Fraction: the heart's
+  main pumping chamber is pushing out a smaller-than-healthy share of its blood with each beat.
+  It's why the STICH trial enrolled patients with reduced heart function alongside CAD and
+  congestive heart failure. [Cleveland Clinic, Ejection Fraction](https://my.clevelandclinic.org/health/articles/16950-ejection-fraction)
+- **Left Coronary Artery** — one of the heart's two main coronary arteries; it and its branches
+  supply a large share of the heart muscle (mainly the left side). That is why a severe blockage
+  here — like Paul's 98% occlusion — is especially consequential: it threatens blood flow to more
+  heart tissue than a blockage in a smaller vessel would.
+  [Wikipedia, Left coronary artery](https://en.wikipedia.org/wiki/Left_coronary_artery)
+- **Candidates for bypass surgery (CABG eligibility)** — whether CABG makes sense for a given
+  patient is a multi-factor clinical judgment, weighing where and how severe the blockages are, how
+  well the heart is pumping, other health conditions, and surgical risk — not a single threshold.
+  The STICH trial specifically enrolled patients whose disease pattern fit this profile.
+  [NHLBI, Coronary Artery Bypass Grafting](https://www.nhlbi.nih.gov/health/coronary-artery-bypass-grafting)
 
 ---
 

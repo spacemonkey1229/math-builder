@@ -6,7 +6,7 @@ MS | Math | Case Study | 2026-27 | Heroes Academy
 
 ## Overview
 
-The dealer's chips click against each other in a steady rhythm, a sound Emilia Carlon has learned to hear underneath everything else on the floor — the slot bells, the low roar of a table that just hit big, a cocktail tray clinking past on someone's shoulder. She's been walking this floor for two years and she still checks the pit count out of habit, out of the corner of her eye, without breaking stride.
+The dealer's chips click against each other in a steady rhythm, a sound Emilia Carlon has learned to hear underneath everything else on the floor — the slot bells, the low roar of a table that just hit big, a cocktail tray clinking past on someone's shoulder. She's been walking this floor for two years and she still checks the pit count — her tables, at a glance — out of habit, out of the corner of her eye, without breaking stride.
 
 The elevator chimes. She doesn't need to turn around to know who it is — the two security guards step out first, then the assistant, then Danny Paseronopolis, exactly on schedule, the way he always is.
 
@@ -28,7 +28,7 @@ Two days. She pulls out her phone and opens a blank note.
 
 ## Background
 
-**Emilia Carlon** has worked for **Danny Paseronopolis**, owner of **The Landmark Hotel And Casino**, in various roles for over ten years, including two years as the casino's manager — a position she took after a prior career as an actuarial consultant. The Landmark has operated for more than 20 years and was recently ranked among the top 3 hotels and casinos in the city. Mr. Paseronopolis has given Emilia two days to recommend which of two games to install in the newly available south lobby space.
+**Emilia Carlon** has worked for **Danny Paseronopolis**, owner of **The Landmark Hotel And Casino**, in various roles for over ten years, including two years as the casino's manager — a position she took after a prior career as an actuarial consultant (someone who uses math and statistics professionally to measure risk, often for an insurance company). The Landmark has operated for more than 20 years and was recently ranked among the top 3 hotels and casinos in the city. Mr. Paseronopolis has given Emilia two days to recommend which of two games to install in the newly available south lobby space.
 
 The two options are:
 
@@ -79,7 +79,7 @@ Do you:
 
 ## Appendix A: Indigo Game Summary
 
-- Minimum buy-in: **$50**. Maximum pot: **$10,000**.
+- Minimum buy-in (the money a player pays up front to get chips to play with — not a fee to the house): **$50**. Maximum pot: **$10,000**. The buy-in and the pot are two separate pools of money: the buy-in is what a player pays just to sit down and get chips, once, before the hand starts; the pot is what accumulates from bets placed during that single hand, and it is the pot — not the buy-in — that the pot rake is taken from.
 - Each table seats up to **7 players** and requires one trained dealer, paid **$12.50 per hour**.
 - Each table costs **$14,650** to purchase and install.
 - The Landmark's house policy sets the pot rake — the percentage of each pot the casino keeps — inside the ranges shown below; the exact rake charged rises with pot size, as shown in the tables.
@@ -129,7 +129,7 @@ The three tables below all use the same six pot-size bands, but the frequency of
 - Each room of video machines requires **two security employees**, regardless of how many machines are installed or in use, paid **$7.50 per hour** each.
 - Each machine costs **$2,860** to purchase and install.
 - A single play (one button press) takes, on average, **17.9 seconds**.
-- On a **losing** play, the house keeps 65% of the amount bet as immediate revenue; the remaining 35% is added to that machine's running jackpot pool, to be paid out later to a jackpot winner — not modeled in this case (**SEE APPENDIX E, Modeling Assumptions**).
+- On a **losing** play, the house keeps 65% of the amount bet as immediate revenue; the remaining 35% is added to that machine's running jackpot pool — prize money that grows over time until a single winner eventually takes the whole accumulated amount — to be paid out later to a jackpot winner — not modeled in this case (**SEE APPENDIX E, Modeling Assumptions**).
 - On a **winning** play, the player's bet is returned and they are paid an additional amount equal to their bet (e.g., a winning $1.50 play returns the $1.50 bet plus an extra $1.50).
 - Each machine also carries three separate jackpots — a $15.00 jackpot, a $25.00 jackpot, and a "complete" jackpot equal to the machine's full accumulated pool — each won at long, fixed odds. These jackpots are **not** part of this case's weekly profit model (Appendix E).
 
@@ -216,7 +216,7 @@ From the same comparable room, average beverage revenue **per player**, by game 
 |---|---|---|
 | MA1 | The new south lobby room operates only during its **peak traffic window, 16:00–04:00 daily** (the two highest-traffic time blocks in Appendix C, both weekday and weekend), not around the clock. | The room is brand-new, with no existing customer base of its own. Appendix C's own traffic numbers show the 04:00–16:00 window running at roughly a third to half the volume of the 16:00–04:00 window in every case — a new room is more plausibly opened on the schedule that already proves out, not staffed at full cost through its weakest hours from day one. |
 | MA2 | The three jackpots described in Appendix B are excluded from this case's weekly profit model. | A single week is far too short a window to estimate how often a jackpot at 125-to-1, 175-to-1, or 500-to-1 odds actually pays out — modeling it honestly needs a much longer time horizon than one week. The 65%/35% split that funds the jackpots is stated in full in Appendix B; only the payout side is left out. |
-| MA3 | Every table or machine installed in the room is assumed to be staffed and running throughout the hours the room is open (per MA1) — the room is modeled as built out to its stated maximum (4 Indigo tables, or 25 video machines), not a partial build-out. | Appendix A and Appendix B give the room's maximum capacity; no other capacity figure is stated, so the full build-out is the only one the given data supports without inventing a number. |
+| MA3 | Every table or machine installed in the room is assumed to be staffed and running throughout the hours the room is open (per MA1) — the room is modeled as built out to its stated maximum (4 Indigo tables, or 25 video machines), not a partial build-out (installing and staffing fewer than the room's maximum number of tables or machines). | Appendix A and Appendix B give the room's maximum capacity; no other capacity figure is stated, so the full build-out is the only one the given data supports without inventing a number. |
 
 ---
 

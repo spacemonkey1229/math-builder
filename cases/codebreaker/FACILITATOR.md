@@ -99,7 +99,8 @@ At roughly the 15-minute mark:
 > does this change your recommendation, or not?"
 
 This is a real, sound mechanism, not an invented plot device — a monoalphabetic substitution
-cipher (Option A) preserves the plaintext's own letter-frequency pattern in its ciphertext no
+cipher (a cipher, like Option A here, that always swaps the same plaintext letter for the same
+output value every time it appears) preserves the plaintext's own letter-frequency pattern in its ciphertext no
 matter how large its one-time keyspace is, which is exactly why real cryptographers consider raw
 keyspace a poor stand-in for real security once a key is reused (Wikipedia, "Frequency analysis"
 — Appendix E). **Checked against every stated assumption, sequentially and simultaneously**: it

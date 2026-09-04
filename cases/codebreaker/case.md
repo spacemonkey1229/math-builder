@@ -6,13 +6,13 @@ MS | Math | Case Study | 2026-27 | Heroes Academy
 
 ## Overview
 
-3:14 AM. James Charmichael circles Rieterpark for the third time, breath fogging in the cold, before he lets himself sit. The bench is empty except for a man in a dark coat who adjusts his hat, sets a book on his lap — the two signals, both correct. Klaus Muller, in person, for the first time in six months of dead drops and forum handles.
+3:14 AM. James Charmichael circles Rieterpark for the third time, breath fogging in the cold, before he lets himself sit. The bench is empty except for a man in a dark coat who adjusts his hat, sets a book on his lap — the two signals, both correct. Klaus Muller, in person, for the first time in six months of dead drops (hidden handoffs — an item left somewhere for the other person to collect later, so the two of them are never seen together) and forum handles.
 
 "Here are the photographs," Klaus says, sliding a manila envelope down the bench without looking at him.
 
 "We cannot be too careful," Charmichael replies, tucking it into his coat. "We're being watched. From now on, handwritten only. There's a man on Bahnhofstrasse who sleeps near the tram stop — when you have something, put it in a coffee cup and leave it with him."
 
-Klaus's hand is shaking slightly. He's not a professional. He's a name in a terror cell's back office who decided, six months ago, to start talking to a stranger on the dark web, and every message since has been a small bet that no one is reading over his shoulder.
+Klaus's hand is shaking slightly. He's not a professional. He's a name in a terror cell's back office who decided, six months ago, to start talking to a stranger on the dark web (parts of the internet not indexed by ordinary search engines and reachable only with special software, often used to communicate anonymously), and every message since has been a small bet that no one is reading over his shoulder.
 
 Charmichael stands to leave. "We need to write in code."
 

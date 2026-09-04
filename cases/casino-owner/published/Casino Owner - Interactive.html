@@ -157,6 +157,23 @@
   .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
   .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
 
+  /* ---- STORY vocabulary hover + hyperlink terms (MCS-47/T1-21) --
+         mirrors .gterm's mechanism exactly but in a distinct accent
+         color (steel blue, not gold) so a reader can tell at a glance
+         "this is a real-world term" vs. "this is a math term". T1-21
+         relies on the .sterm class existing literally in this file;
+         do not rename it. ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted #4a7ea8;cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:#e7f0f7}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:#8fc1e8;font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted #4a7ea8;
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
   /* ============================================================
      CASE-SPECIFIC — add here. Every case will need its own rules
      for its banner art, its notebook layout quirks, its twist
@@ -390,6 +407,7 @@
         <tr><td>Table install cost</td><td class="num">$14,650.00</td></tr>
         <tr><td>South lobby table capacity</td><td class="num">up to 4</td></tr>
       </table>
+      <p class="side-note">The buy-in and the pot are two separate pools of money: the buy-in is what a player pays just to sit down and get chips, once, before the hand starts; the pot is what accumulates from bets placed during that single hand &mdash; and it's the pot, not the buy-in, that the pot rake is taken from.</p>
       <p>The three tables below share the same six pot-size bands, but the frequency of each band, the rake percentage charged, and the average time per game all shift with how many players are seated.</p>
       <p><strong>1&ndash;3 players at the table</strong></p>
       <table>
@@ -530,6 +548,15 @@
       <p class="gloss-source">Links verified working 2026-08-17. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
     </div>
   </details>
+
+  <details open id="apx-story-glossary">
+    <summary>Story Vocabulary &mdash; real-world casino terms used in this case</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> These are real-world casino/gambling terms this case's story uses (not math terms &mdash; those are in Appendix F above). Hover any term for a plain-English definition; click it to open a real outside source on it.</p>
+      <div class="glossary-grid" id="storyGlossaryVocab"></div>
+      <p class="gloss-source">Links verified working 2026-09-02. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
 </section>
 
 <!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
@@ -562,6 +589,11 @@
     <div class="fieldrow"><label for="s3a">Option A (Indigo) weekly profit ($)</label><input type="number" step="1" id="s3a"><button onclick="checkStep3()">Check</button><span class="fb" id="fb3a"></span></div>
     <div class="fieldrow"><label for="s3b">Option B (Video) weekly profit ($)</label><input type="number" step="1" id="s3b"><button onclick="checkStep3()">Check</button><span class="fb" id="fb3b"></span></div>
     <p class="side-note" id="s3margin"></p>
+    <p class="side-note"><strong>D5.</strong> The bar graph below redraws live from whatever you typed into the two fields above &mdash; it's a worked example of the comparison D5 asks you to build, not the graded artifact itself. Your own submitted bar graph should be an original one you make (by hand, or in a spreadsheet), not a screenshot of this one.</p>
+    <div class="chartwrap">
+      <svg id="profitChart" viewBox="0 0 400 160" width="100%" style="max-width:400px"></svg>
+      <div class="cap">Bars redraw from Step 3's own A/B fields above &mdash; nothing here comes from an answer key.</div>
+    </div>
   </div>
 </section>
 
@@ -909,6 +941,32 @@ function checkStep3(){
   }
 }
 
+// D5 worked example: a live bar graph, same "chartwrap + inline <svg>,
+// redrawn from the Hero's own typed notebook values" convention Cold
+// Chain's tallyChart uses. This is a comparable worked example for the
+// deliverable, not a graded submission -- the caption says so.
+function drawProfitChart(){
+  const a = +val('s3a'), b = +val('s3b');
+  const max = 220000; // a little above the base-case Option A total, so both bars have headroom
+  const barW = 110, chartH = 110, base = 130;
+  const hA = Math.max(0, Math.min(1, a/max))*chartH;
+  const hB = Math.max(0, Math.min(1, b/max))*chartH;
+  const svg = document.getElementById('profitChart');
+  svg.innerHTML = `
+    <line x1="20" y1="${base}" x2="380" y2="${base}" stroke="#8a95a3" stroke-width="1.3"/>
+    <rect x="70" y="${base-hA}" width="${barW}" height="${hA}" fill="#1a3a5c" rx="3"/>
+    <rect x="220" y="${base-hB}" width="${barW}" height="${hB}" fill="#c9a227" rx="3"/>
+    <text x="125" y="${base-hA-8}" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="12" font-weight="700" fill="#1a3a5c">${a ? '$'+Math.round(a).toLocaleString() : ''}</text>
+    <text x="275" y="${base-hB-8}" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="12" font-weight="700" fill="#8a6d0f">${b ? '$'+Math.round(b).toLocaleString() : ''}</text>
+    <text x="125" y="${base+18}" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" fill="#5b6472">Option A (Indigo)</text>
+    <text x="275" y="${base+18}" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" fill="#5b6472">Option B (Video)</text>
+    <text x="20" y="14" font-family="-apple-system,Segoe UI,sans-serif" font-size="9.5" fill="#8a95a3">scale: $0&ndash;$${max.toLocaleString()} weekly profit</text>
+  `;
+}
+document.getElementById('s3a').addEventListener('input', drawProfitChart);
+document.getElementById('s3b').addEventListener('input', drawProfitChart);
+drawProfitChart();
+
 /* ================================================================
    CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
    localStorage keys so multiple cases opened in the same browser
@@ -1000,6 +1058,87 @@ const GLOSSARY = {
   "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b -- Appendix B's \"X to 1\" odds are ratios.",
     url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
 };
+/* ================================================================
+   CASE-SPECIFIC — STORY vocabulary (MCS-47/T1-21: real-world, non-math
+   domain terms this case's story actually uses, separate from GLOSSARY
+   above). Deliberately a DIFFERENT data-object name (STORY_GLOSSARY, not
+   GLOSSARY) and DIFFERENT field names ({desc, link}, not {def, url}) --
+   T1-19's own regex matches ANY quoted-label object using the def/url
+   field-name pair anywhere in this file, so reusing that pair here would get these
+   real-world (non-educational-domain) links swept into T1-19's math-
+   allowlist check and wrongly BLOCKED. >=4 terms required, every link a
+   real https:// URL fetched and confirmed working, in the term's OWN
+   domain (Wikipedia here) -- never a duplicate of T1-19's own
+   khanacademy/mathsisfun/cuemath/purplemath/ck12/nctm/openstax allowlist.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Pot Rake": {desc: "The percentage of each poker-style pot a cardroom keeps as its fee for hosting the game -- Indigo's own version of this is set by house policy in Appendix A.",
+    link: "https://en.wikipedia.org/wiki/Rake_(poker)"},
+  "Buy-In": {desc: "The amount of money a player pays up front to sit down and play -- it becomes the chips they bet with, not a fee to the house.",
+    link: "https://en.wikipedia.org/wiki/Buy-in_(poker)"},
+  "Pit": {desc: "The area of tables a single supervisor (a \"pit boss\") oversees on a casino floor -- checking the \"pit count\" means keeping an eye on how those tables are doing.",
+    link: "https://en.wikipedia.org/wiki/Pit_boss"},
+  "Actuarial Consultant": {desc: "Someone who uses math and statistics professionally to measure risk and uncertainty -- Emilia's prior career, before she became a casino manager.",
+    link: "https://en.wikipedia.org/wiki/Actuary"},
+  "Jackpot Pool": {desc: "Prize money that grows over time as a share of every losing bet is added to it, until someone eventually wins the whole accumulated amount.",
+    link: "https://en.wikipedia.org/wiki/Progressive_jackpot"},
+};
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-term="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Read more on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  document.getElementById('storyGlossaryVocab').innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-story-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .sterm, .gterm, #apx-glossary, #apx-story-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
 const HOWTO = [
   ["how to find the percent of a number", "Percent"],
   ["how to convert percents to numbers", "Percent"],
@@ -1106,6 +1245,7 @@ function autoLinkGlossaryTerms(containerSelectors){
   });
 }
 autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkStoryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
 autoAddCSVButtons(CASE_ID);
 
 /* ================================================================
