@@ -460,15 +460,42 @@ non-optional gate (MCS-48).
 Two stages, the same "machine pre-screen, then a fresh model judges quality" shape as P3:
 
 1. **Mechanical pre-screen.** Scans `case.json.deliverables[]` for any deliverable whose `text`
-   contains a real drawing/graphing request (`sketch`, `diagram`, `graph of`, `draw`, `plot` —
-   case-insensitive, word-boundary matched so "graphical" doesn't false-positive). For every match,
-   checks the published Interactive HTML for a real visual anywhere in the file (a genuine `<img>`
-   with a non-placeholder `src`, or an inline `<svg>` with actual `<path>`/`<circle>`/`<rect>`/etc.
-   content, not an empty stub). Zero visuals against one or more matching deliverables is a
-   mechanical FAIL — a deliverable asking a student to produce a diagram they were never shown a
-   comparable worked example of is a real, checkable gap, distinct from the qualitative read below.
-2. **Model-judged cold-read.** Same human-in-the-loop mechanism as P1/P3/P4: the script writes the
-   student packet and prints an explicit dispatch instruction —
+   contains a real drawing/graphing request — `sketch`, `diagram`, `draw`, `plot`, `graph of`, or
+   real chart vocabulary (`bar graph`, `bar chart`, `pie chart`, `histogram`, `scatter plot`,
+   `line graph`), case-insensitive, word-boundary matched so "graphical" doesn't false-positive.
+   (Broadened 2026-09-03 UAT: the original regex only matched the literal phrase "graph of" and
+   missed real deliverable language this corpus actually uses — verified against codebreaker's
+   "bar graph"/"pie chart"/"histogram" deliverables, casino-owner's and a-coachs-dilemma's "bar
+   graph" deliverables.) For every match, checks the published Interactive HTML for a real visual
+   (a genuine `<img>` with a non-placeholder `src`, an inline `<svg>` with actual
+   `<path>`/`<circle>`/`<rect>`/etc. content, or a JS-rendered chart element identified by an
+   `id`/`class`/`aria-label` naming it a chart/graph/diagram/plot — the same signal T1-20 already
+   uses for a chart that is statically empty until the browser fills it in). Decorative chrome is
+   excluded first: the tab nav, header crest/logo, footer credit line, the top action toolbar, and
+   the hidden `<svg aria-hidden="true">` icon-symbol `<defs>` library (its `<symbol>` children
+   contain real `<path>`/`<circle>` icon artwork that the naive shape-tag test used to miscount as
+   a genuine visual). **Residual limitation, stated honestly rather than overclaimed**: this
+   recognizes chrome by container, not by proximity to the SPECIFIC deliverable that asked for a
+   visual — a case with one real chart for Deliverable X and a second, unrelated deliverable Y
+   also asking for a diagram would still mechanically pass on X's visual alone, and a hand-placed
+   decorative icon inside a real content section (not one of the excluded chrome containers) would
+   still be over-counted. A human should still confirm each matched deliverable has its own
+   comparable worked example, not just that some visual exists somewhere in the file. Zero visuals
+   against one or more matching deliverables is a mechanical FAIL — a deliverable asking a student
+   to produce a diagram they were never shown a comparable example of is a real, checkable gap,
+   distinct from the qualitative read below.
+2. **Model-judged cold-read.** Same human-in-the-loop mechanism as P1/P3/P4: the script builds the
+   student packet from the **published Interactive HTML**, not raw `case.md` — text-extracted
+   (script/style stripped, visible prose kept) with every `GLOSSARY`/`STORY_GLOSSARY` term's
+   definition rendered inline at its first mention as a parenthetical gloss, the way a hover
+   tooltip would show a student (e.g. "NDVI (a satellite-based vegetation health measure...)").
+   (Fixed 2026-09-03 UAT, the critical bug of that pass: building this packet from `case.md` the
+   same way P1's `probe_cold_solve` does let a case mechanically PASS T1-21 — glossary added to
+   the HTML — while P7's cold-reader saw none of it, because it was reading a different artifact
+   entirely. **P1/`probe_cold_solve` was deliberately left untouched** — an established, separate
+   probe with its own history; its packet source is out of scope here.) Falls back to the old
+   `case.md`-based behavior when no `published/` HTML exists yet, so a case mid-pipeline isn't
+   broken by this. The script then prints an explicit dispatch instruction —
 
    > **Dispatch a genuinely fresh subagent with ZERO extra context.** Give it the packet path and
    > this instruction: "You have no background in [the case's real-world setting, pulled from
@@ -481,7 +508,22 @@ the cold-reader names 0-1 unexplained concepts.** A finding of 2 or more is a FA
 glossary/explanation coverage is insufficient **regardless of whether Tier 1's T1-21 mechanically
 passed**, because T1-21 only proves a glossary mechanism exists and clears a term-count floor, not
 that coverage is actually complete. Some irreducible unfamiliarity is fine; this is not a
-zero-tolerance bar.
+zero-tolerance bar. Confirmed for real on carpenter/codebreaker (2026-09-03 UAT): even after
+fixing the packet-source bug, both still FAIL — carpenter's cold-read named 10 unexplained
+construction/sourcing concepts, codebreaker's named 6 cipher-mechanics concepts, well past the
+2-concept threshold. Fixing where the packet comes from does not manufacture a PASS that isn't
+earned.
+
+**MCS-49 — a real, evidenced disclosure waiver.** A case may pass P7 via a disclosed-partial
+result (mirroring MCS-26's "disclosure, not elimination" philosophy for P5), but only with real
+proof of genuine effort: `case.json.qa.tier2.P7_waiver = {granted, reason, remediation_rounds,
+terms_added_total, remaining_gaps[], approved_by, date}`, all seven fields required and non-empty
+(`remaining_gaps[]` must actually hold the verbatim gap list from the most recent cold-read, not a
+summary). When present and complete, `tier2_probes.py` notes a waived case's recorded FAIL as
+`"P7: FAIL (waived — see qa.tier2.P7_waiver)"` in its own printed report — the underlying FAIL and
+cold-read transcript are never hidden or deleted. First (and so far only) case waived: Cardiology,
+after 3 real remediation rounds (16 `STORY_GLOSSARY` terms) took its named-gap count from 10 → 9 →
+8; see `cases/cardiology/case.json` and `QA_REPORT.md`.
 
 ---
 

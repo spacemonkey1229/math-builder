@@ -68,3 +68,89 @@ All six Tier 2 probes now PASS with zero FAIL. `case.json.qa` updated: `state: T
 **Files changed this pass:** none (`cases/cardiology/case.json` `qa` block only — the FACILITATOR.md
 and case.md edits themselves were already in place from 2026-08-20, this pass only re-verified and
 recorded them).
+
+## case-readiness UAT — MCS-47 (T1-21) / MCS-48 (P7) — 2026-09-03
+**State:** TIER1_PASS (T1-21 GAP → PASS)   **P7 mechanical:** READY/no missing visuals
+**P7 model-judged cold-read:** still FAIL (see below) — this is the first live use of both checks.
+
+### Before
+`tier1_structural.py --case cardiology`: 20 PASS, 1 GAP (T1-21 — `Cardiology - Interactive.html`
+had no `STORY_GLOSSARY`/`class="sterm"` mechanism at all), 0 blockers. `tier2_probes.py --probe 7`:
+mechanical pre-screen READY (`n_visuals_found: 6`, no deliverable asks for a sketch/diagram/graph
+this case doesn't already show), the model half pending a fresh subagent per the printed prompt.
+
+### Remediation
+Added a `STORY_GLOSSARY` JS object + `class="sterm"` hover/hyperlink mechanism to
+`Cardiology - Interactive.html` (mirroring the existing `GLOSSARY`/`gterm` math-glossary pattern,
+per T1-21's own regex — distinct `{desc, link}` field names so it can never collide with T1-19's
+`{def, url}` scan), a matching "Story Vocabulary" appendix in `case.md` (inserted between Appendix E
+and Appendix F), and the same content added into the published `Case Study.docx` via python-docx
+(real `w:hyperlink` elements with external relationships, same pattern as the existing Appendix E
+links) so the three student artifacts stay in agreement (T1-15 continuity).
+
+Went through 3 rounds, each verified against a genuinely fresh, zero-context subagent cold-read
+(P7's own prescribed method) rather than stopping at the mechanical floor:
+1. **5 terms** (Angiogram, Ejection Fraction, Coronary Artery Disease, Congestive Heart Failure,
+   Coronary Artery Bypass Graft) — closes T1-21 mechanically (>= 4 terms, all real https:// links
+   to MedlinePlus/Cleveland Clinic/NHLBI, fetched and confirmed reachable, none duplicating T1-19's
+   math-education domains). First fresh cold-read subagent then named **10** further unexplained
+   real-world concepts (Occlusion, Stroke Volume, End-Diastolic Volume, E/A ratio, HgA1C, BMI
+   classes, blood pressure format, all-cause mortality, randomization, the affiliate/referral
+   arrangement) — a real FAIL, proving T1-21's mechanical floor is not P7's bar.
+2. **+10 terms** covering that list (sourced to NIDDK, NCI Dictionary of Cancer Terms, NIH RaDaR
+   glossary, NCBI Bookshelf/StatPearls, MedlinePlus, Wikipedia — all fetched and confirmed
+   reachable). Second fresh cold-read still named 9, mostly finer-grained (survival-vs-mortality
+   conversion, "primary report," premature CAD, BMI class ranges, the CHF/heart-attack causal link).
+3. **+1 term** (Premature CAD, sourced to a real NIH/PMC review article) for the cleanest remaining
+   gap. Third fresh cold-read (recorded below) still named **8** real-world concepts.
+
+**No math, `margin_pct`, graded numbers, or clinical-trial data were touched at any point** — every
+change is glossary/visual (STORY_GLOSSARY content + the docx section it mirrors).
+
+`case.md` changed three times in this pass; `case_md_sha256` updated each time in `case.json.qa`
+and `published/MANIFEST.json` to match. The published `Case Study.docx` and `MANIFEST.json` were
+rebuilt after each `case.md` change so T1-15 (continuity) stays clean.
+
+### After
+`tier1_structural.py --case cardiology`: **21/21 PASS, 0 GAP, 0 blockers, VERDICT: TIER1_PASS.**
+T1-21 now PASS (16 real story-glossary terms, all links verified reachable). T1-15/T1-18/T1-19/T1-20
+unaffected.
+
+`tier2_probes.py --probe 7`: mechanical pre-screen still READY (`n_visuals_found: 6`, unchanged).
+The model-judged cold-read (three independent genuinely-fresh subagents dispatched per the probe's
+own printed prompt, one per remediation round) is **honestly recorded as FAIL as of this run** — the
+third and final cold-read still named 8 real-world concepts the packet's prose uses without fully
+resolving (the mortality-to-survival-rate conversion implied but never stated; "median follow-up"
+as a statistical concept; "primary report" implying an unexplained secondary one; the NCT
+identifier/Sponsor-vs-Collaborator roles; unstated BMI class boundaries; "reduced heart function"
+never tied back to Ejection Fraction; the trial's CABG-candidacy eligibility criteria; and why the
+*left* coronary artery specifically matters). This is well past the >=2 threshold that defines a P7
+FAIL. **Not chased further in this pass** — per case-readiness's own design note on P7 (SKILL.md/
+tier2_probes.py's probe_accessibility docstring), T1-21 proves a glossary *mechanism* exists and
+clears a floor, not that coverage is complete, and this case is the first live demonstration of
+exactly that gap. Fixing it further would mean glossing case.md/the interactive HTML with an
+increasingly long tail of methodological asides (most now genuinely marginal, several already
+self-flagged by the case as "beyond what the Challenges require") — a real editorial judgment call
+for a human, not a mechanical remediation. Recorded here rather than forced to a false PASS.
+
+**Files changed:** `cases/cardiology/published/Cardiology - Interactive.html` (STORY_GLOSSARY +
+CSS + renderer + auto-linker, 16 terms), `cases/cardiology/case.md` (Story Vocabulary section, 16
+terms), `cases/cardiology/published/Cardiology - Case Study.docx` (matching section, rebuilt via
+python-docx with real hyperlinks), `cases/cardiology/published/MANIFEST.json` (byte sizes, hash,
+build note), `cases/cardiology/case.json` (`qa.case_md_sha256`), this file.
+
+### Tooling notes (real UAT findings on T1-21/P7 themselves)
+- **T1-18 false-positive interaction:** adding the line "Links verified working 2026-09-03." inside
+  the new Story Vocabulary `<details>` block tripped T1-18's CONTINUITY scan — `09` in the date
+  parses as the float `9.0` (no other digit sequence in the case happens to equal 9), which isn't in
+  `case.md`/`case.json`'s numeric universe. Not a defect in T1-18 itself (dates colliding with
+  data numbers is an expected, documented risk class for that check), but worth flagging: any new
+  "Links verified working YYYY-MM-DD" string is one date-format choice away from a false GAP/FAIL.
+  Worked around here by writing "Links verified working September 2026." instead of the ISO date.
+- **T1-21/P7 relationship confirmed exactly as documented:** T1-21 mechanically PASSED after just 5
+  terms (>= `MIN_STORY_GLOSSARY_TERMS`), while P7's real cold-read kept finding real gaps through 21
+  total terms across 3 rounds. The two checks are doing genuinely different jobs, not a redundant
+  pair — T1-21 is a floor, P7 is the actual bar, and no number of terms mechanically guarantees P7
+  clears, because a cold reader can always surface a new methodological nuance in a real clinical
+  narrative. No bug found in either script's own logic; this is the intended, documented gap between
+  a mechanical check and a model-judged one.

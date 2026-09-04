@@ -48,8 +48,18 @@ def norm(s: str) -> str:
 
 NUM_RE = re.compile(r'(?<![\w.])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+\.\d+|\d+)(?![\w])')
 
+ISO_DATE_RE = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
+
 def numbers_in(text: str):
     """Every numeric literal in a blob of text, as floats."""
+    # An ISO-style date (2026-09-03) is a timestamp, not case data -- its "09" would
+    # otherwise parse as the float 9.0 and, if 9.0 isn't in the case's real numeric
+    # universe, trip a false continuity flag (found on cardiology's T1-18 scan,
+    # 2026-09-03, when a "Links verified working 2026-09-03." string collided this
+    # way). Same style as the clock-time/hex-color exclusions already applied before
+    # numbers_in() is called elsewhere in this file -- strip the date pattern first,
+    # before the general number regex ever sees it.
+    text = ISO_DATE_RE.sub(' ', text)
     out = set()
     for m in NUM_RE.finditer(text):
         try:
@@ -849,14 +859,21 @@ def run(project, cid):
         html_files = [fn for fn in os.listdir(pub) if fn.lower().endswith('.html')]
         for fn in html_files:
             txt = open(os.path.join(pub, fn), encoding='utf-8', errors='ignore').read()
+            # Strip HTML comments before scanning for glossary markup/links (found as a
+            # real bug 2026-09-03, T1-19 UAT): an explanatory code comment describing the
+            # {def, url} shape -- e.g. `<!-- entries look like {def: "...", url: "https://..."} -->`
+            # -- was matched by the data_entries regex as if it were a real glossary term,
+            # falsely BLOCKING. T1-18's own CONTINUITY sweep already strips comments the
+            # same way; apply the identical pattern here before any glossary regex runs.
+            gtxt = re.sub(r'(?is)<!--.*?-->', ' ', txt)
 
-            static_terms = re.findall(r'class="gterm"[^>]*href="([^"]+)"', txt)
-            static_terms += re.findall(r'href="([^"]+)"[^>]*class="gterm"', txt)
+            static_terms = re.findall(r'class="gterm"[^>]*href="([^"]+)"', gtxt)
+            static_terms += re.findall(r'href="([^"]+)"[^>]*class="gterm"', gtxt)
             static_terms = [u for u in static_terms if '${' not in u]  # unresolved template, not a real link
 
             data_entries = re.findall(
                 r'"[A-Za-z][A-Za-z \-]*":\s*\{def:\s*"(?:[^"\\]|\\.)*"\s*,\s*url:\s*"(https://[^"]+)"',
-                txt)
+                gtxt)
 
             # If a JS data object is present, it's the source of truth for both the
             # count and the URLs to validate -- any co-occurring static class="gterm"
@@ -864,7 +881,7 @@ def run(project, cid):
             # unrelated anchor), not a second independent set of real links.
             all_urls = data_entries if data_entries else static_terms
             n_terms = len(data_entries) if data_entries else len(static_terms)
-            has_wiring = bool(re.search(r'class="gterm"', txt))
+            has_wiring = bool(re.search(r'class="gterm"', gtxt))
 
             if not has_wiring:
                 R.blocker('T1-19', f"MCS-39 — {fn} has no class=\"gterm\" hover/hyperlink markup at "

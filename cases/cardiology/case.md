@@ -119,6 +119,66 @@ Beyond the math, this case is grounded in real cardiology. Here's where to go if
 
 ---
 
+## Story Vocabulary — Cardiology & Clinical-Trial Terms
+
+This case also uses real cardiology and clinical-trial vocabulary you may not have met in a math
+class. These terms appear in the Background, Appendices A-D, and Appendix E above; each is defined
+here in plain English, with a real source if you want to read further. This is separate from the
+math vocabulary in Appendix F.
+
+- **Angiogram** — an X-ray procedure that uses a special dye to make blood vessels visible, often
+  used to find blockages in the arteries that supply the heart; the test that showed Paul's 98%
+  occlusion. [MedlinePlus, Coronary angiography](https://medlineplus.gov/ency/article/003876.htm)
+- **Ejection Fraction** — a measurement of how much blood the heart's main pumping chamber pushes
+  out with each beat, expressed as a percent. A healthy heart usually pumps out more than half of
+  the chamber's blood each beat. [Cleveland Clinic, Ejection Fraction](https://my.clevelandclinic.org/health/articles/16950-ejection-fraction)
+- **Coronary Artery Disease** — a condition in which the arteries that supply blood to the heart
+  become narrowed, usually by a buildup of fatty deposits, which can reduce the oxygen the heart
+  muscle receives; the condition Paul has. [MedlinePlus, Coronary Artery Disease](https://medlineplus.gov/coronaryarterydisease.html)
+- **Congestive Heart Failure** — a condition in which the heart cannot pump blood as well as it
+  should, so blood and fluid can back up in the body. It does not mean the heart has stopped — it
+  means it isn't pumping efficiently enough. [NHLBI, Heart Failure](https://www.nhlbi.nih.gov/health/heart-failure)
+- **Coronary Artery Bypass Graft (CABG)** — a surgery that reroutes blood around a blocked section
+  of a coronary artery using a healthy blood vessel taken from elsewhere in the body, restoring
+  blood flow to the heart muscle; the CABG option in Paul's Dilemma. [NHLBI, Coronary Artery Bypass Grafting](https://www.nhlbi.nih.gov/health/coronary-artery-bypass-grafting)
+- **Occlusion** — a blockage or narrowing of a blood vessel; Paul's angiogram found 98% occlusion of
+  his left coronary artery, meaning it was almost completely blocked, usually by a buildup of fatty
+  plaque. [NHLBI, Atherosclerosis](https://www.nhlbi.nih.gov/health/atherosclerosis)
+- **Stroke Volume** — the amount of blood the heart's main pumping chamber ejects with a single
+  heartbeat; one of the two numbers (with End-Diastolic Volume) used to compute Paul's Ejection
+  Fraction. [NCBI Bookshelf, Physiology, Stroke Volume](https://www.ncbi.nlm.nih.gov/books/NBK547686/)
+- **End-Diastolic Volume** — the amount of blood filling the heart's main pumping chamber right
+  before it contracts; the chamber's "full" volume, used with Stroke Volume to compute Ejection
+  Fraction. [NCBI Bookshelf, Physiology, Stroke Volume](https://www.ncbi.nlm.nih.gov/books/NBK547686/)
+- **HgA1C** — a blood test (also written A1C) that measures average blood sugar over about three
+  months, used to diagnose and monitor pre-diabetes and diabetes; Paul's result of 6.4 is in the
+  pre-diabetes range. [NIDDK, The A1C Test & Diabetes](https://www.niddk.nih.gov/health-information/diagnostic-tests/a1c-test)
+- **Body Mass Index (BMI)** — a number calculated from height and weight, used as a screening
+  estimate of body fat. Doctors group higher BMI values into classes; Paul's BMI of 31 falls in the
+  "Class I obesity" range. [MedlinePlus, Body Mass Index](https://medlineplus.gov/ency/article/007196.htm)
+- **All-Cause Mortality** — death from any cause, not just the condition being studied; the STICH
+  trial tracked all-cause mortality so the comparison couldn't be skewed by how a death got labeled.
+  [NCI Dictionary of Cancer Terms, all-cause mortality](https://www.cancer.gov/publications/dictionaries/cancer-terms/def/all-cause-mortality)
+- **Randomized** — in a clinical trial, assigning patients to a treatment group purely by chance, so
+  the groups being compared start out similar; how the STICH trial assigned patients to MT or CABG.
+  [NIH RaDaR, Randomized controlled trial](https://registries.ncats.nih.gov/glossary/randomized-controlled-trial/)
+- **Blood Pressure** — written as two numbers, e.g. 145/60: the first (systolic) is the pressure in
+  the arteries when the heart beats; the second (diastolic) is the pressure when the heart rests
+  between beats. [MedlinePlus, High blood pressure in adults](https://medlineplus.gov/ency/article/000468.htm)
+- **E/A Ratio** — a measurement from a heart ultrasound comparing two phases of how the heart's
+  chamber fills with blood between beats; one of several lab values in Paul's profile beyond what
+  the Challenges require. [Wikipedia, E/A ratio](https://en.wikipedia.org/wiki/E/A_ratio)
+- **Affiliate Agreement** — a financial arrangement in which a doctor's office receives payment tied
+  to sales of a specific product; disclosed here because a patient deserves to know about a
+  financial interest that could affect a recommendation, even one that doesn't change the
+  underlying math. [NCBI Bookshelf, Conflicts of Interest and Medical Practice](https://www.ncbi.nlm.nih.gov/books/NBK22944/)
+- **Premature CAD** — coronary artery disease that shows up unusually early in life; research
+  studies commonly define it as CAD before about age 55 in men or 65 in women. Paul's family
+  history of premature CAD means a close relative was diagnosed at an unusually young age, which
+  raises his own risk. [NIH/NCBI, Pathogenesis of premature coronary artery disease](https://pmc.ncbi.nlm.nih.gov/articles/PMC8843894/)
+
+---
+
 ## Appendix F: "How To…" Math Questions To Research
 
 **Vocabulary**

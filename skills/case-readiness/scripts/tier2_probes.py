@@ -501,7 +501,140 @@ def probe_decay(project, cid, c, out, today=None):
 #       enough to proceed. 2+ such findings is a FAIL regardless of whether
 #       T1-21 mechanically passed, because T1-21 only proves a glossary
 #       MECHANISM exists and clears a floor -- not that coverage is complete.
-VISUAL_KEYWORD_RE = re.compile(r'\b(sketch|diagram|graph of|draw|plot)\w*\b', re.I)
+
+# Bug 2 (UAT 2026-09-03): the original regex only matched the literal phrase "graph
+# of", which missed the real deliverable language this corpus actually uses --
+# "bar graph" (codebreaker D4, casino-owner D5, a-coachs-dilemma D5, carpenter D4),
+# "pie chart" (codebreaker D5), "histogram" (codebreaker D6). Broadened to the real
+# chart/visual vocabulary a deliverable actually asks for, still case-insensitive and
+# word-boundary matched so "graphical"/"platform" etc. don't false-positive.
+VISUAL_KEYWORD_RE = re.compile(
+    r'\b(sketch\w*|diagram\w*|draw\w*|drawing\w*|plot\w*|graph\s+of|'
+    r'bar\s+graphs?|bar\s+charts?|pie\s+charts?|histograms?|scatter\s*plots?|line\s+graphs?)\b',
+    re.I)
+
+# Bug 3 (UAT 2026-09-03): the mechanical visual-count originally counted ANY <img>/
+# <svg> on the page, including decorative nav/logo/UI-chrome icons that have nothing
+# to do with any deliverable -- e.g. templates/interactive_shell.html's top action
+# toolbar (`<div class="toolbar">`, copy/export/submit button icons), the header
+# crest logo and footer credit (`<svg class="logo"><use href="#ha-logo"/></svg>`),
+# and, worst of all, the hidden `<svg width="0" height="0" ... aria-hidden="true">`
+# block that holds the <symbol> icon library itself -- its <defs> contain real
+# <path>/<circle> elements (the icon artwork), which the old bare "<svg>...</svg>
+# contains a shape tag" test counted as a genuine visual even though it is never
+# rendered to a student at all. Exclude all of these known chrome containers before
+# counting. This is a real, but NOT complete, fix -- see the docstring note below.
+CHROME_STRIP_RE = re.compile(
+    r'(?is)<nav\b.*?</nav>'
+    r'|<header\b.*?</header>'
+    r'|<footer\b.*?</footer>'
+    r'|<div\s+class="toolbar"[^>]*>.*?</div>'
+    r'|<svg\b[^>]*\baria-hidden=["\']true["\'][^>]*>.*?</svg>'
+)
+
+
+def _glossary_entries_from_html(html, defkey, urlkey):
+    """Extract {label: definition} from a JS data object shaped like GLOSSARY
+    ({def, url}) or STORY_GLOSSARY ({desc, link}) -- same regex shape T1-19/T1-21
+    already use to find these objects, reused here to pull the definitions
+    themselves (not just count/validate the links)."""
+    pat = re.compile(
+        r'"([^"]+)":\s*\{' + re.escape(defkey) + r':\s*"((?:[^"\\]|\\.)*)"\s*,\s*'
+        + re.escape(urlkey) + r':\s*"(https://[^"]+)"')
+    out = {}
+    for m in pat.finditer(html):
+        label, definition, _url = m.groups()
+        definition = definition.replace('\\"', '"').replace('\\n', ' ').replace('\\/', '/')
+        if label and definition:
+            out[label] = definition
+    return out
+
+
+def _html_to_text(html):
+    """Strip <script>/<style> and all remaining tags, keeping the visible prose a
+    student would actually read, with rough paragraph breaks preserved."""
+    body = re.sub(r'(?is)<script.*?</script>|<style.*?</style>|<!--.*?-->', ' ', html)
+    body = re.sub(r'(?is)</?(?:p|div|section|li|h[1-6]|tr|br)\b[^>]*>', '\n', body)
+    text = re.sub(r'(?s)<[^>]+>', ' ', body)
+    text = (text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
+                .replace('&quot;', '"').replace('&#39;', "'").replace('&nbsp;', ' '))
+    text = re.sub(r'[ \t]+', ' ', text)
+    text = re.sub(r'\n[ \t]*\n+', '\n\n', text)
+    return text.strip()
+
+
+def build_html_cold_read_packet(project, cid, md):
+    """Bug 1 fix (UAT 2026-09-03): P7's cold-read must experience what a student
+    clicking through the real published page actually sees -- including T1-21's
+    STORY_GLOSSARY and T1-19's math GLOSSARY, both of which live ONLY in the
+    published Interactive HTML and never in case.md. Building P7's packet from raw
+    case.md (the same way probe_cold_solve/P1 does) let a case mechanically PASS
+    T1-21 (glossary added to the HTML) while P7's cold-reader saw none of it, because
+    it was reading a different artifact entirely -- a structural mismatch between
+    what the two checks validate.
+
+    Text-extracts the published Interactive HTML (strips <script>/<style>, keeps
+    visible prose) and, for each GLOSSARY/STORY_GLOSSARY term, renders its definition
+    inline as a parenthetical gloss at the term's first mention -- the same
+    information a hover tooltip would show a student, e.g.
+    "NDVI (a satellite-based vegetation health measure...)".
+
+    Deliberately does NOT touch probe_cold_solve/P1 -- that is an established,
+    separate probe with its own history; changing its packet source is out of scope
+    and riskier (P1's leak test in tier2_probes.py's main() is keyed to the raw
+    case.md text). Falls back to the case.md-based behavior when no published/ HTML
+    exists yet, so a case mid-pipeline (not yet published) doesn't break P7 outright.
+
+    Returns (packet_text, source) where source is 'html' or 'case.md (fallback)'.
+    """
+    cdir = os.path.join(project, 'cases', cid)
+    pub = os.path.join(cdir, 'published')
+    html_files = [fn for fn in os.listdir(pub) if fn.lower().endswith('.html')] \
+        if os.path.isdir(pub) else []
+    if not html_files:
+        return md, 'case.md (fallback -- no published/ HTML yet)'
+
+    # Prefer the canonical " - Interactive.html" name (MCS-45's own filename
+    # contract); otherwise take the first HTML file found, sorted for determinism.
+    interactive = [fn for fn in html_files if fn.endswith(' - Interactive.html')]
+    fn = interactive[0] if interactive else sorted(html_files)[0]
+    raw = open(os.path.join(pub, fn), encoding='utf-8', errors='ignore').read()
+
+    glossary = {}
+    glossary.update(_glossary_entries_from_html(raw, 'def', 'url'))       # T1-19 math
+    glossary.update(_glossary_entries_from_html(raw, 'desc', 'link'))     # T1-21 story
+
+    text = _html_to_text(raw)
+    for label, definition in glossary.items():
+        pat = re.compile(r'(?<![\w-])' + re.escape(label) + r'(?![\w-])')
+        m = pat.search(text)
+        if m:
+            gloss = f"{label} ({definition.strip().rstrip('.')})"
+            text = text[:m.start()] + gloss + text[m.end():]
+    return text, f'published/{fn}'
+
+
+def _content_only(txt):
+    """Strip known decorative/navigational chrome (tab nav, header crest/logo, footer
+    credit line, the top action toolbar, and the hidden icon-symbol <defs> library)
+    before counting "real" visuals for MCS-48's mechanical pre-screen -- see the
+    CHROME_STRIP_RE comment above for why each container is excluded.
+
+    RESIDUAL LIMITATION, stated honestly rather than overclaimed: this recognizes the
+    specific chrome containers templates/interactive_shell.html actually uses. It does
+    NOT verify that a surviving visual sits near the SPECIFIC deliverable that asked
+    for it -- only that it is somewhere in the case's real content sections (Overview/
+    Background/Dilemma/Challenges/Appendices/Notebook/Twist), not in chrome. A case
+    with one real chart for Deliverable X and a second, unrelated deliverable Y asking
+    for its own diagram would still mechanically pass on the strength of X's visual
+    alone. A human should still confirm each matched deliverable has its OWN
+    comparable worked example, exactly as the existing findings message below already
+    asks. A hand-placed decorative icon inside a content <section> (not one of the
+    chrome containers above) would also still be over-counted; this cannot be
+    distinguished mechanically from a real diagram without a much stronger convention
+    (e.g. a required `data-deliverable="D4"` tag on every real visual), which does not
+    exist in this corpus today. See SKILL.md's P7 section for the same caveat."""
+    return CHROME_STRIP_RE.sub(' ', txt)
 
 
 def probe_accessibility(project, cid, c, md, out):
@@ -518,14 +651,39 @@ def probe_accessibility(project, cid, c, md, out):
             if not fn.lower().endswith('.html'):
                 continue
             txt = open(os.path.join(pub, fn), encoding='utf-8', errors='ignore').read()
-            body_only = re.sub(r'(?is)<script.*?</script>|<style.*?</style>', ' ', txt)
-            imgs = re.findall(r'<img\b[^>]*\bsrc=["\']([^"\']+)["\']', body_only)
+            # Strip HTML comments BEFORE stripping <script>/<style> -- found as a real
+            # bug while verifying this fix against casino-owner: an explanatory code
+            # comment mentioning the literal text "<script>" (e.g. "...outside a
+            # <script> tag's own computation.") gave the non-greedy <script>.*?</script>
+            # regex a false opening tag with no real closing tag before it, so it
+            # swallowed everything up to the file's ACTUAL closing </script> tag --
+            # including the real, JS-rendered D5 bar-graph <svg id="profitChart">
+            # element sitting in between, producing a false "no visual found" FAIL.
+            # Same class of nested-comment bug templates/interactive_shell.html itself
+            # hit once (see DOCTRINE_LEDGER.md's 2026-08-01 entry) -- comments must be
+            # removed first so a comment's own prose can never be mistaken for markup.
+            scan_txt = re.sub(r'(?is)<!--.*?-->', ' ', txt)
+            scan_txt = re.sub(r'(?is)<script.*?</script>|<style.*?</style>', ' ', scan_txt)
+            scan_txt = _content_only(scan_txt)
+            imgs = re.findall(r'<img\b[^>]*\bsrc=["\']([^"\']+)["\']', scan_txt)
             real_imgs = [s for s in imgs if s and 'placeholder' not in s.lower()
                         and not s.strip().startswith('data:image/gif;base64,R0lGOD')]
             n_visuals += len(real_imgs)
-            svg_blocks = re.findall(r'(?is)<svg\b[^>]*>(.*?)</svg>', txt)
+            svg_blocks = re.findall(r'(?is)<svg\b[^>]*>(.*?)</svg>', scan_txt)
             n_visuals += sum(1 for blk in svg_blocks
                              if re.search(r'(?is)<(path|circle|rect|line|polygon|polyline|ellipse)\b', blk))
+            # A chart populated by JS at load time (found on casino-owner's real
+            # D5 bar-graph deliverable: <svg id="profitChart" ...></svg>, filled by a
+            # <script> block this scan already stripped) is statically empty and would
+            # otherwise be missed entirely -- same class of "the real content only
+            # exists once the browser runs the render function" issue T1-19/T1-21
+            # already solve for glossaries by treating the JS data object as the
+            # source of truth. Reuses T1-20's existing chart_signals heuristic (an
+            # <svg>/<canvas> whose own id/class/aria-label names it as a chart/graph/
+            # diagram/plot) as the same kind of signal here.
+            n_visuals += len(re.findall(
+                r'(?is)<(?:canvas|svg)\b[^>]*\b(?:id|class|aria-label)=["\'][^"\']*'
+                r'(?:chart|graph|diagram|plot|visualiz)[^"\']*["\'][^>]*>', scan_txt))
 
     machine = []
     if matched and n_visuals == 0:
@@ -542,20 +700,47 @@ def probe_accessibility(project, cid, c, md, out):
                        f"just that SOME visual exists somewhere in the file.")
 
     # ---- (b) model-judged cold-read: dispatch a genuinely fresh subagent ----
-    pkt_dir = os.path.join('/tmp', f'coldsolve-{cid}')
+    # Bug 1 fix: the packet is built from the published Interactive HTML (glossary
+    # glosses rendered inline) when one exists, not from raw case.md -- see
+    # build_html_cold_read_packet()'s docstring. Uses its own /tmp directory
+    # (coldread-<id>, not coldsolve-<id>) so it never collides with P1's
+    # case.md-based packet when both probes run in the same invocation.
+    packet_text, packet_source = build_html_cold_read_packet(project, cid, md)
+    pkt_dir = os.path.join('/tmp', f'coldread-{cid}')
     os.makedirs(pkt_dir, exist_ok=True)
     pkt = os.path.join(pkt_dir, 'PACKET.md')
-    open(pkt, 'w', encoding='utf-8').write(md)
+    open(pkt, 'w', encoding='utf-8').write(packet_text)
 
     setting = (c.get('protagonist') or c.get('title') or cid)
     metric = c.get('primary_metric') or ''
+
+    # MCS-49: a real, evidenced P7 disclosure waiver (mirrors MCS-26's "disclosure,
+    # not elimination" philosophy). This never hides or deletes the underlying FAIL/
+    # cold-read transcript -- it only changes how a previously-recorded FAIL verdict
+    # is NOTED in this script's own printed report, and only when every required
+    # evidentiary field is present and non-empty (same "a present-but-incomplete
+    # waiver does not downgrade anything" rule T1-09's MCS-46 waiver already uses).
+    waiver = ((c.get('qa') or {}).get('tier2') or {}).get('P7_waiver') or {}
+    waiver_complete = bool(waiver.get('granted')) and all(
+        (str(waiver.get(k)).strip() if not isinstance(waiver.get(k), (list, int)) else waiver.get(k))
+        for k in ('reason', 'remediation_rounds', 'terms_added_total', 'remaining_gaps',
+                  'approved_by', 'date')
+    ) and isinstance(waiver.get('remaining_gaps'), list) and len(waiver.get('remaining_gaps')) > 0
+    recorded_p7 = ((c.get('qa') or {}).get('tier2') or {}).get('P7')
+    waiver_note = None
+    if recorded_p7 == 'FAIL' and waiver_complete:
+        waiver_note = ("P7: FAIL (waived — see qa.tier2.P7_waiver). The FAIL verdict and its "
+                       "cold-read transcript are NOT hidden or deleted by this waiver -- MCS-49 "
+                       "only lets a disclosed, evidenced FAIL count toward publish, the same "
+                       "'disclosure, not elimination' principle MCS-26 already applies to P5.")
 
     out.append({
         "probe": 7, "name": PROBES[7],
         "machine_status": 'FAIL' if any('NO real visual' in m for m in machine) else 'READY',
         "findings": machine,
         "matched_deliverables": matched, "n_visuals_found": n_visuals,
-        "packet": pkt,
+        "packet": pkt, "packet_source": packet_source,
+        "waiver_note": waiver_note,
         "prompt": (
             f"Dispatch a genuinely fresh subagent with ZERO extra context. Give it the packet path "
             f"({pkt}) and this exact instruction:\n\n"
@@ -614,9 +799,11 @@ def main():
     for r in out:
         print(f"\n--- P{r['probe']} {r['name']}  [{r['machine_status']}]")
         for k in ('base', 'base_winner', 'base_margin_pct', 'scope', 'trap', 'twist', 'packet',
-                  'computed', 'matched_deliverables', 'n_visuals_found'):
+                  'packet_source', 'computed', 'matched_deliverables', 'n_visuals_found'):
             if r.get(k):
                 print(f"    {k}: {r[k]}")
+        if r.get('waiver_note'):
+            print(f"    {r['waiver_note']}")
         for f in r.get('findings', []) + r.get('leaks', []):
             print(f"    ! {f}")
         for row in r.get('table', []):
