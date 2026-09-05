@@ -78,7 +78,8 @@ Priya commits to has to stay safe not just for the static verse, but for every b
 actually holds during the number. Where a figure in this case is not a matter of public record, it
 is stated as an explicit modeling assumption (SEE APPENDIX E) rather than guessed, and every
 sourced figure is listed in **APPENDIX F**. The vocabulary and "how to…" skills this case will ask
-of you are listed in **APPENDIX G** — that is where Challenge 1 sends you.
+of you are listed in **APPENDIX H** — that is where Challenge 1 sends you. (SEE APPENDIX G for the
+live-sound vocabulary that makes the engineering itself make sense.)
 
 ## Dilemma
 
@@ -240,7 +241,7 @@ and House-Right different.
 
 > These figures are **not sourced**. They are stated scenario assumptions chosen by the case
 > author, each with a real basis named below. A Hero may challenge them in discussion — that is a
-> legitimate move.
+> legitimate move, and Appendix H names the math skills a Hero would need to test one.
 
 | # | Assumption | Value used | Basis | Sensitivity |
 |---|---|---|---|---|
@@ -257,23 +258,11 @@ and House-Right different.
 | S2 | The mechanism of gain-before-feedback: its dependence on mic-to-loudspeaker distance via the inverse-square law (6 dB per doubling/halving of distance), and on aiming a directional mic's least-sensitive angle at the loudspeaker | "Greater GBF is obtained with the performer closer to the microphone; an instance of the inverse-square law … if the performer reduces the distance to the microphone by half, the PAG is increased by 6 dB." "Directional microphones … are aimed such that their pickup pattern is weakest in the direction of the loudspeakers." | Wikipedia, "Gain before feedback" ([en.wikipedia.org/wiki/Gain_before_feedback](https://en.wikipedia.org/wiki/Gain_before_feedback)) | 2026-08-19 | MEDIUM — a general encyclopedia entry, not a peer-reviewed or manufacturer source, but it states a standard, uncontested piece of acoustics (the inverse square law applied to gain-before-feedback) consistently with every other source found during this case's research (see RESEARCH_LOG.md); the quoted distance rule is used here for a mic-to-loudspeaker distance exactly as the source itself states it |
 | S3 | The general structure of a real potential-acoustic-gain calculation: a 20·log₁₀ distance-ratio term, plus separate additive terms for microphone directivity pattern and for the number of open microphones | "Estimate uses a PAG-style distance relationship: 20 log10((D0 x Ds) / (D1 x D2)), then applies open-mic, pattern, room, and feedback-stability adjustments." Pattern bonus modeled as 0 to +8 dB depending on directivity; open-mic penalty modeled via a 10·log rule (≈−3 dB per doubling of open mics). | CMUSE, "Gain Before Feedback Calculator for Live Sound" ([cmuse.org/gain-before-feedback-calculator](https://www.cmuse.org/gain-before-feedback-calculator)), dated 2026-06-29 | 2026-08-19 | MEDIUM — a trade/hobbyist audio publication, not a peer-reviewed or manufacturer source, but it corroborates the same 20·log₁₀ distance-ratio and additive-directivity-term structure this case's own GBF score uses (Appendix D), independently of source S2; used here only to confirm the *shape* of a real PAG-style calculation, not for any specific numeric value used in this case |
 
-## Appendix G — "How To…" Math Questions To Research
+## Appendix G — Learn More
 
-**Vocabulary terms**
-
-- Polar Coordinate
-- Parametric Equation
-- Parameter
-
-**"How to…" questions**
-
-- How to convert a point between rectangular and polar coordinates
-- How to graph a polar equation
-- How to eliminate the parameter to find a rectangular equation
-
-**Story vocabulary** — this case also uses real live-sound / audio-engineering terms that are
-not math vocabulary but that a reader who has never worked a show may not know. None of these
-change any number in this case; they are here so the engineering itself makes sense.
+This case also uses real live-sound / audio-engineering terms that are not math vocabulary but
+that a reader who has never worked a show may not know. None of these change any number in this
+case; they are here so the engineering itself makes sense.
 
 - **Front-of-House (FOH)** — the audience-side mixing position and job; the separate job from the
   monitor mixer, who runs what performers hear onstage. Priya is doing both tonight. See
@@ -314,5 +303,19 @@ change any number in this case; they are here so the engineering itself makes se
   though it's built the same way — same tool, a different real object. See [DPA Microphones, "How
   to Read Microphone
   Specifications"](https://www.dpamicrophones.com/mic-university/technology/how-to-read-microphone-specifications/).
+
+## Appendix H — "How To…" Math Questions To Research
+
+**Vocabulary terms**
+
+- Polar Coordinate
+- Parametric Equation
+- Parameter
+
+**"How to…" questions**
+
+- How to convert a point between rectangular and polar coordinates
+- How to graph a polar equation
+- How to eliminate the parameter to find a rectangular equation
 
 <!-- FACILITATOR ONLY: balance argument, margin, and sensitivity notes live in FACILITATOR.md and case.json's balance object, not here. -->

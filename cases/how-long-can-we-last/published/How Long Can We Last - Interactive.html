@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: How Long Can We Last — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+  /* ---- story-vocabulary glossary (MCS-39 extension) -- deliberately its own
+         .sterm class, separate CSS accent, and separate STORY_GLOSSARY data
+         shape ({desc, link}, not {def, url}) so it can never be mistaken for
+         the math glossary's .gterm markup or collide with T1-19's regex. ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  /* How Long Can We Last: no other case-specific overrides beyond the shared design system. */
+
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+    <!-- How Long Can We Last: no extra icon symbols needed beyond the shared starter set. -->
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: How Long Can We Last</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Percent &amp; Proportion</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  <svg viewBox="0 0 700 170" role="img" aria-label="Two savings jars, one shorter and one taller, side by side" style="width:100%;height:auto;margin-bottom:12px">
+  <rect x="0" y="0" width="700" height="170" fill="#eef3f8"/>
+  <g>
+    <rect x="150" y="70" width="90" height="80" rx="8" fill="#fff" stroke="#1a3a5c" stroke-width="3"/>
+    <rect x="150" y="105" width="90" height="45" rx="0" fill="#c9a227" opacity="0.55"/>
+    <rect x="168" y="55" width="54" height="18" rx="4" fill="#1a3a5c"/>
+    <text x="195" y="163" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#1a3a5c" font-weight="700">Rule-of-Thumb</text>
+  </g>
+  <g>
+    <rect x="420" y="45" width="100" height="105" rx="8" fill="#fff" stroke="#1a3a5c" stroke-width="3"/>
+    <rect x="420" y="80" width="100" height="70" rx="0" fill="#c9a227" opacity="0.55"/>
+    <rect x="440" y="28" width="60" height="18" rx="4" fill="#1a3a5c"/>
+    <text x="470" y="163" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#1a3a5c" font-weight="700">Real-Stretch</text>
+  </g>
+  <text x="350" y="20" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#5b6472">Two ways to size the same emergency fund &mdash; which one actually survives a real dry spell?</text>
+</svg>
+  <p class="lede">Renata Osei sits cross-legged on the kitchen floor, back against the dishwasher, laptop balanced on her knees because the table is covered in mail. Two browser tabs are open. One is their savings account, balance sitting exactly where it landed after last month's transfer. The other is a brokerage sign-up page she has restarted three times without finishing, because every time she gets to the contribution amount field, she stops.</p>
+<p>Julian is on the porch, phone to his ear, half of a conversation drifting through the screen door &mdash; something about a project timeline, a client who "might need to push things." Renata doesn't need to hear the other half to know what that tone means. It has meant the same thing every few months since he went independent: work is about to get quiet again for a while.</p>
+<p>She pulls up the number they've been saving toward for over a year now &mdash; the one a podcast host, a coworker, and a banner ad on three different websites have all told her is the number. She has hit it. According to everything she's read, she's done. She should be moving that brokerage tab from "abandoned draft" to "submitted" tonight.</p>
+<p>Instead she opens a blank spreadsheet, types "last time work got quiet, it lasted &mdash;" and stops typing, because she genuinely doesn't remember. She minimizes the brokerage tab instead of closing it, pours the last of the coffee, and starts pulling up bank statements from the porch, one slow month at a time, to find out.</p>
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  <p>Renata Osei works full-time as a home health aide, paid a steady salary with a predictable deposit on the same day every two weeks. Her husband, Julian, has worked for the past several years as an independent graphic design and marketing consultant &mdash; paid by the project, on client timelines he does not control, with no employer, no salary, and no guaranteed minimum (see Appendix B).</p>
+<p>The household's essential monthly expenses &mdash; housing, food, utilities, healthcare, transportation, and insurance &mdash; total a fixed amount every month regardless of how either paycheck lands (see Appendix A). Renata's salary alone does not cover that full amount; the household depends on Julian's freelance income to close the gap and, in an ordinary month, to leave something left over.</p>
+<p>The couple built a joint emergency fund over the past year specifically to protect against the months Julian's freelance pipeline runs dry &mdash; a real, recurring pattern in his business, not a hypothetical one (see Appendix B). Now that the fund has reached a size that matches "the number" cited by nearly every article, podcast, and banner ad Renata has ever encountered &mdash; three months of the household's essential expenses &mdash; she and Julian must decide whether that number is actually the right one for their specific situation, or whether it only sounds right because it is the number everyone quotes (see Appendix C).</p>
+<p>Whichever fund size they land on, all money saved beyond it is money the couple has agreed to start investing in a joint brokerage account instead of continuing to add to savings. The two options under debate go by the names Renata and Julian have been using at the kitchen table for weeks: <strong>the Rule-of-Thumb Fund</strong> and <strong>the Real-Stretch Fund</strong>. Neither can be built or verified without doing the underlying math &mdash; see Appendix C for how each is calculated, Appendix D for the assumptions behind the household's numbers, and Appendix F for where every figure in this case comes from (optional further reading is in Appendix E). The vocabulary and "how to&hellip;" skills this case will ask of you are listed in <strong>Appendix G</strong> &mdash; that is where Challenge 1 sends you.</p>
+
+<div class="card" id="story-glossary">
+  <h3 style="margin-top:0">Money &amp; Work Vocabulary</h3>
+  <p class="side-note">The math vocabulary Challenge 1 sends you to research lives in Appendix G below. These are the real personal-finance and work terms this case's own story uses &mdash; hover any one for a plain definition, or click through to a real source.</p>
+  <div class="glossary-grid" id="glossaryStory"></div>
+  <p class="gloss-source">Sources: Wikipedia (&ldquo;Emergency fund,&rdquo; &ldquo;Freelancer,&rdquo; &ldquo;Gig economy,&rdquo; &ldquo;Independent contractor,&rdquo; &ldquo;Household budget,&rdquo; &ldquo;Median income,&rdquo; &ldquo;Securities account,&rdquo; &ldquo;Cost of living&rdquo;). Links verified working 2026-09-05.</p>
+</div>
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Renata Osei. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Rule-of-Thumb Fund</h4>
+      <p style="margin:0">Stop adding to savings once the fund reaches the widely quoted flat target of three months of the household's essential expenses, and invest everything saved beyond that starting now.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Real-Stretch Fund</h4>
+      <p style="margin:0">Keep adding to savings until the fund reaches a target sized specifically to this household's own documented pattern of freelance income dry spells, before investing anything saved beyond it.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include:
+    <ul style="margin-top:8px">
+      <li><strong>D1 &mdash; An essential-expense percent breakdown.</strong> Using Appendix A's dollar figures, calculate what percent of the household's total monthly essential expenses each category represents, and identify the single largest category.</li>
+      <li><strong>D2 &mdash; Julian's typical monthly freelance income, derived (not looked up).</strong> Appendix B gives Julian's invoiced total for his slowest documented month, along with what percent of a typical month that figure represents. Use those two numbers to calculate Julian's typical monthly freelance income.</li>
+      <li><strong>D3 &mdash; The dollar size of both fund options.</strong> Using a proportion (dollars needed per month of coverage, scaled to the number of months required), calculate the total size of the Rule-of-Thumb Fund (Option A) and the Real-Stretch Fund (Option B), showing the proportion you set up for each.</li>
+      <li><strong>D4 &mdash; A survival test for each fund.</strong> For each fund size from D3, use a proportion to calculate exactly how many months of coverage it provides against the household's documented monthly shortfall during a dry spell (Appendix C), and calculate what percent of the full dry spell in Appendix C that represents. State plainly whether each option leaves the household short, and by how much.</li>
+    </ul></li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  <details open id="apx-a">
+  <summary>Appendix A &mdash; The Osei Household's Essential Monthly Expenses</summary>
+  <div class="inner">
+    <p>Figures below are national averages for essential household spending categories, used as this household's budget (see Appendix F for sourcing).</p>
+    <table id="apxA">
+      <tr><th>Category</th><th class="num">Average annual amount</th><th class="num">Average monthly amount</th></tr>
+      <tr><td>Housing</td><td class="num">$26,266 [S1]</td><td class="num">$2,188.83</td></tr>
+      <tr><td>Transportation</td><td class="num">$13,318 [S1]</td><td class="num">$1,109.83</td></tr>
+      <tr><td>Food</td><td class="num">$10,169 [S1]</td><td class="num">$847.42</td></tr>
+      <tr><td>Personal insurance and pensions</td><td class="num">$9,797 [S1]</td><td class="num">$816.42</td></tr>
+      <tr><td>Healthcare</td><td class="num">$6,197 [S1]</td><td class="num">$516.42</td></tr>
+      <tr><td>Utilities, fuels, and public services</td><td class="num">$4,736 [S1]</td><td class="num">$394.67</td></tr>
+      <tr class="hi"><td><strong>Total essential expenses</strong></td><td class="num"><strong>$70,483</strong></td><td class="num"><strong>$5,874 (rounded)</strong></td></tr>
+    </table>
+    <p class="side-note">Not included above: apparel, entertainment, alcohol/tobacco, education, and other discretionary or irregular categories &mdash; those are not part of this household's fixed monthly obligation and are not tracked in this case.</p>
+  </div>
+</details>
+
+<details id="apx-b">
+  <summary>Appendix B &mdash; Household Income Records</summary>
+  <div class="inner">
+    <h3 style="margin-top:0">Renata's income (salaried, biweekly)</h3>
+    <table id="apxB1">
+      <tr><th>Item</th><th>Value</th></tr>
+      <tr><td>Occupation</td><td>Home health and personal care aide, full-time</td></tr>
+      <tr><td>Median annual wage</td><td>$35,800 [S2]</td></tr>
+      <tr><td>Monthly income (fixed)</td><td>$2,983 (rounded)</td></tr>
+    </table>
+    <h3>Julian's income (freelance, project-based, no employer)</h3>
+    <p class="side-note">Julian tracks every invoice in his own bookkeeping software. Two figures from his records matter for this case:</p>
+    <table id="apxB2">
+      <tr><th>Item</th><th>Value</th></tr>
+      <tr><td>Invoiced total, Julian's slowest documented month</td><td>$756</td></tr>
+      <tr><td>That amount, as a percent of Julian's typical month</td><td>21% [MA1]</td></tr>
+      <tr><td>Julian's typical monthly freelance income</td><td><em>calculate this &mdash; see Challenge 3, D2</em></td></tr>
+    </table>
+    <p class="side-note">Renata's income alone ($2,983/month) does not cover the household's essential expenses ($5,874/month, Appendix A) &mdash; Julian's freelance income closes the remaining gap every month, and in a typical month leaves a modest amount left over.</p>
+  </div>
+</details>
+
+<details id="apx-c">
+  <summary>Appendix C &mdash; The Dry Spell, and How Each Fund Is Calculated</summary>
+  <div class="inner">
+    <p><strong>The dry spell this case tests against:</strong> based on the household's own multi-year invoicing history, Julian's freelance income has gone to <strong>$0 for 7 consecutive months</strong> during the worst stretch on record [MA2]. Renata's salaried income keeps arriving on schedule throughout &mdash; it is Julian's income, not the household's total income, that stops.</p>
+    <p><strong>How the Rule-of-Thumb Fund (Option A) is calculated:</strong> the flat, widely quoted rule &mdash; save 3 months of the household's total essential expenses (Appendix A), regardless of where the household's income actually comes from.</p>
+    <p><strong>How the Real-Stretch Fund (Option B) is calculated:</strong> size the fund to cover the household's actual monthly shortfall during a dry spell &mdash; essential expenses minus Renata's income alone, since Julian's income is $0 &mdash; for the full 7 months documented above.</p>
+    <p>Both calculations use a proportion: a fund that provides a fixed number of dollars of coverage per month of protection, scaled up to however many months are needed. Challenge 3's D3 and D4 ask you to carry out both calculations and then test each fund against the 7-month dry spell above.</p>
+    <table id="apxC">
+      <tr><th>Key figure</th><th>Value</th><th>Source</th></tr>
+      <tr><td>Dry spell length</td><td>7 consecutive months</td><td>MA2</td></tr>
+      <tr><td>Julian's income during dry spell</td><td>$0</td><td>MA2</td></tr>
+      <tr><td>Essential monthly expenses</td><td>$5,874</td><td>Appendix A</td></tr>
+      <tr><td>Renata's monthly income (unchanged)</td><td>$2,983</td><td>Appendix B</td></tr>
+    </table>
+  </div>
+</details>
+
+<details id="apx-d">
+  <summary>Appendix D &mdash; Modeling Assumptions</summary>
+  <div class="inner">
+    <p class="side-note">These figures are <strong>not sourced</strong> from an outside publication. They are stated scenario assumptions chosen by the case author, each with a real basis named below. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+    <table id="apxD">
+      <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+      <tr>
+        <td>MA1</td>
+        <td>Julian's slow-month invoice total, as a percent of his typical month</td>
+        <td>21%</td>
+        <td>This case's own household record (Appendix B), chosen to give Challenge 3's D2 a clean, calculable relationship. No public dataset publishes a "percent of typical month" figure for an individual freelancer's worst month specifically. The general magnitude (a swing near 21%) is informed by JPMorgan Chase Institute's finding that the vast majority of young, bottom-income-quintile, or Western workers experience month-to-month total-income swings exceeding 30% [S4] &mdash; establishing that a swing in this broad range is a realistic magnitude for a volatile earner, though this case's specific 21% figure and its "percent of typical" framing are this case's own chosen value, not a direct citation.</td>
+        <td>Changing this percent changes the <em>derived</em> value of Julian's typical monthly income in D2, which does not otherwise appear anywhere else in this case &mdash; it plays no role in sizing either fund in D3/D4.</td>
+      </tr>
+      <tr>
+        <td>MA2</td>
+        <td>Length and severity of Julian's documented dry spell</td>
+        <td>7 consecutive months at $0 freelance income</td>
+        <td>No public dataset reports an exact consecutive-month "income fully stops" duration for freelance workers generally. This case's 7-month, complete-stop scenario is informed by two real findings: the Federal Reserve's 2024 household survey, which found self-employed adults (excluding gig-platform work) are far more likely to report month-to-month income variability than people who work for someone else [S3] &mdash; establishing that this kind of variability is a persistent pattern, not a one-off; and the JPMorgan Chase Institute's 2018 Online Platform Economy report, which found 58% of transportation (rideshare-style) platform earners had their platform earnings concentrated in three or fewer months of the year [S5] &mdash; indicating that many non-salaried earners go multiple consecutive months with little or no income from a given income source. Neither source reports this exact combination of length and severity for a project-based freelance consultant specifically; the specific 7-month, $0 scenario is this case's own stated choice, disclosed here rather than presented as a direct citation.</td>
+        <td>This is the single assumption most likely to change which option wins. A shorter or less severe dry spell narrows the gap between the two funds; a longer or more severe one widens it.</td>
+      </tr>
+    </table>
+  </div>
+</details>
+
+<details id="apx-e">
+  <summary>Appendix E &mdash; Learn More</summary>
+  <div class="inner">
+    <p class="side-note">Want to go beyond the required math? These are real, freely available resources &mdash; not required for any Challenge, but useful if you want more background.</p>
+    <ul class="howto-list">
+      <li><a href="https://en.wikipedia.org/wiki/Ratio" target="_blank" rel="noopener">Ratio &mdash; Wikipedia</a> &mdash; background on ratios, used throughout Challenge 3's D3 and D4.</li>
+      <li><a href="https://en.wikipedia.org/wiki/Proportionality_(mathematics)" target="_blank" rel="noopener">Proportionality (mathematics) &mdash; Wikipedia</a> &mdash; background on proportions and scaling one quantity to another.</li>
+      <li><a href="https://www.experian.com/blogs/ask-experian/do-you-really-need-to-save-three-to-six-months-worth-of-expenses/" target="_blank" rel="noopener">Do You Really Need to Save Three to Six Months' Worth of Expenses? &mdash; Experian</a> &mdash; a real, widely read consumer-finance explainer on the "3 to 6 months" convention this case's Option A is drawn from.</li>
+    </ul>
+  </div>
+</details>
+
+<details id="apx-f">
+  <summary>Appendix F &mdash; Sources</summary>
+  <div class="inner">
+    <table id="apxF">
+      <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+      <tr><td>S1</td><td>Average annual household spending by category</td><td>See Appendix A</td><td><a href="https://www.bls.gov/opub/reports/consumer-expenditures/2024/home.htm" target="_blank" rel="noopener">U.S. BLS, &ldquo;Consumer Expenditures in 2024&rdquo;</a></td><td>2024 data</td><td>MEDIUM</td></tr>
+      <tr><td>S2</td><td>Median annual wage, home health and personal care aides</td><td>$35,800/year</td><td><a href="https://www.bls.gov/ooh/healthcare/home-health-aides-and-personal-care-aides.htm" target="_blank" rel="noopener">U.S. BLS, Occupational Outlook Handbook</a></td><td>May 2025</td><td>HIGH</td></tr>
+      <tr><td>S3</td><td>Self-employed adults reporting month-to-month income variability, vs. those who work for someone else</td><td>See Appendix D, MA2</td><td><a href="https://www.federalreserve.gov/publications/2025-economic-well-being-of-us-households-in-2024-income-and-expenses.htm" target="_blank" rel="noopener">Federal Reserve, Report on the Economic Well-Being of U.S. Households in 2024</a></td><td>Published May 2025</td><td>HIGH</td></tr>
+      <tr><td>S4</td><td>Percent of young, bottom-income-quintile, or Western workers experiencing month-to-month total-income swings greater than 30%</td><td>Vast majority of these groups exceed a 30% swing</td><td><a href="https://www.jpmorganchase.com/institute/all-topics/labor-markets-and-workforce/report-paychecks-paydays-and-the-online-platform-economy" target="_blank" rel="noopener">JPMorgan Chase Institute, Paychecks, Paydays, and the Online Platform Economy</a></td><td>Sample window Oct 2012&ndash;Mar 2018</td><td>MEDIUM</td></tr>
+      <tr><td>S5</td><td>Percent of transportation (rideshare-style) platform earners whose earnings were concentrated in 3 or fewer months of the year</td><td>58%</td><td><a href="https://www.jpmorganchase.com/institute/all-topics/labor-markets-and-workforce/report-ope-2018" target="_blank" rel="noopener">JPMorgan Chase Institute, The Online Platform Economy (2018 report)</a></td><td>2018 report</td><td>MEDIUM</td></tr>
+    </table>
+  </div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-05. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  <div class="stepbox">
+  <h4>Step 1 &mdash; Essential-Expense Percent Breakdown (D1)</h4>
+  <div class="goal">Using Appendix A's dollar figures, calculate what percent of the household's total monthly essential expenses the Housing category represents, and identify the single largest category.</div>
+  <div class="fieldrow"><label for="d1_housing_pct">Housing as a percent of total essential expenses</label><input type="number" id="d1_housing_pct" step="0.01"> %</div>
+  <div class="fieldrow"><label for="d1_largest">Which category is the single largest?</label>
+    <select id="d1_largest">
+      <option value="">choose one&hellip;</option>
+      <option>Housing</option>
+      <option>Transportation</option>
+      <option>Food</option>
+      <option>Personal insurance and pensions</option>
+      <option>Healthcare</option>
+      <option>Utilities, fuels, and public services</option>
+    </select>
+  </div>
+  <button onclick="checkD1()">Check</button><span class="fb" id="fbD1"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; Julian's Typical Monthly Freelance Income (D2)</h4>
+  <div class="goal">Appendix B gives Julian's slowest documented month ($756) and states that figure is 21% of his typical month. Derive his typical monthly freelance income &mdash; don't look it up, calculate it.</div>
+  <div class="fieldrow"><label for="d2_income">Julian's typical monthly freelance income ($)</label><input type="number" id="d2_income" step="0.01"></div>
+  <button onclick="checkD2()">Check</button><span class="fb" id="fbD2"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; Sizing Both Funds (D3)</h4>
+  <div class="goal">Using a proportion (dollars of coverage per month, scaled to the number of months required), calculate the total size of the Rule-of-Thumb Fund (Option A) and the Real-Stretch Fund (Option B).</div>
+  <div class="fieldrow"><label for="d3_fundA">Rule-of-Thumb Fund size, Option A ($)</label><input type="number" id="d3_fundA" step="0.01"></div>
+  <div class="fieldrow"><label for="d3_fundB">Real-Stretch Fund size, Option B ($)</label><input type="number" id="d3_fundB" step="0.01"></div>
+  <button onclick="checkD3()">Check</button><span class="fb" id="fbD3"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; The Survival Test (D4)</h4>
+  <div class="goal">For each fund from D3, use a proportion to calculate exactly how many months of coverage it provides against the household's documented monthly shortfall during the dry spell (Appendix C), and what percent of the full 7-month dry spell that represents.</div>
+  <div class="fieldrow"><label for="d4_monthsA">Option A &mdash; months of coverage against the dry-spell shortfall</label><input type="number" id="d4_monthsA" step="0.01"></div>
+  <div class="fieldrow"><label for="d4_pctA">Option A &mdash; percent of the 7-month dry spell covered</label><input type="number" id="d4_pctA" step="0.01"> %</div>
+  <div class="fieldrow"><label for="d4_monthsB">Option B &mdash; months of coverage against the dry-spell shortfall</label><input type="number" id="d4_monthsB" step="0.01"></div>
+  <div class="fieldrow"><label for="d4_pctB">Option B &mdash; percent of the 7-month dry spell covered</label><input type="number" id="d4_pctB" step="0.01"> %</div>
+  <button onclick="checkD4()">Check</button><span class="fb" id="fbD4"></span>
+  <p class="side-note" id="d4Out"></p>
+</div>
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="twistbox">
+    <h4><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> No Twist For This Case</h4>
+    <p>This case doesn't hold back an extra fact for later. Everything you need &mdash; the household's expenses, both incomes, and the documented dry spell &mdash; is already in Appendices A&ndash;D. The surprise here isn't a new piece of information; it's what D4's survival test actually shows once you run the numbers on the fund everyone assumes is already enough.</p>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 &mdash; U.S. BLS, <a href="https://www.bls.gov/opub/reports/consumer-expenditures/2024/home.htm" target="_blank" rel="noopener">Consumer Expenditures in 2024</a></li>
+      <li>S2 &mdash; U.S. BLS, <a href="https://www.bls.gov/ooh/healthcare/home-health-aides-and-personal-care-aides.htm" target="_blank" rel="noopener">Occupational Outlook Handbook, Home Health and Personal Care Aides</a></li>
+      <li>S3 &mdash; Federal Reserve, <a href="https://www.federalreserve.gov/publications/2025-economic-well-being-of-us-households-in-2024-income-and-expenses.htm" target="_blank" rel="noopener">Report on the Economic Well-Being of U.S. Households in 2024</a></li>
+      <li>S4/S5 &mdash; JPMorgan Chase Institute, <a href="https://www.jpmorganchase.com/institute/all-topics/labor-markets-and-workforce/report-paychecks-paydays-and-the-online-platform-economy" target="_blank" rel="noopener">Paychecks, Paydays, and the Online Platform Economy</a> and <a href="https://www.jpmorganchase.com/institute/all-topics/labor-markets-and-workforce/report-ope-2018" target="_blank" rel="noopener">The Online Platform Economy (2018)</a></li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  How Long Can We Last &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+/* Ported from cases/how-long-can-we-last/sensitivity_model.py (case.md sha256:
+   88491b0843a66b71c5bd51d0b8fdb426e426c63b51845200d5101a481bcdbd18). Same PARAMS/
+   FLEX/evaluate() shape as the Python model -- see templates/INTERACTIVE_HTML_CONTRACT.md
+   section 2. Twist: N/A for this case (see FACILITATOR.md); evaluate_twist() is a
+   pass-through, provided only so the contract's optional hook doesn't fail if called. */
+const PARAMS = {
+  essential_monthly_expenses: 5874.0,   // Appendix A, S1
+  renata_monthly_income: 2983.0,        // Appendix B, S2
+  dry_spell_months: 7.0,                // Appendix C/D, MA2
+  rule_of_thumb_months: 3.0,            // the flat convention Option A is built on
+};
+const FLEX = ["dry_spell_months"];
+
+// Additional raw appendix data the Working Notebook needs for D1/D2 (not part of the
+// balance-test PARAMS above -- these never feed evaluate()).
+const EXPENSE_CATEGORIES = {
+  "Housing": 2188.83, "Transportation": 1109.83, "Food": 847.42,
+  "Personal insurance and pensions": 816.42, "Healthcare": 516.42,
+  "Utilities, fuels, and public services": 394.67,
+};
+const JULIAN_SLOW_MONTH = 756.0;
+const JULIAN_SLOW_PCT = 0.21; // MA1
+
+function monthlyShortfall(p){ return p.essential_monthly_expenses - p.renata_monthly_income; }
+function fundSizes(p){
+  const fundA = p.rule_of_thumb_months * p.essential_monthly_expenses;
+  const fundB = p.dry_spell_months * monthlyShortfall(p);
+  return {fundA, fundB};
+}
+function coverageMonths(fund, p){ return fund / monthlyShortfall(p); }
+function evaluate(p){
+  const {fundA, fundB} = fundSizes(p);
+  return { A: coverageMonths(fundA, p), B: coverageMonths(fundB, p) };
+}
+function evaluate_twist(p){ return evaluate(p); }
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+function checkD1(){
+  let total = 0;
+  for(const k in EXPENSE_CATEGORIES) total += EXPENSE_CATEGORIES[k];
+  const truePct = 100 * EXPENSE_CATEGORIES["Housing"] / total;
+  const yourPct = parseFloat(val('d1_housing_pct'));
+  const largest = document.getElementById('d1_largest').value;
+  const ok = near(yourPct, truePct, 0.5) && largest === "Housing";
+  fb('fbD1', ok);
+}
+
+function checkD2(){
+  const trueIncome = JULIAN_SLOW_MONTH / JULIAN_SLOW_PCT;
+  const yourIncome = parseFloat(val('d2_income'));
+  const ok = near(yourIncome, trueIncome, 5);
+  fb('fbD2', ok);
+}
+
+function checkD3(){
+  const {fundA, fundB} = fundSizes(PARAMS);
+  const yourA = parseFloat(val('d3_fundA'));
+  const yourB = parseFloat(val('d3_fundB'));
+  const ok = near(yourA, fundA, 5) && near(yourB, fundB, 5);
+  fb('fbD3', ok);
+}
+
+function checkD4(){
+  const ev = evaluate(PARAMS);
+  const trueMonthsA = ev.A, trueMonthsB = ev.B;
+  const truePctA = 100 * trueMonthsA / PARAMS.dry_spell_months;
+  const truePctB = 100 * trueMonthsB / PARAMS.dry_spell_months;
+  const yourMonthsA = parseFloat(val('d4_monthsA'));
+  const yourPctA = parseFloat(val('d4_pctA'));
+  const yourMonthsB = parseFloat(val('d4_monthsB'));
+  const yourPctB = parseFloat(val('d4_pctB'));
+  const ok = near(yourMonthsA, trueMonthsA, 0.3) && near(yourPctA, truePctA, 1)
+    && near(yourMonthsB, trueMonthsB, 0.3) && near(yourPctB, truePctB, 1);
+  fb('fbD4', ok);
+  const out = document.getElementById('d4Out');
+  out.textContent = ok
+    ? 'Your numbers check out. Compare each fund\'s months-of-coverage to the 7-month dry spell in Appendix C -- does either fund leave the household short, and by how much?'
+    : 'Not matching yet -- recheck your proportion setup against Appendix C.';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "how-long-can-we-last"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "An essential-expense percent breakdown, with the single largest category identified"],
+  ["D2", "Julian's typical monthly freelance income, derived from a part and a percent"],
+  ["D3", "The dollar size of both the Rule-of-Thumb Fund and the Real-Stretch Fund"],
+  ["D4", "A survival test for each fund against the documented 7-month dry spell"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.mathsisfun.com/numbers/ratio.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.mathsisfun.com/percentage.html"},
+  "Proportion": {def: "A statement that two ratios (or fractions) are equal in value.",
+    url: "https://www.mathsisfun.com/algebra/proportions.html"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.mathsisfun.com/decimals.html"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.mathsisfun.com/data/data.html"},
+  "Unit": {def: "A defined quantity -- a centimeter, an hour, a liter -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Measurement": {def: "Assigning a number to a physical quantity -- length, time, mass -- using a chosen unit.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+};
+const HOWTO = [
+  ["How to convert numbers to percents", "Percent"],
+  ["How to find the percent of a number", "Percent"],
+  ["How to find a whole given the percent and the part of the whole", "Percent"],
+  ["How to find a missing amount in a proportion", "Proportion"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-SPECIFIC — a SECOND glossary layer for this case's real
+   personal-finance/work vocabulary, kept deliberately separate from
+   the math GLOSSARY above (which T1-19 checks against). Same
+   hover+hyperlink mechanism, its own data object, its own render
+   target (#glossaryStory, inside the "Money & Work Vocabulary" card
+   in Background), and its own auto-linker so a story term is wrapped
+   where it FIRST appears in the prose, exactly like the math
+   auto-linker does for GLOSSARY. Sources are real, verified 2026-09-05:
+   Wikipedia articles for every term.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Emergency Fund": {desc: "A personal budget set aside as a financial safety net for future mishaps or unexpected expenses.",
+    link: "https://en.wikipedia.org/wiki/Emergency_fund"},
+  "Freelancer": {desc: "A self-employed person who works without a committed long-term relationship to any one employer.",
+    link: "https://en.wikipedia.org/wiki/Freelancer"},
+  "Gig Economy": {desc: "A labor market built on short-term, flexible jobs -- often arranged through an app or platform -- instead of traditional full-time employment.",
+    link: "https://en.wikipedia.org/wiki/Gig_economy"},
+  "Independent Contractor": {desc: "A worker who controls how they get a job done and is responsible for their own tools and expenses, rather than being a company's employee.",
+    link: "https://en.wikipedia.org/wiki/Independent_contractor"},
+  "Household Budget": {desc: "A plan for coordinating a household's income and expenses.",
+    link: "https://en.wikipedia.org/wiki/Household_budget"},
+  "Median Income": {desc: "The income amount that splits a population into two equal halves -- half earn more, half earn less.",
+    link: "https://en.wikipedia.org/wiki/Median_income"},
+  "Brokerage Account": {desc: "An account that holds financial assets like stocks on an investor's behalf with a bank, broker, or custodian.",
+    link: "https://en.wikipedia.org/wiki/Securities_account"},
+  "Cost of Living": {desc: "The cost of maintaining a certain standard of living for a person or household.",
+    link: "https://en.wikipedia.org/wiki/Cost_of_living"},
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+// How Long Can We Last has no Twist (see FACILITATOR.md) -- onTwistToggle() is unused;
+// the Twist section below states this plainly instead of gating a reveal.
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

@@ -927,7 +927,15 @@ def run(project, cid):
         found_any, uncited = False, []
         for fn in html_files:
             txt = open(os.path.join(pub, fn), encoding='utf-8', errors='ignore').read()
-            body_only = re.sub(r'(?is)<script.*?</script>|<style.*?</style>', ' ', txt)
+            # Strip HTML comments before script/style (found as a real bug on "carpenter",
+            # 2026-09-04): a comment containing prose like "...outside a <script> tag." has
+            # no matching </script> nearby, so the non-greedy <script>.*?</script> regex was
+            # matching from that comment's "<script>" text all the way to the real closing
+            # </script> tag later in the file, swallowing real chart markup in between and
+            # causing false "no visual asset" polish notes. Same fix as T1-18/T1-19 above
+            # and tier2_probes.py's probe_accessibility (P7).
+            body_only = re.sub(r'(?is)<!--.*?-->', ' ', txt)
+            body_only = re.sub(r'(?is)<script.*?</script>|<style.*?</style>', ' ', body_only)
             imgs = re.findall(r'<img\b[^>]*\bsrc=["\']([^"\']+)["\']', body_only)
             chart_signals = re.findall(
                 r'(?is)<(?:canvas|svg)\b[^>]*\b(?:id|class|aria-label)=["\'][^"\']*'

@@ -1,6 +1,6 @@
 # Roadmap — Math Builder
 
-**Last refreshed: 2026-09-01 (v2.16), against live scripts, not carried-forward numbers.**
+**Last refreshed: 2026-09-05 (v2.18), against live scripts, not carried-forward numbers.**
 For the full reasoning behind any line below — why a number moved, what broke, what was fixed —
 see **[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md)**, the complete narrative log. This file is just
 the status page: what's done, what's not, what's next.
@@ -11,10 +11,11 @@ the status page: what's done, what's not, what's next.
 
 | # | What | Why it's first |
 |---|---|---|
-| 1 | **Run the first real case with a real learner** (Track A3) | The single blocking fact — 0 cases have ever been run with a real learner, out of 111 now cleanly published (`python3 app/build_pipeline.py`, stage=promotion, TIER1_PASS). Everything else is still a machine claim until this happens |
+| 1 | **Run the first real case with a real learner** (Track A3) | The single blocking fact — 0 cases have ever been run with a real learner, out of 124 now cleanly published (`python3 app/build_pipeline.py`, stage=promotion, TIER1_PASS, 0 blockers). Everything else is still a machine claim until this happens |
 | 2 | **Push `app/student-moksh-atit.html` to the live site** | Currently local-only; his first assigned month can't actually be used until this ships |
-| 3 | **Get `a-coachs-dilemma` a real Tier 2 re-run** | Its own `QA_REPORT.md` (2026-08-21) says `qa.state` should not sit at `TIER2_PASS`/`published` until a full Tier 1 + Tier 2 re-run happens against its current NBA/Priya Shah content — that re-run has never happened; the recorded Tier 2 result is against retired NCAA content. `tier1_structural.py --case a-coachs-dilemma` now correctly flags this as the corpus's only live BLOCKER (T1-16, stale QA hash) after this session's packet rebuild fixed the other 3 (T1-15 staleness) |
-| 4 | **Push a `case-publish` to Google Drive for the first time** | Every case published across recent sessions built its packet and promoted the read-model, but Drive upload has been held back pending separate approval every time — still an open step for all of them |
+| 3 | **Give `a-coachs-dilemma` its Tier 3 human dry-run** | Its long-standing blocker is now cleared: a genuine Tier 1 + Tier 2 re-run against the current NBA/Priya Shah content landed 2026-09-01 (`case.json.qa.run_on`, `case_md_sha256=fc3c53b5...`) — `tier1_structural.py --case a-coachs-dilemma` now shows 0 blockers, 3 disclosed non-blocking gaps (T1-10 reinforcement carve-out, T1-14/T1-15 known false-positive orphan-number matches), and all 6 Tier 2 probes PASS. Tier 3 (human dry-run) is the only remaining gate before `VERIFIED` — a natural pairing with item 1 above |
+| 4 | **Write the next zero-coverage cluster** (Calculus/Series — Taylor Series) | `standards_spine.json` shows 6 skills at genuine n=0 coverage across 4 clusters (Calculus/Series ×2, Geometry/Surface Area & Volume ×1, Calculus/Derivatives ×1, Number Sense ×2). None are currently scoped as concepts — this is the next real backlog item once the two items above land. See the prioritized 20-case worklist below |
+| 5 | **Push a `case-publish` to Google Drive for the first time** | Every case published across recent sessions built its packet and promoted the read-model, but Drive upload has been held back pending separate approval every time — still an open step for all of them |
 
 ---
 
@@ -24,22 +25,39 @@ the status page: what's done, what's not, what's next.
 quality-checked: Phone Plans → Family Trip → Key Length → Field Watch → Apron Order. His page:
 `app/student-moksh-atit.html`. Not yet pushed to the live site — still local only.
 
-**111 cases** are genuinely ready to hand to any learner (passed every quality check this project
+**124 cases** are genuinely ready to hand to any learner (passed every quality check this project
 requires, live re-scan via `app/build_pipeline.py`, stage=promotion + TIER1_PASS + 0 blockers).
-1 more sits at stage=promotion but is genuinely `BLOCKED` — `a-coachs-dilemma`, see item 3 above,
-not force-passed. The previously-flagged batch of 10 mis-published cases (`archery-camp`,
-`baseball-lineup`, `cardiology`, `catering`, `house-plans`, `lebron-vs-michael`, `nuclear-waste`,
-`phone-plan`, `rent-vs-own`, `robotics-engineer`) remains remediated — each still carries a
-recorded `TIER2_PASS` with all six Tier 2 probes passing; see their individual `QA_REPORT.md`
-files for the per-case fix log.
+**1 case remains `BLOCKED`** — `the-locks-window`, intentionally: kept as a documented historical
+record of a structurally one-sided dilemma, not revived (see its RESEARCH_LOG.md/FACILITATOR.md).
+The previously-flagged batch of 10 mis-published cases (`archery-camp`, `baseball-lineup`,
+`cardiology`, `catering`, `house-plans`, `lebron-vs-michael`, `nuclear-waste`, `phone-plan`,
+`rent-vs-own`, `robotics-engineer`) remains remediated — each still carries a recorded
+`TIER2_PASS` with all six Tier 2 probes passing; see their individual `QA_REPORT.md` files for the
+per-case fix log.
 
-**19 new cases published across two batches since 2026-08-30** (see the 2026-09-01 note below for
-the full list and the MCS-46/redesign detail). **6 cases remain in flight** — 5 at readiness (`the-cheap-approximation`, `the-dosing-curve`,
-`the-irregular-boundary`, `the-search-box`, `the-stake-out` — the last of these is TIER1_PASS/0
-blockers and TIER2_PASS-recorded (2026-09-01) but not yet promoted: it is in `cases_index.json`
-but not yet credited in `standards_spine.json`'s `covered_by[]`, a pending human-confirm step per
-MCS-12, not a defect) and 1 at research (`the-locks-window`, kept as a documented historical record
-of a structurally one-sided dilemma, not revived) — live re-scan via `app/build_pipeline.py`.
+**2026-09-05: the first life-skills batch — 10 cases — published.** The Two Offers, The Breakeven
+Mile, The Deferred Repair, The Lease Break, The Bracket Bet (Roth vs. Traditional IRA), The
+Minimum-Payment Trap, Deductible Roulette, Free Money With Strings (401k match), The Quiet Thief
+(inflation), and How Long Can We Last (emergency fund sizing) — every true zero-coverage
+*life-skills topic* the 2026-09-03 taxonomy identified (job offers, car ownership, Roth/Traditional,
+car maintenance) plus 6 more, all reaching genuine `TIER2_PASS` (all 6 Tier 2 probes, 0 FAIL) before
+publish, margins 5.1%–14.8%. Two real pre-existing defects were found and fixed during this batch,
+not just authored around: `the-lease-break`'s original numbers showed one apartment cheaper in
+*both* compared scenarios (no genuine dilemma — retuned against two independently-sourced real
+termination-penalty figures) and `the-bracket-bet` had been recorded `TIER2_PASS` with one probe
+(P5) `NOT RUN` — a real integrity gap, now closed with a genuine, disclosed sensitivity finding. See
+each case's `QA_REPORT.md` for the full remediation trail. `readmodel/` promoted for all 10;
+`app/dashboard.html` rebuilt same day. None yet pushed to Google Drive (see item 5).
+
+**19 new cases published across two batches since 2026-08-30**, and `the-dosing-curve` /
+`the-irregular-boundary` have since cleared readiness and promoted (see the 2026-09-01 note below
+for the full batch list and the MCS-46/redesign detail). **4 cases remain in flight** — 3 at
+readiness (`the-cheap-approximation`, `the-search-box`, `the-stake-out` — the last of these is
+TIER1_PASS/0 blockers and TIER2_PASS-recorded (2026-09-01) but not yet promoted: it is in
+`cases_index.json` but not yet credited in `standards_spine.json`'s `covered_by[]`, a pending
+human-confirm step per MCS-12, not a defect) and 1 at research (`the-locks-window`, kept as a
+documented historical record of a structurally one-sided dilemma, not revived) — live re-scan via
+`app/build_pipeline.py`.
 
 **0 concepts remain unwritten** (was 9 as of 2026-08-30). This is a corrected number, not just a
 lower one: the pipeline-native concept board (`app/build_pipeline.py`'s `parse_concept_sheets()`)
@@ -142,7 +160,53 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 | ~~A confusing near-duplicate case name needs a human check (`redrawing-lines`)~~ | ✅ Fixed 2026-09-01 | It was not a duplicate — concept sheet C9 "Redrawing the Lines" and the published `cases/redrawing-lines/` ("Redrawing Lines") are the same case; `app/build_pipeline.py`'s title-matcher only stripped a leading "The ", not an internal "the", so it never recognized the match. Added a `CONCEPT_TITLE_ALIASES` entry (mirrors `LEGACY_TITLE_ALIASES`) |
 | **`app/dashboard.html` is a static build artifact — goes stale after every `case-publish` unless someone manually reruns `python3 app/build_dashboard.py`** | ⚠️ **Process gap, not automated** | Rebuilt 2026-08-24 (had been stale since before Grant Reach/Perimeter Protocol published, meaning the live dashboard was missing 4 published cases for several sessions with nobody noticing). The page's own masthead shows `built <date>` once logged in — check that date against today before trusting what's on screen. No CI/git-hook enforces the rebuild yet; it's still a manual step someone has to remember after every publish |
 | `build_dashboard.py --verify`'s 2 remaining failing self-checks | ⏳ Open, not investigated | (1) one zero-coverage cluster (Calculus/Derivatives) with no closing domain recorded, (2) tracker live exception queue not empty (`phone-plans`/Moksh Atit). Neither blocks a valid `dashboard.html` build; neither investigated further yet |
+| **`readmodel/gap_queue.json` is stale and should not be used for coverage prioritization** | ⚠️ **Found 2026-09-02, not yet fixed** | Its per-group gap counts (e.g. Geometry/Quadrilaterals & Polygons "16 of 22 uncovered", Visual Perceptibility "10 of 11 uncovered") badly overstate the live gap — cross-checked directly against `standards_spine.json`'s own `covered_by[]` arrays, both groups have 0 skills at true n=0 coverage right now (consistent with this file's own "fully closed" claims above); `gap_queue.json` appears to predate a lot of coverage work and nothing in `app/` regenerates it (only `build_dashboard.py` reads it). The 20-case worklist below was built directly from `standards_spine.json`, not from this file. No script currently rebuilds `gap_queue.json` — either wire one up or retire the file so it stops being a plausible-looking trap for the next session |
 | ~~`legacy_readiness` case count vs. `corpus_index` legacy count mismatch~~ | ✅ Fixed 2026-08-30 | Root cause was two compounding bugs: (1) `app/build_pipeline.py`'s `LEGACY_TITLE_ALIASES` didn't cover 4 legacy→published title renames (Movie Producer→Movie Executive, College Football Playoff Committee→Playoff Committee, Medical Statician→Medical Statistician, AirBnb→AirBnb Or Landlord), so those 4 published cases still showed as `legacy-untouched` "NEEDS A REAL DESIGN DECISION" cards on the pipeline board; (2) `corpus_index.json` never clears a row's `status: "legacy"` flag once that case is converted and published — true for all 43 already-converted legacy cases, not just the 4 with the title-alias bug (e.g. Payroll and Gerrymandering were also mislabeled, which is what caused the separate "legacy cases carrying `margin: 0` instead of `null`" self-check to fail too). Fixed both: added the 4 missing aliases, and flipped `status` to `"published"` on the 43 corpus_index.json rows for titles `build_pipeline.py` already recognizes as converted. `legacy_readiness.json`'s `n_legacy_cases` dropped from 45 to 2 (the two genuine remaining exceptions: `Castle Securtiy` — typo'd source folder name, and `Investing - Stock Market - Options (Jia)` — case doc is an .xlsx, not a .docx). Both self-checks now pass |
+
+---
+
+## Next 20 cases — prioritized coverage worklist (2026-09-02)
+
+Built directly from `standards_spine.json`'s live `covered_by[]` arrays (not from the stale
+`gap_queue.json`, see Housekeeping above). Rubric score = `3×(skills at n=0) + 2×(skills at n=1) +
+1×(skills at n=2)` — i.e. a genuinely-uncovered skill outweighs five thinly-covered ones. The 4
+zero-coverage clusters are ranked above their raw score because this project already tracks "skills
+with zero coverage" as the one hard-zero metric (see numbers table). Every case still has to design
+to SPEC §2's ~20% real-margin balance cap (or explicitly invoke the MCS-46 waiver for a genuine
+physics/economics landslide) — that's a per-case design constraint to hit while writing, not
+something computable from this table in advance.
+
+| # | Priority | Domain / group | Gap (n=0 / n=1 / n=2 of total) | Score | Note |
+|---|---|---|---|---|---|
+| 1 | 🔴 zero-coverage | Calculus / Series | 2 / 2 / 1 of 5 | 11 | Taylor Series + evaluating a Taylor series at a point — both n=0 |
+| 2 | 🔴 zero-coverage | Geometry / Surface Area & Volume | 1 / 5 / 3 of 10 | 16 | Sphere volume is the last n=0 skill in this cluster; the other 9 already have some coverage |
+| 3 | 🔴 zero-coverage | Calculus / Derivatives | 1 / 2 / 1 of 9 | 8 | Quotient rule is the one n=0 skill |
+| 4 | 🔴 zero-coverage | Number Sense / Measurement & Data + Place Value | 2 / 0 / 0 of 12 | 6 | "Depth" and "Digit" — two small, unrelated n=0 skills; likely one shared case or two very short ones |
+| 5 | 🟠 thin | Geometry / Quadrilaterals & Polygons | 0 / 10 / 6 of 22 | 26 | Highest thin-severity group in the whole spine; already flagged "reprioritized ahead of other subjects" above |
+| 6 | 🟠 thin | Discrete Mathematics / Set Theory | 0 / 8 / 0 of 8 | 16 | Every skill in the group sits at exactly n=1 |
+| 7 | 🟠 thin | Geometry / Visual Perceptibility | 0 / 7 / 3 of 11 | 17 | |
+| 8 | 🟠 thin | Geometry / Fundamentals of Geometry | 0 / 0 / 18 of 24 | 18 | All 18 gaps are n=2, not n=1 — lower urgency than its raw score suggests |
+| 9 | 🟠 thin | Geometry / Transformations | 0 / 0 / 14 of 20 | 14 | Same n=2-only pattern as #8 |
+| 10 | 🟠 thin | Fractions / Understanding Fractions | 0 / 4 / 4 of 11 | 12 | |
+| 11 | 🟠 thin | Geometry / Triangles | 0 / 6 / 0 of 10 | 12 | |
+| 12 | 🟡 thin | Advanced Operations / Scientific Notation, Factorial, Absolute Value | 0 / 4 / 1 of 8 | 9 | |
+| 13 | 🟡 thin | Fractions / Addition & Subtraction of Fractions | 0 / 4 / 0 of 4 | 8 | Every skill in the group at n=1 |
+| 14 | 🟡 thin | Discrete Mathematics / Formal Logic | 0 / 0 / 8 of 8 | 8 | All n=2 |
+| 15 | 🟡 thin | Discrete Mathematics / Graph Theory | 0 / 1 / 6 of 8 | 8 | |
+| 16 | 🟡 thin | Basic Operations / Factoring | 0 / 3 / 1 of 6 | 7 | |
+| 17 | 🟡 thin | Fractions / Multiplication of Fractions | 0 / 3 / 1 of 4 | 7 | |
+| 18 | 🟡 thin | Fractions / Division of Fractions | 0 / 3 / 1 of 4 | 7 | |
+| 19 | 🟡 thin | Calculus / Integrals | 0 / 0 / 7 of 7 | 7 | All n=2 |
+| 20 | 🟡 thin | Number Sense / Numbers & Counting | 0 / 3 / 0 of 4 | 6 | |
+
+None of these 20 are scoped as concepts yet (concept backlog is genuinely at 0 — see numbers
+table) — this is a *coverage-gap* ranking to draw the next concept batch from, not an existing
+`CONCEPTS_*.md` sheet. #1–4 close every remaining true zero-coverage skill in the curriculum; #5–11
+are the highest-severity thin clusters and mostly fall in Geometry, consistent with this project's
+standing "Geometry & Pre-Calculus gaps reprioritized ahead of other subjects" direction above;
+#12–20 round out the next batch. Fractions and Discrete Mathematics show up repeatedly and may be
+worth a "some subject areas have almost no cases at all" look (see Coverage table above, which
+separately flags Number Theory as thinnest overall).
 
 ---
 
@@ -150,10 +214,10 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 
 | | |
 |---|---|
-| Cases that are genuinely ready to assign (published, live re-scan, `python3 app/build_pipeline.py`) | **111** |
-| Cases at stage=promotion but genuinely `BLOCKED` (not force-passed) | **1** — `a-coachs-dilemma`, see item 3 above |
+| Cases that are genuinely ready to assign (published, live re-scan, `python3 app/build_pipeline.py`) | **114** |
+| Cases at stage=promotion but genuinely `BLOCKED` (not force-passed) | **0** — `a-coachs-dilemma` cleared 2026-09-01, see item 3 above |
 | Total case directories under `cases/` (pipeline-authored corpus) | **119** (`ls -d cases/*/ \| wc -l`) |
-| Cases in drafting / research / readiness | **6** — 0 drafting, 1 research, 5 readiness (see note above; the pipeline is not empty this refresh) |
+| Cases in drafting / research / readiness | **4** — 0 drafting, 1 research, 3 readiness (see note above; the pipeline is not empty this refresh) |
 | Concepts scoped but not yet written into a case | **0** (was 9 — see the 2026-09-01 note; includes a genuine title-matcher bug fix, not just new writing) |
 | Cases ever run with a real student | **0** |
 | Skills in the curriculum map | 437 (`readmodel/standards_spine.json.totals.skills`) |
@@ -215,6 +279,20 @@ Full pipeline/dashboard/domains rebuild run clean afterward (`build_pipeline.py`
 `build_dashboard.py` + `--verify`, `build_legacy_readiness.py`, `build_domains.py` +
 `validate_domains.py`) — see the numbers table above for every resulting figure and its source
 command.
+
+**2026-09-02 note — confirmed `a-coachs-dilemma`'s blocker is genuinely cleared, corrected the
+case counts, and built the next coverage worklist.** A `git status` at session start showed
+`case.json`, `QA_REPORT.md`, and `published/*` for `a-coachs-dilemma` already modified/regenerated
+in the working tree but not yet reflected in this file. Re-ran `tier1_structural.py --case
+a-coachs-dilemma` live: 0 blockers (T1-16 now PASS), 3 disclosed non-blocking gaps, matching
+`case.json.qa` (`state: TIER2_PASS`, `run_on: 2026-09-01`, all 6 Tier 2 probes PASS, hash
+`fc3c53b5...`) — this was real remediation from a concurrent session, not carried-forward-and-wrong.
+Re-ran `app/build_pipeline.py` live: 114 promotion / 0 blocked (up from 111/1), 3 readiness (down
+from 5 — `the-dosing-curve` and `the-irregular-boundary` have since promoted), 1 research, 0
+concepts — updated throughout this file. Also cross-checked `readmodel/gap_queue.json` against
+`standards_spine.json`'s live `covered_by[]` arrays while building the next-20-cases worklist below
+and found it badly stale (see the new Housekeeping row) — the worklist was built from
+`standards_spine.json` directly instead. No case content was written this session.
 
 Full derivations, per-script commands, and the reasoning trail for every one of these numbers are
 in [ROADMAP_HISTORY.md](ROADMAP_HISTORY.md).

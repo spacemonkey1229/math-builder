@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Breakeven Mile — Interactive</title>
+<!-- Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md.
+     case.md sha256 (as of build): cf3a7e26070b6daa4069da9973000f9b0fd600b2d25f67f0c5153868c14d45b7
+     No facilitator content (trap, balance argument, margin_pct verdict) appears anywhere
+     outside a <script> computation, per MCS-37. -->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* ---- story-vocabulary glossary (MCS-39 extension) — its own .sterm class,
+         separate CSS accent, and separate STORY_GLOSSARY data shape ({desc,
+         link}, not {def, url}) so it can never be mistaken for the math
+         glossary's .gterm markup or collide with T1-19's regex. ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* CASE-SPECIFIC */
+  .costline{display:flex;justify-content:space-between;font-family:var(--sans);font-size:.92rem;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .costline:last-child{border-bottom:none;font-weight:700}
+  #twoLineChart{width:100%;height:auto}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-car" viewBox="0 0 24 24"><path d="M3 13l2-6h14l2 6"/><path d="M3 13h18v5H3z"/><circle cx="7.5" cy="18" r="1.6"/><circle cx="16.5" cy="18" r="1.6"/></symbol>
+  <symbol id="icon-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Breakeven Mile</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">HS</span>
+      <span class="pill">Algebra &middot; Systems of Linear Equations</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">The dealership has texted twice today, same message both times: <em>hold expires five p.m., can't extend past close.</em> Renata Osei reads it a third time anyway, thumb over the reply box, saying nothing back yet. On her other screen, a banking app shows the number she's been building toward for two years &mdash; enough, just barely, for the down payment on the gray sedan she test-drove Saturday, the one still sitting under a paper price tag in the dealer's side lot.</p>
+  <p>Her shift ends in twenty minutes. She's spent it, like she spends most of it, driving between four different houses on the east side &mdash; Mr. Adeyemi's blood pressure check, then across town for Ms. Whitfield's dressing change, then back again for the Ortegas &mdash; her own ride request buzzing dead on her phone screen for the third time this week, drivers passing on a fare this short and this cheap. She has made this exact loop, one way or another, almost every weekday for a year now, and she still can't say with a straight face which way is actually cheaper: the loan payment she'd be signing up for tonight, or the ride-app bill she already dreads opening every Sunday.</p>
+  <p>She pulls into the clinic lot, puts the car she's borrowing in park, and opens both tabs side by side &mdash; the loan paperwork on one side, twelve months of ride-app receipts on the other. The clock on her dash reads 4:41. She doesn't touch either tab yet.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Renata Osei is a home health aide who visits patients at their own houses across the city on a fixed daily route, using whatever transportation she can arrange each morning &mdash; usually a rideshare, sometimes a coworker's car, never reliably her own. She is the only person deciding this: no household car to share, no second income to fall back on if she guesses wrong, and no one else's name on either option (see Appendix D).</p>
+  <p>Renata and the friend who's been talking through the decision with her have started calling the two paths by shorthand. <strong>Keys of Her Own</strong> means buying the used mid-size sedan currently on hold at the dealership &mdash; she would take on a loan payment, an insurance policy, and state registration fees that come due every year whether she drives the car one mile or twenty thousand (see Appendix A), on top of a much smaller, steady per-mile cost for gas, tires, and routine maintenance every time she actually drives it (see Appendix B). Both of those pieces together &mdash; a flat yearly amount plus a constant rate per mile &mdash; make Option A's total annual cost a straight-line function of how many miles she drives.</p>
+  <p><strong>The All-App Life</strong> means staying car-free: every mile she drives for work or errands goes on a rideshare app at a flat per-mile rate, with no loan, no insurance policy, and no registration fee to carry in months she barely drives at all (see Appendix C). Option B's total annual cost is also a straight-line function of mileage &mdash; just a steeper one, with no fixed amount to start from.</p>
+  <p>Two straight lines that start in different places and climb at different rates cross exactly once. Below that crossing mileage, the flatter-but-higher-starting line (Keys of Her Own) costs more; above it, the flatter line costs less. Renata's own annual mileage &mdash; how much she actually drives in a year &mdash; decides which side of that crossing point she's standing on, and it is not a number either option gets to set for her (see Appendix D). The dealership's hold on the sedan expires today, and it will not be extended (see Appendix D). The vocabulary and "how to&hellip;" skills this case will ask of you are listed in Appendix G &mdash; that is where Challenge 1 sends you; Appendix E has optional further reading if you want more background before you start. Every dollar figure cited in Appendices A through D is documented &mdash; method, publisher, and date &mdash; in Appendix F (see Appendix F).</p>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Car-Ownership &amp; Gig-Work Vocabulary</h3>
+    <p class="side-note">The math vocabulary Challenge 1 sends you to research lives in Appendix G below. These are the real personal-finance and gig-economy terms this case's own story uses &mdash; hover any one for a plain definition, or click through to a real source.</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Sources: Wikipedia. Links verified working 2026-09-05.</p>
+  </div>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Renata Osei. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Keys of Her Own</h4>
+      <p style="margin:0">Buy the used sedan, taking on fixed loan, insurance, and registration costs every year regardless of mileage, plus a constant per-mile cost for every mile she drives.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The All-App Life</h4>
+      <p style="margin:0">Stay car-free, pay a flat per-mile rideshare rate for every mile driven, with zero fixed cost.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which option you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include four pieces: <strong>D1</strong> &mdash; two cost equations, <code>C_A(m)</code> (from Appendix A's fixed costs and Appendix B's per-mile rate) and <code>C_B(m)</code> (from Appendix C's rideshare rate), presented as a system of two linear equations in <code>m</code> and total cost <code>C</code>. <strong>D2</strong> &mdash; solve that system algebraically (substitution or elimination, every step shown) for the breakeven mileage <code>m*</code> where <code>C_A(m*) = C_B(m*)</code>. <strong>D3</strong> &mdash; a comparison table evaluating both equations at <code>m*</code>, the US average annual mileage (Appendix D), and Renata's own estimated mileage (Appendix D), stating which option wins and by how much at each, plus a check against Renata's monthly budget (Appendix D). <strong>D4</strong> &mdash; a graph, drawn to scale, plotting both lines from 0 to the US average annual mileage, with <code>m*</code> and the three D3 points labeled.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Keys of Her Own: Fixed Ownership Costs</summary>
+    <div class="inner">
+      <p>Costs Renata would owe every year simply for having the sedan registered and insured in her name, regardless of how many miles she drives it.</p>
+      <table id="apxA">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Annual insurance premium</td><td class="num">$1,572 [S1]</td></tr>
+        <tr><td>Annual auto-loan financing cost (interest portion)</td><td class="num">$854 [S1]</td></tr>
+        <tr><td>Annual registration and licensing fees</td><td class="num">$613 [S1]</td></tr>
+      </table>
+      <p class="side-note">These three rows sum to $3,039/year &mdash; the fixed-cost term in Option A's cost equation <code>C_A(m)</code>. Referenced from Background and forces D1's fixed-cost term.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix B &mdash; Keys of Her Own: Per-Mile Operating Cost</summary>
+    <div class="inner">
+      <p>The part of Option A's cost that scales with how much Renata actually drives.</p>
+      <table id="apxB">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Per-mile operating cost (fuel + tires + routine maintenance/oil)</td><td class="num">$0.2303/mile [S2]</td></tr>
+      </table>
+      <p class="side-note">This rate is constant no matter how many miles Renata drives &mdash; it is the slope of Option A's cost equation, multiplying <code>m</code> in <code>C_A(m)</code>. Referenced from Background and Dilemma; forces D1's variable-cost term.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix C &mdash; The All-App Life: Rideshare Cost</summary>
+    <div class="inner">
+      <table id="apxC">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Average rideshare per-mile rate</td><td class="num">$1.50/mile [S3]</td></tr>
+      </table>
+      <p class="side-note">Option B's total annual cost is this rate multiplied by annual mileage, with no fixed term: <code>C_B(m) = 1.50m</code>. Referenced from Background and Dilemma; forces D1's equation for Option B and D3's comparison.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix D &mdash; Renata's Own Numbers</summary>
+    <div class="inner">
+      <p>The figures specific to Renata's actual situation and deadline &mdash; the inputs that turn the two general cost equations above into her real decision.</p>
+      <table id="apxD">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Average annual miles driven per licensed driver in the US, most recent year</td><td class="num">13,662 miles/year [S4]</td></tr>
+        <tr><td>Renata's own estimated annual mileage from her home-health route and errands</td><td class="num">2,760 miles/year &mdash; MA1</td></tr>
+        <tr><td>Renata's maximum monthly transportation budget</td><td class="num">$350/month &mdash; MA2</td></tr>
+        <tr><td>Days remaining on the dealership's price hold</td><td class="num">0 days (expires today, 5 p.m.) &mdash; MA3</td></tr>
+      </table>
+      <p class="side-note">The first row is a real, sourceable national figure and gives D3/D4 a second, contrasting mileage to test besides Renata's own; the other three rows are specific to Renata's own fictional situation and are disclosed as Modeling Assumptions rather than sourced figures. Referenced from Background, Dilemma, and Challenges D1, D3, and D4.</p>
+      <div class="card">
+        <h3 style="margin-top:0">Modeling Assumptions</h3>
+        <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author/researcher. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+        <table>
+          <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+          <tr><td>MA1</td><td>Renata's own annual mileage</td><td class="num">2,760 mi/yr</td><td>A compact, single-neighborhood home-health caseload: roughly 10 miles of driving per workday across her four-stop route, 5 days/week for 50 weeks (250 workdays) = 2,500 mi/yr, plus about 260 mi/yr of weekend errands = 2,760 mi/yr total. Well below the FHWA national average (13,662 mi/yr, S4).</td></tr>
+          <tr><td>MA2</td><td>Renata's maximum monthly transportation budget</td><td class="num">$350/month</td><td>BLS reports median annual pay for home health and personal care aides at $35,800 (May 2025) [S5], about $2,983/month gross. $350/month is roughly 12% of that.</td></tr>
+          <tr><td>MA3</td><td>Days remaining on the dealership's price hold</td><td class="num">0 (expires today, 5 p.m.)</td><td>Matches the Overview's own narrative deadline verbatim.</td></tr>
+        </table>
+      </div>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Learn More</summary>
+    <div class="inner">
+      <p>Want to go beyond the required math? These are real, freely available resources &mdash; not required for any Challenge, but useful if you want more background.</p>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/System_of_linear_equations" target="_blank" rel="noopener">System of Linear Equations &mdash; Wikipedia</a> &mdash; background on the kind of system Challenge 3's D1&ndash;D2 build and solve.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Break-even_(economics)" target="_blank" rel="noopener">Break-even (Economics) &mdash; Wikipedia</a> &mdash; the general idea behind finding the mileage <code>m*</code> where the two options cost the same.</li>
+        <li><a href="https://en.wikipedia.org/wiki/Total_cost_of_ownership" target="_blank" rel="noopener">Total Cost of Ownership &mdash; Wikipedia</a> &mdash; background on why car ownership costs are usually split into a fixed part and a per-mile part.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxF">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Medium-sedan annual full-coverage insurance, license/registration/taxes, and finance charges</td><td>$1,572 / $613 / $854/yr</td><td><a href="https://newsroom.aaa.com/wp-content/uploads/2025/09/AAA-Brochure-Your-Driving-Cost-9.2025.pdf" target="_blank" rel="noopener">AAA &mdash; Your Driving Costs 2025</a></td><td>2025-09</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Medium-sedan per-mile operating cost</td><td>$0.2303/mile</td><td><a href="https://newsroom.aaa.com/wp-content/uploads/2025/09/AAA-Brochure-Your-Driving-Cost-9.2025.pdf" target="_blank" rel="noopener">AAA &mdash; Your Driving Costs 2025</a></td><td>2025-09</td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>National average UberX per-mile rate</td><td>$1.50/mile (range $0.90&ndash;$1.60/mile most cities, up to $2.50+/mile highest-cost metros)</td><td><a href="https://getridewise.com/blog/uber-cost-per-mile" target="_blank" rel="noopener">RideWise &mdash; Uber Rates 2026</a></td><td>2026-03</td><td>MEDIUM</td></tr>
+        <tr><td>S4</td><td>Average annual miles driven per licensed driver, US, 2023</td><td>13,662 mi/yr (derived)</td><td><a href="https://www.fhwa.dot.gov/policyinformation/statistics/2023/vm1.cfm" target="_blank" rel="noopener">FHWA Highway Statistics 2023</a></td><td>2023</td><td>MEDIUM</td></tr>
+        <tr><td>S5</td><td>Median annual wage, home health and personal care aides</td><td>$35,800/yr</td><td><a href="https://www.bls.gov/ooh/healthcare/home-health-aides-and-personal-care-aides.htm" target="_blank" rel="noopener">BLS Occupational Outlook Handbook</a></td><td>2025-05</td><td>HIGH</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-05. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Build the Two Cost Equations</h4>
+    <div class="goal">Goal: write <code>C_A(m) = (fixed costs) + (per-mile rate)&middot;m</code> and <code>C_B(m) = (rideshare rate)&middot;m</code>, then test them at a mileage of your choice.</div>
+    <div class="fieldrow"><label for="s1fixed">Total fixed costs (Appendix A, $/yr)</label><input type="number" id="s1fixed" placeholder="a whole dollar amount"></div>
+    <div class="fieldrow"><label for="s1rateA">Option A per-mile rate (Appendix B, $/mi)</label><input type="number" step="0.0001" id="s1rateA" placeholder="dollars per mile"></div>
+    <div class="fieldrow"><label for="s1rateB">Option B per-mile rate (Appendix C, $/mi)</label><input type="number" step="0.01" id="s1rateB" placeholder="dollars per mile"></div>
+    <div class="fieldrow"><label for="s1test">Test mileage (any value, mi/yr)</label><input type="number" id="s1test" placeholder="any mileage you pick">
+      <button onclick="checkStep1()">Check</button><span class="fb" id="fb1"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: Solve for the Breakeven Mileage</h4>
+    <div class="goal">Goal: solve <code>C_A(m*) = C_B(m*)</code> algebraically (substitution or elimination) for <code>m*</code>, using the case's own Appendix A&ndash;C numbers.</div>
+    <div class="fieldrow"><label for="s2mstar">Your computed m* (miles/yr)</label><input type="number" step="0.1" id="s2mstar" placeholder="miles per year, one decimal place">
+      <button onclick="checkStep2()">Check</button><span class="fb" id="fb2"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: Comparison Table</h4>
+    <div class="goal">Goal: evaluate both equations at three mileages &mdash; m*, the US average, and Renata's own estimate &mdash; and check which option wins at each. Slide to explore before you commit to your table.</div>
+    <div class="sliderow">
+      <label for="mileSlider" style="font-family:var(--sans);min-width:150px">Mileage (mi/yr)</label>
+      <input type="range" id="mileSlider" min="0" max="13662" step="10" value="2760" oninput="updateSlider()">
+      <span class="val" id="mileVal">2,760</span>
+    </div>
+    <div class="costline"><span>C_A(m) &mdash; Keys of Her Own</span><span id="lineA">&mdash;</span></div>
+    <div class="costline"><span>C_B(m) &mdash; The All-App Life</span><span id="lineB">&mdash;</span></div>
+    <p class="side-note">Use the slider to check your own D3 table entries at m*, the US average (13,662 mi/yr), and Renata's own estimate (2,760 mi/yr) &mdash; then also check whether each cost fits inside Renata's $350/month (=$4,200/year) budget from Appendix D.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: Graph</h4>
+    <div class="goal">Goal: plot <code>C_A(m)</code> and <code>C_B(m)</code> as two straight lines on shared axes, from 0 to the US average annual mileage, labeling m* and your three D3 points.</div>
+    <div class="chk">
+      <input type="checkbox" id="graphChk">
+      <label for="graphChk">I've drawn both lines to scale (by hand or Desmos) and labeled m* and my three D3 evaluation points.</label>
+    </div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-phone"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>One more thing. RideWise, the source behind Appendix C's $1.50/mile rideshare rate, reports that rate as a <em>national average</em> &mdash; but its own data shows real city-by-city rates from about $0.90/mile in most US cities up to $2.50+/mile in the highest-cost metros (New York City among them). Renata doesn't live in an average metro; she lives in one specific city, and we don't know which end of that range she's actually on.</p>
+      <div class="sliderow">
+        <label for="twistSelect" style="font-family:var(--sans);min-width:150px;color:#e8e3d5">Try a rideshare rate</label>
+        <select id="twistSelect" onchange="onTwistToggle()">
+          <option value="0.9">$0.90/mile (low end, most cities)</option>
+          <option value="1.5" selected>$1.50/mile (national average, Appendix C)</option>
+          <option value="2.5">$2.50/mile (high end, priciest metros)</option>
+        </select>
+      </div>
+      <div class="costline" style="color:#f2ede0"><span>C_A(2,760)</span><span id="twistA">&mdash;</span></div>
+      <div class="costline" style="color:#f2ede0"><span>C_B(2,760) at selected rate</span><span id="twistB">&mdash;</span></div>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Re-run D3's comparison at the low and high end. Does the winner change?</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1/S2 &mdash; AAA, "Your Driving Costs" 2025 brochure, Medium Sedan column.</li>
+      <li>S3 &mdash; RideWise, "Uber Rates 2026: Price Per Mile &amp; Cost by City."</li>
+      <li>S4 &mdash; FHWA Highway Statistics 2023, Tables VM-1 and DL-1C.</li>
+      <li>S5 &mdash; U.S. Bureau of Labor Statistics, Occupational Outlook Handbook.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Breakeven Mile &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from case.json.
+   case.json sha256 context: see case.json.qa.case_md_sha256.
+   JS port of the case's own model (PARAMS/FLEX/evaluate/evaluate_twist),
+   per templates/INTERACTIVE_HTML_CONTRACT.md section 2.
+   ================================================================ */
+const PARAMS = {
+  fixedCostsA: 3039,        // Appendix A: 1572 + 854 + 613
+  perMileA: 0.2303,         // Appendix B
+  rideshareRate: 1.50,      // Appendix C
+  usAvgMileage: 13662,      // Appendix D, S4
+  renataMileage: 2760,      // Appendix D, MA1
+  monthlyBudget: 350,       // Appendix D, MA2
+  twistLow: 0.90,           // S3 corrected range, low end
+  twistHigh: 2.50           // S3 corrected range, high end
+};
+const FLEX = ["renataMileage"]; // Tier 2 Probe 5 perturbs this ±50%
+
+function evaluate(params, m){
+  const A = params.fixedCostsA + params.perMileA * m;
+  const B = params.rideshareRate * m;
+  return {A, B};
+}
+function evaluate_twist(params){
+  const m = params.renataMileage;
+  const A = params.fixedCostsA + params.perMileA * m;
+  const low = params.twistLow * m;
+  const high = params.twistHigh * m;
+  return {A, low, high};
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  const fixed = parseFloat(val('s1fixed'));
+  const rateA = parseFloat(val('s1rateA'));
+  const rateB = parseFloat(val('s1rateB'));
+  const m = parseFloat(val('s1test')) || 0;
+  const ok = near(fixed, PARAMS.fixedCostsA, 1) && near(rateA, PARAMS.perMileA, 0.001) && near(rateB, PARAMS.rideshareRate, 0.01);
+  fb('fb1', ok);
+}
+function checkStep2(){
+  const mstar = parseFloat(val('s2mstar'));
+  // m* solves fixedCostsA + perMileA*m = rideshareRate*m
+  const trueMstar = PARAMS.fixedCostsA / (PARAMS.rideshareRate - PARAMS.perMileA);
+  const ok = near(mstar, trueMstar, 5);
+  fb('fb2', ok);
+}
+function updateSlider(){
+  const m = parseFloat(document.getElementById('mileSlider').value);
+  document.getElementById('mileVal').textContent = Math.round(m).toLocaleString();
+  const {A, B} = evaluate(PARAMS, m);
+  document.getElementById('lineA').textContent = '$' + round(A,2).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) + '/yr';
+  document.getElementById('lineB').textContent = '$' + round(B,2).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) + '/yr';
+}
+updateSlider();
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-breakeven-mile";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Two cost equations, C_A(m) and C_B(m), as a system"],
+  ["D2", "Algebraic solve for the breakeven mileage m*"],
+  ["D3", "Comparison table at m*, US average, and Renata's own mileage"],
+  ["D4", "A labeled graph of both lines"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). Verified working 2026-09-05.
+   ================================================================ */
+const GLOSSARY = {
+  "System Of Equations": {def: "Two or more equations, involving the same variables, considered together.",
+    url: "https://www.mathsisfun.com/algebra/systems-linear-equations.html"},
+  "Linear Equation": {def: "An equation between two variables that gives a straight line when plotted on a graph.",
+    url: "https://www.mathsisfun.com/algebra/linear-equations.html"},
+  "Slope": {def: "How steep a line is: the vertical change divided by the horizontal change between two points on it.",
+    url: "https://www.mathsisfun.com/gradient.html"},
+  "Elimination Method": {def: "A way to solve a system of equations by adding or subtracting the equations to cancel out one variable.",
+    url: "https://www.cuemath.com/algebra/elimination-method/"},
+  "Substitution Method": {def: "A way to solve a system of equations by isolating one variable in one equation and plugging that expression into the other.",
+    url: "https://www.cuemath.com/algebra/substitution-method/"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"}
+};
+const HOWTO = [
+  ["How to solve a system of linear equations", "System Of Equations"],
+  ["How to solve a system by substitution", "Substitution Method"],
+  ["How to solve a system by elimination", "Elimination Method"],
+  ["How to find the slope of a line", "Slope"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — a SECOND glossary layer for this case's real
+   car-ownership and gig-work vocabulary, kept deliberately separate
+   from the math GLOSSARY above. Sources: Wikipedia, verified 2026-09-05.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Sedan": {desc: "A passenger car in a three-box configuration with separate compartments for an engine, passengers, and cargo.",
+    link: "https://en.wikipedia.org/wiki/Sedan_(automobile)"},
+  "Vehicle Insurance": {desc: "Insurance for cars, trucks, motorcycles, and other road vehicles, providing financial protection against damage and liability.",
+    link: "https://en.wikipedia.org/wiki/Vehicle_insurance"},
+  "Down Payment": {desc: "An initial up-front partial payment for the purchase of an expensive good or service, such as a car, with the remainder financed through a loan.",
+    link: "https://en.wikipedia.org/wiki/Down_payment"},
+  "Car Finance": {desc: "The various financial products that allow someone to acquire a car, including car loans and leases.",
+    link: "https://en.wikipedia.org/wiki/Car_finance"},
+  "Vehicle Registration": {desc: "The registration of a motor vehicle with a government authority, establishing a connection between the vehicle and its owner.",
+    link: "https://en.wikipedia.org/wiki/Motor_vehicle_registration"},
+  "Ridesharing": {desc: "A company or service that, via websites and mobile apps, matches passengers with drivers of vehicles for hire.",
+    link: "https://en.wikipedia.org/wiki/Ridesharing_company"},
+  "Home Care": {desc: "Health care or supportive care provided in the home of the individual where the patient or client is living -- what Renata provides on her daily route.",
+    link: "https://en.wikipedia.org/wiki/Home_care"},
+  "Total Cost Of Ownership": {desc: "The full cost of owning an asset over time, including not just the purchase price but every ongoing fixed and variable cost.",
+    link: "https://en.wikipedia.org/wiki/Total_cost_of_ownership"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+  onTwistToggle();
+}
+function onTwistToggle(){
+  const rate = parseFloat(document.getElementById('twistSelect').value);
+  const m = PARAMS.renataMileage;
+  const A = PARAMS.fixedCostsA + PARAMS.perMileA * m;
+  const B = rate * m;
+  document.getElementById('twistA').textContent = '$' + round(A,2).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) + '/yr';
+  document.getElementById('twistB').textContent = '$' + round(B,2).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) + '/yr';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>
