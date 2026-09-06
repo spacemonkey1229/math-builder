@@ -606,10 +606,21 @@ def build_html_cold_read_packet(project, cid, md):
 
     text = _html_to_text(raw)
     for label, definition in glossary.items():
-        pat = re.compile(r'(?<![\w-])' + re.escape(label) + r'(?![\w-])')
+        # Case-insensitive: a glossary label is usually Title Cased (e.g.
+        # "Recordkeeper") but its first mention in prose is often lowercase
+        # mid-sentence ("...a real recordkeeper's data..."). Matching only the
+        # label's exact case missed those mentions entirely, so a case could
+        # pass T1-19/T1-21 (glossary present) while P7's cold-reader still saw
+        # zero inline glosses for terms that only ever appear lowercase in the
+        # rendered text -- found independently on two different cases
+        # (the-correction-window, the-special-order) 2026-09-06. Preserve the
+        # ACTUAL on-page casing at the match site in the rendered gloss (m.group(0)),
+        # not the glossary object's label casing, so "recordkeeper (...)" reads
+        # naturally rather than "Recordkeeper (...)" mid-sentence.
+        pat = re.compile(r'(?<![\w-])' + re.escape(label) + r'(?![\w-])', re.IGNORECASE)
         m = pat.search(text)
         if m:
-            gloss = f"{label} ({definition.strip().rstrip('.')})"
+            gloss = f"{m.group(0)} ({definition.strip().rstrip('.')})"
             text = text[:m.start()] + gloss + text[m.end():]
     return text, f'published/{fn}'
 

@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Marginal Call — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md
+  (A7, DOCTRINE_LEDGER MCS-37/MCS-39). CASE-AGNOSTIC shell mechanics unchanged; CASE-SPECIFIC
+  content filled below for cases/the-marginal-call.
+
+  HARD LINE (MCS-37): this file must never print the case's balance verdict (net cost per
+  board foot sold, margin_pct, which option wins) as a static literal anywhere outside a
+  <script> tag's live computation. The Working Notebook computes everything from PARAMS;
+  it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — The Marginal Call.
+     ============================================================ */
+  .apxnote{font-family:var(--sans);font-size:.8rem;color:var(--sub);font-style:italic;margin:6px 0 16px}
+  .box-compare .amt{font-weight:700;color:var(--navy);font-size:1.1rem}
+  /* story/domain-vocabulary hover-glossary layer -- separate from the math .gterm layer */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>.
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-saw" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/></symbol>
+  <symbol id="icon-stack" viewBox="0 0 24 24"><rect x="3" y="15" width="18" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="5" y="5" width="14" height="4" rx="1"/></symbol>
+  <symbol id="icon-bank" viewBox="0 0 24 24"><path d="M3 9l9-6 9 6"/><path d="M4 9h16v11H4z"/><path d="M9 13v4M15 13v4"/></symbol>
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Marginal Call</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">HS</span>
+      <span class="pill">Calculus &middot; Quotient Rule &middot; Optimization</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+
+  <figure>
+    <svg viewBox="0 0 700 170" role="img" aria-labelledby="bannerTitle" aria-label="diagram" class="case-diagram">
+      <title id="bannerTitle">Two browser tabs open side by side on a laptop screen -- a deposit form and a half-built spreadsheet</title>
+      <rect x="0" y="0" width="700" height="170" fill="#eef3f8"/>
+      <rect x="40" y="20" width="260" height="130" rx="12" fill="#20262e"/>
+      <rect x="54" y="34" width="232" height="102" rx="6" fill="#fff"/>
+      <text x="70" y="56" font-family="sans-serif" font-size="11" font-weight="700" fill="#1a3a5c">Deposit Form -- Usual Order</text>
+      <rect x="70" y="66" width="200" height="14" rx="3" fill="#e6f4ec" stroke="#1f7a4d" stroke-width="1"/>
+      <text x="76" y="76" font-family="sans-serif" font-size="9" fill="#1f7a4d">covered by credit line</text>
+      <rect x="70" y="90" width="200" height="14" rx="3" fill="#eef3f8" stroke="#1a3a5c" stroke-width="1"/>
+      <text x="76" y="100" font-family="sans-serif" font-size="9" fill="#5b6472">two clicks from submitted</text>
+      <text x="70" y="128" font-family="sans-serif" font-size="9" fill="#5b6472">tab 1 of 2, untouched all morning</text>
+      <g transform="translate(340,40)">
+        <circle cx="55" cy="55" r="48" fill="#f7edcf" stroke="#c9a227" stroke-width="2"/>
+        <use href="#icon-saw" x="30" y="30" width="50" height="50" fill="none" stroke="#1a3a5c" stroke-width="1.6"/>
+      </g>
+      <text x="470" y="66" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">Which batch size actually</text>
+      <text x="470" y="88" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">costs less to sell --</text>
+      <text x="470" y="110" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">not just to produce?</text>
+    </svg>
+    <figcaption>An original diagram for this case: two tabs, two batch sizes, and a clock that isn't waiting for either one to finish rebuilding a spreadsheet (SEE APPENDIX A, APPENDIX B).</figcaption>
+  </figure>
+
+  <p class="lede">The shop floor still smells like wet sawdust and machine oil when Renata Osei's phone lights up for the third time in an hour &mdash; the mill, again, wanting an answer she doesn't have yet. Through the window of her small office she can see the crew mid-shift, stacking finished chair frames near the loading dock, oblivious to the number sitting open on her screen: the hotel chain's purchase order, the biggest single order the shop has ever signed. Black walnut, all of it, FSC-certified, and there is exactly one mill drying run left this season that can supply it before the ship date.</p>
+  <p>Her laptop has two tabs open. One is the deposit form for the batch size they always order &mdash; the one her credit line covers without a second thought. The other is a spreadsheet she has been rebuilding all morning, chasing the point where a bigger batch actually starts paying for itself. That number keeps landing above what her credit line covers on its own, which means a call to the bank &mdash; a call that could take days to clear, if it clears at all before someone else locks the mill's last slot.</p>
+  <p>Her operations partner leans into the doorway. &ldquo;The mill needs the batch size by end of day. Not tomorrow.&rdquo; She nods without looking up. Behind her, out on the floor, a table saw rises and falls, rises and falls, and she still hasn't touched either tab.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+
+  <p>Renata Osei is the operations manager of a small furniture workshop that has spent a decade building custom pieces to order, never before at the scale this order requires. A regional hotel chain has placed a holiday bulk order for guest-room furniture &mdash; every piece specified in <a class="sterm" data-sterm="FSC Certification" href="https://en.wikipedia.org/wiki/Forest_Stewardship_Council" target="_blank" rel="noopener">FSC-certified<span class="tip">A label from the Forest Stewardship Council certifying that wood was harvested from responsibly managed forests.<span class="go">Open a source on this &rarr;</span></span></a> black walnut &mdash; with a firm five-week ship date. The workshop's mill has exactly one more <a class="sterm" data-sterm="Kiln Drying" href="https://en.wikipedia.org/wiki/Wood_drying" target="_blank" rel="noopener">kiln-drying<span class="tip">A controlled-heat process used to dry lumber to a target moisture content faster and more evenly than air drying alone.<span class="go">Open a source on this &rarr;</span></span></a> run scheduled this season that can deliver certified black walnut in time, and Renata has learned, informally, that a national furniture chain is also bidding for space in that same run (SEE APPENDIX D).</p>
+  <p>Renata and her operations partner have started calling the choice by the two batch sizes on the table. <strong>The Steady Order</strong> means locking in the shop's usual run size &mdash; the <a class="sterm" data-sterm="Board Foot" href="https://en.wikipedia.org/wiki/Board_foot" target="_blank" rel="noopener">board footage<span class="tip">A unit of lumber volume equal to a board 12 inches by 12 inches by 1 inch thick -- the standard way hardwood is priced and ordered.<span class="go">Open a source on this &rarr;</span></span></a> they have ordered from this mill for years, priced and financed the way it has always been financed (SEE APPENDIX A, APPENDIX B). Their existing <a class="sterm" data-sterm="Line of Credit" href="https://en.wikipedia.org/wiki/Line_of_credit" target="_blank" rel="noopener">line of credit<span class="tip">A flexible loan arrangement letting a borrower draw funds up to a set limit as needed, paying interest only on the amount actually drawn.<span class="go">Open a source on this &rarr;</span></span></a> covers that deposit without incident. <strong>The Full Kiln</strong> means locking in a much larger run &mdash; large enough to claim the mill's volume price break and spread the run's fixed setup cost over more board feet, which lowers the average cost of every board foot produced (SEE APPENDIX A) &mdash; but large enough that the required deposit exceeds what the credit line covers on its own, requiring a same-day bank approval that is not guaranteed to clear before the mill's last slot fills (SEE APPENDIX D).</p>
+  <p>A larger run does not automatically mean a cheaper order, however. The hotel's order and the shop's other standing accounts can only absorb so many finished walnut board feet within the five-week window (SEE APPENDIX C); any board footage locked in beyond that amount sits as unsold inventory, tying up cash and carrying its own cost for as long as it goes unsold (SEE APPENDIX C). Both the run's total cost and the cost of any unsold leftover scale with the batch size Renata locks in today &mdash; before she knows whether the bank call clears, and before she knows whether the mill's last slot is even still open. The vocabulary and &ldquo;how to&hellip;&rdquo; procedures this case will ask you to research are listed in (SEE APPENDIX F); every priced or sourced figure is documented in the Sources list in the footer below.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Renata Osei. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Steady Order</h4>
+      <p style="margin:0">Lock in the shop's usual batch size, financed comfortably within the existing credit line.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Full Kiln</h4>
+      <p style="margin:0">Lock in a larger batch size that lowers the average cost per board foot, financed only if a same-day bank call clears in time.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a total production-cost function C(x), where x is board feet of black walnut locked into today's run, combining Appendix A's fixed run cost, per-board-foot variable cost, and overtime-labor cost coefficient into a single cost function in x; <strong>D2</strong> using the quotient rule, differentiate the average-cost function A(x) = C(x)/x, set A&prime;(x) = 0, and solve algebraically for the board footage x* that minimizes average cost &mdash; showing every step of the quotient-rule algebra, then use the first derivative test to confirm x* is a minimum; <strong>D3</strong> an average-cost comparison table evaluating A(x) at x*, The Steady Order's board footage, and The Full Kiln's board footage (Appendix B), showing every calculation and stating which real option has the lower average cost and by how much, in dollars and as a percent; <strong>D4</strong> a net-cost-per-board-foot-sold calculation for both options, using Appendix C's sellable-board-footage limit and carrying-cost rate to find any unsold board feet, adding the resulting carrying cost to each option's total cost from D1, and dividing by board feet actually sold; <strong>D5</strong> an original visual display (a graph of A(x), built in Desmos or by hand, or an equivalent chart) showing average cost versus batch size, with x*, The Steady Order's board footage, and The Full Kiln's board footage all labeled; and <strong>D6</strong> a one-paragraph financing memo using Appendix D's deposit percentage and credit-line limit to calculate in dollars how much additional financing The Full Kiln requires beyond the existing credit line, and what happens to the deposit already committed if the bank call does not clear before the mill's last slot fills.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apxA">
+    <summary>Appendix A &mdash; Production Cost Structure</summary>
+    <div class="inner">
+      <p class="apxnote">The three cost components that combine into the run's total cost, C(x), where x is board feet of black walnut locked into today's run. Referenced from Background and Dilemma; forces Challenge 3 (D1, D2, D3).</p>
+      <table id="tblApxA">
+        <tr><th>&nbsp;</th><th>Value</th></tr>
+        <tr><td>Fixed cost per kiln-drying run (mill run-booking/scheduling fee plus the shop's own line changeover and setup labor, independent of run size)</td><td class="num">$1,800 (MA1)</td></tr>
+        <tr><td>Variable cost per board foot at standard (non-overtime) capacity (kiln-dried lumber $14.00/bf [S1] + kiln-drying $0.90/bf [S2] + standard-shift labor $2.50/bf, derived from [S3] &mdash; MA2)</td><td class="num">$17.40/bf</td></tr>
+        <tr><td>Overtime-labor cost coefficient, <em>k</em>, in C(x) = F + vx + kx&sup2; (additional cost that scales with board feet once the run exceeds the shop's normal two-shift throughput capacity within the five-week window)</td><td class="num">0.0001 $/bf&sup2; (MA3)</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apxB">
+    <summary>Appendix B &mdash; Renata's Two Batch Options</summary>
+    <div class="inner">
+      <p class="apxnote">The two real batch sizes on the table. Referenced from Background and Dilemma; forces Challenge 3 (D2, D3, D4, D5).</p>
+      <table id="tblApxB">
+        <tr><th>&nbsp;</th><th>Board feet</th></tr>
+        <tr><td>The Steady Order (the shop's usual run size, ordered from this mill for years)</td><td class="num">2,000 bf (MA4)</td></tr>
+        <tr><td>The Full Kiln (the larger run size the mill's last slot this season can support at its deep-discount threshold)</td><td class="num">3,000 bf (MA5)</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apxC">
+    <summary>Appendix C &mdash; This Quarter's Sellable Limit and Carrying Cost</summary>
+    <div class="inner">
+      <p class="apxnote">The ceiling on how much of either batch can actually be sold this quarter, and what it costs to hold anything beyond that ceiling. Referenced from Background; forces Challenge 3 (D4).</p>
+      <table id="tblApxC">
+        <tr><th>&nbsp;</th><th>Value</th></tr>
+        <tr><td>Total board feet of finished walnut furniture the hotel's bulk order plus the shop's existing standing accounts will consume within the five-week ship window</td><td class="num">2,700 bf (MA6)</td></tr>
+        <tr><td>Carrying cost per unsold board foot, per quarter (storage, tied-up capital, and spoilage/obsolescence risk)</td><td class="num">5% of the $17.40/bf variable unit cost per quarter [S4] = $0.87/bf</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apxD">
+    <summary>Appendix D &mdash; The Clock and the Money</summary>
+    <div class="inner">
+      <p class="apxnote">The financing and timing constraints Renata is deciding under. Referenced from Background and Dilemma; forces Challenge 3 (D6).</p>
+      <table id="tblApxD">
+        <tr><th>&nbsp;</th><th>Value</th></tr>
+        <tr><td>Ship deadline</td><td class="num">5 weeks from today (MA7)</td></tr>
+        <tr><td>Available headroom on the shop's existing business line of credit (the line is otherwise drawn for ongoing payroll and materials)</td><td class="num">$25,000 (MA8)</td></tr>
+        <tr><td>Deposit required to book a kiln-drying run at this mill, as a percent of that run's total cost</td><td class="num">50% [S5]</td></tr>
+        <tr><td>Typical turnaround time for a small business to get bank approval on a line-of-credit increase</td><td class="num">1&ndash;3 weeks (traditional bank) [S6]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apxMA">
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author/researcher, because a genuine multi-tier search found no public source publishing them for a private mill or a specific small furniture shop. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+      <table id="tblApxMA">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Fixed cost per kiln-drying run (mill run-booking fee + shop changeover/setup labor)</td><td class="num">$1,800</td><td>Neither hardwood-kiln operator found in research charges a separate flat run-booking fee &mdash; both price per board foot or a small flat processing charge &mdash; so no public figure exists for this specific line item. $1,800 combines a modest kiln-scheduling fee with roughly a day of shop changeover/setup labor at a blended shop rate.</td><td>This term sets the scale at which average cost is minimized (x* = &radic;(F/k)) &mdash; a Hero who argues F should be materially higher or lower changes where the theoretical minimum falls, though not necessarily which of the two real options wins.</td></tr>
+        <tr><td>MA2</td><td>Board feet of finished stock processed per labor-hour at standard capacity, used to convert [S3]'s wage into a per-board-foot labor cost</td><td class="num">&asymp;8.7 bf/hour</td><td>No public source publishes a per-board-foot labor-hour standard for furniture-grade black walnut processing; chosen to keep the derived labor cost in a plausible range alongside the sourced lumber and kiln-drying figures.</td><td>Sets the flat variable-cost term, which shifts both options' cost equally rather than changing the gap between them.</td></tr>
+        <tr><td>MA3</td><td>Overtime-labor cost coefficient, k, in C(x) = F + vx + kx&sup2;</td><td class="num">0.0001 $/bf&sup2;</td><td>No public source models capacity-constrained marginal cost as a precise function for a small furniture shop. The coefficient is a smooth, continuous approximation of a real, well-documented mechanism &mdash; federal law requires 1.5&times; pay for hours worked beyond the standard workweek &mdash; applied as a stated scenario simplification.</td><td>The assumption the raw average-cost curve is most sensitive to: it sets both the location of x* and how steeply average cost rises past it.</td></tr>
+        <tr><td>MA4</td><td>The Steady Order's board footage</td><td class="num">2,000 bf</td><td>Protagonist-specific: the shop's standing order size with this mill, built up over years of smaller custom runs.</td><td>Changes both options' raw average cost and (if it approached Appendix C's sellable limit) could remove the unsold-inventory penalty from the comparison entirely.</td></tr>
+        <tr><td>MA5</td><td>The Full Kiln's board footage</td><td class="num">3,000 bf</td><td>Protagonist-specific: stated as the mill's minimum board footage to qualify for its last, deep-discount kiln run this season.</td><td>The single most load-bearing protagonist-specific number in the case: it is compared against Appendix C's sellable limit, which is what determines how much of this option's production goes unsold.</td></tr>
+        <tr><td>MA6</td><td>This quarter's sellable limit (hotel order + standing accounts)</td><td class="num">2,700 bf</td><td>Protagonist-specific: the total finished-furniture board footage the hotel's bulk order and the shop's other standing accounts will realistically consume within the five-week window.</td><td>Directly sets how many of The Full Kiln's board feet go unsold &mdash; a Hero arguing this limit is higher changes how much of D4's carrying-cost penalty applies.</td></tr>
+        <tr><td>MA7</td><td>Ship deadline</td><td class="num">5 weeks from today</td><td>Matches the Background's own stated deadline verbatim &mdash; not an independent estimate.</td><td>None &mdash; fixed by the narrative, not a sensitivity lever.</td></tr>
+        <tr><td>MA8</td><td>Available headroom on the shop's existing line of credit</td><td class="num">$25,000</td><td>Protagonist-specific: the shop's credit line carries an unstated total limit but is already partially drawn for ongoing payroll and materials, leaving this much available for a new deposit.</td><td>Sets the exact dollar gap D6 asks students to compute for The Full Kiln's financing risk; does not change the D3/D4 cost-per-board-foot math.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-06. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Furniture-Manufacturing Vocabulary</h3>
+    <p>This case uses real furniture-manufacturing and small-business-finance terms. Hover any term below for a plain-English definition; click it to open a real source (Wikipedia).</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Links verified working 2026-09-06.</p>
+  </div>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Build the total production-cost function C(x)</h4>
+    <div class="goal">Using Appendix A's fixed cost, variable cost, and overtime coefficient, evaluate C(x) = F + vx + kx&sup2; at each real batch size on the table.</div>
+    <div class="fieldrow"><label for="nbCSteady">C(x) at The Steady Order's board footage ($)</label>
+      <input type="number" id="nbCSteady" step="0.01" placeholder="in dollars"> <span class="fb" id="fbCSteady"></span></div>
+    <div class="fieldrow"><label for="nbCFull">C(x) at The Full Kiln's board footage ($)</label>
+      <input type="number" id="nbCFull" step="0.01" placeholder="in dollars"> <span class="fb" id="fbCFull"></span></div>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: Quotient rule &mdash; find x* and classify it</h4>
+    <div class="goal">Differentiate A(x) = C(x)/x with the quotient rule, set A&prime;(x) = 0, and solve for x*. Then use the first derivative test to say whether x* is a minimum.</div>
+    <div class="fieldrow"><label for="nbXstar">x* (board feet)</label>
+      <input type="number" id="nbXstar" step="0.01" placeholder="in board feet"> <span class="fb" id="fbXstar"></span></div>
+    <div class="fieldrow"><label for="nbXstarKind">Is x* a local minimum or a local maximum?</label>
+      <select id="nbXstarKind"><option value="">choose one</option><option value="min">Local minimum</option><option value="max">Local maximum</option></select> <span class="fb" id="fbXstarKind"></span></div>
+    <button onclick="checkStep2()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: Average-cost comparison table</h4>
+    <div class="goal">Evaluate A(x) = C(x)/x at x*, The Steady Order, and The Full Kiln. Then compute the raw percent gap between the two real options.</div>
+    <div class="fieldrow"><label for="nbAxstar">A(x*) ($/bf)</label><input type="number" id="nbAxstar" step="0.01" placeholder="in dollars per board foot"> <span class="fb" id="fbAxstar"></span></div>
+    <div class="fieldrow"><label for="nbASteady">A(Steady Order) ($/bf)</label><input type="number" id="nbASteady" step="0.01" placeholder="in dollars per board foot"> <span class="fb" id="fbASteady"></span></div>
+    <div class="fieldrow"><label for="nbAFull">A(Full Kiln) ($/bf)</label><input type="number" id="nbAFull" step="0.01" placeholder="in dollars per board foot"> <span class="fb" id="fbAFull"></span></div>
+    <div class="fieldrow"><label for="nbRawGapPct">Raw average-cost gap between the two options (as a percent)</label><input type="number" id="nbRawGapPct" step="0.01" placeholder="as a percent"> <span class="fb" id="fbRawGapPct"></span></div>
+    <button onclick="checkStep3()">Check</button>
+    <p class="side-note">This calculator checks your arithmetic &mdash; it will not tell you which option to recommend. That's your D5/pitch to make.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: Net cost per board foot actually sold</h4>
+    <div class="goal">Using Appendix C's sellable limit and carrying-cost rate, find how many board feet (if any) of each option go unsold, fold that carrying cost into the total, and divide by board feet actually sold.</div>
+    <div class="fieldrow"><label for="nbUnsoldFull">The Full Kiln's unsold board feet</label><input type="number" id="nbUnsoldFull" step="0.01" placeholder="in board feet"> <span class="fb" id="fbUnsoldFull"></span></div>
+    <div class="fieldrow"><label for="nbCarryFull">The Full Kiln's total carrying cost ($)</label><input type="number" id="nbCarryFull" step="0.01" placeholder="in dollars"> <span class="fb" id="fbCarryFull"></span></div>
+    <div class="fieldrow"><label for="nbNetSteady">The Steady Order's net cost per board foot sold ($/bf)</label><input type="number" id="nbNetSteady" step="0.01" placeholder="in dollars per board foot"> <span class="fb" id="fbNetSteady"></span></div>
+    <div class="fieldrow"><label for="nbNetFull">The Full Kiln's net cost per board foot sold ($/bf)</label><input type="number" id="nbNetFull" step="0.01" placeholder="in dollars per board foot"> <span class="fb" id="fbNetFull"></span></div>
+    <button onclick="checkStep4()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; D6: Financing memo</h4>
+    <div class="goal">Using Appendix D's 50% deposit rate and the shop's credit-line headroom, find each option's deposit and how much (if any) additional financing The Full Kiln needs.</div>
+    <div class="fieldrow"><label for="nbDepositSteady">The Steady Order's deposit ($)</label><input type="number" id="nbDepositSteady" step="0.01" placeholder="in dollars"> <span class="fb" id="fbDepositSteady"></span></div>
+    <div class="fieldrow"><label for="nbDepositFull">The Full Kiln's deposit ($)</label><input type="number" id="nbDepositFull" step="0.01" placeholder="in dollars"> <span class="fb" id="fbDepositFull"></span></div>
+    <div class="fieldrow"><label for="nbFinGap">Additional financing The Full Kiln needs beyond the credit line ($)</label><input type="number" id="nbFinGap" step="0.01" placeholder="in dollars, or none"> <span class="fb" id="fbFinGap"></span></div>
+    <button onclick="checkStep5()">Check</button>
+    <p class="side-note">D5's graph of A(x) is built outside this notebook &mdash; in Desmos, or by hand &mdash; with x*, The Steady Order, and The Full Kiln all labeled.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-bank"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>The mill calls back that afternoon: the national furniture chain's counter-bid for the same kiln slot came in higher than Renata expected. To hold The Full Kiln's slot at all, she would need to match it &mdash; raising the effective cost of booking that specific, larger run by about half again. The Steady Order, her own standing arrangement with this mill, isn't part of that bidding war at all; its cost is unaffected.</p>
+      <p>Nothing about Appendix A's fixed cost, Appendix B's two batch sizes, or Appendix C's sellable limit was ever a certainty carved in stone &mdash; MA1 (the fixed run cost) was always a stated Modeling Assumption, not a sourced figure. If the contested slot's fixed cost really did jump like this, does the D4 arithmetic you already built still say what you thought it said?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the competing bid: raise The Full Kiln's fixed run cost by 50% (Steady Order is unaffected) and recompute Step 4's net-cost figures.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] CustomWoodQuote &mdash; <a href="https://customwoodquote.com/wood-prices/" target="_blank" rel="noopener">Hardwood Prices Per Board Foot: 2026 Pricing Guide</a> (updated Mar 2026, MEDIUM confidence)</li>
+      <li>[S2] Kitsap Dry Kiln &mdash; <a href="https://kitsapdrykiln.com/Kiln-Drying-Price.html" target="_blank" rel="noopener">Kiln Drying Price</a> (accessed 2026-09-05, MEDIUM confidence)</li>
+      <li>[S3] U.S. Bureau of Labor Statistics &mdash; <a href="https://www.bls.gov/ooh/production/woodworkers.htm" target="_blank" rel="noopener">Occupational Outlook Handbook: Woodworkers</a> (May 2025, HIGH confidence)</li>
+      <li>[S4] VNDLY &mdash; <a href="https://www.vndly.io/blog/inventory-carrying-cost-statistics-2026" target="_blank" rel="noopener">20% Inventory Carrying Costs: 2026 Data &amp; Ways to Cut Them</a> (2026, MEDIUM confidence)</li>
+      <li>[S5] Luke's Furniture Company &mdash; <a href="https://www.lukesfurniturecompany.com/articles/blog/what-deposit-should-i-expect-to-pay-for-custom-furniture-and-is-that-normal" target="_blank" rel="noopener">What Deposit Should I Expect to Pay for Custom Furniture?</a> (2026-05-18, MEDIUM confidence)</li>
+      <li>[S6] Crestmont Capital &mdash; <a href="https://www.crestmontcapital.com/blog/how-long-does-business-loan-approval-take" target="_blank" rel="noopener">Business Loan Approval Time: How Long Does It Take?</a> (2026, MEDIUM confidence)</li>
+      <li>MA1&ndash;MA8 (except the sourced-derived pieces of MA2) are stated Modeling Assumptions, not sourced figures &mdash; see the Modeling Assumptions appendix above for the full basis.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Marginal Call &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/the-marginal-call/case.json
+   (case.md sha256 as of this build: 3202c5ec6a5721bac487f48fb25e12d2bc996131dcf44260972916ebfe7cc631)
+   JS port of cases/the-marginal-call/sensitivity_model.py -- same PARAMS/FLEX/evaluate()/
+   evaluate_twist() shape, so the Working Notebook and the Python sensitivity model can
+   never silently drift. Nothing here hardcodes the balance-test verdict (net cost per
+   board foot sold, margin, winner) -- every derived figure is computed live below.
+   ================================================================ */
+const PARAMS = {
+  v: 17.40,             // Appendix A, sourced/derived: lumber [S1] + kiln-drying [S2] + labor ([S3]/MA2)
+  F: 1800.0,            // Appendix A, Modeling Assumption MA1 -- fixed cost per kiln run
+  k: 0.0001,            // Appendix A, Modeling Assumption MA3 -- overtime cost coefficient
+  steady_bf: 2000.0,    // Appendix B, Modeling Assumption MA4
+  full_bf: 3000.0,      // Appendix B, Modeling Assumption MA5
+  sellable_limit: 2700.0, // Appendix C, Modeling Assumption MA6
+  carry_rate_q: 0.05    // Appendix C, derived from [S4]'s annual benchmark, applied quarterly
+};
+const FLEX = ["F", "k", "steady_bf", "full_bf", "sellable_limit", "carry_rate_q"];
+function cost(x, p){ return p.F + p.v * x + p.k * x * x; }
+function xStar(p){ return Math.sqrt(p.F / p.k); }
+function netCostPerBfSold(x, p){
+  const d = p.sellable_limit;
+  const sold = Math.min(x, d);
+  const unsold = Math.max(0, x - d);
+  const carryPerBf = p.carry_rate_q * p.v;
+  const total = cost(x, p) + carryPerBf * unsold;
+  return total / sold;
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const aNet = netCostPerBfSold(p.steady_bf, p);
+  const bNet = netCostPerBfSold(p.full_bf, p);
+  // Lower net cost per board foot sold is better for Renata -- return negative so
+  // higher score wins, matching sensitivity_model.py's convention.
+  return { A: -aNet, B: -bNet, aNet, bNet,
+           aCost: cost(p.steady_bf, p), bCost: cost(p.full_bf, p) };
+}
+function evaluate_twist(params){
+  const pA = Object.assign({}, PARAMS, params || {});
+  const aNet = netCostPerBfSold(pA.steady_bf, pA);
+  const pB = Object.assign({}, PARAMS, params || {});
+  pB.F = pB.F * 1.5; // 50% higher fixed run cost, The Full Kiln's contested slot only
+  const bNet = netCostPerBfSold(pB.full_bf, pB);
+  return { A: -aNet, B: -bNet, aNet, bNet };
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  const p = PARAMS;
+  const okSteady = near(parseFloat(val('nbCSteady')), cost(p.steady_bf, p), 1);
+  const okFull = near(parseFloat(val('nbCFull')), cost(p.full_bf, p), 1);
+  fb('fbCSteady', okSteady);
+  fb('fbCFull', okFull);
+}
+function checkStep2(){
+  const xs = xStar(PARAMS);
+  const okXstar = near(parseFloat(val('nbXstar')), xs, 5);
+  fb('fbXstar', okXstar);
+  const kind = document.getElementById('nbXstarKind').value;
+  fb('fbXstarKind', kind === 'min');
+}
+function checkStep3(){
+  const p = PARAMS;
+  const xs = xStar(p);
+  const aXstar = cost(xs, p) / xs;
+  const aSteady = cost(p.steady_bf, p) / p.steady_bf;
+  const aFull = cost(p.full_bf, p) / p.full_bf;
+  const rawGapPct = 100 * Math.abs(aSteady - aFull) / Math.max(aSteady, aFull);
+  fb('fbAxstar', near(parseFloat(val('nbAxstar')), aXstar, 0.05));
+  fb('fbASteady', near(parseFloat(val('nbASteady')), aSteady, 0.02));
+  fb('fbAFull', near(parseFloat(val('nbAFull')), aFull, 0.02));
+  fb('fbRawGapPct', near(parseFloat(val('nbRawGapPct')), rawGapPct, 0.3));
+}
+function checkStep4(){
+  const twistEl = document.getElementById('applyTwist');
+  const applied = twistEl && twistEl.checked;
+  const p = PARAMS;
+  const unsoldFull = Math.max(0, p.full_bf - p.sellable_limit);
+  const carryPerBf = p.carry_rate_q * p.v;
+  const carryFull = carryPerBf * unsoldFull;
+  const r = applied ? evaluate_twist({}) : evaluate({});
+  fb('fbUnsoldFull', near(parseFloat(val('nbUnsoldFull')), unsoldFull, 1));
+  fb('fbCarryFull', near(parseFloat(val('nbCarryFull')), carryFull, 1));
+  fb('fbNetSteady', near(parseFloat(val('nbNetSteady')), r.aNet, 0.05));
+  fb('fbNetFull', near(parseFloat(val('nbNetFull')), r.bNet, 0.05));
+}
+function checkStep5(){
+  const p = PARAMS;
+  const depositRate = 0.5;
+  const depositSteady = depositRate * cost(p.steady_bf, p);
+  const depositFull = depositRate * cost(p.full_bf, p);
+  const creditHeadroom = 25000;
+  const finGap = Math.max(0, depositFull - creditHeadroom);
+  fb('fbDepositSteady', near(parseFloat(val('nbDepositSteady')), depositSteady, 1));
+  fb('fbDepositFull', near(parseFloat(val('nbDepositFull')), depositFull, 1));
+  fb('fbFinGap', near(parseFloat(val('nbFinGap')), finGap, 1));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-marginal-call";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Total production-cost function C(x)"],
+  ["D2", "Quotient-rule derivation of x* plus the first derivative test"],
+  ["D3", "Average-cost comparison table at x*, Steady Order, and Full Kiln"],
+  ["D4", "Net-cost-per-board-foot-sold calculation for both options"],
+  ["D5", "Original visual display of A(x) with x*, Steady Order, and Full Kiln labeled"],
+  ["D6", "One-paragraph financing memo"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   "Derivative"/"Critical Point"/"Local Minimum"/"Power Rule" reused verbatim
+   from cases/the-optimal-can's own verified GLOSSARY (mathsisfun.com);
+   "First Derivative Test"/"Optimization" reused verbatim from
+   cases/the-panel-layout's own verified GLOSSARY (khanacademy.org, fetched
+   2026-08-31); "Percent" reused verbatim from the shared STARTER_GLOSSARY
+   (khanacademy.org). "Quotient Rule" is this case's own new-coverage term --
+   fetched and confirmed live on mathsisfun.com 2026-09-06, this session.
+   ================================================================ */
+const GLOSSARY = {
+  "Derivative": {def: "A function that gives the slope of the original function's tangent line at every point -- how fast the output changes as the input changes.",
+    url: "https://www.mathsisfun.com/calculus/derivatives-introduction.html"},
+  "Critical Point": {def: "A point where a function's derivative is zero or undefined -- a candidate for a local maximum or minimum.",
+    url: "https://www.mathsisfun.com/calculus/maxima-minima.html"},
+  "Local Minimum": {def: "A point where a function's value is lower than at every nearby point -- a valley, not necessarily the lowest point overall.",
+    url: "https://www.mathsisfun.com/calculus/maxima-minima.html"},
+  "Power Rule": {def: "A shortcut for differentiating x^n: bring the exponent down as a multiplier, then reduce the exponent by 1.",
+    url: "https://www.mathsisfun.com/calculus/derivatives-rules.html"},
+  "Quotient Rule": {def: "A rule for differentiating a quotient f(x)/g(x): the derivative is (f'g - g'f) / g^2.",
+    url: "https://www.mathsisfun.com/calculus/derivatives-rules.html"},
+  "First Derivative Test": {def: "A method that classifies a critical point as a local minimum, local maximum, or neither by checking whether the derivative's sign changes on either side of it.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-diff-analytical-applications-new/ab-5-4/a/applying-the-first-derivative-test-to-find-extrema"},
+  "Optimization": {def: "Using calculus (typically derivatives) to find the input that makes a function's output as large or as small as possible.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-diff-analytical-applications-new/ab-5-11/v/minimizing-sum-of-squares"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+};
+const HOWTO = [
+  ["How to find a derivative using the power rule", "Power Rule"],
+  ["How to use the quotient rule to differentiate a quotient of functions", "Quotient Rule"],
+  ["How to find critical points of a function", "Critical Point"],
+  ["How to use the first derivative test to classify a critical point", "First Derivative Test"],
+  ["How to solve an optimization problem using derivatives", "Optimization"],
+  ["How to find the percent of a number", "Percent"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-SPECIFIC — story/domain-vocabulary glossary (MCS-47), separate from
+   the math GLOSSARY above. {desc, link} field names and the .sterm class
+   are the load-bearing difference that keeps this from colliding with
+   T1-19's math-only glossary check. All 5 links verified live on
+   en.wikipedia.org 2026-09-06, this session.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Kiln Drying": {desc: "A controlled-heat process used to dry lumber to a target moisture content faster and more evenly than air drying alone.",
+    link: "https://en.wikipedia.org/wiki/Wood_drying"},
+  "Board Foot": {desc: "A unit of lumber volume equal to a board 12 inches by 12 inches by 1 inch thick -- the standard way hardwood is priced and ordered.",
+    link: "https://en.wikipedia.org/wiki/Board_foot"},
+  "FSC Certification": {desc: "A label from the Forest Stewardship Council certifying that wood was harvested from responsibly managed forests.",
+    link: "https://en.wikipedia.org/wiki/Forest_Stewardship_Council"},
+  "Line of Credit": {desc: "A flexible loan arrangement letting a borrower draw funds up to a set limit as needed, paying interest only on the amount actually drawn.",
+    link: "https://en.wikipedia.org/wiki/Line_of_credit"},
+  "Overtime": {desc: "Time worked beyond a standard schedule, typically paid at a higher rate -- in the U.S., federal law generally requires 1.5x pay beyond 40 hours/week.",
+    link: "https://en.wikipedia.org/wiki/Overtime"},
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix F list.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const goal = document.querySelector('#notebook .stepbox:nth-of-type(4) .goal');
+  if(goal){
+    goal.textContent = applied
+      ? "Twist applied: The Full Kiln's fixed run cost (F) is now 50% higher (Steady Order unaffected). Recompute the unsold board feet, carrying cost, and both options' net cost per board foot sold with the updated figure."
+      : "Using Appendix C's sellable limit and carrying-cost rate, find how many board feet (if any) of each option go unsold, fold that carrying cost into the total, and divide by board feet actually sold.";
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

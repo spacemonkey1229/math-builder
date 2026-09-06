@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Painted Gallon — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* ---- story-vocabulary glossary (MCS-39 extension, T1-21) — deliberately
+         its own .sterm class, separate CSS accent, and separate STORY_GLOSSARY
+         data shape ({desc, link}, not {def, url}) so it can never be mistaken
+         for the math glossary's .gterm markup or collide with T1-19's regex. ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Painted Gallon</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Geometry &middot; Measurement &middot; Percent</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+<p class="lede">The boil-water notice has been taped to the door of the county clerk's office for six weeks now, and Devon Aldrich can see it through the windshield from the parking lot: a single sheet of paper, curling at the corner, telling four thousand people to keep boiling their tap water. Devon's phone buzzes against the truck's cupholder &mdash; a text from the mayor's office. <em>Ballot language due Friday. One number. They won't print a range.</em></p>
+<p>Devon has spent nine years keeping this town's water system running, and the inspection report sitting on the passenger seat is the reason the old tank got condemned: a rust bloom the size of a dinner plate, eating through steel nobody had budgeted to repaint in time. Two engineering firms sent back two very different tank designs to replace it &mdash; one shaped like a giant teardrop balanced on a single pole, the other a squat cylinder standing on six legs like a water bug. Both hold exactly the same amount of water. Both firms swear their design is the smarter bet.</p>
+<p>Devon flips past the cover pages to the cost tables, past the spec sheets, past a hand-drawn note from the county attorney: <em>the resolution shall state a specific dollar amount, not to exceed. No ranges. No &ldquo;up to.&rdquo;</em></p>
+<p>One number. Due Friday. Devon opens a blank spreadsheet and starts typing.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+<p>Devon Aldrich is the sole water-system engineer for a town of roughly 4,000 residents, responsible for a single elevated storage tank that supplies gravity-fed pressure to the entire distribution system. The town's only elevated tank failed a corrosion inspection this spring and has been taken out of service, forcing a boil-water advisory that has now run six weeks. A bond measure to fund a full replacement goes before voters in three weeks, and state election code requires the ballot resolution to name one specific dollar amount for the bond &mdash; not a range, not a not-to-exceed figure (see Appendix A).</p>
+<p>The town's engineer of record sized the replacement tank's required capacity at 750,000 gallons (MA2), based on the town's population and standard water-system sizing guidance (see Appendix A). Both competing designs must hold exactly that capacity &mdash; this is a hard constraint, not a variable either firm can change to make its own design look better.</p>
+<p>The vocabulary and &ldquo;how to&hellip;&rdquo; procedures needed to work through this case are listed in Appendix E. Two real, commonly built elevated-tank designs are on the table (see Appendices B and C). The Spheroid is a single-shaft, teardrop-shaped steel tank &mdash; the &ldquo;golf ball on a stick&rdquo; &mdash; that fabricators build with a smaller support footprint and less coated exterior surface than most other elevated shapes, but the specialized curved-steel knuckle welding it requires is a slower, costlier build. The Multi-Column is a plain cylindrical steel tank standing on several straight support legs &mdash; cheaper and faster to fabricate because its steel components are simple and repeatable, but it exposes more total surface area to the weather, and every square foot of that surface has to be recoated on the same schedule the Spheroid's smaller surface does.</p>
+<p>There is a second real complication buried in the same engineering study, and it has nothing to do with surface area: at this capacity, only one company in the country is currently qualified to build a Multi-Column tank, while three separate companies are qualified to build a Spheroid (see Appendix G). A design only one company can build cannot be competitively bid &mdash; the town would have to take whatever price and schedule that single fabricator offers, with no other bidder to check either one. For a town six weeks into a boil-water advisory, already racing a Friday ballot deadline, &ldquo;the cheaper design on paper&rdquo; and &ldquo;the design least likely to blow its price or its timeline&rdquo; are not automatically the same design.</p>
+<p>Neither design is a mistake. Every figure in this case &mdash; construction cost, maintenance cost, and coated surface area &mdash; is drawn from a real 2019 engineering cost study of an actual elevated-tank replacement project, adapted to Devon's town (see Appendix F). The tank's manufacturer-rated exterior surface area is what a recoating contractor actually has to cover, on a fixed maintenance cycle, for as long as the tank stands (see Appendix D). Devon has to turn two engineering reports, a sizing requirement, and a state law that only accepts one number, into a single dollar figure the town can vote on by Friday.</p>
+
+<div class="card" id="story-glossary">
+  <h3 style="margin-top:0">Water-Utility Vocabulary</h3>
+  <p class="side-note">The math vocabulary Challenge 1 sends you to research lives in Appendix E below. These are the real water-utility and municipal-finance terms this case's own story uses &mdash; hover any one for a plain definition, or click through to a real source.</p>
+  <div class="glossary-grid" id="glossaryStory"></div>
+  <p class="gloss-source">Sources: Wikipedia (&ldquo;Water tower,&rdquo; &ldquo;Boil-water advisory,&rdquo; &ldquo;Municipal bond,&rdquo; &ldquo;Metal fabrication,&rdquo; &ldquo;Water supply network,&rdquo; &ldquo;Corrosion&rdquo;). Links verified working 2026-09-06.</p>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Devon Aldrich, the town's water-system engineer. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Spheroid</h4>
+      <p style="margin:0">A single-shaft, teardrop-shaped elevated steel tank &mdash; the &ldquo;golf ball on a stick.&rdquo; Smaller real surface area (16,500 sq&nbsp;ft) and three qualified fabricators, but a slower, costlier curved-steel build.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Multi-Column</h4>
+      <p style="margin:0">A cylindrical elevated steel tank on multiple straight support legs. Larger real surface area (29,100 sq&nbsp;ft) and only one qualified fabricator, but a simpler, cheaper-per-square-foot steel build.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from E. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a solved-dimensions sheet (algebraically solve for the Spheroid's radius and the Multi-Column's height from the required capacity, with a labeled sketch of each shape); <strong>D2</strong> a surface-area comparison table for each idealized shape; <strong>D3</strong> a steel-area-per-gallon rate for each design, in square feet per 1,000 gallons; <strong>D4</strong> a real cost-per-square-foot calculation for each design plus a written paragraph explaining the gap between them; <strong>D5</strong> an original visual display comparing each design's 60-year lifecycle cost per gallon, plus the single bond dollar figure you recommend; and <strong>D6</strong> a short written response to Appendix G's fabricator-competition data.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+<details open>
+  <summary>Appendix A &mdash; The Town's Requirement and the Ballot Rule</summary>
+  <div class="inner">
+    <p class="side-note">Referenced in Background and Challenge 3 (D1, D3).</p>
+    <table id="apxA">
+      <tr><th>Item</th><th>Value</th></tr>
+      <tr><td>Town population</td><td>4,000 (case scenario)</td></tr>
+      <tr><td>Required elevated storage capacity (both designs must meet this exactly)</td><td>750,000 gallons (MA2 &mdash; see Modeling Assumptions)</td></tr>
+      <tr><td>Ballot rule</td><td>State law requires the ordinance/resolution calling a bond election to recite the principal amount of the indebtedness as a single figure, not a range (adapted here from a real state statute governing municipal bond elections) [S3]</td></tr>
+      <tr><td>Gallons-to-cubic-feet conversion</td><td>0.133681 ft&sup3; per gallon [S4]</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix B &mdash; The Spheroid: Design and Real Dimensions</summary>
+  <div class="inner">
+    <p class="side-note">Referenced in Background and Challenge 3 (D1, D2, D4).</p>
+    <table id="apxB">
+      <tr><th>Item</th><th>Value</th></tr>
+      <tr><td>Shape</td><td>Single-shaft, teardrop-shaped elevated steel tank (&ldquo;golf ball on a stick&rdquo;)</td></tr>
+      <tr><td>Real manufacturer-rated exterior (outside) surface area at this capacity</td><td class="num">16,500 sq ft [S5]</td></tr>
+      <tr><td>Real manufactured tank diameter at this capacity (for reference &mdash; the idealized math sphere in D1 will come out smaller; see Modeling Assumptions)</td><td class="num">66 ft [S6]</td></tr>
+      <tr><td>Total construction (capital) cost</td><td class="num">$2,048,000 [S7]</td></tr>
+      <tr><td>60-year net-present-value maintenance (recoating) cost</td><td class="num">$376,000 [S8]</td></tr>
+      <tr><td>Total 60-year lifecycle cost</td><td class="num">$2,424,000 [S9]</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix C &mdash; The Multi-Column: Design and Real Dimensions</summary>
+  <div class="inner">
+    <p class="side-note">Referenced in Background and Challenge 3 (D1, D2, D4).</p>
+    <table id="apxC">
+      <tr><th>Item</th><th>Value</th></tr>
+      <tr><td>Shape</td><td>Cylindrical elevated steel tank on multiple straight support legs</td></tr>
+      <tr><td>Real manufacturer-rated exterior (outside) surface area at this capacity</td><td class="num">29,100 sq ft [S11]</td></tr>
+      <tr><td>Real manufactured tank diameter at this capacity (used directly in D1 to solve for the idealized cylinder's height)</td><td class="num">60 ft [S12]</td></tr>
+      <tr><td>Total construction (capital) cost</td><td class="num">$1,595,000 [S13]</td></tr>
+      <tr><td>60-year net-present-value maintenance (recoating) cost</td><td class="num">$490,000 [S14]</td></tr>
+      <tr><td>Total 60-year lifecycle cost</td><td class="num">$2,085,000 [S15]</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix D &mdash; Lifecycle Cost Per Gallon</summary>
+  <div class="inner">
+    <p class="side-note">Referenced in Background and Challenge 3 (D4, D5). Both rows come from the same real 2019 engineering cost study (see Appendix F), evaluated over the tanks' shared 60-year design life, at the town's required capacity.</p>
+    <table id="apxD">
+      <tr><th>Design</th><th>Total 60-year lifecycle cost</th><th>Cost per gallon of capacity</th></tr>
+      <tr><td>The Spheroid</td><td class="num">$2,424,000 [S9]</td><td class="num">$3.23/gal [S10]</td></tr>
+      <tr><td>The Multi-Column</td><td class="num">$2,085,000 [S15]</td><td class="num">$2.78/gal [S16]</td></tr>
+    </table>
+    <p class="side-note">The bond itself is issued as a 30-year municipal bond covering the construction (capital) cost in Appendices B and C; the 60-year figures above come from the engineering firm's own published lifecycle-cost horizon for a steel elevated tank and are shown here to compare the two designs' long-run maintenance burden, not the length of the bond.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Modeling Assumptions</summary>
+  <div class="inner">
+    <p class="side-note"><em>These figures are not sourced. They are stated scenario assumptions chosen by the case author to connect the real engineering data in Appendices B-D to Devon's fictional town. A Hero may challenge them in discussion &mdash; that is a legitimate move.</em></p>
+    <table id="apxMA">
+      <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+      <tr><td>MA1</td><td>The idealized math sphere and cylinder in D1/D2 come out smaller than the real manufacturer-rated dimensions and areas in Appendices B and C</td><td>The idealized shapes are treated as a lower-bound approximation; the real, fabricator-quoted figures are what is actually used to compute cost</td><td>A real spheroid tank is not a perfect mathematical sphere &mdash; it has a flared cone base and a central access shaft that a pure sphere formula does not capture; a real multi-column tank's &ldquo;outside area&rdquo; figure likewise includes its support legs, not just the cylindrical reservoir.</td><td>Does not change which design wins on any of this case's own cost or area comparisons &mdash; it only explains why a Hero's own D1/D2 arithmetic will not exactly match Appendix B/C's real figures.</td></tr>
+      <tr><td>MA2</td><td>The town's required elevated storage capacity</td><td>750,000 gallons</td><td>No public source publishes a required capacity for this fictional town specifically. The exact 750,000-gallon value is chosen to match a real capacity actually evaluated for an actual town-scale elevated-tank replacement in the real 2019 engineering study this case is built from.</td><td>Both designs are always compared at this same fixed capacity, so this assumption does not by itself favor either option &mdash; confirmed stable across a &plusmn;50% capacity sweep.</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix F &mdash; Sources</summary>
+  <div class="inner">
+    <p class="side-note">All sourced (non-assumption) figures in this case are cited here. S5-S16 are drawn from a single real 2019 municipal engineering study.</p>
+    <table id="apxF">
+      <tr><th>#</th><th>Claim</th><th>Source</th><th>Conf.</th></tr>
+      <tr><td>S1</td><td>Average per-capita residential water demand design standard (200 gal/capita/day)</td><td><a href="https://westernwaterca.gov/DocumentCenter/View/239/Developer-Handbook-Section-2?bidId=" target="_blank" rel="noopener">Western Water &mdash; Design Criteria for Water Distribution Systems</a></td><td>MEDIUM</td></tr>
+      <tr><td>S2</td><td>Ten States Standards: storage &ge; average daily demand</td><td><a href="https://pdhacademy.com/wp-content/uploads/2023/08/378-Water-Storage-Tanks.pdf" target="_blank" rel="noopener">PDH Academy, Water Storage Tanks Course 378</a></td><td>HIGH</td></tr>
+      <tr><td>S3</td><td>CA bond ordinance must recite principal amount as a single figure</td><td><a href="https://codes.findlaw.com/ca/government-code/gov-sect-43610.html" target="_blank" rel="noopener">California Government Code &sect;43610</a></td><td>HIGH</td></tr>
+      <tr><td>S4</td><td>Gallons-to-cubic-feet conversion factor (0.133681 ft&sup3;/gal)</td><td><a href="https://www.nist.gov/system/files/documents/2025/12/23/2026_NIST_HB133_AppendixE-20251222.pdf" target="_blank" rel="noopener">NIST Handbook 133 (2026), Appendix E</a></td><td>HIGH</td></tr>
+      <tr><td>S5&ndash;S17</td><td>Real spheroid/multi-column surface areas, diameters, capital costs, maintenance costs, lifecycle costs, and fabricator counts, all at 0.75 MG capacity</td><td><a href="https://lawrenceks.gov/wp-content/uploads/2020/07/Tank-Alternatives-Memorandum.pdf" target="_blank" rel="noopener">Black &amp; Veatch, Stratford Water Tower Replacement &mdash; Tank Alternatives Memorandum (City of Lawrence, Kansas, 26 Nov 2019)</a></td><td>HIGH</td></tr>
+    </table>
+    <p class="side-note">Note on S5-S17: all eleven figures come from a single real, professional-engineer-sealed 2019 memorandum (project no. 402979) prepared by Black &amp; Veatch for the City of Lawrence, Kansas, evaluating real fabricator budgetary quotes (McDermott, Caldwell Tanks, Landmark Structures) for an actual elevated-tank replacement at that city's Stratford Water Tower site &mdash; adapted here to Devon's fictional town at the same real 0.75-million-gallon (750,000 gal) capacity the memo itself evaluates.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix G &mdash; Fabricator Competition and Procurement Risk</summary>
+  <div class="inner">
+    <p class="side-note">Referenced in Background and Challenge 2c. Real data from the same 2019 Black &amp; Veatch memorandum (see Appendix F, S17) &mdash; not an invented scenario detail.</p>
+    <table id="apxG">
+      <tr><th>Design</th><th>Qualified fabricators at this capacity</th><th>Real engineering-firm note</th></tr>
+      <tr><td>The Spheroid</td><td>3 (McDermott, Caldwell Tanks, Landmark Structures) [S17]</td><td>Multiple qualified bidders &mdash; a competitive bidding environment is expected.</td></tr>
+      <tr><td>The Multi-Column</td><td>1 (Caldwell Tanks only) [S17]</td><td>&ldquo;Because Caldwell is the only manufacturer that is qualified to manufacture this style of tank, there is added risk in choosing this tank alternative due to lack of competition.&rdquo; [S17]</td></tr>
+    </table>
+    <p>This is not a hypothetical concern raised by this case's author &mdash; it is the real engineering firm's own stated caution, in the same memo that supplies every cost and area figure in Appendices B-D. A design only one company can build cannot be put out to competitive bid: the town has no second quote to check the first one against, no leverage if that single fabricator's price rises or its schedule slips, and no fallback bidder if that company cannot take the job.</p>
+    <p class="side-note"><strong>Scope note:</strong> the real memo states these fabricator counts specifically &ldquo;at 0.5-0.75 MG capacity&rdquo; &mdash; the two capacities it evaluated. This case's required capacity (750,000 gal = 0.75 MG) sits inside that sourced range. The fabricator-count figures in this table are not claimed to hold at capacities meaningfully outside 0.5-0.75 MG.</p>
+  </div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>E &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-06. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+<div class="stepbox">
+  <h4>Step 1 &mdash; Solve for each shape's unknown dimension (D1)</h4>
+  <div class="goal">Given the required capacity (750,000 gal, converted to cubic feet) and each design's real diameter, solve for the Spheroid's idealized radius and the Multi-Column's idealized height.</div>
+  <div class="fieldrow"><label for="sphereRadius">Spheroid idealized radius (ft), from V = (4/3)&pi;r&sup3;</label><input type="number" step="0.01" id="sphereRadius"><span class="fb" id="fbRadius"></span></div>
+  <div class="fieldrow"><label for="cylHeight">Multi-Column idealized height (ft), from V = &pi;r&sup2;h (diameter 60 ft)</label><input type="number" step="0.01" id="cylHeight"><span class="fb" id="fbHeight"></span></div>
+  <button onclick="checkD1()">Check</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; Idealized surface-area comparison (D2)</h4>
+  <div class="goal">Using your D1 dimensions, compute each idealized shape's total surface area.</div>
+  <div class="fieldrow"><label for="sphereArea">Sphere surface area, sq ft (4&pi;r&sup2;)</label><input type="number" step="0.1" id="sphereArea"><span class="fb" id="fbSphereArea"></span></div>
+  <div class="fieldrow"><label for="cylArea">Cylinder surface area, sq ft (2&pi;r&sup2; + 2&pi;rh)</label><input type="number" step="0.1" id="cylArea"><span class="fb" id="fbCylArea"></span></div>
+  <button onclick="checkD2()">Check</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; Steel-area-per-gallon rate (D3)</h4>
+  <div class="goal">Divide each idealized area from D2 by the required capacity, converted to a rate per 1,000 gallons.</div>
+  <div class="fieldrow"><label for="sphereRate">Spheroid rate, sq ft per 1,000 gal</label><input type="number" step="0.001" id="sphereRate"><span class="fb" id="fbSphereRate"></span></div>
+  <div class="fieldrow"><label for="cylRate">Multi-Column rate, sq ft per 1,000 gal</label><input type="number" step="0.001" id="cylRate"><span class="fb" id="fbCylRate"></span></div>
+  <button onclick="checkD3()">Check</button>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; Real cost-per-square-foot (D4)</h4>
+  <div class="goal">Divide each design's real total capital cost (Appendix B/C) by its real fabricated exterior area.</div>
+  <div class="fieldrow"><label for="sphereRateReal">Spheroid, USD per sq ft ($2,048,000 &divide; 16,500)</label><input type="number" step="0.01" id="sphereRateReal"><span class="fb" id="fbSphereRateReal"></span></div>
+  <div class="fieldrow"><label for="cylRateReal">Multi-Column, USD per sq ft ($1,595,000 &divide; 29,100)</label><input type="number" step="0.01" id="cylRateReal"><span class="fb" id="fbCylRateReal"></span></div>
+  <button onclick="checkD4()">Check</button>
+  <p class="side-note" id="d4Explain" style="display:none">Now that you've checked your rates &mdash; in your own written pitch, explain in a paragraph why these two rates differ even though both tanks are welded, coated steel.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 5 &mdash; Lifecycle cost per gallon and your ballot figure (D5)</h4>
+  <div class="goal">Compute each design's real total 60-year lifecycle cost per gallon (Appendix D), then build your own bar chart or equivalent visual comparing them in your write-up.</div>
+  <div class="fieldrow"><label for="sphereCPG">Spheroid, USD per gallon ($2,424,000 &divide; 750,000)</label><input type="number" step="0.01" id="sphereCPG"><span class="fb" id="fbSphereCPG"></span></div>
+  <div class="fieldrow"><label for="colCPG">Multi-Column, USD per gallon ($2,085,000 &divide; 750,000)</label><input type="number" step="0.01" id="colCPG"><span class="fb" id="fbColCPG"></span></div>
+  <button onclick="checkD5()">Check</button>
+  <p class="side-note">This calculator checks your arithmetic &mdash; it does not tell you which design to recommend, or what dollar figure to put on the ballot. That's your D5 write-up.</p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 6 &mdash; Fabricator-competition response (D6)</h4>
+  <div class="goal">Not a number to check &mdash; a short written response. Use this box to draft it before you finalize your pitch.</div>
+  <div class="fieldrow" style="align-items:flex-start"><label for="d6Draft">Your 3-5 sentence D6 draft</label><textarea id="d6Draft" style="flex:1;min-height:70px;font-family:var(--sans);font-size:.9rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px"></textarea></div>
+  <p class="side-note">Does the real difference in qualified fabricators (3 vs. 1, Appendix G) change your D5 recommendation? A strong answer names a specific reason either way &mdash; not just a restated position.</p>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+<p>Once D2's idealized areas are on the table, a recommendation usually starts to form around &ldquo;the Spheroid has less area, so it must be the smarter build.&rdquo; It has less area &mdash; and it still costs more per gallon, over 60 years, than the design with more area. Building a smaller, more elegant curved shape well enough to hold water safely at height takes far more specialized, slower, costlier fabrication per square foot than a plain cylinder does, and that fabrication-cost gap is large enough to overwhelm the area advantage.</p>
+<p>There's a second layer once the dollar comparison settles: the real engineering firm behind every number in this case also flagged that the cheaper design, by dollars, has only one qualified fabricator &mdash; no competitive bid, no second quote, no fallback if that one company's price or schedule slips. A purely least-cost recommendation has to reckon with that real, sourced risk too.</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Flex the required capacity &plusmn;50% and re-check whether the dollar-cost winner changes</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+<li>S1&ndash;S2: Western Water / PDH Academy &mdash; per-capita demand and storage-sizing design standards</li>
+<li>S3: California Government Code &sect;43610 &mdash; single-figure bond ordinance requirement</li>
+<li>S4: NIST Handbook 133 (2026) &mdash; gallons-to-cubic-feet conversion</li>
+<li>S5&ndash;S17: Black &amp; Veatch, Stratford Water Tower Replacement &mdash; Tank Alternatives Memorandum (City of Lawrence, Kansas, 26 Nov 2019)</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Painted Gallon &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/the-painted-gallon/sensitivity_model.py (case_md_sha256 b47159c3...)
+// PARAMS/FLEX/evaluate() mirror the Python file's arithmetic exactly.
+const CAPACITY_REF_GAL = 750000.0;
+const PARAMS = {
+  capacity_gal: 750000.0,
+  spheroid_build_rate: 124.12,
+  spheroid_maint_rate: 22.79,
+  multicolumn_build_rate: 54.81,
+  multicolumn_maint_rate: 16.84,
+  spheroid_area_ref: 16500.0,
+  multicolumn_area_ref: 29100.0,
+};
+const FLEX = ["capacity_gal"];
+function areaScaled(areaRef, capacityGal){
+  return areaRef * Math.pow(capacityGal / CAPACITY_REF_GAL, 2.0/3.0);
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const cap = p.capacity_gal;
+  const spArea = areaScaled(p.spheroid_area_ref, cap);
+  const mcArea = areaScaled(p.multicolumn_area_ref, cap);
+  const aTotal = spArea * (p.spheroid_build_rate + p.spheroid_maint_rate);
+  const bTotal = mcArea * (p.multicolumn_build_rate + p.multicolumn_maint_rate);
+  return { A: -(aTotal / cap), B: -(bTotal / cap) };
+}
+function evaluate_twist(params){
+  // The twist here is the capacity flex itself -- same evaluate(), different capacity_gal.
+  return evaluate(params);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+// Real idealized dimensions, computed once from the case's own numbers (capacity in cu ft = 750000 * 0.133681).
+const CAP_FT3 = 750000 * 0.133681;
+const TRUE_SPHERE_R = Math.cbrt((3 * CAP_FT3) / (4 * Math.PI));
+const CYL_DIAMETER = 60; const CYL_R = CYL_DIAMETER / 2;
+const TRUE_CYL_H = CAP_FT3 / (Math.PI * CYL_R * CYL_R);
+const TRUE_SPHERE_AREA = 4 * Math.PI * TRUE_SPHERE_R * TRUE_SPHERE_R;
+const TRUE_CYL_AREA = 2 * Math.PI * CYL_R * CYL_R + 2 * Math.PI * CYL_R * TRUE_CYL_H;
+const REQUIRED_GAL = 750000;
+
+function checkD1(){
+  const r = parseFloat(val('sphereRadius'));
+  const h = parseFloat(val('cylHeight'));
+  fb('fbRadius', near(r, TRUE_SPHERE_R, 0.5));
+  fb('fbHeight', near(h, TRUE_CYL_H, 0.5));
+}
+function checkD2(){
+  const sa = parseFloat(val('sphereArea'));
+  const ca = parseFloat(val('cylArea'));
+  fb('fbSphereArea', near(sa, TRUE_SPHERE_AREA, 50));
+  fb('fbCylArea', near(ca, TRUE_CYL_AREA, 50));
+}
+function checkD3(){
+  const sr = parseFloat(val('sphereRate'));
+  const cr = parseFloat(val('cylRate'));
+  const trueSphereRate = (TRUE_SPHERE_AREA / REQUIRED_GAL) * 1000;
+  const trueCylRate = (TRUE_CYL_AREA / REQUIRED_GAL) * 1000;
+  fb('fbSphereRate', near(sr, trueSphereRate, 0.05));
+  fb('fbCylRate', near(cr, trueCylRate, 0.05));
+}
+function checkD4(){
+  const sr = parseFloat(val('sphereRateReal'));
+  const cr = parseFloat(val('cylRateReal'));
+  fb('fbSphereRateReal', near(sr, PARAMS.spheroid_build_rate, 0.5));
+  fb('fbCylRateReal', near(cr, PARAMS.multicolumn_build_rate, 0.5));
+  document.getElementById('d4Explain').style.display = 'block';
+}
+function checkD5(){
+  const s = parseFloat(val('sphereCPG'));
+  const c = parseFloat(val('colCPG'));
+  const base = evaluate({});
+  fb('fbSphereCPG', near(s, -base.A, 0.05));
+  fb('fbColCPG', near(c, -base.B, 0.05));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "painted-gallon"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Solved-dimensions sheet: Spheroid radius and Multi-Column height, with labeled sketches"],
+  ["D2", "Surface-area comparison table for each idealized shape"],
+  ["D3", "Steel-area-per-gallon rate for each design (sq ft per 1,000 gal)"],
+  ["D4", "Real cost-per-square-foot calculation for each design, plus written explanation"],
+  ["D5", "Visual display comparing 60-year lifecycle cost per gallon, plus recommended bond figure"],
+  ["D6", "Written response to Appendix G's fabricator-competition data"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Sphere": {def: "A perfectly round 3-D shape, like a ball -- every point on its surface is the same distance from its center.",
+    url: "https://www.mathsisfun.com/geometry/sphere.html"},
+  "Cylinder": {def: "A solid with two flat, circular, parallel, congruent ends connected by one curved lateral surface.",
+    url: "https://www.mathsisfun.com/geometry/cylinder.html"},
+  "Radius": {def: "The distance from the center of a circle or sphere to its edge or surface -- half the diameter.",
+    url: "https://www.mathsisfun.com/definitions/radius.html"},
+  "Volume": {def: "The amount of three-dimensional space a shape encloses.",
+    url: "https://www.khanacademy.org/math/geometry-home/geometry-volume-surface-area"},
+  "Surface Area": {def: "The total area of every outside face of a 3-D shape, added together.",
+    url: "https://www.khanacademy.org/math/geometry-home/geometry-volume-surface-area"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Unit": {def: "A defined quantity -- a centimeter, an hour, a liter -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"}
+};
+const HOWTO = [
+  ["find the volume of a sphere", "Sphere"],
+  ["find the volume of a cylinder", "Cylinder"],
+  ["find the surface area of a cylinder", "Surface Area"],
+  ["convert an amount with compound units", "Unit"],
+  ["find the percent of a number", "Percent"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-SPECIFIC — a SECOND glossary layer for this case's real
+   water-utility / municipal-finance vocabulary, kept deliberately
+   separate from the math GLOSSARY above (T1-19 checks that one).
+   Same hover+hyperlink mechanism, its own data object, its own
+   render target (#glossaryStory, inside the "Water-Utility
+   Vocabulary" card in Background), and its own auto-linker so a
+   story term is wrapped where it FIRST appears in the prose.
+   Sources are real, live-verified 2026-09-06: Wikipedia articles.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Water Tower": {desc: "An elevated structure supporting a water tank, built high enough to pressurize a distribution system and provide emergency fire-protection storage.",
+    link: "https://en.wikipedia.org/wiki/Water_tower"},
+  "Boil-Water Advisory": {desc: "A public-health directive telling residents to boil tap water before drinking it because the water is or could be contaminated.",
+    link: "https://en.wikipedia.org/wiki/Boil-water_advisory"},
+  "Municipal Bond": {desc: "A bond issued by a state or local government (or an entity it creates) to fund public projects like a water tank replacement.",
+    link: "https://en.wikipedia.org/wiki/Municipal_bond"},
+  "Corrosion": {desc: "The natural process that converts a refined metal, like the steel in a water tank, into a more chemically unstable, weaker oxide -- what condemned Devon's old tank.",
+    link: "https://en.wikipedia.org/wiki/Corrosion"},
+  "Metal Fabrication": {desc: "The creation of metal structures by cutting, bending, and assembling raw material -- the process a tank fabricator actually performs.",
+    link: "https://en.wikipedia.org/wiki/Metal_fabrication"},
+  "Water Supply Network": {desc: "The engineered system of pipes, storage, and pressurization that delivers treated water from a source to every household in town.",
+    link: "https://en.wikipedia.org/wiki/Water_supply_network"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const cap = applied ? CAPACITY_REF_GAL * 1.5 : CAPACITY_REF_GAL;
+  const res = evaluate_twist({ capacity_gal: cap });
+  const aCost = -res.A, bCost = -res.B;
+  const winner = aCost < bCost ? 'A' : 'B';
+  console.log('Twist flex applied:', applied, 'capacity:', cap, 'winner (not shown to student):', winner);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

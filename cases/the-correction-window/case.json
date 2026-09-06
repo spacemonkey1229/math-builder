@@ -1,0 +1,361 @@
+{
+  "id": "the-correction-window",
+  "title": "The Correction Window",
+  "tier": "T4",
+  "band": [
+    "HS"
+  ],
+  "primary_metric": "successful control corrections landed within tolerance, per millisecond of flight-computer time spent on the sin(theta) approximation across the canyon transit -- (1 - error rate) divided by total compute-budget spent (ms)",
+  "options": {
+    "A": "Build 3 -- fly with the flight code approximating sin(theta) via the 3rd-order Taylor polynomial, theta - theta^3/6",
+    "B": "Build 5 -- fly with the flight code approximating sin(theta) via the 5th-order Taylor polynomial, theta - theta^3/6 + theta^5/120"
+  },
+  "margin_pct": 11.7,
+  "standards": [
+    "calculus-taylor-series",
+    "calculus-how-to-find-the-taylor-series-of-a-function-at-a-point",
+    "calculus-sequence",
+    "calculus-series",
+    "calculus-how-to-determine-whether-a-series-converges-or-diverges",
+    "measurement-how-to-convert-an-amount-with-compound-units",
+    "advanced-numbers-how-to-find-the-percent-of-a-number"
+  ],
+  "new_coverage": [
+    "calculus-taylor-series",
+    "calculus-how-to-find-the-taylor-series-of-a-function-at-a-point"
+  ],
+  "sources": [
+    {
+      "id": "S1",
+      "placeholder": "P01/P02",
+      "claim": "Maximum CPU clock speed of the STM32F405/407, an Arm Cortex-M4-based MCU used in real flight-controller boards",
+      "value": "168",
+      "units": "MHz",
+      "as_of": "2026 (current datasheet revision)",
+      "org": "STMicroelectronics",
+      "title": "STM32F405xx/407xx Datasheet",
+      "url": "https://www.st.com/resource/en/datasheet/dm00037051.pdf",
+      "accessed": "2026-09-05",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Primary manufacturer datasheet. STM32F405 is a real Cortex-M4 MCU widely used in racing-style and DIY flight-controller boards; 168 MHz is the maximum documented core clock. Cycle time (5.952 ns) and correction-loop period (125 us) are arithmetic derivations from this and S3, not separately sourced figures."
+    },
+    {
+      "id": "S2",
+      "placeholder": "P03",
+      "claim": "Arithmetic instructions (multiply, add, subtract, and fused multiply-accumulate) on the Cortex-M4 core execute in a single clock cycle",
+      "value": "1",
+      "units": "clock cycle per instruction",
+      "as_of": "Nov 2016",
+      "org": "Arm",
+      "title": "The DSP capabilities of Arm Cortex-M4 and Cortex-M7 Processors (White Paper), T. Lorenser",
+      "url": "https://community.arm.com/cfs-file/__key/communityserver-blogs-components-weblogfiles/00-00-00-21-42/7563.ARM-white-paper-_2D00_-DSP-capabilities-of-Cortex_2D00_M4-and-Cortex_2D00_M7.pdf",
+      "accessed": "2026-09-05",
+      "confidence": "HIGH",
+      "derived": false,
+      "note": "Direct quote, p.6: 'All of the instructions are single-cycle on Cortex-M4 (except hardware divide).' Also documents VMLA/VMLS (floating-point multiply-accumulate) as single arithmetic instructions (p.18), which is what lets Challenge 3 (D3) count a 'multiply-then-add' pair as one operation when the case's worked derivation uses a fused multiply-add. This is the case's core embedded-systems sourcing risk named at concept approval, and it held up: this is a real, primary, dated Arm publication, not a fabricated cycle-count table."
+    },
+    {
+      "id": "S3",
+      "placeholder": "P05",
+      "claim": "A real, documented flight-control loop-rate practice: gyro/PID control loops run at 8 kHz on Cortex-M4 flight controllers fast enough to keep up, with slower MCUs explicitly stepped down to a lower rate instead",
+      "value": "8000",
+      "units": "Hz",
+      "as_of": "current",
+      "org": "Betaflight",
+      "title": "Configuration Tab documentation",
+      "url": "https://betaflight.com/docs/wiki/app/configuration-tab",
+      "accessed": "2026-09-05",
+      "confidence": "MEDIUM",
+      "derived": false,
+      "note": "Betaflight's own docs: gyro locks to 8 kHz for the MPU6000 gyro, and 'it's usually best to have [PID] set to the same frequency as the gyro, or half of it if you are using a slower MCU ... (8KHz gyro would be 4KHz PID loop on an F411).' The STM32F405 used in this case (S1) is the faster-class MCU this guidance implies can hold the full 8kHz PID rate. Graded MEDIUM, not HIGH: this documents real racing-drone firmware practice, used here as a real-world proxy for 'flight-control loops of this class genuinely run this fast on this hardware' -- not a claim that Mara's fictional rescue drone runs Betaflight specifically. No published per-mission loop-rate figure exists for a purpose-built search-and-rescue canyon drone, and none is expected to (see RESEARCH_LOG.md)."
+    }
+  ],
+  "_ext": "keys below are pipeline extensions, additive to SPEC SS4",
+  "status": "published",
+  "studio": "Launchpad",
+  "protagonist": "Mara Yun, search-and-rescue drone operator and flight-software author",
+  "deliverables": [
+    {
+      "id": "D1",
+      "text": "A term-by-term derivation of the Taylor (Maclaurin) series for sin(theta) about theta = 0, starting from the general Taylor series formula (Appendix D) and computing enough derivatives of sin(theta) at 0 to justify BOTH Build 3's polynomial (theta - theta^3/6) and Build 5's polynomial (theta - theta^3/6 + theta^5/120) from scratch -- not quoted from a table.",
+      "skills": [
+        "calculus-taylor-series",
+        "calculus-how-to-find-the-taylor-series-of-a-function-at-a-point"
+      ]
+    },
+    {
+      "id": "D2",
+      "text": "An exact-error table: for each of the five gust-tilt angles in Appendix E, compute sin(theta), each build's polynomial approximation, and the resulting absolute error, with the subtraction shown for every cell -- and for the two largest angles, check the subtracted error against the size of the next un-kept term of the series, stating in words whether adding still more terms would keep shrinking the error indefinitely or not.",
+      "skills": [
+        "calculus-taylor-series",
+        "calculus-sequence",
+        "calculus-series",
+        "calculus-how-to-determine-whether-a-series-converges-or-diverges"
+      ]
+    },
+    {
+      "id": "D3",
+      "text": "A per-correction compute-cost derivation: for each build, count every individual single-cycle arithmetic operation (Appendix A) its polynomial needs to evaluate one correction -- showing which intermediate values (like theta^2) are reused between terms -- then convert that operation count into nanoseconds using Appendix A's flight-computer clock speed, with every conversion step shown.",
+      "skills": [
+        "measurement-how-to-convert-an-amount-with-compound-units"
+      ]
+    },
+    {
+      "id": "D4",
+      "text": "A whole-mission compute-budget and error-rate table: using Appendix E's gust-frequency distribution and Appendix A's correction-loop rate, find the total number of correction cycles over the stated canyon-transit time, then compute, for each build, (i) the fraction of those cycles whose gust-tilt band exceeds Appendix E's correction-error tolerance, and (ii) the total milliseconds of flight-computer time the build spends on its sin(theta) approximation across the whole transit, using the D3 per-correction cost.",
+      "skills": [
+        "advanced-numbers-how-to-find-the-percent-of-a-number",
+        "measurement-how-to-convert-an-amount-with-compound-units"
+      ]
+    },
+    {
+      "id": "D5",
+      "text": "A primary-metric comparison and an original visual display: using D4's figures, compute (1 - error rate) divided by (total compute-budget spent, in milliseconds) for each build, and build one original visual (a bar chart, a scatter plot of error rate against compute cost, or equivalent) comparing Build 3 and Build 5 on this metric.",
+      "skills": [
+        "advanced-numbers-how-to-find-the-percent-of-a-number",
+        "calculus-taylor-series"
+      ]
+    }
+  ],
+  "appendices": [
+    {
+      "letter": "A",
+      "title": "The Flight Computer and the Correction Loop",
+      "referenced_from": [
+        "Background",
+        "Challenges D3, D4"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "B",
+      "title": "The Canyon Corridor",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "C",
+      "title": "Build 3 and Build 5: The Two Polynomials",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "D",
+      "title": "Taylor Series Reference",
+      "referenced_from": [
+        "Background",
+        "Challenges D1"
+      ],
+      "kind": "reference"
+    },
+    {
+      "letter": "E",
+      "title": "Canyon Gusts, Correction Tolerance, and the Error-vs-Cost Trade-off",
+      "referenced_from": [
+        "Background",
+        "Challenges D2, D4"
+      ],
+      "kind": "table"
+    },
+    {
+      "letter": "F",
+      "title": "\"How To...\" Math Questions To Research",
+      "referenced_from": [
+        "Challenge 1"
+      ],
+      "kind": "standards-bridge"
+    },
+    {
+      "letter": "G",
+      "title": "Sources",
+      "referenced_from": [
+        "Background"
+      ],
+      "kind": "sources"
+    }
+  ],
+  "balance": {
+    "argument_a": "Build 3 (theta - theta^3/6) needs only 3 single-cycle floating-point operations per correction [S2] (theta^2, theta^3 = theta^2*theta, and a fused multiply-add for the final subtraction) against Build 5's 5 [S2] (the same 3, plus theta^5 = theta^3*theta^2, plus a second fused multiply-add) -- at the STM32F405's 168 MHz clock [S1], that is 12.857 ms of total flight-computer time spent on the trig approximation across the whole 720,000-cycle, 90-second canyon transit for Build 3, against 21.429 ms for Build 5. Build 3's raw approximation error is genuinely worse -- it exceeds Appendix E's 0.0003 tolerance at the 30 degree, 40 degree and 50 degree gust bands (MA1's weights put 33% of all correction cycles in those three bands), where Build 5's error never exceeds roughly 0.00008 across the same range. Build 3's case is not that it is more accurate -- it is not -- but that the case's own named primary metric weighs accuracy against the compute budget it costs, and on that specific ratio Build 3 comes out ahead.",
+    "argument_b": "Build 5 (theta - theta^3/6 + theta^5/120) keeps every gust-tilt band in Appendix E inside the 0.0003 tolerance (MA2) -- its worst-case error across the entire tested range is roughly 0.00008, more than 50 times smaller than Build 3's worst-case error of about 0.0041 at the 50 degree band. Its case is that a single missed correction near a rock wall, in a canyon already flown at a 15-foot offset (Appendix B), is a categorically worse failure than a few extra milliseconds of CPU time spread across a 90-second transit -- especially since Appendix A's own numbers show both builds' total compute cost is a small fraction of the correction loop's available time budget at 8 kHz [S3]. A Hero arguing for B is arguing that the raw failure-avoidance case matters more than the case's own metric says it does, which is a legitimate, defensible position to bring into discussion even though it does not carry the primary-metric comparison in Challenge 3 (D5).",
+    "margin_basis": "margin = 100 * |metric(A) - metric(B)| / min(metric(A), metric(B)) (project convention: winner-minus-loser over loser), where metric(option) = (1 - error_rate(option)) / total_compute_budget_ms(option). error_rate(A) = 0.33 (the 30/40/50 degree bands from Appendix E's MA1 weights, whose Build-3 error exceeds MA2's 0.0003 tolerance); error_rate(B) = 0.00 (no band exceeds tolerance under Build 5). total_compute_budget_ms(A) = 720,000 cycles x 3 ops x 5.952 ns = 12.857 ms; total_compute_budget_ms(B) = 720,000 cycles x 5 ops x 5.952 ns = 21.429 ms. metric(A) = 0.67 / 12.857 = 0.052111; metric(B) = 1.00 / 21.429 = 0.046667. margin = (0.052111 - 0.046667) / 0.046667 = 11.7%, inside the SPEC SS2 target 8-12% band. See sensitivity_model.py for the exact reproducible computation.",
+    "margin_pct": 11.7
+  },
+  "needs_source": [
+    {
+      "token": "{{NEEDS_SOURCE: model of Cortex-M4-based flight-controller MCU commonly used in real drone flight controllers}}",
+      "location": "Appendix A, row 'Flight computer'",
+      "status": "SOURCED",
+      "resolved_by": "S1"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: maximum CPU clock speed, MHz, for the flight-controller MCU above, from its manufacturer datasheet}}",
+      "location": "Appendix A, row 'CPU clock speed'",
+      "status": "SOURCED",
+      "resolved_by": "S1"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: derived — 1 ÷ clock speed, in nanoseconds}}",
+      "location": "Appendix A, row 'Cycle time per clock tick'",
+      "status": "SOURCED",
+      "resolved_by": "S1",
+      "note": "Arithmetic derivation from S1: 1 / 168,000,000 Hz = 5.952 ns. No separate citation needed."
+    },
+    {
+      "token": "{{NEEDS_SOURCE: whether multiply/add/fused-multiply-add instructions on this MCU's core execute in a single clock cycle, and the primary source confirming it}}",
+      "location": "Appendix A, row 'Time for one single-cycle arithmetic operation'",
+      "status": "SOURCED",
+      "resolved_by": "S2",
+      "priority": "HIGHEST -- core sourcing risk named at concept approval. Resolved: found a real, primary Arm white paper stating this directly."
+    },
+    {
+      "token": "{{NEEDS_SOURCE: a real, documented flight-control loop rate (Hz) used in practice on this class of flight controller, and the source recommending/documenting it}}",
+      "location": "Appendix A, row 'Correction-loop rate'",
+      "status": "SOURCED",
+      "resolved_by": "S3"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: derived — 1 ÷ loop rate, in microseconds}}",
+      "location": "Appendix A, row 'Correction-loop period'",
+      "status": "SOURCED",
+      "resolved_by": "S3",
+      "note": "Arithmetic derivation from S3: 1 / 8,000 Hz = 125 us."
+    },
+    {
+      "token": "{{NEEDS_SOURCE: stated scenario duration, seconds, for Mara's canyon transit}}",
+      "location": "Appendix A, row 'Canyon transit time'",
+      "status": "ASSUMPTION",
+      "resolved_by": "SCENARIO",
+      "note": "90 seconds is a plain stated scenario constraint (like the-deferred-repair's 'three more years'), not a dilemma-sensitive Modeling Assumption -- see sensitivity_model.py's comment: transit time multiplies both builds' total compute cost equally and cancels out of the metric(A)/metric(B) ratio entirely, so it is not listed as an MA and not swept by Tier 2 P5."
+    },
+    {
+      "token": "{{NEEDS_SOURCE: derived — transit time ÷ loop period}}",
+      "location": "Appendix A, row 'Total correction cycles across the transit'",
+      "status": "SOURCED",
+      "resolved_by": "S3",
+      "note": "Arithmetic derivation: 90,000 ms / 0.125 ms = 720,000 cycles."
+    },
+    {
+      "token": "{{NEEDS_SOURCE: stated scenario constraint, feet, for the drone's held offset from the canyon wall}}",
+      "location": "Appendix B, row 'Required offset from canyon wall'",
+      "status": "ASSUMPTION",
+      "resolved_by": "SCENARIO",
+      "note": "15 feet is the concept's own fixed scenario constraint, not independently sourceable for a fictional canyon; it is the basis for MA2's tolerance derivation."
+    },
+    {
+      "token": "{{NEEDS_SOURCE: stated modeling assumption — share of correction cycles at this tilt band}} (5 rows: 10/20/30/40/50 degrees)",
+      "location": "Appendix E, gust-tilt band table",
+      "status": "ASSUMPTION",
+      "resolved_by": "MA1",
+      "priority": "HIGHEST -- core sourcing risk named at concept approval. Genuine search (turbulence/gust-response literature for confined multirotor flight) confirmed no published per-canyon gust-tilt-frequency distribution exists for any real or fictional canyon -- see RESEARCH_LOG.md."
+    },
+    {
+      "token": "{{NEEDS_SOURCE: stated modeling assumption — the sine-error tolerance, and its basis in Appendix B's wall offset}}",
+      "location": "Appendix E, row 'Correction-error tolerance'",
+      "status": "ASSUMPTION",
+      "resolved_by": "MA2"
+    },
+    {
+      "token": "{{NEEDS_SOURCE: Sources appendix table pending case-research}}",
+      "location": "Appendix G",
+      "status": "SOURCED",
+      "note": "Populated with S1-S3 above."
+    }
+  ],
+  "modeling_assumptions": [
+    {
+      "id": "MA1",
+      "assumption": "Distribution of correction cycles across the five gust-tilt bands (10/20/30/40/50 degrees) over the canyon transit",
+      "value_used": "40% / 27% / 20% / 10% / 3%",
+      "basis": "No public dataset gives a per-canyon gust-tilt-angle frequency distribution for a specific slot canyon -- a genuine search of quadrotor wind-gust and confined-corridor flight literature (wind-gust estimation studies, urban-canyon UAV aerodynamics papers) confirmed this is a real, well-studied problem in general but that no source publishes a tilt-angle-frequency table for any canyon, real or fictional (see RESEARCH_LOG.md). The chosen shape -- most correction cycles at small tilt, progressively fewer at larger tilt -- follows the general, well-documented atmospheric-turbulence pattern that small perturbations occur far more often than large ones.",
+      "sensitivity": "This is the load-bearing, dilemma-relevant assumption in the case -- moving weight between the smaller and larger tilt bands changes Build 3's effective error rate over the mission (Build 5's stays near zero regardless, since it clears tolerance at every tested band), which moves the primary metric in Challenge 3 (D4, D5). Tier 2 P5 records the flip threshold; the direction and size of that sensitivity are facilitator-only.",
+      "flips_dilemma": true
+    },
+    {
+      "id": "MA2",
+      "assumption": "Correction-error tolerance: the maximum acceptable |sin(theta) - polynomial(theta)|",
+      "value_used": "0.0003",
+      "basis": "No published tolerance standard exists for an acceptable sin(theta) approximation error in a station-keeping drone correction loop. The value is derived directly from Appendix B's 15-foot (180-inch) wall offset: a sin(theta) error of 0.0003 corresponds to roughly a 0.05-inch lateral positioning miscalculation at that range (180 in x 0.0003 = 0.054 in) -- tight enough to matter this close to a rock wall, chosen as a defensible design tolerance rather than measured from a real flight log.",
+      "sensitivity": "This value sits close to Build 3's actual error at the 30 degree gust band -- a modest change to the tolerance either way can move whether that band counts as in-tolerance for Build 3, which changes Build 3's computed error rate in D4 and therefore the metric in D5. The direction and size of that sensitivity are facilitator-only; work Challenge 3 (D2) and (D4) again under a different tolerance before treating 0.0003 as fixed.",
+      "flips_dilemma": true
+    }
+  ],
+  "derived": {
+    "notes": "Figures computed from sensitivity_model.py, not restated in case.md (facilitator-only), kept here so FACILITATOR.md's Guide Notes stay checkable against a value of record instead of drifting silently.",
+    "ops_per_correction": {
+      "A": 3,
+      "B": 5
+    },
+    "cycle_time_ns": 5.952380952,
+    "total_correction_cycles": 720000,
+    "total_compute_budget_ms": {
+      "A": 12.857142857,
+      "B": 21.428571429
+    },
+    "error_rate": {
+      "A": 0.33,
+      "B": 0.0
+    },
+    "metric": {
+      "A": 0.052111,
+      "B": 0.046667
+    },
+    "margin_pct": 11.7,
+    "gust_30_theta_rad": 0.5236,
+    "gust_30_flip_error_rate_A_pct": 43.0
+  },
+  "sensitivity_disclosure": [
+    {
+      "param": "gust_30",
+      "category": "F",
+      "justification": "The share of correction cycles at the 30-degree gust-tilt band for one specific, still-to-be-flown canyon transit is a forecast of turbulence conditions that have not happened yet, not a measurable present fact -- no dataset can tell Mara today exactly how often this flight will be pushed to each tilt band. Tier 2 P5 found this dial flips the verdict at +50% flex (0.30 vs the stated 0.20) and also pushes the margin to 28.3% (breaking the SPEC SS2 20% cap) at -50% flex; see QA_REPORT.md for the full sweep."
+    },
+    {
+      "param": "tolerance",
+      "category": "F",
+      "justification": "The correction-error tolerance (MA2) is a scenario design choice derived from Appendix B's wall offset, not an externally measured safety limit -- reasonable engineers could set it tighter or looser. Tier 2 P5 found +50% flex (0.00045 vs the stated 0.0003) does not flip the verdict but pushes the margin to 45.0%, breaking the SPEC SS2 20% cap -- disclosed here per the doctrine that a flex pushing the margin past the cap is the same class of finding as a flip. -50% flex does not move the margin (the same three bands still exceed the tighter tolerance). See QA_REPORT.md for the full sweep."
+    }
+  ],
+  "cohort_bands": [
+    {
+      "band": "Full (12-20)",
+      "note": "Anchors and the 45-minute timed plan in FACILITATOR.md run as written."
+    },
+    {
+      "band": "Compressed (6-11)",
+      "note": "Anchors 2-3 combine into one pass; the D3/D4 compute-cost build-out runs as a single worked example instead of small-group work; total runtime shortens proportionally."
+    },
+    {
+      "band": "1:1 / pair (1-2)",
+      "note": "No vote at Anchor 1 -- a stated initial position instead; facilitator plays devil's advocate directly; the MA1/MA2 pressure-test still runs in full."
+    }
+  ],
+  "sensitivity_note": "Touches a real but bounded stress scenario (a missing hiker in dropping temperatures, a search-and-rescue mission with a closing daylight/battery window) -- carries the SPEC SS6 one-line facilitator flag for the discussion lead. Framed around protection (finding Dana, keeping the drone safely flying) rather than harm, consistent with SPEC SS6's guidance; no illness, death, or family hardship is depicted.",
+  "qa": {
+    "state": "TIER2_PASS",
+    "note": "2026-09-05 case-readiness run. Tier 1: 0 BLOCKERs, 0 GAPs after fixing 4 GAPs found on the first pass (Appendix F reference, Socratic-question line-wrapping, two facilitator-only orphan numbers, one bare section-number false positive). Tier 2: P1 cold solve PASS (fresh subagent reached a defensible position -- Build 5/B -- via a reasoned override of the metric it correctly computed as favoring Build 3/A; not the trap). P2 both-sides PASS (both options genuinely defensible with real numbers; the finding that Argument A is more exposed under peer pressure than Argument B is the case's own intended tension, not a concession-style collapse). P3 trap PASS (fixed a false-positive mechanical FAIL caused by an earlier, unrelated use of the word 'trap' in the margin section; a fresh subagent then independently named the documented trap). P4 twist PASS after a real fix -- an adversarial pass found the twist depended on two unstated conventions (which band loses gust-weight; whether tolerance is a hard veto or a graded ratio input) and both are now stated explicitly in FACILITATOR.md's Twist section per the case-readiness backward-flow rule. P5 sensitivity PASS (disclosed) -- gust_30 flips the verdict at +50%; gust_30 at -50% and tolerance at +50% each breach the SPEC SS2 20% cap without flipping; all three disclosed in sensitivity_disclosure[]. P6 data decay PASS -- S2 and S3 directly re-fetched and confirmed live with matching figures; S1 corroborated via independent distributor listings after the primary PDF fetch timed out twice. 2026-09-06: case-publish's packet build ran (published/ now exists: Case Study docx, Data xlsx, Facilitator Guide docx, Interactive.html), so P7 was re-run for real against the actual published HTML. Mechanical pre-screen PASS (1 real visual found for D5's chart requirement). The qualitative cold-read took 6 rounds of a genuinely fresh, zero-context subagent against the published HTML, with real remediation between each: round 1 named concrete undefined real-world terms (the physical tilt/offset geometry, USB-drive/flashing mechanics, implicitly fused multiply-add) -- fixed by adding a physical explanation of tilt-vs-offset and thrust decomposition, and a hand-placed 'Flashing Firmware' STORY_GLOSSARY term with a full inline definition (a bug was found and fixed here: the P7 packet-builder's gloss-matcher is case-sensitive and only inlines a definition where the STORY_GLOSSARY label's exact casing appears in prose, so lowercase first-mentions like 'correction loop'/'flight computer' needed to rely on their Title-Case Appendix-A summary heading match instead, and terms needing a guaranteed inline gloss -- 'Flashing Firmware', 'Fused Multiply-Add' -- were hand-authored with the full anchor+tooltip markup rather than left to the client-side auto-linker, which the packet-builder's static extraction cannot see). Rounds 2-3 still flagged fused multiply-add and a 'PID loops' citation term as undefined -- fixed with a concrete worked FMA example (2y+3 in one cycle vs two) and an inline gyro/PID gloss in the Appendix G S3 citation. Round 4 flagged an unstated 'flight controller' vs 'flight computer' naming inconsistency between the Overview and Appendix A -- fixed by standardizing on 'flight computer' throughout and naming the two boards as the same class of device. Rounds 5-6 returned zero remaining undefined real-world vocabulary; round 6 explicitly listed Taylor/Maclaurin series, flashing, flight computer, correction loop, Cortex-M4, clock rate, PID/gyro, and FMA as 'not gaps, for clarity' and the only remaining items were self-qualified as either the D3 deliverable's own job (mapping FMA to specific operations), physics/math depth explicitly outside the (non-math) pass criterion (thrust-vector geometry, small-angle scaling), or deliberately unquantified narrative color (bench-profiling share, camera time budget) that the case does not need for its math. This is a genuine, evidenced PASS (0-1 real gaps per round 5-6), not a waiver -- MCS-49's waiver mechanism was not invoked. See QA_REPORT.md for the full run and all 6 cold-read transcripts.",
+    "verdict": "PASS",
+    "run_on": "2026-09-05",
+    "blockers_open": 0,
+    "gaps_open": 0,
+    "tier2": {
+      "P1": "PASS",
+      "P2": "PASS",
+      "P3": "PASS",
+      "P4": "PASS",
+      "P5": "PASS (disclosed)",
+      "P6": "PASS",
+      "P7": "PASS"
+    },
+    "tier3_runs": [],
+    "case_md_sha256": "10de6a4c9ab88794c0be77022b4f37beb5153a5625a5aece2f0a4a7a8933d978"
+  },
+  "authored_on": "2026-09-05",
+  "pipeline_version": "1.0",
+  "complexity": 5,
+  "published_on": "2026-09-06"
+}

@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Overlap Send — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  See templates/INTERACTIVE_HTML_CONTRACT.md for the shape contract this file follows.
+  HARD LINE (MCS-37): this file must never print the case's balance verdict (which
+  option wins, the margin) as a static literal anywhere outside a <script> tag. The
+  Working Notebook computes both options' expected net revenue live from the case's
+  own numbers; it never hands over the recommendation.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* story (email-marketing) glossary -- separate class/shape from .gterm on purpose */
+  .sterm{position:relative;color:#5b3f14;text-decoration:none;border-bottom:1.5px dotted #8a6d2b;cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:#3a2f0c;color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#3a2f0c}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted #8a6d2b;
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* CASE-SPECIFIC — Venn diagram figure */
+  .venn-figure svg{max-width:560px}
+  .venn-note{font-family:var(--sans);font-size:.78rem;color:var(--sub)}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <!-- CASE-SPECIFIC: two overlapping circles, for the set-theory story -->
+  <symbol id="icon-venn" viewBox="0 0 24 24"><circle cx="9" cy="12" r="7"/><circle cx="15" cy="12" r="7"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Overlap Send</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Discrete Math &middot; Set Theory</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+
+  <figure>
+    <svg viewBox="0 0 700 170" role="img" aria-labelledby="bannerTitle" aria-label="illustration" class="case-illustration">
+      <title id="bannerTitle">Two customer lists side by side on a screen, a cursor hovering between two send options</title>
+      <rect x="0" y="0" width="700" height="170" fill="#eef3f8"/>
+      <rect x="40" y="24" width="230" height="122" rx="10" fill="#20262e"/>
+      <rect x="54" y="38" width="202" height="94" rx="6" fill="#fff"/>
+      <text x="70" y="58" font-family="sans-serif" font-size="11" font-weight="700" fill="#1a3a5c">CRM Export.csv</text>
+      <g font-family="sans-serif" font-size="9" fill="#5b6472">
+        <text x="70" y="76">Set P &mdash; recent purchasers</text>
+        <text x="70" y="92">Set L &mdash; newsletter opt-ins</text>
+        <text x="70" y="112">overlap: unknown until today</text>
+      </g>
+      <g transform="translate(330,45)">
+        <circle cx="45" cy="40" r="34" fill="#1a3a5c" opacity=".18" stroke="#1a3a5c" stroke-width="2"/>
+        <circle cx="75" cy="40" r="34" fill="#c9a227" opacity=".25" stroke="#c9a227" stroke-width="2"/>
+      </g>
+      <text x="470" y="65" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">One list. One send.</text>
+      <text x="470" y="87" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">One number for Friday's board.</text>
+    </svg>
+    <figcaption>An original illustration for this case: two customer lists nobody on the team has ever actually compared, and a decision that has to go out today (SEE APPENDIX A).</figcaption>
+  </figure>
+
+  <p class="lede">Jess Okafor has the CRM export open in one tab and the board deck open in the other, and the cursor won't stop blinking in the "Send To" field. Two lists sit side by side on the screen: one column of everyone who bought a Basecamp Crate box in the last ninety days, another column of everyone who ever checked the newsletter box at checkout. Nobody on this three-person marketing team has ever actually compared them.</p>
+  <p>A Slack message from the CEO is still pinned at the top of the channel: <em>"Board meeting Friday. Need to see the plan for the number by then."</em> The quarter is behind, and this send is the last one the ad budget can cover before the quarter closes. Jess has already dragged the two lists into a spreadsheet twice and closed it twice, because both times the honest next step was a diagram, not a guess.</p>
+  <p>The office is empty except for the hum of the space heater under the desk and a half-cold oat-milk latte. Jess pulls up a blank circle-and-circle sketch, types the two list sizes into the corners, and stops with the cursor hovering between "Send to everyone" and "Send to just the middle."</p>
+  <p>The file has to go out today. One list. One send. One number to bring to the board on Friday.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+
+  <p>Jess Okafor is the sole growth marketer at Basecamp Crate, a small outdoor-gear subscription box company. Marketing owns the CRM, the newsletter signup form, and the paid-send budget, and Jess is the only person who touches all three &mdash; there is no one else to double check the math before Friday's board meeting.</p>
+  <p>Basecamp Crate's CRM currently holds two separate customer lists (a <em>Set</em> of contacts, in the vocabulary below), built by different tools at different times (SEE APPENDIX A): <strong>Set P</strong>, everyone who purchased a box in the last 90 days, and <strong>Set L</strong>, everyone who has ever opted into the email newsletter. The purchase-tracking form and the newsletter signup form were built by two different vendors two years apart, and nobody on the current team has ever run the two lists against each other to see how much they overlap.</p>
+  <p>This quarter's remaining paid-send budget is fixed and cannot be exceeded (SEE APPENDIX B): whatever list Jess chooses, the total cost of the send &mdash; every name on the list, billed at the same flat per-recipient rate regardless of whether that person ever opens the email &mdash; must fit inside it. There is no partial-send option and no way to add more budget before Friday.</p>
+  <p>The two options on the table are named plainly on Jess's whiteboard: <strong>Cast The Net</strong>, mailing every name that appears in <em>either</em> list (the union of P and L), or <strong>Mail The Middle</strong>, mailing only the names that appear in <em>both</em> lists (the intersection of P and L). A published industry benchmark report gives a real, sourced conversion-rate figure for what a broad, undifferentiated send typically achieves, and that same body of published research informs &mdash; without directly measuring &mdash; how much better a tightly-overlapping segment is likely to convert (SEE APPENDIX C). The vocabulary and "how to&hellip;" procedures needed to work through the two sets are listed in (SEE APPENDIX D), and every sourced or assumed figure in this case is documented in the Sources list below.</p>
+  <p>Jess has to recommend one list, defend the expected revenue math behind it, and file it before the office closes today.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Jess Okafor. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Cast The Net</h4>
+      <p style="margin:0">Mail everyone in the union of Set P and Set L, the widest possible reach.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Mail The Middle</h4>
+      <p style="margin:0">Mail only the names in the intersection of Set P and Set L, the smallest, most tightly-overlapping list.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix D. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which list you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a two-circle Venn diagram, drawn inside a rectangle representing Basecamp Crate's full reachable email universe, showing Set P and Set L with all four region counts labeled from Appendix A's data (only-P, only-L, both, and neither) &mdash; including an explicit check of whether any one of those four regions is the empty set (&empty;), and a sentence stating what it would mean for this case if it were; <strong>D2</strong> a written set-notation summary stating |P|, |L|, |P &cap; L|, and |P &cup; L|, showing the inclusion-exclusion arithmetic used to compute |P &cup; L| from |P|, |L|, and |P &cap; L|, plus a subset determination &mdash; using &sube; or &nsube; notation &mdash; for whether P is a subset of L, or L a subset of P, defended with the actual counts from Appendix A; <strong>D3</strong> a reach-and-cost table comparing Option A (mail P &cup; L) and Option B (mail P &cap; L): recipient count, total send cost at Appendix B's flat per-recipient fee, and how each compares to Appendix B's fixed remaining budget; <strong>D4</strong> an expected-net-revenue calculation for each option &mdash; reach &times; conversion rate &times; average order value, minus total send cost &mdash; using Appendix C's benchmark conversion-rate figures, shown step by step for both options; and <strong>D5</strong> a one-paragraph written recommendation, using correct set notation (&cap;, &cup;, &sube;, &nsube;, &empty;) throughout, that names which option's expected net revenue is higher and explicitly addresses why comparing raw reach alone, without the conversion-rate difference, would have been misleading.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apxA">
+    <summary>Appendix A &mdash; CRM List Snapshot</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D1, D2). Basecamp Crate's two customer lists, exported the same afternoon so both counts are from the same moment in time.</p>
+      <table id="tblApxA">
+        <tr><th>Set</th><th>Definition</th><th>Count</th></tr>
+        <tr><td>Full reachable email universe (U)</td><td>All active, mailable contacts in Basecamp Crate's ESP</td><td class="num">90,000 (MA1)</td></tr>
+        <tr><td>P</td><td>Customers who purchased a Basecamp Crate box in the last 90 days</td><td class="num">21,400 (MA1)</td></tr>
+        <tr><td>L</td><td>Customers who have ever opted into the Basecamp Crate email newsletter</td><td class="num">38,600 (MA1)</td></tr>
+        <tr><td>P &cap; L</td><td>Customers who appear on BOTH lists</td><td class="num">6,900 (MA1)</td></tr>
+      </table>
+      <p class="side-note"><strong>RESEARCH FLAG RESOLVED:</strong> no public company publishes the exact size or exact overlap of its own CRM lists &mdash; this is proprietary, day-to-day operational data specific to one company's customer database. All four counts are a stated, disclosed Modeling Assumption (MA1) &mdash; see Modeling Assumptions below.</p>
+
+      <figure class="venn-figure">
+        <svg viewBox="0 0 700 380" role="img" class="case-diagram" aria-label="Venn diagram template of Set P and Set L inside the full reachable email universe">
+          <title id="vennTitle">Two-circle Venn diagram scaffold for Set P and Set L, inside a rectangle for the full reachable universe U</title>
+          <rect x="20" y="20" width="660" height="340" rx="10" fill="#eef3f8" stroke="#1a3a5c" stroke-width="2"/>
+          <text x="34" y="44" font-family="sans-serif" font-size="12.5" font-weight="700" fill="#1a3a5c">U &mdash; Basecamp Crate's full reachable email universe (90,000)</text>
+
+          <circle cx="290" cy="215" r="94" fill="#1a3a5c" opacity=".16" stroke="#1a3a5c" stroke-width="2.4"/>
+          <circle cx="430" cy="215" r="126" fill="#c9a227" opacity=".22" stroke="#8a6d2b" stroke-width="2.4"/>
+
+          <text x="230" y="150" font-family="Georgia,serif" font-size="18" font-weight="700" fill="#1a3a5c" text-anchor="middle">P</text>
+          <text x="230" y="172" font-family="sans-serif" font-size="12" fill="#1a3a5c" text-anchor="middle">21,400</text>
+
+          <text x="500" y="150" font-family="Georgia,serif" font-size="18" font-weight="700" fill="#5b3f14" text-anchor="middle">L</text>
+          <text x="500" y="172" font-family="sans-serif" font-size="12" fill="#5b3f14" text-anchor="middle">38,600</text>
+
+          <text x="344" y="205" font-family="Georgia,serif" font-size="13" font-weight="700" fill="#20262e" text-anchor="middle">P &cap; L</text>
+          <text x="344" y="223" font-family="sans-serif" font-size="12" fill="#20262e" text-anchor="middle">6,900</text>
+
+          <text x="230" y="272" font-family="sans-serif" font-size="12" font-style="italic" fill="#5b6472" text-anchor="middle">only P = ?</text>
+          <text x="500" y="272" font-family="sans-serif" font-size="12" font-style="italic" fill="#5b6472" text-anchor="middle">only L = ?</text>
+          <text x="112" y="330" font-family="sans-serif" font-size="12" font-style="italic" fill="#5b6472" text-anchor="middle">neither = ?</text>
+
+          <text x="34" y="345" font-family="sans-serif" font-size="10.5" fill="#5b6472">P, L, and P &cap; L are Appendix A's given counts. The three "?" regions are yours to compute &mdash; see Working Notebook Step 1.</text>
+        </svg>
+        <figcaption class="venn-note">A drawn-to-scale Venn diagram scaffold: circle L is sized larger than circle P because 38,600 &gt; 21,400, and their overlap reflects the 6,900 shared names. The three unlabeled regions (only-P, only-L, neither) are exactly what Challenge&nbsp;3's D1 asks you to compute and check &mdash; use Working Notebook Step&nbsp;1 below once you have your own numbers, and decide for yourself whether any region could plausibly be the empty set (&empty;) before you check.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details id="apxB">
+    <summary>Appendix B &mdash; Send Cost &amp; Remaining Budget</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D3).</p>
+      <table id="tblApxB">
+        <tr><th>Item</th><th>Value</th></tr>
+        <tr><td>Flat cost per recipient, any send (regardless of whether the recipient opens it)</td><td class="num">$0.06 (MA2)</td></tr>
+        <tr><td>Basecamp Crate's remaining paid-send budget this quarter</td><td class="num">$4,000 (MA3)</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apxC">
+    <summary>Appendix C &mdash; Conversion &amp; Order-Value Benchmarks</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D4).</p>
+      <table id="tblApxC">
+        <tr><th>Metric</th><th>Value</th><th>Source type</th></tr>
+        <tr><td>Placed-order (conversion) rate, a broad, undifferentiated send to a full customer file</td><td class="num">0.16% [S1]</td><td>sourced benchmark report</td></tr>
+        <tr><td>Placed-order (conversion) rate, a tightly-overlapping, multi-signal segment (customers who show two independent signals of interest)</td><td class="num">0.60% (MA4)</td><td>stated modeling assumption, informed by [S1], [S2], [S3]</td></tr>
+        <tr><td>Average order value (AOV), Basecamp Crate box purchase</td><td class="num">$58 (MA5)</td><td>stated modeling assumption, informed by [S4]</td></tr>
+      </table>
+      <p class="side-note"><strong>What "conversion" means here:</strong> a placed-order (conversion) rate of 0.16% means that out of every 1,000 people who receive the send, 1.6 of them go on to complete a purchase &mdash; place an actual order, not just open the email or click a link. Challenge 3 (D4) multiplies this rate by reach and by AOV to turn "how many people saw the email" into "how much revenue the send is expected to generate."</p>
+      <p class="side-note"><strong>RESEARCH FLAG RESOLVED:</strong> a genuine search for a published conversion-rate figure specific to "customers appearing in both a recent-purchase list and a newsletter opt-in list" turned up no such report. The broad-send rate <strong>is</strong> a real, sourced figure [S1]. The intersection-segment rate is a stated Modeling Assumption (MA4), informed by &mdash; but not copied directly from &mdash; three real, cited pieces of published research on targeting/segmentation lift [S1]/[S2]/[S3]. See Modeling Assumptions below.</p>
+    </div>
+  </details>
+
+  <details id="apxMA">
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced from an external publisher</strong>. They are stated scenario assumptions chosen by the case author because Basecamp Crate's own list sizes, overlap, budget, and per-recipient cost are internal operational data no public company publishes, and because no industry report measures the exact "recent-purchaser-and-newsletter-subscriber" segment's conversion rate. A Hero may challenge these numbers in discussion &mdash; that is a legitimate move, and the sensitivity column shows exactly where the challenge would matter.</blockquote>
+      <table id="tblApxMA">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Full reachable email universe (U), Set P size, Set L size, and overlap P &cap; L</td><td class="num">U = 90,000; P = 21,400; L = 38,600; P &cap; L = 6,900</td><td>No source publishes any specific company's internal CRM list sizes. Chosen to reflect a realistic relative pattern for a small subscription-box company: an all-time newsletter list larger than a rolling 90-day purchaser list, built by two different signup forms with only partial overlap.</td><td>This case's numbers are close enough that several of these counts, if challenged, could change which option comes out ahead.</td></tr>
+        <tr><td>MA2</td><td>Flat per-recipient send cost</td><td class="num">$0.06</td><td>No source publishes an exact blended figure for a coordinated email-plus-paid-sync send charged against an ad budget. Set above published bare ESP marginal costs and below typical third-party list-rental costs.</td><td>Changes both options' total cost and how much of Appendix B's budget each option consumes.</td></tr>
+        <tr><td>MA3</td><td>Remaining quarterly paid-send budget</td><td class="num">$4,000</td><td>This is the case's own stated scenario detail &mdash; a constructed, disclosed detail of this fictional company.</td><td>Does not change which option's expected net revenue is higher on its own in this case's current numbers, but a smaller budget could rule an option out entirely.</td></tr>
+        <tr><td>MA4</td><td>Placed-order rate for the intersection (multi-signal) segment</td><td class="num">0.60%</td><td>No source measures conversion rate for exactly "recent purchaser AND newsletter subscriber." Informed by Klaviyo's 2026 benchmark data [S1], HubSpot's segmentation guidance [S2], and Mailchimp's segmentation study [S3] &mdash; a deliberately moderate point within the real range these sources bracket.</td><td>This is the single assumption the case's recommendation is most sensitive to.</td></tr>
+        <tr><td>MA5</td><td>Average order value (AOV)</td><td class="num">$58</td><td>No source publishes Basecamp Crate's own AOV. Informed by Shopify's own 2025 AOV benchmark figures (citing Dynamic Yield's benchmark research) [S4].</td><td>Changes the expected-revenue gap between the two options proportionally on both sides.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix D &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-06. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Email-Marketing Vocabulary</h3>
+    <p>This case uses real email-marketing and CRM terms. Hover any term below for a plain-English definition; click it to open a real source (Wikipedia).</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Links verified working 2026-09-06.</p>
+  </div>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Fill in the Venn diagram's remaining regions</h4>
+    <div class="goal">Using Appendix A's given counts (P = 21,400, L = 38,600, P &cap; L = 6,900, U = 90,000), compute the three regions the diagram above left blank, then check whether any of the four regions is the empty set.</div>
+    <div class="fieldrow"><label for="nbOnlyP">Only P (in P, not in L)</label>
+      <input type="number" id="nbOnlyP" step="1" placeholder="a whole number"> <span class="fb" id="fbOnlyP"></span></div>
+    <div class="fieldrow"><label for="nbOnlyL">Only L (in L, not in P)</label>
+      <input type="number" id="nbOnlyL" step="1" placeholder="a whole number"> <span class="fb" id="fbOnlyL"></span></div>
+    <div class="fieldrow"><label for="nbNeither">Neither P nor L (inside U, outside both circles)</label>
+      <input type="number" id="nbNeither" step="1" placeholder="a whole number"> <span class="fb" id="fbNeither"></span></div>
+    <div class="fieldrow"><label for="nbEmptyCheck">Is any one of the four regions the empty set (&empty;)?</label>
+      <select id="nbEmptyCheck"><option value="">choose one</option><option value="yes">Yes, at least one region is &empty;</option><option value="no">No, all four regions have members</option></select> <span class="fb" id="fbEmptyCheck"></span></div>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: Set-notation summary and subset determination</h4>
+    <div class="goal">Use inclusion-exclusion to compute |P &cup; L| from |P|, |L|, and |P &cap; L|. Then decide, from Appendix A's actual counts, whether P &sube; L, L &sube; P, or neither.</div>
+    <div class="fieldrow"><label for="nbUnion">|P &cup; L| (inclusion-exclusion)</label>
+      <input type="number" id="nbUnion" step="1" placeholder="a whole number"> <span class="fb" id="fbUnion"></span></div>
+    <div class="fieldrow"><label for="nbSubset">Subset relationship between P and L</label>
+      <select id="nbSubset"><option value="">choose one</option><option value="pl">P &sube; L (every member of P is also in L)</option><option value="lp">L &sube; P (every member of L is also in P)</option><option value="neither">Neither is a subset of the other</option></select> <span class="fb" id="fbSubset"></span></div>
+    <button onclick="checkStep2()">Check</button>
+    <p class="side-note">This calculator checks your arithmetic &mdash; it will not tell you which option to recommend. That's your D5/pitch to make.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: Reach-and-cost table</h4>
+    <div class="goal">Compute each option's reach and total send cost at Appendix B's flat per-recipient fee, then check whether each fits Appendix B's $4,000 remaining budget.</div>
+    <div class="fieldrow"><label for="nbReachA">Option A reach (|P &cup; L|)</label>
+      <input type="number" id="nbReachA" step="1" placeholder="a whole number"> <span class="fb" id="fbReachA"></span></div>
+    <div class="fieldrow"><label for="nbCostA">Option A total send cost ($)</label>
+      <input type="number" id="nbCostA" step="0.01" placeholder="in dollars"> <span class="fb" id="fbCostA"></span></div>
+    <div class="fieldrow"><label for="nbReachB">Option B reach (|P &cap; L|)</label>
+      <input type="number" id="nbReachB" step="1" placeholder="a whole number"> <span class="fb" id="fbReachB"></span></div>
+    <div class="fieldrow"><label for="nbCostB">Option B total send cost ($)</label>
+      <input type="number" id="nbCostB" step="0.01" placeholder="in dollars"> <span class="fb" id="fbCostB"></span></div>
+    <div class="fieldrow"><label for="nbBudgetFit">Do BOTH options fit inside the $4,000 budget?</label>
+      <select id="nbBudgetFit"><option value="">choose one</option><option value="yes">Yes, both fit</option><option value="no">No, at least one exceeds it</option></select> <span class="fb" id="fbBudgetFit"></span></div>
+    <button onclick="checkStep3()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: Expected net revenue for each option</h4>
+    <div class="goal">Using Appendix C's conversion-rate figures and AOV, compute each option's expected net revenue: reach &times; conversion rate &times; AOV &minus; total send cost.</div>
+    <div class="fieldrow"><label for="nbEnrA">Option A expected net revenue ($)</label>
+      <input type="number" id="nbEnrA" step="0.01" placeholder="in dollars"> <span class="fb" id="fbEnrA"></span></div>
+    <div class="fieldrow"><label for="nbEnrB">Option B expected net revenue ($)</label>
+      <input type="number" id="nbEnrB" step="0.01" placeholder="in dollars"> <span class="fb" id="fbEnrB"></span></div>
+    <button onclick="checkStep4()">Check</button>
+    <p class="side-note">Still just checking your own arithmetic. If you've revealed and applied the Twist below, this step re-checks against the challenged number instead.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-venn"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>A board member emails Jess back before the meeting even starts: <em>"Where did the 0.60% come from? I don't see it in any report you attached."</em></p>
+      <p>Nobody &mdash; not Klaviyo, not Basecamp Crate, not this case &mdash; has ever measured a real conversion rate for exactly "recent purchaser AND newsletter subscriber." Appendix C's intersection-segment rate (MA4) is a stated Modeling Assumption informed by real segmentation research [S1]/[S2]/[S3], not a directly measured figure. If the real rate for this exact segment is meaningfully lower than 0.60%, does Step 4's comparison still come out the same way?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the board member's challenge: cut the intersection segment's conversion rate (MA4) in half and recompute Step 4's Option B expected net revenue.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] Klaviyo &mdash; <a href="https://www.klaviyo.com/products/email-marketing/benchmarks" target="_blank" rel="noopener">2026 Email Marketing Benchmarks by Industry</a> (accessed 2026-09-05, HIGH confidence)</li>
+      <li>[S2] HubSpot Blog &mdash; <a href="https://blog.hubspot.com/marketing/email-list-segmentation" target="_blank" rel="noopener">Email List Segmentation: 30 Ways to Earn Higher Engagement and Revenue</a> (accessed 2026-09-05, MEDIUM confidence &mdash; supplemental, informs MA4's basis)</li>
+      <li>[S3] Mailchimp &mdash; <a href="https://mailchimp.com/resources/effects-of-list-segmentation-on-email-marketing-stats/" target="_blank" rel="noopener">Effects of List Segmentation on Email Marketing Stats</a> (accessed 2026-09-05, MEDIUM confidence &mdash; supplemental, dated Feb 2017, informs MA4's basis)</li>
+      <li>[S4] Shopify (citing Dynamic Yield benchmark research) &mdash; <a href="https://www.shopify.com/blog/average-order-value" target="_blank" rel="noopener">Average Order Value benchmarks by industry</a> (accessed 2026-09-05, MEDIUM confidence &mdash; supplemental, informs MA5's basis)</li>
+      <li>MA1, MA2, MA3, MA4, MA5 are stated Modeling Assumptions, not sourced figures &mdash; see the Modeling Assumptions appendix above for the full basis.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Overlap Send &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   Given data, copied verbatim from cases/the-overlap-send/case.json
+   (case.md sha256 as of this build: b26a7cc5f8df387aa7482364347fbfc5324b5971c3bb64916dc7c769d4e92680)
+   JS port of cases/the-overlap-send/sensitivity_model.py -- same PARAMS/FLEX/evaluate()
+   shape, so the Working Notebook and the Python sensitivity model can never silently drift.
+   ================================================================ */
+const PARAMS = {
+  p_size: 21400.0,             // Appendix A, Modeling Assumption MA1
+  l_size: 38600.0,             // Appendix A, Modeling Assumption MA1
+  p_and_l: 6900.0,             // Appendix A, Modeling Assumption MA1
+  per_recipient_cost: 0.06,    // Appendix B, Modeling Assumption MA2
+  conv_broad: 0.0016,          // Appendix C [S1] -- sourced, HIGH confidence, NOT flexed by default
+  conv_intersection: 0.006,    // Appendix C, Modeling Assumption MA4
+  aov: 58.0                    // Appendix C, Modeling Assumption MA5
+};
+const FLEX = ["p_size", "l_size", "p_and_l", "per_recipient_cost", "conv_intersection", "aov"];
+const U_SIZE = 90000.0; // Appendix A, Modeling Assumption MA1 -- full reachable universe (Venn-diagram-only; not part of the ported PARAMS/FLEX arithmetic)
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const union = p.p_size + p.l_size - p.p_and_l;
+  const intersection = p.p_and_l;
+  const onlyP = p.p_size - p.p_and_l;
+  const onlyL = p.l_size - p.p_and_l;
+  const neither = U_SIZE - union;
+  const costA = union * p.per_recipient_cost;
+  const costB = intersection * p.per_recipient_cost;
+  const enrA = union * p.conv_broad * p.aov - costA;
+  const enrB = intersection * p.conv_intersection * p.aov - costB;
+  return { A: enrA, B: enrB, union, intersection, onlyP, onlyL, neither, costA, costB, enrA, enrB };
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  const r = evaluate({});
+  fb('fbOnlyP', near(parseFloat(val('nbOnlyP')), r.onlyP, 1));
+  fb('fbOnlyL', near(parseFloat(val('nbOnlyL')), r.onlyL, 1));
+  fb('fbNeither', near(parseFloat(val('nbNeither')), r.neither, 1));
+  const emptyChoice = document.getElementById('nbEmptyCheck').value;
+  const anyEmpty = (r.onlyP === 0 || r.onlyL === 0 || r.intersection === 0 || r.neither === 0);
+  fb('fbEmptyCheck', emptyChoice === (anyEmpty ? 'yes' : 'no'));
+}
+function checkStep2(){
+  const r = evaluate({});
+  fb('fbUnion', near(parseFloat(val('nbUnion')), r.union, 1));
+  const subsetChoice = document.getElementById('nbSubset').value;
+  const correctSubset = (r.onlyP > 0 && r.onlyL > 0) ? 'neither' : (r.onlyP === 0 ? 'pl' : (r.onlyL === 0 ? 'lp' : 'neither'));
+  fb('fbSubset', subsetChoice === correctSubset);
+}
+function checkStep3(){
+  const r = evaluate({});
+  fb('fbReachA', near(parseFloat(val('nbReachA')), r.union, 1));
+  fb('fbCostA', near(parseFloat(val('nbCostA')), r.costA, 0.5));
+  fb('fbReachB', near(parseFloat(val('nbReachB')), r.intersection, 1));
+  fb('fbCostB', near(parseFloat(val('nbCostB')), r.costB, 0.5));
+  const budgetChoice = document.getElementById('nbBudgetFit').value;
+  const bothFit = (r.costA <= 4000 && r.costB <= 4000);
+  fb('fbBudgetFit', budgetChoice === (bothFit ? 'yes' : 'no'));
+}
+function checkStep4(){
+  const twistEl = document.getElementById('applyTwist');
+  const params = (twistEl && twistEl.checked) ? { conv_intersection: PARAMS.conv_intersection * 0.5 } : {};
+  const r = evaluate(params);
+  fb('fbEnrA', near(parseFloat(val('nbEnrA')), r.enrA, 1));
+  fb('fbEnrB', near(parseFloat(val('nbEnrB')), r.enrB, 1));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-overlap-send";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Two-circle Venn diagram with all four regions labeled and an empty-set check"],
+  ["D2", "Set-notation summary (|P|, |L|, |P ∩ L|, |P ∪ L|) via inclusion-exclusion, plus a subset determination"],
+  ["D3", "Reach-and-cost table comparing Option A and Option B against the fixed budget"],
+  ["D4", "Expected-net-revenue calculation for each option, shown step by step"],
+  ["D5", "One-paragraph written recommendation in correct set notation, addressing the reach-vs-rate trap"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every
+   url https:// to an allowlisted domain). Both live links below
+   were fetched and confirmed 2026-09-06 (200 OK):
+   mathsisfun.com/sets/sets-introduction.html and
+   mathsisfun.com/sets/venn-diagrams.html.
+   ================================================================ */
+const GLOSSARY = {
+  "Set": {def: "A well-defined collection of distinct objects, called its elements or members.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Element": {def: "One of the objects that belongs to a set, e.g. a single customer's name inside Set P.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Subset": {def: "A set A is a subset of set B (written A ⊆ B) if every element of A is also an element of B.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Empty Set": {def: "The set with no elements at all, written ∅ or {}.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Universal Set": {def: "The set that contains every element under consideration in a given problem — here, every mailable contact.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Union": {def: "The union of two sets (written A ∪ B) is everything that is in A, or in B, or in both.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Intersection": {def: "The intersection of two sets (written A ∩ B) is everything that is in BOTH A and B at the same time.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Venn Diagram": {def: "A diagram using overlapping circles inside a bounding rectangle to show how sets relate to each other and to the universal set.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"}
+};
+const HOWTO = [
+  ["How to find the union and intersection of two sets", "Venn Diagram"],
+  ["How to represent a set relationship using a Venn diagram", "Venn Diagram"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-SPECIFIC — story/domain-vocabulary glossary (MCS-47), separate
+   from the math GLOSSARY above. Links verified live 2026-09-06.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Conversion Rate": {desc: "The share of people who take a desired action (here, placing an order — completing an actual purchase, not just opening the email or clicking a link) out of everyone who received the send.",
+    link: "https://en.wikipedia.org/wiki/Conversion_marketing"},
+  "Placed-Order": {desc: "Completed an actual purchase — as opposed to merely opening the email or clicking a link. This is the specific action a \"placed-order (conversion) rate\" measures.",
+    link: "https://en.wikipedia.org/wiki/Conversion_marketing"},
+  "Email Marketing": {desc: "Sending commercial or promotional messages to a list of customers or prospects by email.",
+    link: "https://en.wikipedia.org/wiki/Email_marketing"},
+  "CRM": {desc: "Customer Relationship Management — the system a company uses to store and manage its customer data, including list membership.",
+    link: "https://en.wikipedia.org/wiki/Customer_relationship_management"},
+  "Newsletter Opt-In": {desc: "A customer's explicit choice to receive a company's regular email newsletter, typically by checking a box.",
+    link: "https://en.wikipedia.org/wiki/Opt-in_email"},
+  "List Segmentation": {desc: "Dividing a larger customer list into smaller groups based on shared traits or behavior, so each group can be targeted differently.",
+    link: "https://en.wikipedia.org/wiki/Market_segmentation"},
+  "ESP": {desc: "Email Service Provider — the platform (such as Klaviyo or Mailchimp) a company uses to send and track its marketing emails.",
+    link: "https://en.wikipedia.org/wiki/Email_service_provider_(marketing)"},
+  "Klaviyo": {desc: "A company that makes email and SMS marketing software; it publishes benchmark research from the campaigns run on its own platform, cited in this case as Source S1.",
+    link: "https://en.wikipedia.org/wiki/Klaviyo"},
+  "HubSpot": {desc: "A company that makes marketing, sales, and customer-service software, including email marketing tools; its published guidance is cited in this case as Source S2.",
+    link: "https://en.wikipedia.org/wiki/HubSpot"},
+  "Mailchimp": {desc: "A company that makes email marketing software; its own segmentation study is cited in this case as Source S3.",
+    link: "https://en.wikipedia.org/wiki/Mailchimp"},
+  "Shopify": {desc: "A company that provides the software platform many online stores run on; its published AOV benchmarks are cited in this case as Source S4.",
+    link: "https://en.wikipedia.org/wiki/Shopify"},
+  "Dynamic Yield": {desc: "A personalization-technology company, now part of Mastercard, whose benchmark research Shopify cited in the figures used for Source S4.",
+    link: "https://www.mastercard.com/us/en/business/consumer-acquisition-and-engagement/personalization/dynamic-yield.html"},
+  "List-Rental": {desc: "The practice of paying a fee to temporarily use someone else's mailing list for a single send, rather than mailing a list the company owns itself.",
+    link: "https://en.wikipedia.org/wiki/List_broker"},
+  "Paid-Sync": {desc: "Uploading the same customer list to a paid ad platform (like Facebook or Google) so ads can also target those same people, syncing the email send with paid advertising.",
+    link: "https://en.wikipedia.org/wiki/Targeted_advertising"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's
+   actually used, not just in the Appendix D list.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, svg, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  // Recomputation happens the next time Step 4's Check button runs (see checkStep4
+  // above, which reads #applyTwist directly) -- same pattern as
+  // cases/the-deferred-repair's own onTwistToggle().
+  const goal = document.querySelector('#notebook .stepbox:nth-of-type(4) .goal');
+  const applied = document.getElementById('applyTwist').checked;
+  if(goal){
+    goal.textContent = applied
+      ? "Challenge applied: recompute Option B's expected net revenue using the board member's halved intersection conversion rate, then hit Check again."
+      : "Using Appendix C's conversion-rate figures and AOV, compute each option's expected net revenue: reach × conversion rate × AOV − total send cost.";
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

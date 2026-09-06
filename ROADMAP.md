@@ -1,6 +1,6 @@
 # Roadmap — Math Builder
 
-**Last refreshed: 2026-09-05 (v2.18), against live scripts, not carried-forward numbers.**
+**Last refreshed: 2026-09-06 (v2.19), against live scripts, not carried-forward numbers.**
 For the full reasoning behind any line below — why a number moved, what broke, what was fixed —
 see **[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md)**, the complete narrative log. This file is just
 the status page: what's done, what's not, what's next.
@@ -11,10 +11,10 @@ the status page: what's done, what's not, what's next.
 
 | # | What | Why it's first |
 |---|---|---|
-| 1 | **Run the first real case with a real learner** (Track A3) | The single blocking fact — 0 cases have ever been run with a real learner, out of 124 now cleanly published (`python3 app/build_pipeline.py`, stage=promotion, TIER1_PASS, 0 blockers). Everything else is still a machine claim until this happens |
+| 1 | **Run the first real case with a real learner** (Track A3) | The single blocking fact — 0 cases have ever been run with a real learner, out of 134 now cleanly published (`python3 app/build_pipeline.py`, stage=promotion, TIER1_PASS, 0 blockers). Everything else is still a machine claim until this happens |
 | 2 | **Push `app/student-moksh-atit.html` to the live site** | Currently local-only; his first assigned month can't actually be used until this ships |
 | 3 | **Give `a-coachs-dilemma` its Tier 3 human dry-run** | Its long-standing blocker is now cleared: a genuine Tier 1 + Tier 2 re-run against the current NBA/Priya Shah content landed 2026-09-01 (`case.json.qa.run_on`, `case_md_sha256=fc3c53b5...`) — `tier1_structural.py --case a-coachs-dilemma` now shows 0 blockers, 3 disclosed non-blocking gaps (T1-10 reinforcement carve-out, T1-14/T1-15 known false-positive orphan-number matches), and all 6 Tier 2 probes PASS. Tier 3 (human dry-run) is the only remaining gate before `VERIFIED` — a natural pairing with item 1 above |
-| 4 | **Write the next zero-coverage cluster** (Calculus/Series — Taylor Series) | `standards_spine.json` shows 6 skills at genuine n=0 coverage across 4 clusters (Calculus/Series ×2, Geometry/Surface Area & Volume ×1, Calculus/Derivatives ×1, Number Sense ×2). None are currently scoped as concepts — this is the next real backlog item once the two items above land. See the prioritized 20-case worklist below |
+| 4 | **Decide the next coverage target** | Every true zero-coverage skill in the entire 437-skill standards spine is now closed (see 2026-09-06 note below) — this project has never been at `uncovered: 0` before. The next real backlog item is picking which of the remaining 162 thin (n=1/n=2) skill groups to thicken next, not closing a hard zero anymore. No batch is currently scoped — needs a fresh `case-brainstorm` pass against `standards_spine.json`'s live thin-group list |
 | 5 | **Push a `case-publish` to Google Drive for the first time** | Every case published across recent sessions built its packet and promoted the read-model, but Drive upload has been held back pending separate approval every time — still an open step for all of them |
 
 ---
@@ -48,6 +48,28 @@ termination-penalty figures) and `the-bracket-bet` had been recorded `TIER2_PASS
 (P5) `NOT RUN` — a real integrity gap, now closed with a genuine, disclosed sensitivity finding. See
 each case's `QA_REPORT.md` for the full remediation trail. `readmodel/` promoted for all 10;
 `app/dashboard.html` rebuilt same day. None yet pushed to Google Drive (see item 5).
+
+**2026-09-06: the curriculum zero-coverage batch — 10 cases — published. `uncovered` reaches 0
+for the first time in this project's history.** The Correction Window (Taylor Series ×2), The
+Painted Gallon (sphere volume), The Marginal Call (quotient rule), The Deep End (`depth`/`digit`)
+— the four true zero-coverage clusters `standards_spine.json` had flagged since 2026-09-02 — plus
+The Bandstand Angle, The Overlap Send (full 8/8 Set Theory close), The Custom Die, The Sightline
+Vote, The Mirror Cut, and The Special Order (full 8/8 Fractions close), thickening five of the
+highest-severity thin clusters. All 10 reached genuine `TIER2_PASS` before publish, margins
+6.4%–14.6%. Real defects found and fixed, not authored around: `the-painted-gallon`'s original
+design had the Multi-Column tank winning every dollar metric with no genuine dilemma — fixed not
+by retuning numbers but by adding a second real factor already present in the same cited
+engineering memo (fabricator sole-sourcing risk), plus 3 bad citations (an unsupported claim, a
+mis-cited CA Elections Code section, a dead USGS link) all replaced with verified sources;
+`the-custom-die`'s Twist depended on an unstated convention (whether a signed annual contract
+resets the tooling re-decision window) — now stated explicitly — and its accessibility probe found
+14 unglossed real-world terms, closed for real over 3 remediation rounds. Also fixed in
+`skills/case-readiness/scripts/tier2_probes.py`: a case-sensitive glossary-matching bug that let a
+case pass its glossary structural checks (T1-19/T1-21) while the accessibility cold-read still saw
+zero inline glosses for any term that only appears lowercase in prose — found independently on two
+different cases the same day. `readmodel/` promoted for all 10; `app/dashboard.html` rebuilt same
+day (the Calculus/Derivatives zero-coverage self-check failure that had stood since before
+2026-08-24 is now gone, closed by The Marginal Call). None yet pushed to Google Drive.
 
 **19 new cases published across two batches since 2026-08-30**, and `the-dosing-curve` /
 `the-irregular-boundary` have since cleared readiness and promoted (see the 2026-09-01 note below
@@ -95,7 +117,7 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 | Tag old cases against the skill map | ✅ Done | Worked to its honest limit |
 | Add Pre-Calculus / Calculus / Discrete Math to the skill map | ✅ Done | — |
 | Give every case facilitator discussion notes | 🔄 In progress | 16 of 56 older cases still missing them |
-| **Write/finish cases for Geometry & Pre-Calculus gaps** | 🔄 In progress | Pre-Calculus is fully closed; Geometry's Quadrilaterals & Polygons and Visual Perceptibility are now also fully closed — only Surface Area & Volume (1 skill: sphere volume) remains, plus the pre-existing Calculus/Derivatives (quotient rule) and Calculus/Series (Taylor series, 2 skills) clusters — see table below |
+| **Write/finish cases for Geometry & Pre-Calculus gaps** | ✅ Done | Pre-Calculus, Quadrilaterals & Polygons, Visual Perceptibility, Surface Area & Volume, Calculus/Derivatives, and Calculus/Series are all now fully closed (last three closed 2026-09-06 by The Painted Gallon/The Marginal Call/The Correction Window) — zero true zero-coverage skills remain anywhere in the spine |
 | Some subject areas have almost no cases at all | ⏳ Not started | Number Theory is the thinnest |
 
 **Geometry & Pre-Calculus gap tracker** (reprioritized ahead of other subjects per direct request):
@@ -167,6 +189,15 @@ Legend: ✅ done · 🔄 in progress · 🔜 next up · ⏳ open, not started ·
 
 ## Next 20 cases — prioritized coverage worklist (2026-09-02)
 
+**Superseded 2026-09-06: #1–4 (every zero-coverage cluster), #6 (Set Theory, full 8/8),
+and #10 (Fractions/Understanding Fractions, full 8/8) are now closed** — see the
+2026-09-06 batch note above (The Correction Window, The Painted Gallon, The Marginal Call,
+The Deep End, The Overlap Send, The Special Order). #5, #7, #8, #9 were also substantially
+thickened by The Bandstand Angle, The Custom Die, The Sightline Vote, and The Mirror Cut
+respectively, though none of those four groups reached a full close — re-run this worklist
+against the live spine before drawing the next batch rather than trusting the table below,
+which reflects 2026-09-02 numbers.
+
 Built directly from `standards_spine.json`'s live `covered_by[]` arrays (not from the stale
 `gap_queue.json`, see Housekeeping above). Rubric score = `3×(skills at n=0) + 2×(skills at n=1) +
 1×(skills at n=2)` — i.e. a genuinely-uncovered skill outweighs five thinly-covered ones. The 4
@@ -214,18 +245,17 @@ separately flags Number Theory as thinnest overall).
 
 | | |
 |---|---|
-| Cases that are genuinely ready to assign (published, live re-scan, `python3 app/build_pipeline.py`) | **114** |
-| Cases at stage=promotion but genuinely `BLOCKED` (not force-passed) | **0** — `a-coachs-dilemma` cleared 2026-09-01, see item 3 above |
-| Total case directories under `cases/` (pipeline-authored corpus) | **119** (`ls -d cases/*/ \| wc -l`) |
-| Cases in drafting / research / readiness | **4** — 0 drafting, 1 research, 3 readiness (see note above; the pipeline is not empty this refresh) |
-| Concepts scoped but not yet written into a case | **0** (was 9 — see the 2026-09-01 note; includes a genuine title-matcher bug fix, not just new writing) |
+| Cases that are genuinely ready to assign (published, live re-scan, `python3 app/build_pipeline.py`) | **134** |
+| Cases at stage=promotion but genuinely `BLOCKED` (not force-passed) | **0** — `a-coachs-dilemma` cleared 2026-09-01, see item 3 above (`the-locks-window` is `BLOCKED` at stage=research, intentionally, a documented historical record, not a defect) |
+| Total case directories under `cases/` (pipeline-authored corpus) | **138** (`ls -d cases/*/ \| wc -l`) |
+| Concepts scoped but not yet written into a case | **0** (18 concept sheets in `cases/_concepts/`, all C-numbered concepts written) |
 | Cases ever run with a real student | **0** |
 | Skills in the curriculum map | 437 (`readmodel/standards_spine.json.totals.skills`) |
-| Skills with zero coverage (n=0) | **6** — Number Sense (2: Depth, Digit), Geometry/Surface Area & Volume (1: sphere volume), Calculus/Derivatives (1: quotient rule), Calculus/Series (2: Taylor series) |
-| Skills "thin" (1 ≤ n ≤ 2, the project's tracked thin-coverage threshold, `standards_spine.json.totals.thin_1_2`) | 211 |
-| Distinct case titles credited in the spine (`standards_spine.json.totals.cases`) | 123 |
+| Skills with zero coverage (n=0) | **0 — first time in this project's history**, closed 2026-09-06 (Taylor Series ×2, sphere volume, quotient rule, Depth, Digit) |
+| Skills "thin" (1 ≤ n ≤ 2, the project's tracked thin-coverage threshold, `standards_spine.json.totals.thin_1_2`) | 162 |
+| Distinct case titles credited in the spine (`standards_spine.json.totals.cases`) | 143 |
 | Legacy source-corpus cases still un-triaged/exception (`readmodel/pipeline_status.json.legacy_exceptions`) | 2 (`Castle Securtiy`, `Investing - Stock Market - Options (Jia)`) |
-| Concept-sheet backlog files (`cases/_concepts/CONCEPTS_*.md`) | 14 sheets, 0 unwritten C-numbered concepts remaining across all of them |
+| Concept-sheet backlog files (`cases/_concepts/CONCEPTS_*.md`) | 18 sheets, 0 unwritten C-numbered concepts remaining across all of them |
 | `app/dashboard.html` last rebuilt | **2026-09-01** — must be rerun (`python3 app/build_dashboard.py`) after every future `case-publish`, or the live site keeps serving stale data even though the underlying case files are correct. `--verify` clean at 206 checks, 2 pre-existing documented failures (Calculus/Derivatives zero-coverage cluster; `phone-plans`/Moksh Atit tracker exception), 1080/1080 asset links resolved |
 | `readmodel/domains.json` / `domain_coverage.json` | 40 domains, 12 clusters, `app/validate_domains.py` 28/28 checks passing |
 
