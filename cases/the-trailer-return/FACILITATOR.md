@@ -14,8 +14,12 @@ hardship. No facilitator flag required beyond ordinary care with real municipal 
 Frame the case as a real routing decision a small town's public-works department makes every
 single collection day. Name the opener: Denise Okafor standing in the Public Works yard, breath
 fogging over Truck 4's exhaust, a flatbed hauler's quote open on her phone, a one-page
-recommendation due to her supervisor before Thursday's budget meeting. She has not put the truck
-in gear yet — that pause is the whole case.
+recommendation due to her supervisor before Thursday's budget meeting. Fifteen years into this
+route, she still runs it with a hand-annotated paper map bungeed to the dash, because the GPS
+"argues with her" about which streets are actually one-way or blocked, and that paper map has
+never once been wrong — she's practical and a little stubborn about trusting her own read of the
+pavement, and she treats a few minutes saved as a genuine win, not just a line item. She has not
+put the truck in gear yet — that pause is the whole case.
 
 ## Launch
 

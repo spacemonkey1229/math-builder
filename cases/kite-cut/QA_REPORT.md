@@ -126,3 +126,69 @@ checks run: 21 · PASS 19 · GAP 2 · FAIL 0
 
 ### Tier 3 — human dry-run
 NOT RUN
+
+## case-readiness run — 2026-09-10 (character/voice remediation)
+**State:** TIER2_PASS → TIER2_PASS (re-verified)   **Verdict:** PASS
+
+### Change since last run
+Purely a protagonist character/voice pass, requested because three of the six newly-published
+cases shared the template-artifact first name "Priya." Renamed the protagonist **Priya Anand →
+Kavi Anand** everywhere (`case.md`, `FACILITATOR.md`, `case.json.protagonist`, `RESEARCH_LOG.md`
+framing text, and all four `published/` packet files). Added real character texture to
+`case.md`'s Background section and `FACILITATOR.md`'s Intro: Kavi is third-generation owner (his
+grandfather started the shop — this ties directly into the pre-existing "kite-history binder her
+grandfather kept" detail in Overview, now "his"), grew up in competitive glass-coated-line
+kite-fighting, and carries that world's obsession with a clean, waste-free cut into the shop,
+including one in-voice cutting-metaphor line. **No numbers, margins, options, deliverables,
+sources, or the verdict were touched** — confirmed by diff: only prose sentences containing the
+protagonist's name or pronoun changed in `case.md`/`FACILITATOR.md`; `case.json`'s `derived{}`,
+`margin_pct`, `balance{}`, `modeling_assumptions[]`, and `sensitivity_disclosure[]` are byte-identical
+to the prior run except the updated `qa{}` block itself.
+
+### Rebuild
+- `published/Kite Cut - Case Study.docx` and `published/Kite Cut - Facilitator Guide.docx`
+  regenerated via `skills/case-publish/scripts/build_docx.js kite-cut` from the edited
+  `case.md`/`FACILITATOR.md` (not hand-edited). Verified programmatically: 0 occurrences of
+  "Priya", 8 and 6 occurrences of "Kavi" respectively.
+- `published/Kite Cut - Data.xlsx` — scanned every cell; contained no protagonist name in either
+  version, so left byte-for-byte unchanged (only its mtime was refreshed for T1-15 continuity).
+- `published/Kite Cut - Interactive.html` — hand-edited (no per-case `html_config.py` exists for
+  this case, so it was not originally built through `scripts/generic_publish/build_html.py`;
+  edited the same five prose spans directly). Verified: 0 occurrences of "Priya" remaining anywhere
+  in the file.
+- `published/MANIFEST.json` — refreshed `built_on`, `case_md_sha256`, file byte counts, and an
+  added note documenting this pass.
+
+### Tier 1 — structural (21 checks), re-run after the rename
+checks run: 21 · PASS 19 · GAP 2 · FAIL 0 (sha256(case.md)=c38f8b29218b89bf5c00adf1631115a0a3d8a2b9446c36846c547aefcc376dac)
+
+Same two GAPs as the prior run, unaffected by this pass: T1-10 (reinforcement carve-out, expected/
+permanent) and T1-15 (the pre-existing clock-time false-positive in the Facilitator Guide docx
+continuity sweep — 10.0/15.0/45.0 are `10:00`/`15:00`/`45:00` table entries in the Socratic-plan
+timing table, a documented checker limitation, not new content). 0 BLOCKERs.
+
+**VERDICT: TIER1_PASS (0 blockers, 2 gaps)** — unchanged from the prior run.
+
+### Tier 2 — simulated play (7 probes), re-verified
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | PASS | Re-solved fresh from the current packet: both raw sail areas are identical (648 sq in each, diagonals formula is crossing-point-independent); Option A's zero-waste parallelogram pairing plus 576 sq in tail (1,224 sq in total, $4.505 fabric + $7.50 spar = $12.005/kite) still undercuts Option B's individually-boxed 1,296 sq in ($4.770 fabric + $7.50 spar = $12.270/kite) by 2.16%. Metric optimized: total material cost per kite/run (the case's own `primary_metric`), not raw area. Most sensitive assumption: MA3. Weakest-supported number: S2's unbundled "from $3.75" rod price. Unaffected by the character pass — arithmetic and options are untouched. |
+| P2 both-sides | PASS | Re-run: A's best sentence — "the zero-waste parallelogram nesting is proven geometry, not an assumption, and still wins on the stated numbers." B's best sentence — "Option A's cost edge depends entirely on MA3, an unsourced worst-case assumption for B that Appendix H explicitly invites you to challenge." Neither side collapses. |
+| P3 trap | PASS | The trap (judging material cost by outline shape without running D2's diagonals-formula comparison) is unchanged in `FACILITATOR.md` and still the most plausible wrong path from a fresh read of the renamed `case.md`. |
+| P4 twist | PASS, same documentation note as before | The Interactive HTML's optional MA3-waste-multiplier toggle (2.0x → 1.5x, flipping the recommendation to B) is untouched by this pass and still survives every reading of the case's stated assumptions cleanly. The pre-existing tension between FACILITATOR's "Twist: N/A" framing and the HTML's scripted toggle remains an open (non-blocking) documentation note from the prior run, not a new finding. |
+| P5 sensitivity | PASS (disclosed) | Re-run of the mechanical ±50% sweep on the 3 declared dials (`tail_len_mult`, `tail_width_in`, `b_layout_waste_mult`) reproduces the identical prior result: all three flip the verdict to B at the extremes, each already carries a category + justification in `sensitivity_disclosure[]` (unedited by this pass), base winner is still A at 2.16%. |
+| P6 data decay | PASS | Live-refetched all 7 cited URLs (S1–S7) via WebFetch. Every recorded claim/value still appears verbatim: S1 diamond-kite sizing, S2 rod price/length ("from $3.75", 48in/72in options), S3 "19 percent of the way down from the nose" + tailless, S4 "typical diamond-shaped kites need a tail", S5 $7.95/yd + 60in/1.52m width, S6 "3-4 times the height", S7 "several times the height." No drift, no dead links. |
+| P7 accessibility cold-read | PASS | Read the rebuilt `published/Kite Cut - Interactive.html` cold-read packet myself, fresh. Only one genuinely unexplained real-world (non-math) concept remains: "bowed spreader" (Background, mentioned twice, no inline glossary entry — same as the prior run). The new character texture ("competitive kite-fighting," "glass-coated-line matches," "cutting the other flier's line") is self-explanatory from its own sentence context and introduces no second unexplained concept — 1 named concept stays under the 2-concept FAIL threshold. |
+
+### MA3 disclosure check (explicit, per remediation request)
+Confirmed MA3 is still honestly disclosed post-edit, not obscured by the character pass:
+`case.json.modeling_assumptions[2]` (MA3) and `sensitivity_disclosure[2]` are unedited and intact;
+Appendix E in both `case.md` and the rebuilt `Interactive.html`/`Case Study.docx` still states the
+2.0x waste multiplier as an unsourced modeling assumption with its basis and sensitivity note;
+`FACILITATOR.md` Anchor 4 still surfaces the ≈1.89x flip point verbatim; the Interactive HTML's
+Twist section still exposes the 2.0x → 1.5x toggle. No figure, disclosure sentence, or sensitivity
+note was touched by this pass.
+
+### Tier 3 — human dry-run
+NOT RUN

@@ -11,7 +11,11 @@ Triangle, Leg, and the multiply/divide-decimals and percent-of-a-number "how to�
 
 Frame the format: a real professional dilemma, not a worksheet with a story stapled on. Name
 the opener — "One engineer, one pallet of free salvage steel, and a shop that starts cutting new
-steel at four o'clock whether Priya has an answer or not."
+steel at four o'clock whether Suri has an answer or not." Worth naming for the room: Suri grew up
+in this town and crossed the old footbridge over this same creek every school morning as a kid —
+she still carries a tape measure in her bag out of habit, even to meetings where she'll never need
+it — but she's a by-the-book engineer first, and the case is about whether that sentimentality gets
+anywhere near her actual recommendation.
 
 ## Launch
 
@@ -88,7 +92,7 @@ from $24.91 to $23.02. The winner does not flip — The Warren Line is still che
 $23.02/ft — but the margin drops from 14.81% to **7.84%**, roughly half of what it was.
 
 Follow-up: **"What just broke in your model? Were you wrong, or just missing information — and how
-confident should Priya actually be in her recommendation now?"** A Hero who declared A the clear
+confident should Suri actually be in her recommendation now?"** A Hero who declared A the clear
 winner has to reckon with how much of that "clear" was really doing the work of a single
 unverified labor-hour estimate (MA1).
 

@@ -37,7 +37,7 @@ PARAMS = {
 
 # Probe 5 flexes THESE and only these. FIXED 2026-09-09 (case-readiness Tier 2 P5
 # remediation): the box dimensions were previously included here too, on the
-# theory that they're "Priya's own team's engineering choice, not a physical
+# theory that they're "Odalys's own team's engineering choice, not a physical
 # constant." That reasoning doesn't hold up against SPEC's own FLEX-scoping
 # doctrine (skills/case-readiness/SKILL.md, "FLEX[] scoping is the model
 # author's responsibility") — Appendix C's dimensions are presented as fixed

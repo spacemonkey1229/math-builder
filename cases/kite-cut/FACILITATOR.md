@@ -12,8 +12,11 @@ Researched and margin-resolved 2026-09-09 (`margin_pct` = 2.16, see `sensitivity
 ## Intro
 
 Frame the format: this is a real small-business cutting-floor decision with a deadline tonight,
-not a worksheet about shapes. Name the opener — "You're the owner. Two sample frames are on the
-mat. Two hundred fifty kites' worth of fabric budget rides on which one you cut tonight."
+not a worksheet about shapes. Name the opener — "You're Kavi Anand, third-generation owner of
+Anand Kite Works. You grew up in competitive kite-fighting, where cutting your line clean was a
+point of pride — now that same obsession with never wasting fabric is on the line for real, in
+dollars. Two sample frames are on the mat. Two hundred fifty kites' worth of fabric budget rides
+on which one you cut tonight."
 
 ## Launch
 
@@ -27,7 +30,7 @@ loud before anyone touches a calculator.
 
 **TAKE A STAND AND VOTE. No reasoning yet, just commit.**
 
-"Is anyone courageous enough to stand with Priya on The Eddy Flyer — the one that skips the tail
+"Is anyone courageous enough to stand with Kavi on The Eddy Flyer — the one that skips the tail
 entirely?" Show of hands, both options, no discussion. Record the count for Close.
 
 ## Anchor 2 — What is the problem we're solving?
@@ -35,8 +38,8 @@ entirely?" Show of hands, both options, no discussion. Record the count for Clos
 **"Is this the right question?" · "What do you mean by 'better'?"**
 
 Let confusion grow. Heroes will want to jump to "which one flies better" or "which one looks more
-impressive at a festival" — real considerations, but not the graded metric. Push: "Priya's boss is
-her own supply budget. What number does *she* actually need before five o'clock?" If the room
+impressive at a festival" — real considerations, but not the graded metric. Push: "Kavi's boss is
+his own supply budget. What number does *he* actually need before five o'clock?" If the room
 separates "which kite is the better flyer" from "which one costs less to build," the case is
 working.
 
@@ -99,8 +102,8 @@ color") if a live run shows the discussion needs a jolt.
    would have to be true about the Eddy sail's shape for the same trick to work on it?
 3. **MA3 is one stated assumption away from flipping the case.** Is a case-author's stated
    assumption — even a reasoned, disclosed one — a fair thing to build a recommendation on, when
-   the sensitivity math shows how close it is to changing the answer? What would Priya want to
-   verify with her own cutting floor before committing to either option?
+   the sensitivity math shows how close it is to changing the answer? What would Kavi want to
+   verify with his own cutting floor before committing to either option?
 
 ## 45-minute Socratic plan
 
@@ -128,8 +131,8 @@ to miss if a Hero stops at "I computed the area, so I'm done."
 1. D2 shows both frames enclose exactly 648 square inches of sail fabric. If the shapes look this different, why is the raw area identical — and what does that tell you about judging material cost by eye?
 2. D3 proves two rhombus panels nest into a parallelogram with zero waste. What single property of a rhombus makes that proof work, and why does the same construction fail to close cleanly for a kite that isn't also a rhombus?
 3. MA3 assumes Option B's sail panels are cut with no pairing efficiency at all. What would a real cutting-floor test have to show about the Eddy sail's shape to change that assumption — and how far would it have to move before Option B actually wins?
-4. Option A needs a tail and Option B doesn't. If tail material were free, would you still recommend Option A — and does that change what you'd tell Priya to research before committing the shop's budget?
-5. The margin between the two options is thin. If you were Priya, what's the one number on this cutting floor you'd want to double-check with a real supplier invoice before signing off on 250 kites?
+4. Option A needs a tail and Option B doesn't. If tail material were free, would you still recommend Option A — and does that change what you'd tell Kavi to research before committing the shop's budget?
+5. The margin between the two options is thin. If you were Kavi, what's the one number on this cutting floor you'd want to double-check with a real supplier invoice before signing off on 250 kites?
 
 ## Close
 

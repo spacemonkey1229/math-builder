@@ -37,7 +37,7 @@ pass; this log documents both what was needed and what was found/rejected.
 - Fetched: `https://www.my-best-kite.com/eddy-kite.html` — confirmed: spreader crosses "19 percent
   of the way down from the nose" on the original Eddy design (a "modern variation" at 25% is also
   mentioned but not used — this case uses the historic original proportion, matching the
-  Background's framing of it as the design Priya found in her grandfather's kite-history binder).
+  Background's framing of it as the design Kavi found in his grandfather's kite-history binder).
 - Outcome: **SOURCED** → S3. MEDIUM confidence — a hobbyist kite-history reference, not Eddy's own
   1890s documentation, but specific and internally consistent with S4.
 

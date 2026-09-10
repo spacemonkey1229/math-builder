@@ -194,3 +194,53 @@ NOT RUN.
 
 ## Next step
 Tier 2 is clean. `case-publish` / Tier 3 human dry-run can proceed when scheduled.
+
+## case-readiness run — 2026-09-10 (protagonist rename)
+**State:** TIER2_PASS → TIER2_PASS   **Verdict:** PASS
+
+### What changed
+Protagonist renamed "Priya Nakamura, P.E." → "Suri Nakamura, P.E." across `case.md`,
+`FACILITATOR.md`, `case.json.protagonist`, and `published/Creek Span - Interactive.html`
+(prose only — no numbers, margins, options, deliverables, sources, or the verdict touched).
+Added character texture to `case.md`'s Background (and a matching one-sentence beat in
+`FACILITATOR.md`'s Intro): Suri grew up in this town and crossed the old footbridge over Miller's
+Creek every school morning as a kid, and still carries a tape measure in her bag out of habit even
+to meetings where she won't use it. `LEARNING_GOALS.md` and `RESEARCH_LOG.md` contained no
+protagonist name (checked — neither names Priya), so neither needed edits.
+Published packet rebuilt: `Creek Span - Case Study.docx` and `Creek Span - Facilitator Guide.docx`
+regenerated via `skills/case-publish/scripts/build_docx.js creek-span`; `Creek Span - Data.xlsx`'s
+one "Priya" cell (Appendix B side-note, `A2`) updated via openpyxl and verified cell-for-cell
+identical to the prior workbook except that one string. `Creek Span - Interactive.html` had only
+its 7 protagonist-name/Background-prose lines edited (`git diff` confirms no other line changed) —
+its independently-verified glossary/JS logic (`evaluate()`/`evaluate_twist()`, `STORY_GLOSSARY`,
+the steel-angle/math-Angle term-collision fix) is byte-for-byte untouched.
+`published/MANIFEST.json` resynced (`case_md_sha256`, `built_on`, file byte counts) via
+`skills/case-readiness/scripts/resync_artifacts.py --case creek-span` plus a manual MANIFEST note,
+since that script only touches HTML/docx/xlsx mtimes, not MANIFEST.json content.
+
+### Tier 1 — structural (21 checks), re-run
+PASS 18 · GAP 2 · FAIL 0. **0 BLOCKERs.** Same two pre-existing, already-documented GAPs as every
+prior run (T1-03 Option B fuzzy-match false positive; T1-10 reinforcement carve-out). Verdict:
+**TIER1_PASS**.
+
+### Tier 2 — simulated play (7 probes), re-run
+No case math, sources, or the FACILITATOR twist logic changed — only protagonist name and prose
+texture — so every probe was re-verified against the rebuilt packet rather than assumed.
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Re-read the regenerated cold-solve packet (`/tmp/coldsolve-creek-span/PACKET.md`, now naming Suri). Reproduced the full D5 arithmetic unchanged: chord + new-diagonal weight × $0.55/lb + joints × 1.5 hr × $30.18/hr, ÷ 24 ft → A $21.22/ft vs. B $24.91/ft, 14.81% margin. Metric named (total fabricated cost per foot of span), MA1 named as most sensitive assumption, S4 named as least-supported figure. |
+| P2 both-sides solve | **PASS** | A's case (fewer joints, lighter chord) and B's case (zero-cost salvage, cheaper raw material at $190.34 vs $192.32) both still stand on their own; B still collapses first at the full D5 joint-labor tally, unchanged from the prior run — none of this turns on the protagonist's name. |
+| P3 trap check | **PASS** | The "free steel is free steel" trap named in `FACILITATOR.md`'s Data Deep Dive is unchanged and still the most plausible wrong path from `case.md` alone. |
+| P4 twist integrity | **PASS** | Re-derived the twist under the case's own stated facts: jointsB 9→8, labor = 8 × 1.5 hr × $30.18/hr = $362.16, total = $552.50, $23.02/ft — matches `case.json.derived.twist_cost_per_ft_b_usd`/`twist_margin_pct` (23.02 / 7.84%) exactly. No unstated convention required; winner unchanged. |
+| P5 assumption sensitivity | **PASS** | `sensitivity_model.py` mechanical sweep of MA1 ±50%: margin ranges 11.0%–16.7%, A wins throughout, no SPEC §2 cap breach. |
+| P6 data decay | **PASS** | Fetched all 3 distinct sourced URLs directly (WebFetch): Engineers Edge (S1/S2/S3, all three weights 3.21/4.89/7.17 lb/ft confirmed verbatim), SteelFlo (S4, $950–$1,250/ton range confirmed verbatim), BLS OOH (S5, $62,780/yr May-2025 median confirmed verbatim). No dead links, no drifted figures. |
+| P7 accessibility cold-read | **PASS** | Regenerated `/tmp/coldread-creek-span/PACKET.md` from the rebuilt Interactive HTML and read it cold myself (no nested/background agent). Confirmed the P7-fix from the prior run is still intact: "steel angle" carries the correct structural-steel definition (the packet still shows the known, previously-documented packaging artifact of the math Angle gloss appended after it — a cold-read packet construction quirk, not a live-page defect, per the prior run's note and reconfirmed by `git diff` showing the linker JS untouched), P.E./AISC/A36/L2×2×1/4 are all explained on first use, and "floodway ordinance" remains the sole borderline/soft item — 1 concept, at/under the probe's 0–1 pass threshold. No new unexplained concepts introduced by the rename or the added Background texture. |
+
+**7 of 7 probes PASS.** `case.json.qa.state` stays `TIER2_PASS`, `qa.verdict` stays `PASS`.
+
+### Tier 3 — human dry-run
+NOT RUN.
+
+## Next step
+Tier 2 remains clean after the protagonist rename. No further action required for this pass.

@@ -3,7 +3,7 @@ MS | Math | Case Study | 2026-27 | Heroes Academy
 
 ## Overview
 
-Priya Nakamura has two truss elevations pinned to the light table and a shop that stops cutting
+Suri Nakamura has two truss elevations pinned to the light table and a shop that stops cutting
 steel at four o'clock.
 
 She's the newest P.E. at Ferrand & Cole Structural, and this is the first bridge she's allowed to
@@ -12,7 +12,7 @@ rail-trail's washed-out plank crossing — but the county's purchasing agent kee
 same photo: a pallet of salvaged steel angle in the shop yard, pulled off a footbridge the county
 tore out last spring. "Free steel is free steel," his email says. "Use what we've got."
 
-Priya has been staring at that pallet since Tuesday. She can see, just by eye, that the pieces are
+Suri has been staring at that pallet since Tuesday. She can see, just by eye, that the pieces are
 short — shorter than she'd normally spec for a truss this size. Whether "short" means "won't reach"
 is a different question, and it's the one her supervisor just asked her, standing in her doorway
 with her coat already on.
@@ -20,15 +20,20 @@ with her coat already on.
 "Shop's cutting new steel at four either way," she says. "Which truss are we drawing — the one that
 needs new diagonals, or the one that can actually use what's sitting in the yard?"
 
-Priya pulls the tape measure off her desk and looks at the two elevations again.
+Suri pulls the tape measure off her desk and looks at the two elevations again.
 
 ## Background
 
-Priya Nakamura is a staff structural engineer at Ferrand & Cole Structural, a small civil
-engineering firm under contract to the Kestrel County Parks Department. Her job is to finalize the
-shop drawing for a replacement pedestrian truss bridge over Miller's Creek, on a heavily used
-rail-trail — a drawing the fabricator's shop will cut steel from directly, so every member length on
-it has to be a real, buildable length, not just a number that looks right on the elevation.
+Suri Nakamura is a staff structural engineer at Ferrand & Cole Structural, a small civil
+engineering firm under contract to the Kestrel County Parks Department. She grew up in this town,
+close enough to Miller's Creek that she crossed the old plank footbridge every school morning as a
+kid, so the crossing she's now been asked to redesign is not just another job site to her — a fact
+she keeps carefully separate from the engineering. She still carries a tape measure in her bag out
+of old habit, pulling it out even in meetings where she'll never actually use it. Her job here is to
+finalize the shop drawing for a replacement pedestrian truss bridge over Miller's Creek, on a
+heavily used rail-trail — a drawing the fabricator's shop will cut steel from directly, so every
+member length on it has to be a real, buildable length, not just a number that looks right on the
+elevation.
 
 A truss is rigid for a specific geometric reason: a triangle is the only polygon whose shape is
 fixed once its three side lengths are set — a rectangle can rack into a parallelogram under load,
@@ -71,7 +76,7 @@ and the Triangle Inequality Theorem.)
 
 ## Dilemma
 
-You are Priya Nakamura.
+You are Suri Nakamura.
 Do you:
 A.) Detail The Warren Line — three 8-foot equilateral-triangle panels, every diagonal cut from new
 steel OR
@@ -135,7 +140,7 @@ section even though its span and loading are identical to The Warren Line's.
 
 ## Appendix B — The Truss Geometry
 
-Priya's own layout for this crossing — not a public bridge plan (Ferrand & Cole's project
+Suri's own layout for this crossing — not a public bridge plan (Ferrand & Cole's project
 drawings are proprietary), but built entirely from real, standard Warren-truss geometry and the
 county's own floodway clearance requirement.
 

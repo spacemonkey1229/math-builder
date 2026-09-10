@@ -3,31 +3,37 @@ MS | Math | Case Study | 2026-27 | Heroes Academy
 
 ## Overview
 
-Priya Anand is on her knees on the workshop floor, surrounded by spooled ripstop nylon and a fan
-of fiberglass rods, when her phone buzzes against the cutting mat again. The city Arts Festival's
+Kavi Anand is on his knees on the workshop floor, surrounded by spooled ripstop nylon and a fan
+of fiberglass rods, when his phone buzzes against the cutting mat again. The city Arts Festival's
 event coordinator wants a final answer on the opening-day kite giveaway — tonight, before Anand
 Kite Works closes for the day.
 
 Two sample frames lie side by side on the mat, both a diamond silhouette the crowd will recognize
 on sight, both cut to the same square-ish outline. Only the crossbar sits in a different place on
-each. On one, the crossbar splits the spine dead center — a shape so symmetric she can fold it on
-itself either way. On the other, the crossbar rides high, closer to the nose, an old proportion she
-found in a kite-history binder her grandfather kept, the one that supposedly lets the sail fly
+each. On one, the crossbar splits the spine dead center — a shape so symmetric he can fold it on
+itself either way. On the other, the crossbar rides high, closer to the nose, an old proportion he
+found in a kite-history binder his grandfather kept, the one that supposedly lets the sail fly
 without a tail dragging behind it in the wind.
 
-Both frames look, to the naked eye, like they'll eat about the same yardage off the roll. Priya
+Both frames look, to the naked eye, like they'll eat about the same yardage off the roll. Kavi
 isn't convinced that's actually true, and with the whole festival order riding on tonight's
-purchase order, "looks about the same" isn't something she can sign her name to.
+purchase order, "looks about the same" isn't something he can sign his name to.
 
-She pulls the fabric roll and the spar invoices onto the mat, picks up a marker, and starts laying
+He pulls the fabric roll and the spar invoices onto the mat, picks up a marker, and starts laying
 out cutting patterns.
 
 ## Background
 
-Priya Anand owns and runs Anand Kite Works, a small kite-making business that supplies hand-built
-festival and promotional kites to city arts organizations, schools, and specialty retailers. She
-prices and cuts every production run herself, which means every material decision — fabric, spars,
-trim — has to pencil out before she commits the shop's supply budget to an order.
+Kavi Anand owns and runs Anand Kite Works, a small kite-making business that supplies hand-built
+festival and promotional kites to city arts organizations, schools, and specialty retailers —
+the same shop his grandfather opened three generations ago. Kavi grew up in competitive
+kite-fighting, the glass-coated-line matches where the whole game is cutting the other flier's
+line before they cut yours, and that's where his obsession with never wasting an inch of sail
+fabric really comes from — to him, a clean cut isn't just cheaper, it's a point of pride carried
+over from the fighting kite field. He still talks that way on the shop floor, telling apprentices
+"you don't get to keep flying if you can't keep your line tight." He prices and cuts every
+production run himself, which means every material decision — fabric, spars, trim — has to
+pencil out before he commits the shop's supply budget to an order.
 
 The festival wants **250 identical diamond-shaped kites** for its opening-day giveaway (SEE
 APPENDIX D), each built to the shop's standard festival size: a **36-inch-tall, 36-inch-wide**
@@ -35,7 +41,7 @@ sail — a size consistent with typical diamond-shaped kites generally, which "v
 most are less than 1 metre (3 ft) in height" [S1] (SEE APPENDIX A). Every kite in the run uses the
 same two framing sticks — a vertical **spine** and a horizontal **spreader**, each cut from
 **0.125-inch fiberglass rod** [S2] — crossing at a right angle to form the sail's two diagonals.
-Where those two sticks cross is the only real difference between the two designs on Priya's cutting
+Where those two sticks cross is the only real difference between the two designs on Kavi's cutting
 mat.
 
 **The True Diamond** crosses the spreader at the exact midpoint of the spine — 18 inches down from
@@ -44,12 +50,12 @@ proportion instead: the spreader crosses **19 percent of the way down the spine 
 [S3], well above center. That single difference in crossing point is real engineering, not
 decoration — "typical diamond-shaped kites need a tail to help with stability" [S4], while the
 off-center Eddy proportion (paired with a bowed spreader) was specifically developed to fly stable
-without one [S3][S4] (SEE APPENDIX E for how this case treats the tail Priya must still cut for The
+without one [S3][S4] (SEE APPENDIX E for how this case treats the tail Kavi must still cut for The
 True Diamond).
 
 Fabric comes off a single roll of **60-inch-wide ripstop nylon** priced at **$7.95 per yard** [S5]
 (SEE APPENDIX B), and every square inch that isn't turned into a finished sail or tail is fabric
-Priya has already paid for and cannot resell. How efficiently each frame's sail shape can actually
+Kavi has already paid for and cannot resell. How efficiently each frame's sail shape can actually
 be laid out and cut from that roll — not just how much sail area each design encloses — is the real
 question behind tonight's purchase order (SEE APPENDIX C). All figures in this case are sourced in
 Appendix F, or stated as an explicit modeling assumption in Appendix E where no public figure
@@ -59,7 +65,7 @@ diamond-kite construction.)
 
 ## Dilemma
 
-You are Priya Anand.
+You are Kavi Anand.
 Do you:
 A.) Cut the whole order as The True Diamond — a symmetric rhombus frame that needs a tail on every
 kite OR

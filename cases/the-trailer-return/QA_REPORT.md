@@ -58,3 +58,63 @@ NOT RUN — no `RUN_REPORT` filed yet; out of scope for this remediation pass.
 5. Updated `case.json.qa` (state, verdict, blockers_open, gaps_open, tier2 block, case_md_sha256) and `published/MANIFEST.json` (hash, byte sizes, note) to match.
 
 **Skipped (documented, not fixed):** the T1-15/T1-18 shared-tooling number-extraction false positives described above — fixing them means patching `tier1_structural.py`'s docx/xlsx checkers or the generic build scripts project-wide, which is out of scope for a single-case remediation pass and was judged excessive rework per task instructions.
+
+---
+
+## case-readiness run — 2026-09-10 (character/voice pass — protagonist personality)
+**State:** TIER2_PASS → TIER2_PASS   **Verdict:** PASS
+
+Scope: gave protagonist Denise Okafor (name unchanged) a memorable, concrete personality —
+15 years on the route, a hand-annotated paper street map she trusts over the GPS ("argues with
+her" about one-ways/construction, "has never once been wrong"), treats shaved minutes as a real
+win, practical/stubborn-but-not-a-luddite. Edited `case.md` Background (2nd paragraph), the
+`FACILITATOR.md` Intro, and `case.json.protagonist`; propagated the same Background rewrite into
+`published/The Trailer Return - Interactive.html`; rebuilt `published/*.docx` via
+`skills/case-publish/scripts/build_docx.js the-trailer-return` (reads case.md/FACILITATOR.md
+directly, so both docx files picked up the new text automatically). **No numbers, margins,
+options, deliverables, sources, or the verdict were touched** — Appendices A-H, `sensitivity_model.py`,
+and the balance/margin block are byte-identical to the prior pass.
+
+### Tier 1 — structural (21 checks)
+Re-ran `tier1_structural.py --case the-trailer-return`. **0 BLOCKER, 4 GAP** (same four as the
+prior pass, all pre-existing shared-tooling artifacts, not case-content drift):
+- T1-10 — `new_coverage[]` empty, carve-out via `reinforcement_note` (unchanged, still valid).
+- T1-15 — `Data.xlsx` README!A2 boilerplate year-range number ("27") and the Facilitator Guide
+  docx's un-stripped plan-table clock times (30.0, 45.0) — cosmetic, unrelated to this pass.
+- T1-18 — Interactive HTML's fee-slider `max="300"` UI default flagged as an orphan number —
+  cosmetic, unrelated to this pass.
+`published/MANIFEST.json` and `case.json.qa.case_md_sha256` updated to the new case.md hash
+(`553d83bb...`); `Data.xlsx` touched (content unchanged, mtime refreshed) to clear the T1-15
+CONTINUITY-STALE blocker that a bare timestamp mismatch would otherwise raise. **VERDICT: TIER1_PASS.**
+
+### Tier 2 — simulated play (7 probes)
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Re-read the packet fresh. Appendix B/C's Practice Block scaffolding (26 vertices, 14 odd, full pairwise distance table) is untouched byte-for-byte — the same hand-workable greedy pairing from the prior pass still holds (e.g. O&ndash;R and Q&ndash;S free at 0.0000 mi, E&ndash;V at 0.0099 mi, L&ndash;M at 0.0227 mi). D5 still routes through Appendix D's pre-computed official full-grid figures rather than asking the student to hand-run the 68-vertex matching. **The 68-vertex tractability question this case turns on is unaffected by a Background/Intro-only text pass** — confirmed no appendix, table, or script content changed. |
+| P2 both-sides | **PASS** | A's and B's one-sentence pitches are exactly as before (A: ~12x cheaper in raw dollars; B: a real 3.70% cut in the case's own primary metric). Neither collapses; the character pass touched no argument text. |
+| P3 trap | **PASS** | FACILITATOR.md's named trap (build D5, see A win on dollars, stop) is unchanged in substance; only the Intro paragraph above it gained personality color. |
+| P4 twist integrity | **PASS** | Re-checked the Twist (S6's consumer-rate basis for the $115/day fee) against MA4's sensitivity note — untouched, still a confidence twist not a flip twist. |
+| P5 sensitivity | **PASS** | Re-ran `sensitivity_model.py` ±50% on `trailer_fee`: winner stays B, margin stays 3.70% at both extremes ($57.50 and $172.50) — mechanical PASS, unchanged from prior run. |
+| P6 data decay | **PASS** | Live-fetched all 5 cited URLs directly (WebFetch) instead of delegating: S1 (afdc.energy.gov/data/10310) shows 5.2392 mpg; S2 (eia.gov/petroleum/gasdiesel) shows $5.967/gal, week of 2026-09-07; S5 (bls.gov OEWS 53-7081) shows $22.99/hr, May 2023; S6 (towingservicehub.com) shows $75-150 hookup + $3.50-7.00/mi, 2026; S3 (overpass-api.de/api/interpreter) returns HTTP 400 on a bare GET with no query body — expected for this endpoint, not link rot. All five figures still match the recorded `value`s in `case.json.sources[]`. |
+| P7 accessibility (cold read) | **PASS** | Built the packet from the *rebuilt* published Interactive HTML and read it fresh. The new personality sentences (GPS, paper map, one-way streets, construction) use only plain, already-familiar vocabulary — no new unglossed jargon introduced. Existing glossary terms (hopper, flatbed, single-stream recycling, Euler circuit/path, deadhead ratio) remain intact and correctly hover-linked. 0 unexplained real-world concepts found. |
+
+**Tier 2 verdict: 7/7 PASS.**
+
+### Tier 3 — human dry-run
+NOT RUN (unchanged from prior pass — out of scope).
+
+### Fixes applied this pass
+1. `case.md` Background — inserted 2-4 sentences of protagonist personality (paper map vs. GPS,
+   15 years, satisfied by shaved minutes, practical/stubborn-not-a-luddite) directly after the
+   opening protagonist-identification sentence; no other Background content altered.
+2. `FACILITATOR.md` Intro — appended the same personality beats to the existing opener paragraph.
+3. `case.json.protagonist` — expanded from a bare title line to include the personality detail.
+4. `published/The Trailer Return - Interactive.html` — Background section's opening paragraph
+   hand-patched to match `case.md` (this file is authored by hand, not generated by
+   `build_docx.js`).
+5. Rebuilt `published/The Trailer Return - Case Study.docx` and `published/The Trailer Return -
+   Facilitator Guide.docx` via `node skills/case-publish/scripts/build_docx.js the-trailer-return`.
+   `Data.xlsx` content unchanged (no appendix data touched); mtime refreshed only.
+6. `published/MANIFEST.json` — hash, byte counts, and `_note` refreshed to this rebuild.
+7. `case.json.qa` — `run_on` and `case_md_sha256` updated; `state`/`verdict`/`blockers_open`/
+   `gaps_open`/`tier2` block unchanged (still TIER2_PASS / PASS / 0 / 4 / 7-7-PASS).

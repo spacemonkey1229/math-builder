@@ -3,16 +3,18 @@ MS | Math | Case Study | 2026-27 | Heroes Academy
 
 ## Overview
 
-Priya Anand has the mold vendor on hold and a sample box in each hand.
+Odalys Reyes has the mold shop (the outside vendor that will cut the tooling) on hold and a sample box in each hand.
 
 Six weeks ago, Thistle & Fern Bath Co. got the email every small bath-and-body brand hopes for:
 a national retailer wants the company's mini fizzer bath bombs as a holiday gift-set add-on, and
-the buyer needs a packaging decision locked before the mold shop can start cutting. Priya has
+the buyer needs a packaging decision locked before the mold shop can start cutting. Odalys has
 spent the last two days at her bench with a scale, a ruler, and two hand-built prototypes — one a
 small paper pyramid tied shut at the peak, the other a small paper cone tied shut the same way —
 each one holding a handful of the little round fizzers that gave the product its name.
 
-She sets both prototypes down next to the stack of spec sheets she's built over the past two days
+She sets both prototypes down next to the stack of spec sheets (reference pages listing a product's
+exact measurements and materials, the kind of document Appendices B and C in this case actually are)
+she's built over the past two days
 and picks the pyramid back up, turning it over so the peak catches the light. Behind her, the
 production calendar on the wall has a red circle around a single date: the day the mold shop's
 quote locks in and the tooling gets cut. Whichever shape she signs off on today is the shape
@@ -20,26 +22,33 @@ Thistle & Fern ships for the whole holiday run.
 
 Her phone, still on hold, crackles.
 
-Priya sets the pyramid down next to the cone and reaches for the phone.
+Odalys sets the pyramid down next to the cone and reaches for the phone.
 
 ## Background
 
-Priya Anand is the packaging engineer at Thistle & Fern Bath Co., a small bath-and-body brand
-that makes and sells its own bath bombs, soaps, and lotions. She is responsible for every
-container the company's products ship in, and she is the one who has to sign off before the
-company commits real money to a custom mold or die.
+Odalys Reyes is the packaging engineer at Thistle & Fern Bath Co., a small bath-and-body brand
+that makes and sells its own bath bombs, soaps, and lotions. She came to packaging engineering out
+of studio pottery, and it still shows — she'll press her thumb into a box seam before she ever
+looks at its spec sheet, and a shelf behind her desk holds every failed prototype box she's ever
+built, kept as a record of exactly how each one broke rather than thrown out. She has a low
+tolerance for a marketing claim that doesn't survive a materials audit; ask her what "eco-friendly"
+means on a box and she'll ask you back which kilogram of it is supposed to be eco. She is
+responsible for every container the company's products ship in, and she is the one who has to sign
+off before the company commits real money to a custom mold or die.
 
 The product driving this decision is the company's **Mini Fizzer** — a small, round bath bomb
 about the size of a quarter (SEE APPENDIX B for its real, sourced diameter) — which Thistle &
-Fern sells in small gift boxes as an impulse add-on. A national retail buyer wants to carry the
-Mini Fizzer as a holiday gift-set item, and has asked Priya to lock in a single container shape
+Fern sells in small gift boxes as an impulse add-on (a small, cheap item placed to catch a shopper
+who wasn't planning to buy it, like the candy rack by a checkout line). A national retail buyer wants to carry the
+Mini Fizzer as a holiday gift-set item, and has asked Odalys to lock in a single container shape
 before the company's mold shop (the outside vendor that builds the physical steel mold used to
 die-cut and score every box or bag from a flat sheet of material) can start cutting tooling for
-the season. Priya's team sketched several container shapes on the whiteboard before narrowing the
+the season. Odalys's team sketched several container shapes on the whiteboard before narrowing the
 field to the two she actually built prototypes of (SEE APPENDIX A for the full whiteboard log of
 shapes considered and why the others were ruled out).
 
-**Option A — The Peak Box** is a small square pyramid, cut and scored from a single flat sheet of
+**Option A — The Peak Box** is a small square pyramid, cut and scored (pressed with a crease line
+so it folds cleanly along that edge, rather than cracking) from a single flat sheet of
 cardstock (a heavier, stiffer paper stock than ordinary printer paper — SEE APPENDIX D for its
 real, sourced price) and tied shut at the peak with a short length of ribbon, the same way a
 party favor box is finished. **Option B — The Twist Cone** is a small cone, cut and scored from
@@ -53,9 +62,9 @@ little spheres one at a time, they're poured in and the box is closed — so nei
 interior volume actually fills with product; some fraction of that volume is always air between
 the spheres (SEE APPENDIX C for the real, sourced figure this case uses for that fraction).
 
-Priya's mold shop can only cut tooling for one shape before the season, and there is no time to
+Odalys's mold shop can only cut tooling for one shape before the season, and there is no time to
 change course once the order is placed (SEE APPENDIX E). The buyer has not specified case-pack
-counts for the shipping cartons yet, but Priya knows from experience that a shape that wastes
+counts for the shipping cartons yet, but Odalys knows from experience that a shape that wastes
 space inside a standard shipping carton (SEE APPENDIX F) costs the company in freight even when it
 wins on the price of the box itself — so she has pulled that number too, even though it isn't the
 number the buyer's contract is actually priced on. All figures in this case are sourced in
@@ -63,9 +72,23 @@ Appendix G, or stated as an explicit modeling assumption in Appendix E where no 
 exists for a decision this specific to one company. The vocabulary and the "how to…" skills this
 case will ask of you are listed in Appendix H — that is where Challenge 1 sends you.
 
+### Why the math matters here
+
+Two different questions are hiding inside D1–D5, and it helps to keep them separate before you
+start computing. **Surface area** (D1) is a *cost* question: cardstock is priced by the square
+inch (Appendix D), so every square inch a shape's flat cut pattern — its **net**, the 2-D pattern
+that folds or rolls up into the 3-D box — actually uses turns directly into money spent per box.
+**Volume** (D2) is a *fit* question: how much three-dimensional space is inside the finished
+container once it's folded or rolled shut. Neither question alone answers what the buyer cares
+about. A shape can have a small net (cheap) but a cramped interior that only fits a few Mini
+Fizzers, or a larger net (pricier) that fits several more — which is exactly why D3 applies the
+real loose-fill packing figure to that interior volume and rounds *down* to a whole Mini Fizzer
+count (you can't ship a fraction of a bath bomb), and D4 only becomes answerable once both a cost
+(from D1) and a usable count (from D3) exist side by side.
+
 ## Dilemma
 
-You are Priya Anand.
+You are Odalys Reyes.
 Do you:
 A.) Approve The Peak Box — a square-pyramid cardstock box, tied shut at the peak OR
 B.) Approve The Twist Cone — a cardstock cone, twisted shut at the point
@@ -92,7 +115,9 @@ would choose and why. Your pitch must include:
     D4. A material-cost-per-Mini-Fizzer-delivered comparison: combine D1's material cost with D3's
     usable Mini Fizzer count for each option, expressed as dollars per Mini Fizzer actually
     shipped. State which option wins on that number and by how much.
-    D5. A shipping-carton footprint estimate: using Appendix F's real shipping carton, compute how
+    D5. A shipping-carton footprint estimate (a box's "footprint" is the floor area its base
+    actually touches, the same way a person's footprint is the shape their foot presses into
+    the ground): using Appendix F's real shipping carton, compute how
     many Peak Boxes and how many Twist Cones fit in a single layer of that carton in a simple
     grid arrangement, and what percent of that layer's floor area each shape's footprint actually
     covers.
@@ -106,7 +131,7 @@ discussion post 500 "excellent" words on the questions above.
 
 ## Appendix A — Whiteboard Log: Shapes Considered
 
-Priya's team sketched several shapes before narrowing the field to Options A and B. A cylinder
+Odalys's team sketched several shapes before narrowing the field to Options A and B. A cylinder
 (too tall to sit flat on a retail shelf endcap at the size needed), a rectangular prism (too much
 dead corner space around round spheres), and a full sphere-shaped box (a mold shop quote came back
 more than four times the cost of either finalist, because a curved die is far more expensive to
@@ -123,7 +148,7 @@ and the cone survived as real, buildable candidates at a defensible cost.
 
 ## Appendix C — Box Options: Engineering Spec Sheet
 
-Both options were sized by Priya's own team to comfortably hold multiple Mini Fizzers with room
+Both options were sized by Odalys's own team to comfortably hold multiple Mini Fizzers with room
 for the loose-fill packing described in Background — these are Thistle & Fern's own chosen
 container dimensions, not a published product.
 
@@ -151,7 +176,9 @@ modeling choice) [S3].
 | Price per square inch | $0.00089797 (derived: $0.08396 ÷ 93.5 sq in) |
 
 This is the same raw material both options are cut from. The shape of each die changes how much
-of the sheet ends up as box versus scrap, but not the price of the sheet itself.
+of the sheet ends up as box versus scrap, but not the price of the sheet itself. The "110 lb."
+figure is the cardstock's paper weight rating — a heavier number means a thicker, stiffer sheet,
+though the rating isn't perfectly comparable across every category of paper.
 
 ## Appendix E — Modeling Assumptions
 
@@ -168,7 +195,7 @@ assumption and that percent gap changes noticeably, possibly enough to flip who 
 | # | Assumption | Value used | Basis | Sensitivity |
 |---|---|---|---|---|
 | MA1 | Whether the real 64% random loose-packing figure (Appendix C) applies equally well to a tapering shape (the Twist Cone) as it does to a boxier shape (the Peak Box) | **Applied identically to both options** | The 64% figure ([S3]) was measured for spheres settling inside a container with no strong taper; no published figure exists specifically for a narrow cone. This case applies the same published figure to both shapes as a simplifying assumption rather than inventing a lower, unsourced figure for the taper. A real production run would likely see a somewhat lower usable fraction in a cone than in a box, because spheres pack less efficiently near a narrowing point. | The margin is sensitive to this value — see D4. If the Twist Cone's real packing fraction runs meaningfully lower than the Peak Box's, D4's result could flip. |
-| MA2 | Mold-shop tooling lockout: whether Priya's mold shop can realistically cut tooling for a second shape later in the same season if the first choice underperforms | **No — one shape, one season, no mid-season change** | Tied directly to Background: the mold shop needs lead time measured in weeks against a holiday production window measured in a handful of months, and a national retail buyer's holiday reset date does not move. This is a business constraint stated directly by the scenario, not a public fact. | Does not affect the D4 margin directly — it is the reason the decision matters at all (SEE Background). |
+| MA2 | Mold-shop tooling lockout: whether Odalys's mold shop can realistically cut tooling for a second shape later in the same season if the first choice underperforms | **No — one shape, one season, no mid-season change** | Tied directly to Background: the mold shop needs lead time measured in weeks against a holiday production window measured in a handful of months, and a national retail buyer's holiday reset date does not move. This is a business constraint stated directly by the scenario, not a public fact. | Does not affect the D4 margin directly — it is the reason the decision matters at all (SEE Background). |
 
 ## Appendix F — Shipping Carton Reference
 
@@ -180,7 +207,8 @@ assumption and that percent gap changes noticeably, possibly enough to flip who 
 
 D5 asks for a simple grid arrangement: how many box footprints fit edge-to-edge along each 12 in
 side of the carton floor, squared. This is an estimate, not a claim that real warehouse packing
-uses a simple grid — real packers may nest cones point-to-base to do better than a flat grid, but
+uses a simple grid — real packers may nest cones point-to-base (fitting one shape partway into the
+gaps left by its neighbors, the way stacked paper cups tuck into each other) to do better than a flat grid, but
 a flat grid is the fair, identical method to apply to both shapes for comparison.
 
 ## Appendix G — Sources

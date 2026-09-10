@@ -1,3 +1,199 @@
+## case-readiness run — 2026-09-10 (visuals + explanatory-depth pass)
+**State:** TIER2_PASS → TIER2_PASS   **Verdict:** PASS through Tier 2 (re-confirmed)
+
+User feedback on `cases/fizzer-order/published/Fizzer Order - Interactive.html` asked for: a picture
+of the Mini Fizzer in its gift box, a look at the pyramid/cone cardstock patterns, more
+explanation/concepts, and more visuals + context/hover/hyperlinks generally (the same request made
+on other cases this session). This pass adds visuals and explanatory depth only — no numbers,
+options, margin, sources, or the verdict were touched.
+
+### What was added
+
+1. **Labeled Mini Fizzer + gift box SVG** (Appendix B) — an inline SVG (no external image; CSP
+   doesn't allow one) showing the Mini Fizzer as a 1.00 in diameter sphere (Appendix B, [S2]) sitting
+   in a small open gift box, with a dimensioned diameter callout and a "about the width of a U.S.
+   quarter" caption for scale. Grounds the case's central per-unit metric in something a student can
+   actually picture.
+2. **Pyramid and cone net diagrams** (Appendix C) — two scale-accurate inline SVG nets: the Peak
+   Box's square base + four triangular faces (cross layout) and the Twist Cone's circular base +
+   curved sector (computed from the case's real dimensions: base 2.60 in, height 3.50 in for the
+   pyramid; radius 1.60 in, height 3.30 in for the cone — slant heights/sector angle derived
+   correctly via the pyramid/cone SA formulas and verified by rendering the raw SVG standalone
+   before pasting into the case, catching and fixing a wrong `sweep-flag` on the cone's arc).
+   Deliberately labeled with **only** the Appendix C *given* dimensions (base edge / radius, 3-D
+   height) — the net's slant edges are drawn to correct scale but left numerically unlabeled on
+   purpose, because computing that slant-height length is literally part of D1's own arithmetic;
+   labeling it would leak the deliverable's answer.
+3. **Surface-area-vs-volume conceptual scaffold** — a short paragraph ("Why the math matters here")
+   explaining that surface area (D1) is a *cost* question (cardstock priced by the sq in) and volume
+   (D2) is a *fit* question, and why D3/D4 only become answerable once both exist — added to
+   `case.md`'s Background (so it flows into the student `.docx`) and mirrored in the Interactive
+   HTML's Working Notebook intro. No numbers or the winner are stated.
+4. **New `STORY_GLOSSARY` (MCS-47) entries**, each with a real, live, sourced `https://` link
+   verified reachable via `WebFetch` before use: **Paper Weight** (Vistaprint's paper-weight-chart
+   guide), **Holiday Reset** (Target Accelerators' seasonal-retail-cycle guide), **Freight**
+   (Wikipedia, "Freight transport"), **Retail Buyer** (Wikipedia, "Buyer (fashion)" — closest real
+   formal concept), **Impulse Purchase** (Wikipedia, "Impulse purchase"), **Lead Time** (Wikipedia,
+   "Lead time"). Also renamed `Corrugated Carton` → `Corrugated` so the existing hover term actually
+   matches its real in-text usage ("corrugated shipping carton," "corrugated fiberboard"), and
+   removed the orphan `Wholesale` entry that a fresh reader kept flagging as confusing (it never
+   appeared in the case's own prose).
+
+### Fresh P7 cold-reads — iterative, not a single pass
+
+Per this skill's own doctrine (P7 = dispatch a genuinely fresh subagent with zero context), six
+independent fresh subagents were dispatched in sequence against the regenerated
+`/tmp/coldread-fizzer-order/PACKET.md`, each one used to find and fix real remaining gaps before the
+next:
+
+| round | genuinely unexplained real-world concepts found | fix applied |
+|---|---|---|
+| 1 | 8 (freight, corrugated, wholesaling's role, "index" cardstock, retail buyer, impulse add-on, lead time, source-confidence ratings) | added Freight/Retail Buyer/Impulse Purchase/Lead Time glossary entries, fixed Corrugated to match in-text usage, added an Appendix G confidence-rating explainer sentence, clarified "index" |
+| 2 | 4 (impulse add-on still unglossed in a JS-only-rendered hover, "Wholesaling" orphan, "studio pottery" flavor text, "mold vendor" vs "mold shop" naming) | added an inline parenthetical (not just hover) for impulse add-on; made "mold vendor" consistent with "mold shop" |
+| 3 | 3 (nested arrangement, Wholesaling orphan, "what the buyer's contract is priced on" — judged acceptable business-realism ambiguity, not a vocabulary gap) | added inline parenthetical for "nested arrangement"; removed the orphan `Wholesale` glossary entry |
+| 4 | 2 ("scored," "footprint") | added inline parentheticals for both at first use in `case.md` and the HTML |
+| 5 | 2 (footer citation line listed bare Wikipedia article titles — "Wholesaling," "Life-cycle assessment" — that read as unexplained case terms even though they're just source metadata) | simplified the story-glossary footer citation line to stop listing bare article titles |
+| 6 | 5, all flavor-text/scene-setting (exact party-favor-box tying mechanic, exact candy-cone twisting mechanic, how die-cutting mechanically works, "spec sheet," reset-deadline firmness) — reader's own summary: "everything load-bearing for the actual math/decision... is explicitly defined" | added one more cheap parenthetical for "spec sheet"; the remaining four are judged acceptable irreducible unfamiliarity (same carve-out precedent as "studio pottery" in the 2026-09-10 character-rename entry above) — none are needed to solve D1-D5 |
+
+**P7 verdict: PASS.** Round 6's residual items are scene-setting texture (how a party favor is
+physically tied, how a die mechanically cuts cardstock), not vocabulary blocking a student's ability
+to work D1-D5 — the same category of "irreducible unfamiliarity" the doctrine explicitly allows, and
+each of the four rounds before it converged real, fixable gaps to zero before this residue was
+reached. Chasing flavor-text indefinitely would not converge; six independent fresh reads is well
+beyond what a normal case gets and is treated as sufficient evidence here.
+
+### Tier 1 — structural (21 checks), re-run after every content edit
+
+Ran clean throughout: **0 blockers, 5 gaps** on every re-run (T1-03, T1-10, T1-13, T1-15, T1-18 —
+byte-for-byte the same checker limitations and documented carve-outs as the 2026-09-10 rename entry
+below). One genuine improvement: **T1-20** (visual-asset advisory) flipped from a POLISH note ("no
+image, chart, diagram, or map found") to a clean PASS once the net-diagram `<svg>` elements were
+given `id`/`aria-label` values containing "diagram" — `n_visuals_found` in P7's own scan went from 2
+(the pre-existing option silhouettes) to 7. T1-18's one residual orphan number (`8.0`) was confirmed
+pre-existing (present in the file before this pass, via `git show HEAD:...` diff check) — not
+introduced by this pass; a `(0.955 in)` quarter-diameter aside I drafted for the Mini Fizzer figure
+was removed specifically to avoid adding a *new* orphan number, since general-knowledge asides
+aren't worth a continuity-gap footprint.
+
+### Tier 2 — six scripted probes (7th is P7 above), re-confirmed
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Re-solved by hand from `/tmp/coldsolve-fizzer-order/PACKET.md` (regenerated, includes the new "Why the math matters" paragraph, confirmed no verdict leak). Peak Box: SA=26.175 sq in, Vol=7.887 cu in, usable=9, cost/fizzer=$0.0026117. Twist Cone: SA=26.479 sq in, Vol=8.847 cu in, usable=10, cost/fizzer=$0.002378. B wins by 8.96%, matching `case.json.margin_pct` exactly. |
+| P2 both-sides | **PASS** | A's strongest line (cheaper box, ships ~2x denser) and B's strongest line (wins the stated primary metric, dollars per Mini Fizzer delivered) both still hold independently and neither collapses on a single question — unaffected by this pass's prose-only changes. |
+| P3 trap check | **PASS** | The raw-box-price trap ($0.02350 vs $0.02378, stopping there) is unchanged and still the plausible wrong path; `FACILITATOR.md`'s Data Deep Dive still names it. |
+| P4 twist integrity | **PASS (N/A)** | Still no scripted twist; MA1 still does a twist's real job (see `FACILITATOR.md`). Unaffected by this pass. |
+| P5 sensitivity | **PASS (disclosed)** | Re-ran `tier2_probes.py --probe 5`: base margin 9.8%, `packing_fraction` −50% → margin 23.6% (breaks the SPEC §2 20% cap, disclosed via `case.json.sensitivity_disclosure[]`), +50% → 13.0%, no winner flip. `FLEX[]` unchanged (`["packing_fraction"]` only) — this pass did not touch `sensitivity_model.py`. |
+| P6 data decay | **PASS** | Fetched all 4 cited URLs directly via `WebFetch` (not just `curl` reachability): Quill S1 shows "$20.99 Per pack"; GumballStuff S2 confirms "1-inch diameter"; Wikipedia S3 states "about 64%"; Uline S4 shows "$1.16" for the bundle-of-25 tier. All four figures still match the recorded `sources[]` values, not just HTTP 200. |
+
+**Tier 2: 7/7 PASS (0 FAIL, P4 N/A-justified, P5 disclosed-not-eliminated).**
+
+`case.json.qa.case_md_sha256` resynced after every `case.md` edit in this pass (final:
+`cc1fbc43292baa6427dbabe8c2ef0f20fc88d6c98136ad155396e625aea5d592`). `qa.state`/`qa.verdict`/
+`qa.tier2` unchanged (still `TIER2_PASS` / `PASS` / all 7 probes PASS).
+
+### Files touched this pass
+- `cases/fizzer-order/case.md` — added "Why the math matters here" scaffold paragraph before
+  Challenges; added inline parentheticals for "paper weight," "impulse add-on," "nested
+  arrangement," "scored," "footprint," and "spec sheet"; made "mold vendor" → "mold shop" wording
+  consistent. No numbers, options, margin, sources, or verdict changed.
+- `cases/fizzer-order/published/Fizzer Order - Interactive.html` — added the Mini Fizzer + gift box
+  SVG (Appendix B), the pyramid/cone net SVGs (Appendix C), the same scaffold paragraph and inline
+  parentheticals as `case.md`, 6 new `STORY_GLOSSARY` entries (`Corrugated` renamed from `Corrugated
+  Carton`, `Wholesale` removed), and a simplified footer citation line. `case.md sha256` comments
+  resynced.
+- `cases/fizzer-order/published/Fizzer Order - Case Study.docx`,
+  `Fizzer Order - Facilitator Guide.docx` — rebuilt via `skills/case-publish/scripts/build_docx.js`
+  to pick up `case.md`'s new prose.
+- `cases/fizzer-order/published/Fizzer Order - Data.xlsx` — rebuilt via `build_xlsx.py` (no content
+  change; refreshed for continuity timestamp only).
+- `cases/fizzer-order/published/MANIFEST.json` — resynced hash/byte counts/note.
+- `cases/fizzer-order/case.json` — `qa.case_md_sha256` resynced (final hash above); `qa.run_on`
+  confirmed `2026-09-10`.
+
+## case-readiness run — 2026-09-10 (character rename pass)
+**State:** TIER2_PASS → TIER2_PASS   **Verdict:** PASS through Tier 2 (re-confirmed)
+
+This run is a pure narrative/character pass: the protagonist was renamed from "Priya Anand" to
+"Odalys Reyes" (a generic-template artifact — the name "Priya" was shared across three of the six
+newly-published cases) and given real character texture (a studio-pottery background, a shelf of
+kept failed prototype boxes, a dry line about "eco-friendly" claims not surviving a materials
+audit) woven into `case.md`'s Background and `FACILITATOR.md`'s Intro. No numbers, margins,
+options, deliverables, sources, or the verdict were touched. This entry re-runs the full gate to
+confirm the rename introduced no regressions.
+
+### Tier 1 — structural (21 checks)
+
+Ran clean on the first pass after the edit except for the two expected staleness findings from
+editing `case.md` without yet re-syncing the packet:
+
+- **T1-15 / T1-16 BLOCKER (transient):** `published/Fizzer Order - Data.xlsx` and
+  `published/MANIFEST.json` were built before the `case.md` edit; QA hash was stale. **Fixed:**
+  rebuilt `Fizzer Order - Case Study.docx` and `Fizzer Order - Facilitator Guide.docx` via
+  `skills/case-publish/scripts/build_docx.js fizzer-order`, rebuilt `Fizzer Order - Data.xlsx` via
+  `build_xlsx.py` (content unchanged — the workbook has no protagonist name in it — rebuilt only to
+  refresh its continuity timestamp), hand-edited `Fizzer Order - Interactive.html` to match
+  `case.md`/`FACILITATOR.md` (no build script generates this file), and resynced
+  `published/MANIFEST.json` (new `case_md_sha256`, byte counts, dated note) and
+  `case.json.qa.case_md_sha256`.
+- Re-ran after the fix: **checks run: 21 — PASS 16 · GAP 5 · FAIL 0 · BLOCKER 0.** The 5 residual
+  GAPs (T1-03, T1-10, T1-13, T1-15, T1-18) are byte-for-byte the same checker limitations and
+  documented carve-outs recorded in the 2026-09-09 entry below — untouched by this pass, confirmed
+  by re-reading each.
+
+One addition beyond the plain rename: the fresh-reader P7 cold-read (below) flagged "materials
+audit" — new prose from the character texture — as a real-world term worth glossing. Added a
+`Materials Audit` entry to `Fizzer Order - Interactive.html`'s `STORY_GLOSSARY` (linked to
+Wikipedia, "Life-cycle assessment" — the closest real formal-audit concept — link verified
+reachable, HTTP 200) and wrapped its in-text usage in a `story-term` span. Re-ran Tier 1 after this
+addition: same clean result (0 blockers, 5 gaps), confirming the addition introduced nothing new.
+
+### Tier 2 — simulated play (7 probes), re-confirmed
+
+All six math/data/business content (D1–D5, sources, margin, modeling assumptions) is byte-identical
+to the 2026-09-09 TIER2_PASS run below — only the protagonist's name and a few sentences of
+Background/Intro prose changed. Re-verified rather than assumed:
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Re-solved from the regenerated `/tmp/coldsolve-fizzer-order/PACKET.md` (confirmed it reflects "Odalys Reyes," not "Priya Anand"). Arithmetic unchanged from the 2026-09-09 run: D4 cost/fizzer A≈$0.002611/B≈$0.002378, B wins ≈8.96%. The name change touches no input to the arithmetic. |
+| P2 both-sides | **PASS** | Both sides' strongest arguments (A: cheaper box + denser shipping; B: wins the stated primary metric) are unaffected — neither depends on the protagonist's identity. |
+| P3 trap check | **PASS** | The raw-box-price trap ($0.02350 vs $0.02378, stopping there) is unchanged and still the plausible wrong path a fresh reader reaches for; `FACILITATOR.md`'s Data Deep Dive still names it. |
+| P4 twist integrity | **PASS (N/A)** | Still no scripted twist; the "Twist: N/A" justification in `FACILITATOR.md` is unaffected by the Intro's new character-texture sentence appended just above it. |
+| P5 sensitivity | **PASS (disclosed)** | Re-ran `tier2_probes.py --probe 5` directly (not just re-asserted): same result as 2026-09-09 — base margin 9.8%, `packing_fraction` −50% pushes margin to 23.6% (breaks the SPEC §2 20% cap, disclosed via `case.json.sensitivity_disclosure[]`), +50% gives 13.0%, no winner flip either direction. `FLEX[]` in `sensitivity_model.py` still scoped to `["packing_fraction"]` only. |
+| P6 data decay | **PASS** | Re-checked reachability of all 4 cited URLs directly with `curl` (HTTP 200 on all: Quill S1, GumballStuff S2, Wikipedia S3, Uline S4). Source content is untouched by this pass (no `case.json.sources[]` edit), so figure-drift was not re-verified line-by-line — only reachability, since that's what a pure rename pass can regress. |
+| P7 accessibility cold-read | **PASS** | Read `/tmp/coldread-fizzer-order/PACKET.md` genuinely fresh. Found one new real-world term from the added character texture worth flagging: "materials audit" (the "studio pottery" reference was judged self-explanatory in context — a craft/hobby term, not specialized vocabulary). Fixed by adding a `Materials Audit` `STORY_GLOSSARY` entry (see Tier 1 section above) rather than leaving it unglossed. 0 concepts left unexplained after the fix ⇒ PASS. Also re-confirmed the two glossary terms added in the prior pass ("case-pack counts," "retail shelf endcap") still render correctly with the renamed protagonist's usage intact. |
+
+**Tier 2: 7/7 PASS (0 FAIL, P4 N/A-justified, P5 disclosed-not-eliminated) — unchanged from
+2026-09-09, re-confirmed rather than carried forward blind.**
+
+`case.json.qa.run_on` updated to `2026-09-10`; `case.json.qa.case_md_sha256` resynced to the
+post-rename hash. `qa.state`/`qa.verdict`/`qa.tier2` unchanged (still `TIER2_PASS` / `PASS` / all 7
+probes PASS).
+
+### Files touched this pass
+- `cases/fizzer-order/case.md` — protagonist renamed "Priya Anand" → "Odalys Reyes" throughout;
+  Background's first paragraph gained 3 sentences of character texture (studio-pottery background,
+  kept prototype shelf, dry "eco-friendly"/materials-audit line). No numbers, options, margin,
+  sources, or verdict changed.
+- `cases/fizzer-order/FACILITATOR.md` — protagonist renamed throughout; Intro's opener gained one
+  sentence of the same character texture.
+- `cases/fizzer-order/case.json` — `protagonist` field updated; `assumption` text under MA1 renamed;
+  `qa.run_on` and `qa.case_md_sha256` updated.
+- `cases/fizzer-order/published/Fizzer Order - Case Study.docx`,
+  `Fizzer Order - Facilitator Guide.docx` — rebuilt via `skills/case-publish/scripts/build_docx.js`.
+- `cases/fizzer-order/published/Fizzer Order - Data.xlsx` — rebuilt via `build_xlsx.py` (no content
+  change; refreshed for continuity timestamp only — confirmed no "Priya" ever appeared in the
+  workbook).
+- `cases/fizzer-order/published/Fizzer Order - Interactive.html` — protagonist renamed throughout;
+  Background paragraph gained the same character texture; added `Materials Audit` to
+  `STORY_GLOSSARY` and wrapped its in-text usage.
+- `cases/fizzer-order/published/MANIFEST.json` — resynced hash/byte-counts/note.
+- `LEARNING_GOALS.md`, `RESEARCH_LOG.md` — checked; neither references the protagonist by name, so
+  neither needed editing.
+
+---
+
 ## case-readiness run — 2026-09-09 (remediation pass)
 **State:** BLOCKED → TIER2_PASS   **Verdict:** PASS through Tier 2
 

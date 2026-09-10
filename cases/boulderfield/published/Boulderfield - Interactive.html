@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Boulderfield — Interactive</title>
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .storyterm{position:relative;color:#5b3a8c;text-decoration:none;border-bottom:1.5px dotted #9c7bc9;cursor:help;font-weight:600}
+  .storyterm:hover, .storyterm:focus{background:#f2eaf9}
+  .storyterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:240px;background:#3a2a55;color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .storyterm .tip .go{display:block;margin-top:6px;color:#c9a7ef;font-weight:700}
+  .storyterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#3a2a55}
+  .storyterm:hover .tip, .storyterm:focus .tip{visibility:visible;opacity:1}
+  .story-glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .story-glossary-grid .storyterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted #9c7bc9;
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  .numline{width:100%;height:auto;display:block}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-mountain" viewBox="0 0 24 24"><path d="M2 20 L9 8 L13 14 L16 9 L22 20 Z"/><circle cx="9" cy="6.2" r="1.1"/></symbol>
+  <symbol id="icon-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-6 2 2-6z"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Boulderfield</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Integers &middot; Equations &middot; Rates</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <figure>
+    <svg viewBox="0 0 640 200" role="img" aria-label="Schematic of the Longs Peak trailhead, the shared trail to the Boulderfield, and the Keyhole and Loft routes splitting above it">
+      <rect x="0" y="0" width="640" height="200" fill="#eef3f8"/>
+      <polygon points="0,200 0,150 120,150 260,40 400,150 640,150 640,200" fill="#1a3a5c" opacity="0.15"/>
+      <polyline points="30,150 260,42" fill="none" stroke="#5b6472" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="260" cy="42" r="5" fill="#c9a227"/>
+      <text x="230" y="30" font-family="Segoe UI,Arial,sans-serif" font-size="12" fill="#1a3a5c" font-weight="700">Boulderfield</text>
+      <polyline points="260,42 420,20" fill="none" stroke="#1f7a4d" stroke-width="4" stroke-linecap="round" stroke-dasharray="2,0"/>
+      <text x="430" y="18" font-family="Segoe UI,Arial,sans-serif" font-size="12" fill="#1f7a4d" font-weight="700">The Keyhole Route</text>
+      <polyline points="260,42 380,70" fill="none" stroke="#a3312a" stroke-width="4" stroke-linecap="round" stroke-dasharray="6,5"/>
+      <text x="360" y="88" font-family="Segoe UI,Arial,sans-serif" font-size="12" fill="#a3312a" font-weight="700">The Loft</text>
+      <circle cx="30" cy="150" r="5" fill="#1a3a5c"/>
+      <text x="6" y="170" font-family="Segoe UI,Arial,sans-serif" font-size="12" fill="#1a3a5c" font-weight="700">Trailhead</text>
+    </svg>
+    <figcaption>Both routes climb the same trail to the Boulderfield before splitting — a schematic, not to scale. See Appendix A for the real distances and elevation gains.</figcaption>
+  </figure>
+  <p class="lede">The radio on Talia Ferro's belt crackles at 2:14 a.m. <em>"Dispatch, we have voice contact. Male, twenty-six, ankle injury, can't bear weight, last known position near the summit approach."</em> Talia is already standing at the Longs Peak Trailhead kiosk, headlamp off to save the battery, staring at the inside of her own helmet — where a strip of athletic tape holds four numbers she wrote there herself, in Sharpie, after four different seasons of climbing both routes on this mountain solo, stopwatch running, just to know for certain how long each one actually takes.</p>
+  <p>Two duffel bags of rescue gear sit at her boots. One is packed for the Keyhole — ropes coiled but unlikely to be needed, headlamps, the radio repeater. The other is packed for the Loft — the same gear, plus the extra rigging gear her team carries whenever the route isn't cairned the whole way up. Her radio is still open. Somewhere above her, past 12,000 feet, wind is moving across rock she cannot see.</p>
+  <p>Dispatch keys up again. <em>"Talia, incident command needs your call. Which way is the team going?"</em></p>
+  <p>She looks at the two numbers taped inside her helmet.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Longs Peak (14,259 ft) is the highest point in Rocky Mountain National Park, and its standard approach trailhead sits at 9,400 ft (SEE APPENDIX A). Rocky Mountain National Park's own guidance for climbers describes the Keyhole Route's round trip as a 10-to-15-hour undertaking and recommends starting by 3:00 a.m. specifically so a party is off the exposed upper mountain before the thunderstorms that build most afternoons in June, July, and August (SEE APPENDIX C). Search-and-rescue operations on Longs Peak are real and recurring — the park has publicly reported multiple rescue and search operations on the peak's upper routes in recent seasons (SEE APPENDIX E).</p>
+  <p>Talia Ferro is the lead Search and Rescue ranger for the Longs Peak zone. She is not the one who decides whether a rescue happens — that call was already made the moment the injured climber's party made voice contact with dispatch. Her call is narrower and, in the ranger station, considered just as consequential: which of the two routes that reach the upper mountain does she send her four-person ground team up, right now, tonight. Talia spent three seasons as a backcountry wilderness EMT before she became a SAR ranger, and she has never once sent a team up a route timed only from a guidebook page — every season since, she has personally climbed both the Keyhole and the Loft solo, off-duty, stopwatch running from the trailhead kiosk to the point where each route leaves the shared lower trail, because a number she measured herself is the only kind she fully trusts when a climber's condition is what's riding on it.</p>
+  <p>Both of Longs Peak's most-used routes share the same lower trail out of the trailhead, through treeline, and up to a boulder-strewn basin called <strong>the Boulderfield</strong> — a flat, exposed staging area at roughly 12,760 ft where climbing parties often camp before a summit push (SEE APPENDIX A). Above the Boulderfield, the routes split:</p>
+  <p><strong>The Keyhole Route</strong> continues on the maintained, cairned standard trail — Rocky Mountain National Park's own signed and most heavily used route to the summit, 14.5 route-miles round trip with 5,100 ft of total elevation gain (SEE APPENDIX A).</p>
+  <p><strong>The Loft</strong> splits west below the Boulderfield and climbs a steeper, shorter line past the base of Mount Meeker — 13.0 route-miles round trip with 5,300 ft of total elevation gain, unmaintained and largely unmarked above the point where it leaves the standard trail, with the same "considerable" rockfall potential — the park's own scale for how likely loose rock is to fall on climbers — and high exposure rating — how far and how dangerous a fall from the trail itself would be — the park assigns to Longs Peak's technical routes (SEE APPENDIX A).</p>
+  <p>Every number in this case is either cited to a real published source or disclosed as a stated Modeling Assumption (SEE APPENDICES B, C AND D) — never invented quietly. The vocabulary and "how to…" skills this case will ask you to research are listed in Appendix F, which is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Talia Ferro. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Keyhole Route</h4>
+      <p style="margin:0">The longer, maintained, cairned standard trail: 14.5 route-miles round trip with 5,100 ft of elevation gain.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Loft</h4>
+      <p style="margin:0">The shorter, steeper, unmaintained route: 13.0 route-miles round trip with 5,300 ft of elevation gain, requiring extra route-finding time above the Boulderfield.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which route you'd send the team up and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include: <strong>D1</strong> a one-way route breakdown for each route, with a comparison of which is shorter and which gains more elevation; <strong>D2</strong> a Naismith's Rule time estimate for each route, before this case's own adjustments; <strong>D3</strong> a total adjusted time-to-patient for each route and the margin between them as a percent; <strong>D4</strong> a required-pace equation, solved for the minimum average moving pace each route needs to beat a stated deadline; <strong>D5</strong> a signed-number temperature and wind chill analysis at the Boulderfield and the summit; <strong>D6</strong> two original visual displays &mdash; a bar graph of each route's total time by component, and a signed number line of D5's four temperature values.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open><summary>Appendix A &mdash; Route Statistics</summary><div class="inner">
+    <p>All mileage and elevation figures are round-trip, on the standard East Longs Peak Trail approach, per 14ers.com's route database for Longs Peak, cross-confirmed against the National Park Service's own stated summit elevation of 14,259 ft [S1] [S3].</p>
+    <table id="apxA">
+      <thead><tr><th></th><th>Trailhead</th><th>The Boulderfield (shared)</th><th>The Keyhole Route</th><th>The Loft</th></tr></thead>
+      <tbody>
+        <tr><td>Elevation</td><td class="num">9,400 ft [S1]</td><td class="num">~12,760 ft [S4]</td><td class="num">Summit 14,259 ft [S1][S3]</td><td class="num">Summit 14,259 ft [S1]</td></tr>
+        <tr><td>Round-trip distance</td><td>&mdash;</td><td class="num">~11.0 mi RT (5.5 mi one-way) [MA-BF]</td><td class="num">14.5 mi [S1]</td><td class="num">13.0 mi [S2]</td></tr>
+        <tr><td>Round-trip elevation gain</td><td>&mdash;</td><td class="num">~3,360 ft [MA-BF]</td><td class="num">5,100 ft [S1]</td><td class="num">5,300 ft [S2]</td></tr>
+        <tr><td>Surface / marking</td><td>&mdash;</td><td>&mdash;</td><td>Maintained, cairned, NPS-signed</td><td>Unmaintained, largely unmarked above the split</td></tr>
+        <tr><td>Exposure / rockfall</td><td>&mdash;</td><td>&mdash;</td><td>High / Considerable [S1]</td><td>High / Considerable [S2]</td></tr>
+      </tbody>
+    </table>
+    <p class="side-note">Both routes share the same lower trail from the trailhead through the Boulderfield before splitting. Published distances to the Boulderfield vary somewhat by which trailhead approach is used (one trip report of a longer, alternate Boulder Brook approach reports 7 mi one-way rather than the standard trail's ~5.5 mi); this case fixes the standard trail's figures as its working value (SEE APPENDIX D, MA-BF) rather than presenting a contested number as settled.</p>
+  </div></details>
+
+  <details><summary>Appendix B &mdash; Timing Model</summary><div class="inner">
+    <p><strong>Naismith's Rule</strong> (1892): allow one hour of travel time for every 3 miles of horizontal distance, plus one additional hour for every 2,000 ft of elevation gain [S5]. In formula form, with <em>d</em> = one-way distance in miles and <em>g</em> = elevation gain in feet:</p>
+    <blockquote>Naismith time (hours) = d / 3 + g / 2000</blockquote>
+    <p><strong>This case's own timing adjustments</strong>, applied on top of the Naismith estimate (SEE APPENDIX D for basis):</p>
+    <table id="apxB">
+      <thead><tr><th>Adjustment</th><th>Applies to</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Night / full-gear rescue-pace multiplier</td><td>Both routes</td><td class="num">&times;1.3 [MA1]</td></tr>
+        <tr><td>Route-finding / exposure penalty</td><td>The Loft only, above the split</td><td class="num">+55 minutes [MA2]</td></tr>
+      </tbody>
+    </table>
+    <p class="side-note">Total adjusted time = (Naismith time &times; night-pace multiplier), converted to minutes, plus the route-finding penalty where it applies.</p>
+  </div></details>
+
+  <details><summary>Appendix C &mdash; Temperature, Wind Chill, and the Turnaround Guidance</summary><div class="inner">
+    <p><strong>Standard environmental lapse rate</strong>: air temperature drops by approximately 3.5&deg;F for every 1,000 ft of elevation gained, under typical (non-inversion) atmospheric conditions [S6].</p>
+    <p><strong>National Weather Service Wind Chill Temperature Index</strong> (valid for air temperatures at or below 50&deg;F and wind speeds above 3 mph) [S7]:</p>
+    <blockquote>Wind Chill (&deg;F) = 35.74 + 0.6215&middot;T &minus; 35.75&middot;(V^0.16) + 0.4275&middot;T&middot;(V^0.16)</blockquote>
+    <p>where <em>T</em> is air temperature in &deg;F and <em>V</em> is wind speed in mph. This case supplies a pre-computed wind-factor lookup table so the fractional exponent itself does not need to be evaluated by hand:</p>
+    <table id="apxC">
+      <thead><tr><th>Wind speed, V (mph)</th><th>V^0.16 (case-supplied)</th></tr></thead>
+      <tbody>
+        <tr><td class="num">25</td><td class="num">1.6735</td></tr>
+        <tr><td class="num">35</td><td class="num">1.7663</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Rocky Mountain National Park's own recommendation</strong> is to start a Longs Peak climb by 3:00 a.m. specifically to be off the exposed upper mountain before afternoon thunderstorms typically build in June, July, and August (SEE BACKGROUND) [S3]. A widely used mountaineering rule of thumb built on that same seasonal pattern is to plan to be off an exposed summit by noon [S8].</p>
+  </div></details>
+
+  <details><summary>Appendix D &mdash; Modeling Assumptions</summary><div class="inner">
+    <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+    <table id="apxD">
+      <thead><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr></thead>
+      <tbody>
+        <tr><td>MA-BF</td><td>Trailhead-to-Boulderfield one-way distance and elevation gain</td><td class="num">5.5 mi / 3,360 ft</td><td>Published route/trip-report distances to the Boulderfield vary by trailhead approach; this case fixes the standard East Longs Peak Trail figures as its working value.</td><td>Does not affect the base A-vs-B time margin.</td></tr>
+        <tr><td>MA1</td><td>Night / full-gear rescue-pace multiplier</td><td class="num">&times;1.3</td><td>No public figure exists for a SAR team's exact night/full-gear pace penalty; a modest, round slowdown factor, applied identically to both routes.</td><td>The answer is sensitive to this value.</td></tr>
+        <tr><td>MA2</td><td>Route-finding/exposure penalty, The Loft</td><td class="num">+55 min</td><td>No public figure exists for the extra time an unmaintained, unmarked route costs a rescue team; a flat, round penalty, applied only to Option B.</td><td>The answer is sensitive to this value.</td></tr>
+        <tr><td>MA3</td><td>Pre-dawn trailhead air temperature</td><td class="num">28&deg;F</td><td>No public record for this specific night; set consistent with RMNP's own documented summer-night and alpine temperature-drop ranges [S9].</td><td>Feeds D5 only; does not affect the primary time margin.</td></tr>
+        <tr><td>MA4</td><td>Summit-ridge and Boulderfield wind speeds</td><td class="num">35 mph / 25 mph</td><td>No public record for this incident's specific wind speed; set consistent with RMNP's own description of persistently windy alpine ridges.</td><td>Feeds D5 only; does not affect the primary time margin.</td></tr>
+        <tr><td>MA5</td><td>Turnaround deadline used in D4</td><td class="num">10:00 a.m.</td><td>No official policy fixes one exact clock time; set between NPS's 3:00 a.m. recommended start [S3] and the widely used off-the-summit-by-noon rule of thumb [S8].</td><td>Sets the D4 target only; does not affect the primary time margin.</td></tr>
+      </tbody>
+    </table>
+  </div></details>
+
+  <details><summary>Appendix E &mdash; Sources</summary><div class="inner">
+    <table id="apxE">
+      <thead><tr><th>#</th><th>Claim</th><th>Source</th><th>Confidence</th></tr></thead>
+      <tbody>
+        <tr><td>S1</td><td>Trailhead/summit elevation, Keyhole distance/gain/class</td><td><a href="https://www.14ers.com/routelist.php?peakid=10015" target="_blank" rel="noopener">14ers.com &mdash; Longs Peak Route List</a></td><td>MEDIUM</td></tr>
+        <tr><td>S2</td><td>The Loft: distance, gain, class, exposure rating</td><td><a href="https://www.14ers.com/routelist.php?peakid=10015" target="_blank" rel="noopener">14ers.com &mdash; Longs Peak Route List</a></td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Summit elevation; NPS 3:00 a.m. start recommendation; thunderstorm risk</td><td><a href="https://www.nps.gov/romo/planyourvisit/longspeak.htm" target="_blank" rel="noopener">NPS &mdash; Longs Peak, Keyhole Route</a></td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Boulderfield distance/elevation (basis for MA-BF)</td><td>See RESEARCH_LOG.md / case.json sources[] note on contested trip-report figures</td><td>MEDIUM</td></tr>
+        <tr><td>S5</td><td>Naismith's Rule constants</td><td><a href="https://en.wikipedia.org/wiki/Naismith%27s_rule" target="_blank" rel="noopener">Wikipedia &mdash; Naismith's rule</a></td><td>MEDIUM</td></tr>
+        <tr><td>S6</td><td>Standard environmental lapse rate</td><td><a href="https://www.spc.noaa.gov/exper/soundings/help/lapse.html" target="_blank" rel="noopener">NOAA SPC &mdash; Sounding Help: Lapse Rate</a></td><td>MEDIUM</td></tr>
+        <tr><td>S7</td><td>NWS Wind Chill Temperature Index formula</td><td><a href="https://www.weather.gov/safety/cold-wind-chill-chart" target="_blank" rel="noopener">NWS &mdash; Cold Weather Safety</a></td><td>HIGH</td></tr>
+        <tr><td>S8</td><td>"Off the summit by noon" rule of thumb (basis for MA5)</td><td><a href="https://www.summitpost.org/longs-peak/150310" target="_blank" rel="noopener">SummitPost &mdash; Longs Peak</a></td><td>MEDIUM</td></tr>
+        <tr><td>S9</td><td>RMNP summer temperature range and alpine drop guidance (basis for MA3); real RMNP SAR activity</td><td><a href="https://www.nps.gov/romo/planyourvisit/all-about-weather.htm" target="_blank" rel="noopener">NPS &mdash; All About Weather</a> &middot; <a href="https://www.nps.gov/romo/learn/news/pr_major_rescue_underway_on_east_face_of_longs_peak.htm" target="_blank" rel="noopener">NPS news release</a></td><td>HIGH</td></tr>
+      </tbody>
+    </table>
+  </div></details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-10. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <details id="apx-story-glossary">
+    <summary>Real-World Terms Used In This Case</summary>
+    <div class="inner">
+      <p><strong>Story vocabulary.</strong> These are real-world terms from search-and-rescue and mountaineering, not math vocabulary &mdash; hover or click for a plain-English explanation.</p>
+      <div class="story-glossary-grid" id="storyGlossaryVocab"></div>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which route to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; One-way route breakdown (D1)</h4>
+    <div class="goal">Divide each route's round-trip distance by 2 to get the one-way distance. Elevation gain is already stated as the one-way ascent total.</div>
+    <div class="fieldrow"><label for="s1a">Keyhole one-way distance (mi)</label><input type="number" step="any" id="s1a" placeholder="format: miles, one decimal"><span class="fb" id="fb1a"></span></div>
+    <div class="fieldrow"><label for="s1b">The Loft one-way distance (mi)</label><input type="number" step="any" id="s1b" placeholder="format: miles, one decimal"><span class="fb" id="fb1b"></span></div>
+    <button onclick="checkStep1()">Check Step 1</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Naismith's Rule raw time estimate (D2)</h4>
+    <div class="goal">Substitute each route's one-way distance and elevation gain into Naismith's Rule: d/3 + g/2000. Round to four decimal places.</div>
+    <div class="fieldrow"><label for="s2a">Keyhole raw Naismith time (hr)</label><input type="number" step="any" id="s2a" placeholder="format: hours, four decimals"><span class="fb" id="fb2a"></span></div>
+    <div class="fieldrow"><label for="s2b">The Loft raw Naismith time (hr)</label><input type="number" step="any" id="s2b" placeholder="format: hours, four decimals"><span class="fb" id="fb2b"></span></div>
+    <button onclick="checkStep2()">Check Step 2</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Adjusted total time and margin (D3)</h4>
+    <div class="goal">Apply the night-pace multiplier (Appendix B) to both raw Naismith times, add The Loft's route-finding penalty to Option B only, convert to minutes, then compute the margin as a percent of the slower route's time.</div>
+    <div class="fieldrow"><label for="s3a">Keyhole total time (min)</label><input type="number" step="any" id="s3a" placeholder="format: minutes, one decimal"><span class="fb" id="fb3a"></span></div>
+    <div class="fieldrow"><label for="s3b">The Loft total time (min)</label><input type="number" step="any" id="s3b" placeholder="format: minutes, one decimal"><span class="fb" id="fb3b"></span></div>
+    <div class="fieldrow"><label for="s3c">Margin (%)</label><input type="number" step="any" id="s3c" placeholder="format: percent, two decimals"><span class="fb" id="fb3c"></span></div>
+    <button onclick="checkStep3()">Check Step 3</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Required-pace equation (D4)</h4>
+    <div class="goal">Using Appendix D's MA5 deadline, write and solve an equation for the minimum average moving pace (mph) each route needs, holding elevation-gain time, the night-pace multiplier, and (for The Loft) the route-finding penalty fixed.</div>
+    <div class="fieldrow"><label for="s4a">Keyhole required pace (mph)</label><input type="number" step="any" id="s4a" placeholder="format: mph, two decimals"><span class="fb" id="fb4a"></span></div>
+    <div class="fieldrow"><label for="s4b">The Loft required pace (mph)</label><input type="number" step="any" id="s4b" placeholder="format: mph, two decimals"><span class="fb" id="fb4b"></span></div>
+    <button onclick="checkStep4()">Check Step 4</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; Signed temperature &amp; wind chill (D5)</h4>
+    <div class="goal">Use Appendix C's lapse rate to find each location's air temperature, then the NWS formula (with the case-supplied wind-factor table) to find each wind chill. Both are signed integers. Then find each location's integer difference (air temperature minus wind chill).</div>
+    <div class="fieldrow"><label for="s5a">Boulderfield air temp (&deg;F)</label><input type="number" step="any" id="s5a" placeholder="format: whole degrees"><span class="fb" id="fb5a"></span></div>
+    <div class="fieldrow"><label for="s5b">Summit air temp (&deg;F)</label><input type="number" step="any" id="s5b" placeholder="format: whole degrees"><span class="fb" id="fb5b"></span></div>
+    <div class="fieldrow"><label for="s5c">Boulderfield wind chill (&deg;F)</label><input type="number" step="any" id="s5c" placeholder="format: whole degrees, may be negative"><span class="fb" id="fb5c"></span></div>
+    <div class="fieldrow"><label for="s5d">Summit wind chill (&deg;F)</label><input type="number" step="any" id="s5d" placeholder="format: whole degrees, may be negative"><span class="fb" id="fb5d"></span></div>
+    <div class="fieldrow"><label for="s5e">Boulderfield: temp &minus; wind chill (&deg;F)</label><input type="number" step="any" id="s5e" placeholder="format: whole degrees"><span class="fb" id="fb5e"></span></div>
+    <div class="fieldrow"><label for="s5f">Summit: temp &minus; wind chill (&deg;F)</label><input type="number" step="any" id="s5f" placeholder="format: whole degrees"><span class="fb" id="fb5f"></span></div>
+    <button onclick="checkStep5()">Check Step 5</button>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-mountain"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>New information from dispatch: the injured climber's party reports he has self-descended, in pain, back down to the Boulderfield &mdash; the point where both routes are still the <em>same trail</em>. He is no longer above the split at all.</p>
+      <p>Using Appendix A's shared-segment numbers &mdash; does your Step 3 recommendation still hold? What happens to the margin you just computed?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Recompute Step 3 using only the shared Boulderfield segment (the Twist scenario)</label>
+      </div>
+      <div id="twistResult" style="margin-top:10px;font-family:var(--sans);font-size:.9rem"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1][S2] 14ers.com &mdash; <a href="https://www.14ers.com/routelist.php?peakid=10015" target="_blank" rel="noopener">Longs Peak Route List</a> (accessed 2026-09-10)</li>
+      <li>[S3] National Park Service, Rocky Mountain National Park &mdash; <a href="https://www.nps.gov/romo/planyourvisit/longspeak.htm" target="_blank" rel="noopener">Longs Peak - Keyhole Route</a> (accessed 2026-09-10)</li>
+      <li>[S5] Wikipedia, citing William W. Naismith's 1892 report &mdash; <a href="https://en.wikipedia.org/wiki/Naismith%27s_rule" target="_blank" rel="noopener">Naismith's rule</a> (accessed 2026-09-10)</li>
+      <li>[S6] NOAA Storm Prediction Center &mdash; <a href="https://www.spc.noaa.gov/exper/soundings/help/lapse.html" target="_blank" rel="noopener">Sounding Help: Lapse Rate</a> (accessed 2026-09-10)</li>
+      <li>[S7] National Weather Service &mdash; <a href="https://www.weather.gov/safety/cold-wind-chill-chart" target="_blank" rel="noopener">Cold Weather Safety: Wind Chill Chart</a> (accessed 2026-09-10)</li>
+      <li>[S8] SummitPost &mdash; <a href="https://www.summitpost.org/longs-peak/150310" target="_blank" rel="noopener">Longs Peak</a> (accessed 2026-09-10)</li>
+      <li>[S9] National Park Service &mdash; <a href="https://www.nps.gov/romo/planyourvisit/all-about-weather.htm" target="_blank" rel="noopener">All About Weather</a> &middot; <a href="https://www.nps.gov/romo/learn/news/pr_major_rescue_underway_on_east_face_of_longs_peak.htm" target="_blank" rel="noopener">Major Rescue Underway On East Face Of Longs Peak</a> (accessed 2026-09-10)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Boulderfield &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   Given data, ported from cases/boulderfield/sensitivity_model.py
+   (source of record; case.json case_md_sha256 recorded at QA time).
+   ================================================================ */
+const PARAMS = {
+  pace_mph: 3.0,
+  climb_rate_ft_per_hr: 2000.0,
+  keyhole_oneway_mi: 7.25,
+  keyhole_gain_ft: 5100.0,
+  loft_oneway_mi: 6.5,
+  loft_gain_ft: 5300.0,
+  boulderfield_oneway_mi: 5.5,
+  boulderfield_gain_ft: 3360.0,
+  night_pace_multiplier: 1.3,
+  technical_penalty_min: 55.0,
+};
+const FLEX = ["night_pace_multiplier", "technical_penalty_min"];
+
+function routeTimeMin(onewayMi, gainFt, p, penaltyMin){
+  penaltyMin = penaltyMin || 0;
+  const hrs = (onewayMi / p.pace_mph + gainFt / p.climb_rate_ft_per_hr) * p.night_pace_multiplier;
+  return hrs * 60 + penaltyMin;
+}
+function timeBreakdown(p){
+  const aNaismithHr = p.keyhole_oneway_mi / p.pace_mph + p.keyhole_gain_ft / p.climb_rate_ft_per_hr;
+  const bNaismithHr = p.loft_oneway_mi / p.pace_mph + p.loft_gain_ft / p.climb_rate_ft_per_hr;
+  const A_min = routeTimeMin(p.keyhole_oneway_mi, p.keyhole_gain_ft, p);
+  const B_min = routeTimeMin(p.loft_oneway_mi, p.loft_gain_ft, p, p.technical_penalty_min);
+  return {aNaismithHr, bNaismithHr, A_min, B_min};
+}
+function evaluate(p){
+  const b = timeBreakdown(p);
+  const ceiling = 2 * Math.max(b.A_min, b.B_min);
+  return {A: ceiling - b.A_min, B: ceiling - b.B_min};
+}
+function evaluateTwist(p){
+  const t = routeTimeMin(p.boulderfield_oneway_mi, p.boulderfield_gain_ft, p);
+  return {A: t, B: t};
+}
+
+/* ================================================================
+   Generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CSV export helpers.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   Top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  const a = parseFloat(val('s1a')), b = parseFloat(val('s1b'));
+  fb('fb1a', near(a, PARAMS.keyhole_oneway_mi, 0.05));
+  fb('fb1b', near(b, PARAMS.loft_oneway_mi, 0.05));
+}
+function checkStep2(){
+  const bd = timeBreakdown(PARAMS);
+  const a = parseFloat(val('s2a')), b = parseFloat(val('s2b'));
+  fb('fb2a', near(a, bd.aNaismithHr, 0.01));
+  fb('fb2b', near(b, bd.bNaismithHr, 0.01));
+}
+function checkStep3(){
+  const bd = timeBreakdown(PARAMS);
+  const a = parseFloat(val('s3a')), b = parseFloat(val('s3b')), m = parseFloat(val('s3c'));
+  const slower = Math.max(bd.A_min, bd.B_min), faster = Math.min(bd.A_min, bd.B_min);
+  const margin = (slower - faster) / slower * 100;
+  fb('fb3a', near(a, bd.A_min, 0.5));
+  fb('fb3b', near(b, bd.B_min, 0.5));
+  fb('fb3c', near(m, margin, 0.2));
+}
+function checkStep4(){
+  const budgetHr = 7 + 46/60; // 2:14 a.m. to the 10:00 a.m. MA5 deadline
+  function requiredPace(onewayMi, gainFt, penaltyMin){
+    penaltyMin = penaltyMin || 0;
+    const availHr = budgetHr - penaltyMin/60;
+    const availPreMult = availHr / PARAMS.night_pace_multiplier;
+    const remainingForDistance = availPreMult - gainFt / PARAMS.climb_rate_ft_per_hr;
+    return onewayMi / remainingForDistance;
+  }
+  const pk = requiredPace(PARAMS.keyhole_oneway_mi, PARAMS.keyhole_gain_ft);
+  const pl = requiredPace(PARAMS.loft_oneway_mi, PARAMS.loft_gain_ft, PARAMS.technical_penalty_min);
+  const a = parseFloat(val('s4a')), b = parseFloat(val('s4b'));
+  fb('fb4a', near(a, pk, 0.05));
+  fb('fb4b', near(b, pl, 0.05));
+}
+function windChill(T, Vpow){ return 35.74 + 0.6215*T - 35.75*Vpow + 0.4275*T*Vpow; }
+function checkStep5(){
+  const bfTemp = 28 - Math.round(3360/1000*3.5);
+  const smTemp = 28 - Math.round(4859/1000*3.5);
+  const bfWC = Math.round(windChill(bfTemp, 1.6735));
+  const smWC = Math.round(windChill(smTemp, 1.7663));
+  const a = parseFloat(val('s5a')), b = parseFloat(val('s5b')), c = parseFloat(val('s5c')),
+        d = parseFloat(val('s5d')), e = parseFloat(val('s5e')), f = parseFloat(val('s5f'));
+  fb('fb5a', near(a, bfTemp, 0));
+  fb('fb5b', near(b, smTemp, 0));
+  fb('fb5c', near(c, bfWC, 1));
+  fb('fb5d', near(d, smWC, 1));
+  fb('fb5e', near(e, bfTemp - bfWC, 1));
+  fb('fb5f', near(f, smTemp - smWC, 1));
+}
+
+/* ================================================================
+   Dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "boulderfield";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   Deliverables checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "One-way route breakdown"],
+  ["D2", "Naismith's Rule raw time estimate"],
+  ["D3", "Adjusted total time and margin"],
+  ["D4", "Required-pace equation"],
+  ["D5", "Signed temperature and wind chill analysis"],
+  ["D6", "Bar graph + signed number line"]
+];
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   Glossary content (MCS-39: >=8 terms, https:// to an allowlisted
+   domain: khanacademy.org, mathsisfun.com, cuemath.com, purplemath.com,
+   ck12.org, nctm.org, openstax.org). Every URL below was fetched and
+   confirmed working on 2026-09-10 (see RESEARCH_LOG.md).
+   ================================================================ */
+const GLOSSARY = {
+  "Integer": {def: "A number with no fractional part -- a positive counting number, zero, or a negative counting number.",
+    url: "https://www.mathsisfun.com/definitions/integer.html"},
+  "Positive Number": {def: "A number greater than zero -- on a number line, anything to the right of zero.",
+    url: "https://www.mathsisfun.com/positive-negative-integers.html"},
+  "Negative Number": {def: "A number less than zero -- on a number line, anything to the left of zero.",
+    url: "https://www.mathsisfun.com/positive-negative-integers.html"},
+  "Operation": {def: "A mathematical process, like addition, subtraction, multiplication, or division.",
+    url: "https://www.mathsisfun.com/definitions/operation.html"},
+  "Expression": {def: "Numbers, symbols and operators (+, -, x, /) put together to represent a value -- no equals sign.",
+    url: "https://www.mathsisfun.com/definitions/expression.html"},
+  "Equation": {def: "A statement that two things are equal, written with an equals sign.",
+    url: "https://www.mathsisfun.com/definitions/equation.html"},
+  "Variable": {def: "A symbol, usually a letter, standing in for a value we don't know yet.",
+    url: "https://www.mathsisfun.com/definitions/variable.html"},
+  "Rounding": {def: "Replacing a number with an approximate value that is simpler, or has fewer decimal digits.",
+    url: "https://www.mathsisfun.com/rounding-numbers.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+};
+const HOWTO = [
+  ["how to add with negative numbers", "Negative Number"],
+  ["how to subtract with negative numbers", "Negative Number"],
+  ["how to evaluate an expression with multiple operations (Order of Operations)", "Operation"],
+  ["how to evaluate a variable expression (Substitution Property)", "Variable"],
+  ["how to solve a one-step equation", "Equation"],
+  ["how to solve a multi-step equation with a variable on one side", "Equation"],
+  ["how to round a number to a specified place value", "Rounding"],
+  ["how to find the percent of a number", "Percent"],
+];
+
+/* ================================================================
+   STORY_GLOSSARY (MCS-47) -- real-world, non-math vocabulary this
+   case uses. {desc, link} shape, deliberately distinct from
+   GLOSSARY's {def, url} so T1-19's regex never double-counts it.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Cairned": {desc: "Marked with cairns -- small, human-built stacks of rocks used as trail markers above treeline, where there's no dirt path or vegetation to follow.",
+    link: "https://www.nps.gov/romo/planyourvisit/longspeak.htm"},
+  "Class 3": {desc: "A climbing-difficulty rating meaning steep scrambling on rock, using your hands for balance, where an unroped fall could seriously hurt you -- one step below routes that require ropes.",
+    link: "https://www.nps.gov/romo/planyourvisit/longspeak.htm"},
+  "Route-Finding": {desc: "The skill of navigating unmarked or lightly marked terrain by reading the landscape, rather than following a signed, cairned trail.",
+    link: "https://www.nps.gov/romo/planyourvisit/longspeak.htm"},
+  "Incident Command": {desc: "The organizational structure that coordinates an emergency response -- who is in charge, who makes which call, and how information flows during a rescue.",
+    link: "https://www.nps.gov/romo/learn/news/pr_major_rescue_underway_on_east_face_of_longs_peak.htm"},
+  "Wilderness EMT": {desc: "An Emergency Medical Technician with additional training for treating patients far from a hospital, in the backcountry, where an ambulance can't reach.",
+    link: "https://www.nps.gov/romo/learn/news/pr_major_rescue_underway_on_east_face_of_longs_peak.htm"},
+  "Rigging Gear": {desc: "Ropes, anchors, and hardware used to protect a team crossing steep or loose rock -- carried as a precaution even on a route that doesn't require full technical climbing.",
+    link: "https://www.nps.gov/romo/planyourvisit/longspeak.htm"},
+};
+
+/* ================================================================
+   Glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="storyterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Read more &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryVocab');
+  if(el) el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+/* ================================================================
+   Auto-link glossary + story-glossary terms in prose.
+   ================================================================ */
+function autoLinkTerms(dict, renderFn, containerSelectors, skipExtra){
+  const linked = new Set();
+  document.querySelectorAll('[data-term], [data-sterm]').forEach(a => {
+    if(!a.closest('#apx-glossary') && !a.closest('#apx-story-glossary')){
+      linked.add(a.dataset.term || a.dataset.sterm);
+    }
+  });
+  const terms = Object.keys(dict).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .storyterm, #apx-glossary, #apx-story-glossary, button, input, select, textarea, label' + (skipExtra || '');
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = renderFn(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkTerms(GLOSSARY, gtermHTML, ['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkTerms(STORY_GLOSSARY, stermHTML, ['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   Twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const box = document.getElementById('applyTwist');
+  const out = document.getElementById('twistResult');
+  if(!box.checked){ out.textContent=''; return; }
+  const tw = evaluateTwist(PARAMS);
+  out.innerHTML = 'Recomputed on the shared Boulderfield segment only: Option A and Option B now come out to the <strong>exact same</strong> total time &mdash; try it in Step 3 above using Appendix A\'s Boulderfield row instead of the full-route rows, and see what happens to the margin.';
+}
+
+/* ================================================================
+   Tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

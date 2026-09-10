@@ -6,10 +6,12 @@ death, or financial-hardship stakes. No facilitator content note required.
 ## Intro
 
 Frame the format: a real professional dilemma, not a worksheet with a story stapled on. Name the
-opener — "Priya Anand has a mold-shop quote deadline today, two hand-built prototypes on her
+opener — "Odalys Reyes has a mold-shop quote deadline today, two hand-built prototypes on her
 bench, and a phone still on hold. Whichever shape she signs off on today is the shape Thistle &
-Fern ships for the whole holiday run." This is a packaging-engineering call with a real production
-consequence, not an abstract geometry worksheet.
+Fern ships for the whole holiday run." Odalys came up through studio pottery before packaging
+engineering — she trusts what a box feels like in her hand as much as what its spec sheet says,
+and the shelf of failed prototypes behind her desk is there on purpose, not clutter. This is a
+packaging-engineering call with a real production consequence, not an abstract geometry worksheet.
 
 ## Launch
 
@@ -66,12 +68,12 @@ not dollars per box, and the Twist Cone's larger interior volume converts its sl
 cost into a lower cost per unit once the real 64% packing figure is applied — one extra whole Mini
 Fizzer per box. Cold-call on this specifically: "You just told me the Peak Box is cheaper. Cheaper
 per *what*?" Once D4 is run in full, Option B (Twist Cone) wins the primary metric by **8.96%** —
-comfortably inside SPEC §2's margin cap, which is exactly why Priya is still standing at her bench
+comfortably inside SPEC §2's margin cap, which is exactly why Odalys is still standing at her bench
 with a prototype in each hand.
 
 A second-order version of the same trap sits in D5: a Hero who then flips to the Twist Cone on
 D4's number alone, without ever computing the shipping-carton footprint, misses that the Peak Box
-ships nearly twice as densely — a real freight cost Priya's company pays even though it never
+ships nearly twice as densely — a real freight cost Odalys's company pays even though it never
 appears on the mold shop's per-box invoice. A strong pitch has to hold both numbers at once.
 
 ## Twist: N/A
@@ -130,7 +132,7 @@ See `case.json.cohort_bands[]`.
 
 Use these across Anchors 2–4 and the Data Deep Dive — each is answerable only with this case's own numbers, not general opinion.
 
-1. Your D4 table says the Twist Cone wins by about 9% on cost per Mini Fizzer delivered, but the Peak Box is the cheaper box — which number should Priya actually be optimizing, and why isn't "cheaper box" automatically "cheaper decision"?
+1. Your D4 table says the Twist Cone wins by about 9% on cost per Mini Fizzer delivered, but the Peak Box is the cheaper box — which number should Odalys actually be optimizing, and why isn't "cheaper box" automatically "cheaper decision"?
 2. D5 says nearly twice as many Peak Boxes fit in one shipping carton layer as Twist Cones — if freight is priced by the carton, how big would that per-carton cost have to get before shipping density outweighs the Twist Cone's win on cost per fizzer?
 3. Modeling Assumption MA1 applies the same 64% loose-packing figure to both shapes even though the Twist Cone tapers to a point and the Peak Box doesn't — if the cone's real packing efficiency runs even a little below the Peak Box's, what happens to the D4 winner?
 4. A student who compares only the two boxes' raw material cost will confidently pick the Peak Box — what did that comparison leave out, and why does leaving it out produce a wrong-but-confident answer?

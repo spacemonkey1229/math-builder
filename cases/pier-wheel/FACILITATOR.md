@@ -16,6 +16,14 @@ that agree on almost everything, and a board that has never once overridden her 
 she writes down, in every way that matters, is the decision." The tension is not "which wheel is
 bigger" — it's "which wheel wins on the rule the authority actually uses to decide."
 
+Worth surfacing early, in your own words: Renata isn't a desk engineer who's never stood on a
+ride — she spent six years running ride panels before going back for her engineering degree, and
+colleagues rib her that she's now designed the sightlines for three sunset-view wheels without
+ever once catching the view herself, because the person running the shift watches the loading
+gate, not the horizon. That's not just color — it's why she reads a spec sheet for what a rider
+actually experiences rather than for which wheel sounds more impressive on paper, and it's a
+useful frame to have in the room before Anchor 2's question about what "better design" even means.
+
 ## Launch
 
 Read the Overview aloud, then Background's first two paragraphs — who Renata is, that both

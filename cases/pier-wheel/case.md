@@ -32,6 +32,17 @@ board has asked her to score two competing design proposals and bring a single r
 Thursday's vote — she does not choose the winner herself, but the board has never overridden her
 recommendation memo in the agency's history, so in every way that matters, this call is hers.
 
+Before she was an engineer, Renata spent six years running the ride panel at a regional amusement
+park — loading capsules, watching the sky for lightning, learning the difference between a wheel
+that feels smooth to a rider and one that merely tests smooth on paper — before going back to
+school for her engineering degree. She still trusts what her hands remember over what a spec sheet
+promises. It's a running joke among her colleagues that she has now designed the sightlines for
+three different sunset-view wheels and, across eleven years of working actual evening shifts, has
+caught the view from the top of exactly zero of them — somebody has to watch the loading gate
+while the tourists watch the horizon. That ground-level instinct is why she reads a spec sheet the
+way she does: not for which wheel sounds more impressive, but for which one actually delivers what
+it promises to the rider standing in the capsule, not just to the board approving the drawing.
+
 Both proposals come from real, already-built reference installations, licensed to Bellwether
 Point by the manufacturers who engineered them — the authority is not inventing a wheel from
 scratch, it is choosing which proven design family to build a version of (SEE APPENDICES A AND

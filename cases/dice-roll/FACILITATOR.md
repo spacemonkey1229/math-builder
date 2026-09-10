@@ -26,6 +26,15 @@ ballots every county in Colorado has to hand-recount. That part isn't up for deb
 law. What Marisol has to decide by end of day is something the dice don't touch at all: which
 five counties her own team physically visits to watch it happen."
 
+Worth naming when you introduce her: Marisol was a county poll worker herself, years before she
+moved to the compliance side — she's worked a real polling floor, not just reviewed the
+paperwork it produces, and that ground-level experience is part of why she stays even-keeled
+when a county clerk pushes back hard on a finding. She also keeps a single six-sided die on her
+desk, a memento from her first audit-methods training, where an instructor used ordinary dice to
+teach random sampling — a small, concrete echo of the math this case actually asks Heroes to do.
+Keep this strictly a character/competence detail; it is not political content and should not be
+used to editorialize about elections.
+
 ## Launch
 
 Read the Overview aloud, then Background's first two paragraphs — the RLA is mandatory

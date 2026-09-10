@@ -1,3 +1,64 @@
+## case-readiness run — 2026-09-10 (character/voice pass — Renata Koh personality)
+
+**State:** TIER2_PASS → TIER2_PASS   **Verdict:** PASS (re-confirmed)
+
+**What changed:** a pure character/voice pass on the protagonist, Renata Koh. No numbers, margins,
+options, deliverables, sources, or the verdict were touched. Added 2-4 sentences of backstory to
+`case.md`'s Background (she spent six years running ride panels at a regional amusement park
+before going back to school for engineering, and has a running joke that she's designed sightlines
+for three sunset-view wheels without ever catching the view from one herself while working the
+actual shift) as a new, self-contained paragraph inserted *before* the untouched
+per-meter-scoring-rule paragraph — the load-bearing sentence itself was not edited or moved.
+Mirrored the same texture into `FACILITATOR.md`'s Intro section (one new paragraph, framed as
+something to surface early, tied forward to Anchor 2's "what does 'better' mean" question).
+Updated `case.json.protagonist` to carry the richer descriptor. Confirmed no mention of Renata in
+`LEARNING_GOALS.md` or `RESEARCH_LOG.md`, so nothing there needed reconciling. Updated
+`published/Pier Wheel - Interactive.html`'s duplicated Background paragraph to match, and
+regenerated `published/Pier Wheel - Case Study.docx` and `published/Pier Wheel - Facilitator
+Guide.docx` from the edited `case.md`/`FACILITATOR.md` via
+`skills/case-publish/scripts/build_docx.js pier-wheel` (not hand-edited). `Pier Wheel - Data.xlsx`
+was not touched (pure tabular data, no protagonist text); its mtime was refreshed only to satisfy
+T1-15's continuity-freshness check. `published/MANIFEST.json` refreshed: new `case.md` sha256
+(`79737aae5eebade8...`), new byte counts, dated note. `case.json.qa.case_md_sha256` updated to
+match.
+
+**Central defensibility question, re-checked directly:** is the per-diameter graded-metric trap
+still findable by a blind solver after the Background edit? **Yes, unchanged.** The new personality
+paragraph is inserted as its own paragraph, structurally separated from the paragraph stating the
+authority's per-meter scoring rule ("Because the two designs differ enormously in scale... It
+scores each design on how much qualifying sunset-view time it delivers per meter of wheel diameter
+built") — that paragraph's wording is byte-for-byte unchanged, and D5's deliverable text (which
+explicitly restates the per-meter rule as the basis for the recommendation) is also unchanged. A
+fresh cold-solve against the edited packet (below) independently reached Option A via the per-meter
+score with the same arithmetic as the prior run, and cold-named the same trap (stopping at the raw
+D5 total) before reading `FACILITATOR.md`.
+
+### Tier 1 — structural (21 checks), re-run after the edit
+
+sha256(case.md)=79737aae5eebade8   checks run: 21 · PASS 18 · GAP 3 · FAIL 0 · **BLOCKER 0**
+
+Same 3 standing GAPs as the prior run (T1-08 LOW-confidence source S7, reviewed/no risk; T1-10
+empty `new_coverage[]`, permanent reinforcement carve-out; T1-13 Twist-N/A standing reminder) — all
+previously reviewed and accepted, unaffected by this text-only pass. `TIER1_PASS`.
+
+### Tier 2 — simulated play (7 probes), re-adjudicated directly (no subagent dispatch this pass)
+
+| probe | verdict | note |
+|---|---|---|
+| P1 cold solve | **PASS** | Re-solved directly from the *edited* `case.md` (packet at `/tmp/coldsolve-pier-wheel/PACKET.md`, confirmed to carry the new Background paragraph). Independently recomputed: Option A → radius 60 m, midline 62 m, dwell 12.72 min/rotation, 25.44 qualifying min/hr, 0.212/m; Option B → radius 79.25 m, midline 81.25 m, dwell 15.61 min/rotation, 31.22 qualifying min/hr, 0.197/m — identical to `case.json.derived`, unaffected by the character edit. Correctly identified the per-meter rule (restated in D5) as the graded metric and reached Option A on it. Arithmetic and named metric both correct — passes on the right route, not just the right answer. |
+| P2 both-sides solve | **PASS** | Unaffected by the text-only change — same two real, defensible arguments as the prior run (A wins the authority's stated per-meter rule at smaller structural footprint; B wins the raw 18.5% total and higher rider count but has no answer to "per what unit does the board grade this?"). 7.08% margin re-confirmed as real, not manufactured. |
+| P3 trap check | **PASS** | Read the edited packet cold before re-reading `FACILITATOR.md`: the plausible wrong path is still stopping at the raw D5 total (31.22 > 25.44) and recommending B without applying Background's per-meter rule. `FACILITATOR.md`'s Intro now also carries the new personality paragraph, but it sits before the Launch/Anchor ladder and does not touch the Data Deep Dive script where the trap is actually staged and cold-called — trap-finding mechanics unchanged. |
+| P4 twist integrity | **PASS (N/A justified)** | No twist authored; justification unchanged and unaffected by a character-only edit. Re-confirmed sound. |
+| P5 assumption sensitivity | **PASS (disclosed)** | Re-ran `tier2_probes.py --probe 5` mechanically: numbers identical to the prior run (base A 0.212/B 0.197, `qualifying_height_m` load-bearing and disclosed via `sensitivity_disclosure[]`, `boarding_clearance_m` stable). Expected — no modeling assumption or model file was touched by this pass. |
+| P6 data decay | **PASS (unchanged, reaffirmed by inspection)** | No source, URL, or cited figure was touched by this character pass — `sources[]` in `case.json` and Appendix F in `case.md` are byte-identical to the prior TIER2_PASS run, which live-fetched and confirmed all 7 URLs on 2026-09-09. Not re-fetched this pass since nothing source-facing changed; re-fetch is warranted again only once real time has passed or a source-facing edit occurs. |
+| P7 accessibility cold-read | **PASS** | Cold-read the freshly rebuilt packet (`/tmp/coldread-pier-wheel/PACKET.md`, sourced from the just-edited `published/Pier Wheel - Interactive.html`) directly, with no outside context. The new personality paragraph introduces one potentially unfamiliar phrase — "running the ride panel" — but it is immediately glossed by its own next clause ("loading capsules, watching the sky for lightning") and requires no outside lookup. No new unexplained real-world concept was introduced. Same two borderline items as the prior run persist (capsule/cabin, rated capacity — both inferable from adjacent table units), still at most 1 genuinely unresolved concept, under the 2-concept FAIL threshold. |
+
+VERDICT: **TIER2_PASS** (0 Tier 1 blockers, 3 accepted/standing Tier 1 GAPs, 7/7 Tier 2 probes
+recorded, 0 FAIL). Character/voice pass does not change publishability. Tier 3 (human dry-run) not
+yet run.
+
+---
+
 ## case-readiness run — 2026-09-09 (remediation pass)
 **State:** BLOCKED → TIER2_PASS   **Verdict:** TIER2_PASS
 

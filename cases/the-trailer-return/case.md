@@ -18,8 +18,14 @@ grid on her phone, starts counting corners, and does not put the truck in gear y
 ## Background
 
 Denise Okafor is the Recycling Route Coordinator for the Department of Public Works in the town of
-Averyton. She is responsible for the weekly single-stream recycling route through the Bay Fruit
-Streets district — a 68-intersection, 102-block-segment street grid along the town's original
+Averyton. Fifteen years on this route have made her genuinely proud of the work — she still keeps a
+hand-annotated paper street map bungeed to Truck 4's dash, because, as she puts it, the GPS "argues
+with her" about which streets are actually one-way or blocked by construction, and her paper map has
+never once been wrong. She is not chasing a badge for it; shaving even a few minutes off a route is a
+real, satisfying win to her, not just a box her supervisor asked her to check. Practical, a little
+stubborn about trusting her own eyes on the pavement over what a screen tells her, but no luddite —
+she just knows these streets better than any app does. She is responsible for the weekly single-stream
+recycling route through the Bay Fruit Streets district — a 68-intersection, 102-block-segment street grid along the town's original
 harbor-front plat — and is accountable to her supervisor for the truck's daily diesel cost, which
 comes out of the same line item as every other route in town (SEE APPENDIX A). She does not set the
 town's labor contract or its fuel budget, but her route-design memo is what her supervisor uses to
