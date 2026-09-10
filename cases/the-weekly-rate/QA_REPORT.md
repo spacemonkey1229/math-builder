@@ -45,3 +45,33 @@ tripping the artifact-staleness check).
 
 ### Tier 3 — human dry-run
 NOT RUN — no cohort has run this case yet. `PUBLISHED` does not require Tier 3; `VERIFIED` does.
+
+---
+
+## Remediation pass — 2026-09-10 (later same day) — reviewer feedback: "has no pictures," graph/section correctness check
+
+**Trigger:** direct reviewer feedback on the published Interactive HTML — no e-bike picture; the deliverables checklist reads as an answer key with no process explanation; needs more hover/hyperlink context; explicit request to verify individual sections and graphs are actually correct rather than assumed correct.
+
+**Changes made:**
+1. **Visuals.** Added a labeled, not-to-scale inline-SVG illustration of a step-through delivery e-bike (battery, rear cargo rack, callouts to both real prices) in Background, right after the option-comparison card. Verified both existing cost-function graphs by hand:
+   - **Bug found and fixed:** Appendix B's Whizz distractor SVG drew its cost line flat (`y1=195` to `y2=195`) instead of sloping from the $99 deposit point to the $69/week-rate point at `(390,35)` — the marked (4, 375) dot was floating disconnected above a horizontal line. Fixed to `y2=35` so the line actually connects both marked points.
+   - **Bug found and fixed:** the D5 "worked example" (fictional Mercury/Vesta lines, used to teach the graphing technique without leaking Dara's real numbers) had its "intersection" marker at a pixel position that was mathematically off both drawn lines by ~8-48px. Recomputed the true line-line intersection and moved the marker/label to the correct pixel.
+   - Relabeled the worked-example card "Step 5" and renumbered the old Step 5 (D6, total-cost-at-horizon) to Step 6, closing a numbering gap that made D5 look skipped.
+2. **Checklist as process guide.** `DELIVERABLES` gained a 3rd array element per item — a "Why" line explaining the *reasoning* for that step (e.g. why a break-even point matters, why the Whizz graph is a distractor) without stating any numeric answer or the verdict. `renderChecklist()` updated to render it under each label.
+3. **Glossary.** Added "Linear Equation" (mathsisfun.com, fetched and confirmed) to `GLOSSARY` and "Watt-Hour (Wh)" (eia.gov, fetched and confirmed) to `STORY_GLOSSARY`; Challenge 3's D1 text reworded so "linear equation" appears in prose and gets auto-linked, not just listed in Appendix E.
+4. **Correctness verification (not just re-asserted).** Ran `sensitivity_model.py` and a hand-written Node port of the HTML's `evaluate()`/`costBreakdown()` side by side: `A_cost=$3963.7222144`, `B_cost=$3638.7222144`, `breakeven=105.982...wk`, `margin=8.19936...%` — bit-for-bit identical between Python and the shipped JS. The JS port has not drifted.
+5. **P6 data-decay re-check turned up two real findings**, both on non-critical figures: S2 (RadRunner 3 Plus price) now shows $2,229 on a fresh fetch vs. the $2,299 cited (a $70/~3% drift — does not flip the winner or breach the 20% margin cap even worst-case); S5b (Whizz) no longer shows the $99 deposit at all, and the $69/week plan is now labeled "Storm-2," not "Storm-1" as originally cited. Fixed the plan-name label everywhere (case.md, case.json, HTML, build scripts) since it's a clean correction. Left the $2,299 and $99 figures as originally cited (MCS-21 — don't silently swap in a new number from a single fetch that could be a momentary promo) and added a dated re-verification disclosure to Appendix D in both case.md and the HTML, plus a `note` field update on `case.json.sources` S2/S5b, flagging both for re-verification before the next reprint.
+
+### Tier 2 — re-adjudication (all 7 probes)
+
+| probe | verdict | note |
+|---|---|---|
+| P1 cold solve | **PASS** | Re-worked cold from the rebuilt packet; arithmetic unchanged (A=$3963.72, B=$3638.72, margin 8.2%, B wins) — none of this pass's changes touch `PARAMS` or the model. |
+| P2 both-sides | **PASS** | Unaffected by this pass — no change to either side's supporting figures. |
+| P3 trap | **PASS** | Trap (mistaking "eventually cheaper" for "cheaper on Dara's actual horizon") is unaffected; still named correctly in `FACILITATOR.md`. |
+| P4 twist | **PASS** | `evaluateTwist()` re-verified against `sensitivity_model.py.evaluate_twist()` numerically — matches (base margin 8.2% B wins → twist margin 4.62% A wins). |
+| P5 sensitivity | **PASS (disclosed)** | Re-run mechanically; unchanged from the original pass (no PARAMS touched this cycle). |
+| P6 data decay | **PASS (2 drifts disclosed)** | Re-fetched all 7 sources live this pass. 5 of 7 (S1, S3, S4, S5a, S6) confirmed unchanged. S2 and S5b show drift (see above) — neither is a 404/dead link, neither changes the balance-test verdict, both are now disclosed in Appendix D and `case.json.sources[].note` rather than silently left stale. This is the "resolves but no longer matches" failure mode P6 exists to catch, and it did. |
+| P7 accessibility | **PASS** | Illustration and both graph fixes make the packet stronger, not weaker, on this axis. Cold-read of the rebuilt packet end-to-end: every real-world term including the two new glossary additions is glossed at first mention; the same two flavor details as before ("48V, 14Ah", "U-lock") remain un-glossed but non-blocking — still comfortably within threshold. |
+
+**Tier 2 result: 7/7 probes recorded, 0 FAIL, 2 disclosed data-decay findings (non-blocking). TIER2_PASS.**

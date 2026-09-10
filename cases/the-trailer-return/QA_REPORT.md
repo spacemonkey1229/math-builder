@@ -118,3 +118,104 @@ NOT RUN (unchanged from prior pass — out of scope).
 6. `published/MANIFEST.json` — hash, byte counts, and `_note` refreshed to this rebuild.
 7. `case.json.qa` — `run_on` and `case_md_sha256` updated; `state`/`verdict`/`blockers_open`/
    `gaps_open`/`tier2` block unchanged (still TIER2_PASS / PASS / 0 / 4 / 7-7-PASS).
+
+---
+
+## case-readiness run — 2026-09-10 (user review pass — visuals, process guide, fresh-reader check)
+**State:** TIER2_PASS → TIER2_PASS   **Verdict:** PASS
+
+Scope: user reviewed the published Interactive HTML and flagged "issues on pictures, explanation
+of process, and an ask to check the work and narrative." Three real issues found and fixed:
+
+1. **A real arithmetic error.** Appendix E printed "Fuel cost per mile driven = $1.1391 / mi
+   (computed: $5.967 ÷ 5.2392)". The division actually computes to $1.1389143.../mi, which rounds
+   to **$1.1389**, not $1.1391 — a genuine transposition-style error in a load-bearing figure. Fixed
+   in `case.md`, the published HTML's Appendix E table, and `published/The Trailer Return -
+   Data.xlsx` (App E!B6). The Working Notebook's live JS calculator (`evaluateDollars()`) was never
+   affected — it recomputes directly from `PARAMS.diesel_price_per_gal / PARAMS.mpg` rather than
+   reading the printed table value, so no downstream cost figure, margin, or verdict changed. Margin
+   (3.70%), both deadhead ratios, and all of Appendices A-D were independently re-verified by hand
+   and are internally consistent (degree-distribution sum = 2×edges, odd-vertex counts match across
+   Appendix A/B/D, Practice Block table sums to 37 edges/26 vertices/14 odd — all checked with a
+   throwaway script, not just re-read).
+2. **Missing scene-setting visual.** The case's central math object (the Practice Block's 26-vertex/
+   37-edge graph, gold/navy odd/even coloring) already had a real, legible inline-SVG diagram in
+   Appendix B — that was not the gap. What was missing was anything showing *what the case is
+   actually about*: a truck, a trailer, a street grid a reader could picture. Added a new labeled
+   inline-SVG scene to the Overview section (`class="scene-diagram"`) showing a schematic street
+   grid, Truck 4 mid-route with a dashed "repeat block (deadhead)" backtrack, an odd-degree-corner
+   legend matching Appendix B's convention, and the flatbed hauler that Option B would contract —
+   no external images, both diagrams tagged so T1-20's visual-asset check recognizes them.
+3. **Deliverables checklist was answer-shaped, not process-shaped.** `DELIVERABLES` in the HTML and
+   the Challenge-3 list in `case.md` stated *what* to produce (D1-D5) but not *why* that step comes
+   where it does. Added a third array element to each `DELIVERABLES` entry (a short why/process line
+   — e.g. why odd vertices get identified before pairing, why an open path gets to "spend" its free
+   endpoint on the priciest pair, why the deadhead ratio and the raw dollar total can disagree) and
+   updated `renderChecklist()` to render it under each item. None of the six lines discloses a
+   numeric answer or the verdict. Mirrored the same five process notes into `case.md`'s Challenge 3
+   list as italicized asides.
+
+**Fresh-reader checks performed directly (not delegated):**
+- **P1 cold-solve**, re-done from `case.md` alone: reached a defensible D1-D5 using only the
+  document. Practice Block greedy pairing still hand-tractable post-fix (O-R and Q-S free at
+  0.0000 mi, A-B free, E-V at 0.0099 mi, L-M at 0.0227 mi, J-K at 0.0335 mi, F-U at 0.1293 mi as the
+  costliest remaining pair — the natural candidate to leave unmatched for D4's open path). D5 still
+  routes through Appendix D's pre-computed official full-grid figures, not a hand-run 68-vertex
+  match. The corrected $1.1389/mi fuel figure changes D5's arithmetic by under half a cent/day —
+  nowhere near enough to move the ~12x-dollar / 3.70%-ratio tension the case is built on.
+- **P7 cold-read**, re-done end-to-end on the *rebuilt* published HTML: read Overview through Twist
+  in order as a first-time reader. Narrative holds together — Denise's paper-map character detail,
+  the Averyton/Cape Charles framing, the Monroe/Strawberry unmatched-pair callback in the Overview
+  paying off in Appendix D, the Twist's confidence-not-flip framing — no internal contradictions
+  found. New Overview scene SVG's `<desc>` and figcaption read correctly with a screen reader in
+  mind; no new unglossed jargon introduced (same one methodology aside, "blossom-algorithm" in
+  Appendix D's own explanatory prose, already noted in the 2026-09-09 pass as non-blocking).
+
+### Tier 1 — structural (21 checks)
+Re-ran `tier1_structural.py --case the-trailer-return` after rebuilding `published/The Trailer
+Return - Case Study.docx`, `- Facilitator Guide.docx` (via `node skills/case-publish/scripts/
+build_docx.js the-trailer-return`) and `- Data.xlsx` (via `python3 scripts/generic_publish/
+build_xlsx_generic.py the-trailer-return`) to pick up the $1.1389 fix, and confirming via
+`grep -o "<h[1-3][^>]*>[^<]*</h[1-3]>"` that all expected sections (Overview, Background, The
+Dilemma, Challenges, Appendices, Working Notebook, Twist) are present and the HTML grew from
+93,837 to 100,631 bytes (no shrinkage). **0 BLOCKER, 4 GAP** — the same four pre-existing,
+documented, out-of-scope shared-tooling artifacts as the prior two passes (T1-10 reinforcement
+carve-out; T1-15 xlsx "2026-27" boilerplate + Facilitator docx un-stripped clock times; T1-18 HTML
+fee-slider `max="300"` UI default). T1-20's advisory polish note ("no image/chart/diagram/map
+found") is now resolved — both SVGs carry a `diagram`-matching class. **VERDICT: TIER1_PASS.**
+
+### Tier 2 — simulated play (7 probes)
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | See fresh-reader check above — reached a defensible position with correct, hand-checkable arithmetic using only the document; the fuel-cost fix does not change tractability or the trap. |
+| P2 both-sides | **PASS** | Both one-sentence pitches unchanged in substance (A: ~12x cheaper in raw dollars — now $10.07 vs. $9.70+$115, both rounding the same at 2 decimals before and after the fix; B: a real 3.70% cut in the case's own primary metric). Neither collapses. |
+| P3 trap | **PASS** | The named trap (build D5, see A win on raw dollars, stop, never engage B's ratio argument) is unchanged and still exactly what FACILITATOR.md's Data Deep Dive names. |
+| P4 twist integrity | **PASS** | Re-checked the twist (S6's consumer-rate basis for the $115/day fee) against MA4's sensitivity note and against the corrected fuel-cost figure — still a confidence twist, not a flip twist; unaffected by this pass's fix. |
+| P5 sensitivity | **PASS** | Ran `sensitivity_model.py` ±50% on `trailer_fee`: winner stays B, margin stays 3.70% at both extremes ($57.50 and $172.50) — mechanical PASS, unchanged. |
+| P6 data decay | **PASS** | No source values changed this pass (S1/S2/S3/S5/S6 untouched — only a derived, non-sourced arithmetic figure was corrected). Re-confirmed all 5 cited figures still match `case.json.sources[]` from the 2026-09-09 live-fetch pass; no re-fetch needed since nothing about the sources themselves changed. |
+| P7 accessibility (cold read) | **PASS** | See fresh-reader check above — 0 new unglossed jargon, 0 narrative contradictions, new scene SVG accessible (title/desc/figcaption). |
+
+**Tier 2 verdict: 7/7 PASS.**
+
+### Tier 3 — human dry-run
+NOT RUN (unchanged from prior passes — out of scope).
+
+### Fixes applied this pass
+1. **Fuel-cost arithmetic error** — `case.md` Appendix E, published HTML Appendix E table, and
+   `published/The Trailer Return - Data.xlsx` (App E!B6) corrected from $1.1391/mi to $1.1389/mi
+   ($5.967 ÷ 5.2392, verified by direct computation). The Working Notebook's JS calculator was
+   already correct (computes live from `PARAMS`, never reads the printed table).
+2. **Added a scene-setting visual** — new inline-SVG in the Overview section (Truck 4, its
+   backtrack, the flatbed hauler, an odd-degree-corner legend matching Appendix B's convention),
+   `class="scene-diagram"`; tagged the existing Appendix B Practice Block graph `class="graph-
+   diagram"` too, so both now satisfy T1-20's visual-asset detection.
+3. **Deliverables checklist made process-oriented** — added a 3rd (`process`) element to every
+   `DELIVERABLES` entry in the Interactive HTML and updated `renderChecklist()` to render it under
+   each item's label; mirrored the same five process notes into `case.md`'s Challenge 3 list.
+4. Rebuilt `published/The Trailer Return - Case Study.docx`, `- Facilitator Guide.docx`, and
+   `- Data.xlsx`; refreshed `published/MANIFEST.json` (hash, byte counts, `_note`) and
+   `case.json.qa` (`run_on`, `case_md_sha256`, `tier2` block) to match.
+
+**No numbers other than the one fuel-cost correction changed** — margin (3.70%), both deadhead
+ratios, both options' total mileage, the flatbed fee, and the verdict are all unchanged from the
+prior pass.

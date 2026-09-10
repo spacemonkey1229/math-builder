@@ -13,9 +13,12 @@ Frame the format: a real professional dilemma, not a worksheet with a story stap
 the opener — "One engineer, one pallet of free salvage steel, and a shop that starts cutting new
 steel at four o'clock whether Suri has an answer or not." Worth naming for the room: Suri grew up
 in this town and crossed the old footbridge over this same creek every school morning as a kid —
-she still carries a tape measure in her bag out of habit, even to meetings where she'll never need
-it — but she's a by-the-book engineer first, and the case is about whether that sentimentality gets
-anywhere near her actual recommendation.
+she can still name the exact board that used to give under her sneaker and never broke, and as a
+kid she decided that wobble meant the bridge was alive, not failing. She still carries a tape
+measure in her bag out of that same habit, even to meetings where she'll never need it — but she's
+a by-the-book engineer first, and the case is about whether that sentimentality gets anywhere near
+her actual recommendation (worth pointing out to the room: her own answer to "is a flex a failure?"
+is exactly the kind of judgment call D2's Triangle Inequality check forces onto solid ground).
 
 ## Launch
 

@@ -27,13 +27,17 @@ Suri pulls the tape measure off her desk and looks at the two elevations again.
 Suri Nakamura is a staff structural engineer at Ferrand & Cole Structural, a small civil
 engineering firm under contract to the Kestrel County Parks Department. She grew up in this town,
 close enough to Miller's Creek that she crossed the old plank footbridge every school morning as a
-kid, so the crossing she's now been asked to redesign is not just another job site to her — a fact
-she keeps carefully separate from the engineering. She still carries a tape measure in her bag out
-of old habit, pulling it out even in meetings where she'll never actually use it. Her job here is to
-finalize the shop drawing for a replacement pedestrian truss bridge over Miller's Creek, on a
-heavily used rail-trail — a drawing the fabricator's shop will cut steel from directly, so every
-member length on it has to be a real, buildable length, not just a number that looks right on the
-elevation.
+kid. She can still name the third board past the north bank — the one that always gave a half-inch
+under her sneaker and never once broke — and she remembers deciding, at maybe eight years old, that
+the wobble meant the bridge was alive rather than failing. Nobody told her that; she worked it out
+herself, standing on it. So the crossing she's now been asked to redesign is not just another job
+site to her — a fact she keeps carefully separate from the engineering, the same way she'd tell that
+eight-year-old the board wasn't breaking, it was flexing, and that both of those could be true at
+once. She still carries a tape measure in her bag out of old habit, pulling it out even in meetings
+where she'll never actually use it. Her job here is to finalize the shop drawing for a replacement
+pedestrian truss bridge over Miller's Creek, on a heavily used rail-trail — a drawing the
+fabricator's shop will cut steel from directly, so every member length on it has to be a real,
+buildable length, not just a number that looks right on the elevation.
 
 A truss is rigid for a specific geometric reason: a triangle is the only polygon whose shape is
 fixed once its three side lengths are set — a rectangle can rack into a parallelogram under load,

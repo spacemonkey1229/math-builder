@@ -1,18 +1,142 @@
 CONFIG = {
     "strand_summary": "Statistics And Probability &middot; Sampling And Experiments",
     "protagonist": "Marisol Ibarra, Compliance Audit Coordinator",
+    "overview_banner_svg": """
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 760 500" role="img" class="county-comparison-diagram" aria-label="county sampling comparison diagram" aria-labelledby="cmpTitle cmpDesc" style="width:100%;max-width:760px;display:block;margin:0 auto 6px" xmlns="http://www.w3.org/2000/svg">
+    <title id="cmpTitle">Comparing the two visit-plan options across the 12-county working roster</title>
+    <desc id="cmpDesc">Two panels, each showing the same 12 counties grouped by region. The top panel highlights the 5 counties The Statewide Draw selects this cycle, spread across every region. The bottom panel highlights the 5 counties The Front Range Loop always selects, all clustered in the Front Range column, with the other four regions shaded to show they are never reached.</desc>
+    <style>
+      .colhead{font:700 11px var(--sans, sans-serif);fill:var(--sub,#5b6472);text-transform:uppercase;letter-spacing:.03em}
+      .cname{font:500 11px var(--sans, sans-serif);fill:var(--ink,#1f2530)}
+      .cname.dim{fill:var(--sub,#5b6472);opacity:.55}
+      .paneltitle{font:700 15px var(--serif, serif);fill:var(--ink,#1f2530)}
+      .panelnote{font:italic 11.5px var(--sans, sans-serif);fill:var(--sub,#5b6472)}
+      .legend{font:600 11px var(--sans, sans-serif);fill:var(--ink,#1f2530)}
+    </style>
+
+    <!-- ============ PANEL A: The Statewide Draw ============ -->
+    <text x="10" y="20" class="paneltitle">A &mdash; The Statewide Draw (multistage: SRS of counties, then systematic within each)</text>
+
+    <text x="80" y="46" text-anchor="middle" class="colhead">Front Range</text>
+    <text x="230" y="46" text-anchor="middle" class="colhead">Eastern Plains</text>
+    <text x="380" y="46" text-anchor="middle" class="colhead">San Luis Valley</text>
+    <text x="530" y="46" text-anchor="middle" class="colhead">Western Slope / SW</text>
+    <text x="680" y="46" text-anchor="middle" class="colhead">South-Central</text>
+
+    <!-- Front Range column: Jefferson(sel), Douglas, Larimer, Boulder(sel), El Paso -->
+    <circle cx="80" cy="70" r="9" fill="var(--navy,#1a3a5c)"/>
+    <text x="94" y="74" class="cname">Jefferson &#10003;</text>
+    <circle cx="80" cy="102" r="9" fill="none" stroke="var(--line,#dfe4ea)" stroke-width="2"/>
+    <text x="94" y="106" class="cname dim">Douglas</text>
+    <circle cx="80" cy="134" r="9" fill="none" stroke="var(--line,#dfe4ea)" stroke-width="2"/>
+    <text x="94" y="138" class="cname dim">Larimer</text>
+    <circle cx="80" cy="166" r="9" fill="var(--navy,#1a3a5c)"/>
+    <text x="94" y="170" class="cname">Boulder &#10003;</text>
+    <circle cx="80" cy="198" r="9" fill="none" stroke="var(--line,#dfe4ea)" stroke-width="2"/>
+    <text x="94" y="202" class="cname dim">El Paso</text>
+
+    <!-- Eastern Plains: Kit Carson(sel), Prowers -->
+    <circle cx="230" cy="70" r="9" fill="var(--navy,#1a3a5c)"/>
+    <text x="244" y="74" class="cname">Kit Carson &#10003;</text>
+    <circle cx="230" cy="102" r="9" fill="none" stroke="var(--line,#dfe4ea)" stroke-width="2"/>
+    <text x="244" y="106" class="cname dim">Prowers</text>
+
+    <!-- San Luis Valley: Alamosa(sel) -->
+    <circle cx="380" cy="70" r="9" fill="var(--navy,#1a3a5c)"/>
+    <text x="394" y="74" class="cname">Alamosa &#10003;</text>
+
+    <!-- Western Slope / SW: Mesa, La Plata, Montezuma -->
+    <circle cx="530" cy="70" r="9" fill="none" stroke="var(--line,#dfe4ea)" stroke-width="2"/>
+    <text x="544" y="74" class="cname dim">Mesa</text>
+    <circle cx="530" cy="102" r="9" fill="none" stroke="var(--line,#dfe4ea)" stroke-width="2"/>
+    <text x="544" y="106" class="cname dim">La Plata</text>
+    <circle cx="530" cy="134" r="9" fill="none" stroke="var(--line,#dfe4ea)" stroke-width="2"/>
+    <text x="544" y="138" class="cname dim">Montezuma</text>
+
+    <!-- South-Central: Pueblo(sel) -->
+    <circle cx="680" cy="70" r="9" fill="var(--navy,#1a3a5c)"/>
+    <text x="694" y="74" class="cname">Pueblo &#10003;</text>
+
+    <text x="10" y="228" class="panelnote">Every region has counties with a real, calculable chance of a visit &mdash; this cycle's actual draw happened to land on Jefferson, Boulder, Pueblo, Kit Carson, and Alamosa.</text>
+
+    <line x1="0" y1="250" x2="760" y2="250" stroke="var(--line,#dfe4ea)" stroke-width="1"/>
+
+    <!-- ============ PANEL B: The Front Range Loop ============ -->
+    <text x="10" y="278" class="paneltitle">B &mdash; The Front Range Loop (convenience sample: same 5 counties, every cycle)</text>
+
+    <!-- shaded "never reached" background behind the 4 non-Front-Range columns -->
+    <rect x="165" y="292" width="545" height="120" rx="8" fill="var(--bad-bg,#fbeceb)" opacity="0.6"/>
+    <text x="437" y="426" text-anchor="middle" class="panelnote" fill="var(--bad,#a3312a)">Eastern Plains, San Luis Valley, Western Slope, and South-Central are never in reach &mdash; not this cycle, not any cycle</text>
+
+    <text x="80" y="304" text-anchor="middle" class="colhead">Front Range</text>
+    <text x="230" y="304" text-anchor="middle" class="colhead">Eastern Plains</text>
+    <text x="380" y="304" text-anchor="middle" class="colhead">San Luis Valley</text>
+    <text x="530" y="304" text-anchor="middle" class="colhead">Western Slope / SW</text>
+    <text x="680" y="304" text-anchor="middle" class="colhead">South-Central</text>
+
+    <!-- Front Range column: all 5 selected -->
+    <circle cx="80" cy="328" r="9" fill="var(--gold,#c9a227)"/>
+    <text x="94" y="332" class="cname">Jefferson &#10003;</text>
+    <circle cx="80" cy="360" r="9" fill="var(--gold,#c9a227)"/>
+    <text x="94" y="364" class="cname">Douglas &#10003;</text>
+    <circle cx="80" cy="392" r="9" fill="var(--gold,#c9a227)"/>
+    <text x="94" y="396" class="cname">Larimer &#10003;</text>
+    <circle cx="80" cy="424" r="9" fill="var(--gold,#c9a227)"/>
+    <text x="94" y="428" class="cname">Boulder &#10003;</text>
+    <circle cx="80" cy="456" r="9" fill="var(--gold,#c9a227)"/>
+    <text x="94" y="460" class="cname">El Paso &#10003;</text>
+
+    <!-- other columns: grayed, unreachable -->
+    <circle cx="230" cy="328" r="7" fill="none" stroke="var(--bad,#a3312a)" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.6"/>
+    <text x="244" y="332" class="cname dim">Kit Carson</text>
+    <circle cx="230" cy="360" r="7" fill="none" stroke="var(--bad,#a3312a)" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.6"/>
+    <text x="244" y="364" class="cname dim">Prowers</text>
+
+    <circle cx="380" cy="328" r="7" fill="none" stroke="var(--bad,#a3312a)" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.6"/>
+    <text x="394" y="332" class="cname dim">Alamosa</text>
+
+    <circle cx="530" cy="328" r="7" fill="none" stroke="var(--bad,#a3312a)" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.6"/>
+    <text x="544" y="332" class="cname dim">Mesa</text>
+    <circle cx="530" cy="360" r="7" fill="none" stroke="var(--bad,#a3312a)" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.6"/>
+    <text x="544" y="364" class="cname dim">La Plata</text>
+    <circle cx="530" cy="392" r="7" fill="none" stroke="var(--bad,#a3312a)" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.6"/>
+    <text x="544" y="396" class="cname dim">Montezuma</text>
+
+    <circle cx="680" cy="328" r="7" fill="none" stroke="var(--bad,#a3312a)" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.6"/>
+    <text x="694" y="332" class="cname dim">Pueblo</text>
+
+    <!-- legend -->
+    <circle cx="15" cy="480" r="7" fill="var(--navy,#1a3a5c)"/>
+    <text x="28" y="484" class="legend">Selected, Option A</text>
+    <circle cx="175" cy="480" r="7" fill="var(--gold,#c9a227)"/>
+    <text x="188" y="484" class="legend">Selected, Option B</text>
+    <circle cx="335" cy="480" r="7" fill="none" stroke="var(--line,#dfe4ea)" stroke-width="2"/>
+    <text x="348" y="484" class="legend">On roster, not selected</text>
+    <circle cx="520" cy="480" r="6" fill="none" stroke="var(--bad,#a3312a)" stroke-width="1.5" stroke-dasharray="2,2"/>
+    <text x="533" y="484" class="legend">Outside Option B's reach, every cycle</text>
+  </svg>
+  <p style="font-size:.85rem;color:var(--sub);text-align:center;margin:2px 0 14px">Same 12-county roster, two different selection processes. The Statewide Draw's actual 5-county pick (top) reaches every region; The Front Range Loop (bottom) never leaves the Front Range column, no matter how many cycles run.</p>
+  </div>
+""",
     "option_a_label": "The Statewide Draw",
     "option_a_text": "A multistage sample: 5 of 12 working-roster counties chosen by simple random sampling, then audit sessions inside each selected county chosen by systematic sampling -- every region of the state has a real chance of an in-person Division visit.",
     "option_b_label": "The Front Range Loop",
     "option_b_text": "A convenience sample of the 5 counties nearest the Denver office -- cheaper and simpler to run, but the Eastern Plains, the San Luis Valley, and the Western Slope are never visited, no matter how many cycles pass.",
     "challenge3_summary": "Include: <strong>D1</strong> a population-and-sample description (working roster vs. full state, and the percent each represents); <strong>D2</strong> the Statewide Draw's realized county selection plus each selected county's systematic-sampling interval and starting point; <strong>D3</strong> a cluster-sampling cost check (full-census review cost vs. the systematic subsample); <strong>D4</strong> a Front Range Loop representativeness analysis (single-cycle and three-cycle selection probability for a remote county); <strong>D5</strong> a total program cost comparison; <strong>D6</strong> a bar graph and a pie chart.",
     "deliverables": [
-        ["D1", "Population-and-sample description"],
-        ["D2", "Statewide Draw sampling plan (SRS + systematic)"],
-        ["D3", "Cluster-sampling cost check"],
-        ["D4", "Front Range Loop representativeness + probability"],
-        ["D5", "Total program cost comparison"],
-        ["D6", "Bar graph + pie chart"],
+        ["D1", "Population-and-sample description",
+         "Process: name the population (64 counties), the working roster this case uses to stand in for it (12), and the sample (5). Turn each of \"sample-of-roster\" and \"sample-of-state\" into a percent the same way -- part divided by whole, times 100 -- and show the division, not just the final number."],
+        ["D2", "Statewide Draw sampling plan (SRS + systematic)",
+         "Process: first stage is simple random sampling -- 5 of the 12 roster counties, each with an equal shot. Second stage is systematic sampling done separately inside each selected county: find the interval k (scheduled sessions ÷ target observed, rounded down), pick a random start between session 1 and session k, then take every k-th session from there."],
+        ["D3", "Cluster-sampling cost check",
+         "Process: a full cluster census means reviewing every scheduled session at all 5 Statewide Draw counties, not a subsample. Add up total scheduled sessions across those 5 counties, multiply by the per-session cost, and compare that total to what the systematic subsample (2 per county) actually costs -- that gap is the case for subsampling inside the cluster instead of taking the whole thing."],
+        ["D4", "Front Range Loop representativeness + probability",
+         "Process: sort the roster into \"inside the Loop's reach\" vs. \"outside it, permanently,\" using the mileage column. For probability, a single-cycle chance is sample size ÷ roster size; a three-cycle chance is easier solved backward -- find the probability a county is missed every time, then subtract that from 1."],
+        ["D5", "Total program cost comparison",
+         "Process: for each option's 5 counties, add mileage (round-trip miles × rate) + lodging (only past the overnight threshold) + M&IE (flat per visit) + staff day cost (flat per visit), then total all 5 counties per option and compare the two totals."],
+        ["D6", "Bar graph + pie chart",
+         "Process: the bar graph needs one bar per cost category (mileage, lodging, M&IE, staff time) for each option, side by side -- not a single total-cost bar. The pie chart needs the Front Range Loop's 5-county population as one slice against the rest of the state's population as the other; convert each to a percent of the state total before drawing the slices."],
     ],
     "notebook_steps_html": """
   <div class="stepbox">

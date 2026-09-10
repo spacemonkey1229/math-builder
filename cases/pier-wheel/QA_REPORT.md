@@ -1,3 +1,149 @@
+## case-readiness run — 2026-09-10 (STRUCTURAL-PARITY PASS — Twist section + Dilemma-pick widget added)
+
+**State:** TIER2_PASS → TIER2_PASS   **Verdict:** PASS (structural parity fix, content unchanged)
+
+**What was flagged:** `published/Pier Wheel - Interactive.html` was built on a leaner shell than 5
+siblings from this week's release (boulderfield, the-weekly-rate, creek-span, the-trailer-return,
+dice-roll). A `grep -o "<h2>[^<]*</h2>"` comparison showed the 5 siblings each carrying a Twist,
+Dilemma-pick, second Working Notebook, and Deliverables-checklist `<h2>`, none of which pier-wheel
+had as top-level sections.
+
+**Ground-truth check before touching anything:** read all 5 siblings' actual `<section id="...">`
+markup, not just the `grep -o <h2>` text. Every one of the 5 siblings' "Dilemma pick" / second
+"Working Notebook" / "Deliverables checklist" `<h2>` strings turned out to live **only inside that
+file's `exportSubmissionPacket()` JS template string** (the print-packet generator) — not real page
+sections. Each sibling's actual page has exactly 7 real sections: overview, background, dilemma,
+challenges, appendices, notebook, twist. The Dilemma-pick radio widget is embedded **inside** the
+Dilemma section (`cardA`/`cardB` optioncards, `name=pick` radios, `pickPill` in the header), not a
+standalone section. The Deliverables checklist is an `<h3>` **inside** Challenges, not a standalone
+`<h2>` section. Confirmed identically, line-for-line pattern, across creek-span, the-weekly-rate,
+dice-roll, boulderfield, and the-trailer-return. No sibling has a real second Working Notebook
+section anywhere in its markup. This means the original task premise (10 real sections, 60-100KB
+"peer norm") was based on a `grep` false-positive from JS-string text, not real structure.
+
+**What was actually missing on pier-wheel, once corrected:**
+1. A real `<section id="twist">` — pier-wheel's Twist is genuinely N/A (confirmed against
+   `FACILITATOR.md`'s existing "## Twist — N/A, justified" section: the case's whole pedagogical
+   weight already rests on the per-meter scoring-rule read, not a late reveal). Added a `.twistbox`
+   section using the same N/A-justified pattern fizzer-order already ships for its own `Twist: N/A`
+   case, with wording drawn directly from `FACILITATOR.md`'s existing justification — no new twist
+   invented.
+2. The Dilemma-pick radio widget, embedded inside the existing `#dilemma` section: `cardA`/`cardB`
+   `optioncard` labels with `name=pick` radios wired to Option A (Thames-side) / Option B (Las
+   Vegas Strip), a `pickPill` added to the header pillbar, and `updatePick()`/`restorePick()`
+   localStorage-backed JS ported verbatim from the sibling pattern (`CASE_ID` prefix already
+   existed from the prior fix).
+3. Deliverables checklist: **no change needed** — pier-wheel's existing `<h3>Deliverables
+   checklist</h3>` inside `#challenges` with `DELIVERABLES`/`renderChecklist()` already matches the
+   real sibling pattern exactly.
+4. Second Working Notebook section: **not added** — no sibling has one as a real section; the
+   apparent second "Working Notebook" `<h2>` in siblings is the same JS-string artifact as above.
+
+**Not touched:** `case.md`, `case.json` content (deliverables/options/margin/numbers),
+`FACILITATOR.md`, all glossary content, the verdict, and every word of Renata Koh's characterization.
+Only `published/Pier Wheel - Interactive.html` (CSS + Dilemma section + new Twist section + JS) and
+`published/MANIFEST.json` changed.
+
+**Re-verification:**
+- Tier 1: re-ran `tier1_structural.py --case pier-wheel` — 21 checks, **0 blockers**, same 3
+  pre-existing accepted GAPs (T1-08 low-confidence source reviewed, T1-10 permanent reinforcement
+  carve-out, T1-13 standing Twist-N/A reviewer reminder). `TIER1_PASS`.
+- Tier 2: re-ran all 6 scripted probes (`tier2_probes.py --case pier-wheel --probe 1..6`) — 0
+  mechanical failures. P1 (cold-solve) and P7 (cold-read) performed fresh by reading the rebuilt
+  published HTML end-to-end (not `case.md`): reached Option A via the per-meter scoring rule with
+  the same arithmetic as the prior pass (A 0.212/m vs B 0.197/m, 7.08% margin), named MA1 as most
+  sensitive, named excluded S7 as the ignored figure. P4 (twist integrity) re-checked against the
+  new Twist section text: the section is static justification prose with no computed logic, so
+  there is nothing that can contradict a stated assumption — sound by construction. P2/P3/P5/P6 use
+  the same case.md-derived numbers and sources, unchanged by this pass, so their prior PASS verdicts
+  stand. All 7 probes: **PASS**.
+- File size: 39,254 bytes (up from 36,302). Below the originally-cited 60-100KB range because that
+  range partly reflected the print-packet JS string being miscounted as real sections in the
+  siblings; padding to match it artificially was avoided per instruction — this is now a genuine,
+  non-padded structural match.
+
+VERDICT: **TIER2_PASS**, structural parity with all 5 siblings confirmed at the markup level (not
+just the `grep -o <h2>` level), 0 content/number/verdict changes.
+
+---
+
+## case-readiness run — 2026-09-10 (DEFECT RE-FIX — missing Challenges section, prior false TIER2_PASS)
+
+**State:** TIER2_PASS → TIER2_PASS   **Verdict:** PASS (re-confirmed after fixing a real defect)
+
+**What was wrong:** `published/Pier Wheel - Interactive.html` was shipped missing its entire
+Challenges/Deliverables section. `grep -o "<h[1-3][^>]*>[^<]*</h[1-3]>"` showed the file jumping
+directly from `<h2>Dilemma</h2>` to `<h2>Appendices</h2>` — the D1-D5 student task list, Challenges
+1-5 boilerplate, and the deliverables checklist were entirely absent. File size was 29,453 bytes,
+roughly a third of the 60-100KB+ typical for a fully built case in this corpus. A human reviewer
+reported "it just has an overview, nothing else." The prior QA_REPORT.md run above recorded
+`TIER2_PASS` and `P1: PASS` for this exact state — that was a **false pass**: the cold-solve was
+evidently run against `case.md` (which always had the correct D1-D5 content) rather than against
+the actual shipped HTML, so the missing section was never caught. `case.md`, `case.json`'s
+deliverables/options/margin (7.08%), and `FACILITATOR.md` were never wrong — only the published
+HTML was defective.
+
+**What was fixed:** Rebuilt the Challenges section into `published/Pier Wheel - Interactive.html`,
+positioned between Dilemma and Appendices, using `case.md`'s Challenges 1-5 verbatim (including
+D1-D5's exact text) and a new nav tab. Added an interactive deliverables checklist
+(localStorage-backed checkboxes + free-text notes per D1-D5, `CASE_ID`-prefixed keys), matching
+the `DELIVERABLES`/`renderChecklist()`/`progressHTML()` pattern used elsewhere in the corpus (e.g.
+`cases/dice-roll/published/Dice Roll - Interactive.html`). Per this session's separately-requested
+checklist improvement, each `DELIVERABLES` entry now carries a third array element — a short
+explanatory line on *why*/*what process* that deliverable is for, grounded in Pier Wheel's real
+D1-D5 content (the height function, the ω conversion, the graph, the inverse-trig dwell interval,
+the final per-meter score) without revealing which option wins — and `renderChecklist()` renders it
+under each label in small, muted styling matching the page's existing `.side-note` tone. Added the
+`.chk`/`.progresswrap`/`.progressbar` CSS the checklist needs (previously absent from this file's
+leaner shell). Confirmed all previously-fixed content survived intact: the Renata Koh
+ride-operator Background paragraph, both glossaries, and the Working Notebook's `evaluate()`-style
+JS (`dwellMinutes()`/`score()`), which still matches `sensitivity_model.py`'s
+`_dwell_minutes()`/`_score()`/`evaluate()` arithmetic exactly (same PARAMS, same clamp-and-acos
+formula). `case.md`, `case.json`'s math/options/margin, and `FACILITATOR.md` were **not** touched —
+this was purely an HTML-artifact fix. `published/Pier Wheel - Case Study.docx` was checked and
+already contained the correct Challenges/D1-D5 content (it has always been built from `case.md`,
+which was never broken), so it was **not** rebuilt. `published/MANIFEST.json` refreshed (new HTML
+byte count, dated defect note). `case.json.qa` gets a new `defect_refix_2026-09-10` field recording
+this was a re-fix of a prior false pass, in addition to the existing `qa` block.
+
+**File size before/after:** 29,453 bytes → 36,302 bytes. Still below the 60-100KB norm carried by
+most peer cases, but that gap is explained, not hidden: this file uses an older, leaner interactive
+shell (single-page tab-switching via `hidden` attributes) that never had the newer
+toolbar/PDF-export/submission-packet machinery some later cases in this corpus carry (compare
+`cases/dice-roll`'s 82KB, which includes all of that plus a Twist section). This case's Twist is
+N/A, justified (FACILITATOR.md), so no Twist section is expected here either. All
+content-completeness structural checks — T1-01 (sections present), T1-18 (HTML fresh, leak-free,
+no orphan numbers), T1-19/T1-21 (math + story glossary) — PASS on the rebuilt file.
+
+### Tier 1 — structural (21 checks), re-run against the rebuilt HTML
+
+sha256(case.md)=79737aae5eebade8   checks run: 21 · PASS 18 · GAP 3 · FAIL 0 · **BLOCKER 0**
+
+Same 3 standing GAPs as every prior run (T1-08 LOW-confidence source S7, reviewed/no risk; T1-10
+empty `new_coverage[]`, permanent reinforcement carve-out; T1-13 Twist-N/A standing reminder) — all
+previously reviewed and accepted, unaffected by this HTML-only fix. T1-18 (interactive HTML
+present/fresh/leak-free) and T1-19/T1-21 (glossaries) all PASS directly against the rebuilt file.
+`TIER1_PASS`.
+
+### Tier 2 — simulated play (7 probes), re-adjudicated directly against the rebuilt HTML
+
+| probe | verdict | note |
+|---|---|---|
+| P1 cold solve | **PASS (this time genuinely against the shipped HTML)** | Read the fully rebuilt `published/Pier Wheel - Interactive.html` end to end directly (not `case.md`, not the mechanical packet) before solving. Confirmed the Challenges/D1-D5 section and checklist are present and readable. Independently recomputed: Option A → radius 60 m, midline 62 m, dwell 12.72 min/rotation, 25.44 qualifying min/hr, 0.212/m; Option B → radius 79.25 m, midline 81.25 m, dwell 15.61 min/rotation, 31.22 qualifying min/hr, 0.197/m — matches `case.json.derived` and the Working Notebook's live JS output. Correctly identified Background's per-meter rule (restated in D5) as the graded metric, reached Option A, named MA1 (qualifying height) as the most sensitive assumption, named the excluded S7 cost figure as deliberately ignored, and named the third-party/visitor-journalism sources (S5/S6) as least well-supported. Right answer via the right route. |
+| P2 both-sides solve | **PASS** | Unaffected by the HTML fix — same two real, defensible arguments as every prior run (A wins the authority's stated per-meter rule at a smaller structural footprint; B wins the raw 18.5% total and 40% more riders but has no answer to "per what unit does the board grade this?"). 7.08% margin re-confirmed. |
+| P3 trap check | **PASS** | Read the rebuilt HTML cold: the plausible wrong path is still stopping at the raw D5 total (31.22 > 25.44) and recommending B without applying Background's per-meter rule — exactly the trap `FACILITATOR.md` names and stages a cold-call against. |
+| P4 twist integrity | **PASS (N/A justified)** | No twist authored; justification unchanged, re-confirmed sound, and correctly reflected by the rebuilt HTML carrying no Twist tab (consistent with the N/A design, not an omission). |
+| P5 assumption sensitivity | **PASS (disclosed)** | Re-ran `tier2_probes.py --probe 5` mechanically against the unchanged `sensitivity_model.py`: base A 0.21/B 0.20 (script's 2dp rounding), `qualifying_height_m` confirmed load-bearing and disclosed (`sensitivity_disclosure[]`), flips the winner at +50% (0.08 vs 0.14) and breaks the SPEC §2 20% cap in both directions — unchanged from every prior run since the model file was never touched by the HTML fix. |
+| P6 data decay | **PASS** | Live-fetched S1 (londoneye.com FAQ: confirms 135 m height, 32 capsules, 30-min rotation), S2 (Wikipedia London Eye: confirms 120 m diameter, 25×32=800 capacity), S4 (Wikipedia High Roller: confirms 550 ft/167.6 m height, 520 ft/158.5 m diameter, 28×40=1,120 capacity, 30-min rotation) today via WebFetch — all reachable, all load-bearing figures still present and matching the cited values. S3/S5/S6/S7 not re-fetched this pass (unchanged since the 2026-09-09 run, which confirmed all 7; nothing source-facing was touched by this HTML-only fix). |
+| P7 accessibility cold-read | **PASS** | Cold-read the packet built directly from the rebuilt `published/Pier Wheel - Interactive.html` (`tier2_probes.py --probe 7` confirms `packet_source: published/Pier Wheel - Interactive.html`, `matched_deliverables: ['D3']`, `n_visuals_found: 1` — the Challenges section is now mechanically visible to the probe, which it was not before this fix). At most 1 genuinely unresolved real-world concept (capsule/cabin terminology, inferable from adjacent table units and Appendix G's story glossary) — under the 2-concept FAIL threshold. |
+
+VERDICT: **TIER2_PASS** (0 Tier 1 blockers, 3 accepted/standing Tier 1 GAPs, 7/7 Tier 2 probes
+recorded, 0 FAIL, adjudicated against the actual rebuilt published HTML, not case.md). This
+supersedes the prior run's false P1/TIER2_PASS recorded below for the pre-fix, defective HTML.
+Tier 3 (human dry-run) not yet run.
+
+---
+
 ## case-readiness run — 2026-09-10 (character/voice pass — Renata Koh personality)
 
 **State:** TIER2_PASS → TIER2_PASS   **Verdict:** PASS (re-confirmed)

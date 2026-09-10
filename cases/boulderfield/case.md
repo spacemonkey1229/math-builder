@@ -101,33 +101,52 @@ choose and why. Your pitch must include:
 D1. **A one-way route breakdown**: for each route, the one-way distance (half the round-trip
 mileage from Appendix A) and the one-way elevation gain, showing your arithmetic — and a
 comparison stating, in one sentence each, which route is shorter in distance and which route
-gains more elevation.
+gains more elevation. *Why one-way, not round trip:* the number that drives Talia's dispatch
+decision is how long it takes her team to **reach** the injured climber, not how long the whole
+mission takes there and back — every later timing deliverable in this case builds on the one-way
+figures you compute here.
 
 D2. **A Naismith's Rule time estimate for each route**, evaluated from Appendix B's formula and
 constants before any of this case's own timing adjustments are applied, showing every step of the
-substitution and the order of operations you used.
+substitution and the order of operations you used. *What this number is, and isn't:* Naismith's
+Rule converts pure distance and elevation gain into a travel-time estimate and nothing else — it
+assumes an unloaded hiker in daylight on a normal trail. It has no way of accounting for a team
+moving at night, in full rescue gear, or route-finding across unmarked ground, so treat it as a
+starting estimate rather than a finished answer; D3 is where those real-world conditions get
+applied.
 
 D3. **A total adjusted time-to-patient for each route**, applying Appendix B's night-pace
 multiplier to both routes and The Loft's route-finding penalty to Option B only, then stating the
-margin between the two routes as a percent of the slower route's time.
+margin between the two routes as a percent of the slower route's time. This is where D2's raw
+estimate becomes a real-world number: the night-pace multiplier applies to both routes equally
+(both teams travel at night), while the route-finding penalty applies only to The Loft, because
+that is the route with no cairns above the Boulderfield split. The percent margin scales the gap
+between the two routes so it's comparable no matter which one turns out slower.
 
 D4. **A required-pace equation**: Rocky Mountain National Park's own guidance is to be off the
 exposed upper mountain before early-afternoon thunderstorms build (SEE APPENDIX C). Using a stated
 turnaround-deadline assumption (SEE APPENDIX D), write and solve an equation for the minimum
 average moving pace, in miles per hour, each route would require to reach the patient by that
-deadline, holding Appendix B's other constants fixed.
+deadline, holding Appendix B's other constants fixed. Where D1–D3 ask "how long will this take,"
+D4 flips the question: given a hard deadline, how fast would the team's average pace need to be to
+still make it? A required pace that turns out to be unrealistically fast is itself evidence worth
+writing about.
 
 D5. **A signed-number temperature and wind chill analysis**: using Appendix C's lapse-rate method
 and the National Weather Service wind chill formula, compute the air temperature and the wind
 chill (each as a signed integer, in °F) at the Boulderfield and at the summit, and compute the
 integer difference between the air temperature and the wind chill at each location, showing your
-work.
+work. This deliverable is separate from the timing comparison above — it's about the condition the
+team and the patient will be in on arrival, not how fast they got there. Both figures fall as
+elevation and wind speed increase, so expect signed, possibly negative, values at both locations.
 
 D6. **Two original visual displays of the data**: a bar graph comparing each route's total
 adjusted time-to-patient, broken out by its Naismith hiking-and-climbing time, its night-pace
 addition, and (for Option B) its route-finding penalty; and a signed number line plotting all
 four D5 temperature values (both air temperatures and both wind chills) so a reader can see at a
-glance which are above zero and which are below.
+glance which are above zero and which are below. A reader can't compare stacked time components or
+see which temperatures cross zero from a table of numbers alone — the two visuals are there to let
+your audience see the shape of the comparison, not just read digits.
 
 4.) An appendix showing evidence of your original thinking, work, calculations and processes you
 used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix

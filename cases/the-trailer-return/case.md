@@ -77,20 +77,32 @@ would choose and why. Your pitch must include:
 3.) Your pitch must include:
     D1. A vertex-degree table for every corner in the Bay Fruit Streets Practice Block (a real
     26-intersection excerpt of the full grid, Appendix B), each vertex labeled EVEN or ODD.
+    *Process note: you can't tell which corners force backtracking until you know how many
+    block-segments meet there — count carefully, street by street.*
     D2. A written Euler determination for the full 68-intersection Bay Fruit Streets grid: does it
     have an Euler circuit, an Euler path, or neither — justified by the specific odd-vertex count
     given in Appendix A, using the rule in Appendix G.
+    *Process note: the rule only cares about the ODD-vertex count, not the total vertex count —
+    zero means a circuit, exactly two means a path, anything else means neither.*
     D3. A closed-circuit repeat-mileage computation for the Practice Block: pair every odd vertex
     with another odd vertex using the shortest-path distance table in Appendix C, and compute the
     Practice Block's resulting deadhead ratio (total block-segments driven ÷ total block-segments
     that exist).
+    *Process note: every odd corner needs one extra pass to balance its "in" and "out" trips, and
+    the cheapest way to buy that pass is the shortest path to another odd corner — pairing is a
+    minimization problem, not just bookkeeping.*
     D4. An open-path repeat-mileage computation for the same Practice Block: re-run the pairing in
     D3, but this time leave exactly one pair of odd vertices unmatched as your route's start and
     end corners, choosing whichever pair minimizes the mileage left to pair — then compute the new
     deadhead ratio and compare it to D3's.
+    *Process note: an open path gets to start and end at two different odd corners for free — spend
+    that free pass on whichever pair would otherwise have been the most expensive to connect.*
     D5. A cost comparison table for the full grid: total daily diesel cost under The Closed Loop
     (Option A) versus total daily diesel cost plus the flatbed hauling fee under The Trailer Return
     (Option B), using Appendix D's official deadhead-ratio figures and Appendix E's cost data.
+    *Process note: the deadhead ratio measures efficiency per mile serviced, while the dollar total
+    folds in a flat daily fee unrelated to mileage — a smaller ratio doesn't automatically mean a
+    smaller bill, so compute both totals independently before comparing them.*
 
 4.) An appendix showing evidence of your original thinking, work, calculations and processes you
 used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix
@@ -213,7 +225,7 @@ hauler needs to retrieve the truck from.
 |---|---|
 | Refuse-vehicle fuel economy | 5.2392 mpg (gasoline-gallon-equivalent) [S1] |
 | U.S. average on-highway diesel price | $5.967 / gal, week of 2026-09-07 [S2] |
-| Fuel cost per mile driven | $1.1391 / mi (computed: $5.967 ÷ 5.2392) |
+| Fuel cost per mile driven | $1.1389 / mi (computed: $5.967 ÷ 5.2392) |
 | Flatbed hauling fee, Option B only | $115 / collection day [S6, MA4] |
 | Refuse/recyclable collector mean wage (for reference; identical under both options) | $22.99 / hr [S5] |
 

@@ -86,6 +86,31 @@ ever left unresolved.
   (GSA's own primary release); the specific $110/$68 dollar split is MEDIUM (confirmed only via
   a secondary aggregator, since the primary page's interactive tool wasn't fetchable).
 
+## P09 — Are SRS/systematic/cluster/multistage the standard sampling toolkit? (2026-09-10 clarity pass)
+
+- Prompted by facilitator feedback that the case didn't make clear whether the four sampling
+  methods it asks a Hero to use are a standard toolkit or something unusual/case-invented, and
+  didn't state the dilemma, the two options, or the relevance of the dice clearly enough near the
+  top of the case.
+- Searched: "openstax introductory statistics well-known random sampling methods stratified
+  cluster systematic", then fetched the matching OpenStax page directly.
+- Fetched: openstax.org/books/introductory-statistics-2e/pages/1-2-data-sampling-and-variation-in-
+  data-and-sampling — confirms the exact framing: "Other well-known random sampling methods are
+  the stratified sample, the cluster sample, and the systematic sample," introduced immediately
+  after simple random sampling in the textbook's own sampling-methods section.
+- Rejected: an initial attempt to find an election-observation-specific source (OSCE/ODIHR
+  methodology, searching for whether real election-monitoring programs use stratified/cluster
+  sampling to pick observation sites) did not turn up a citable, specific claim — OSCE's own
+  Election Observation Handbook describes deployment as only "pseudo-random" and explicitly not
+  standardized. Rather than overclaim that real election-monitoring programs use these methods,
+  the case instead cites the general statistics-education framing (these are the standard toolkit
+  taught in any first stats course) and explicitly discloses, in the Background text itself, that
+  whether Colorado's real Division uses one of these methods for site-visit selection specifically
+  is not public record — consistent with the case's existing Modeling Assumption disclosure
+  pattern rather than a second, riskier sourcing claim.
+- Outcome: SOURCED → S9. HIGH confidence (a primary open-access statistics textbook, directly
+  fetched and quoted verbatim).
+
 ## Not sourced — stated as Modeling Assumptions (see `case.md` Appendix D)
 
 - **MA1 — overnight threshold (150 mi one-way):** No public Division policy states this cutoff

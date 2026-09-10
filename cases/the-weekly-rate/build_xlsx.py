@@ -72,7 +72,7 @@ autosize(ws, [50, 12, 16, 32])
 
 # ---------------- Appendix B ----------------
 ws = wb.create_sheet("Appendix B - Distractor Plan")
-ws.append(["Whizz Storm-1 weekly plan (NOT Dara's choice)", "Value", "Units", "Source"])
+ws.append(["Whizz Storm-2 weekly plan (NOT Dara's choice)", "Value", "Units", "Source"])
 rows = [
     ["Weekly rate", 69.00, "USD/week", "S5b"],
     ["One-time mandatory deposit", 99.00, "USD", "S5b"],

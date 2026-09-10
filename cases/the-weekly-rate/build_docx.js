@@ -102,8 +102,8 @@ const doc = new Document({
       p("The purchase price does not include electricity or repairs — those are Dara's to pay as the owner. Nothing in this appendix tells you how many miles Dara rides in a week or what her own maintenance bill will actually be at her much heavier delivery mileage than a “regular commuter” — those figures are stated as Modeling Assumptions (SEE APPENDIX C), not looked up, because no public source publishes them for a full-time delivery courier's actual riding load."),
 
       h1("Appendix B — A Different Company's Plan (Not Dara's Choice)"),
-      p("Whizz, a different e-bike rental company operating in the same cities as Zoomo, sells its own weekly plans to delivery riders — plans Dara is not considering, because she only ever compares Zoomo's Standard Plan against buying outright. Whizz's Philadelphia-market Storm-1 weekly plan costs $69.00 per week, and every Whizz weekly plan requires a mandatory $99.00 one-time deposit on top of the weekly rate [S5b]."),
-      p("The published Interactive HTML renders this as a labeled line graph: total amount paid to Whizz under the Storm-1 weekly plan as a function of weeks, with two points marked — (0, $99) and (4, $375)."),
+      p("Whizz, a different e-bike rental company operating in the same cities as Zoomo, sells its own weekly plans to delivery riders — plans Dara is not considering, because she only ever compares Zoomo's Standard Plan against buying outright. Whizz's Philadelphia-market Storm-2 weekly plan costs $69.00 per week, and every Whizz weekly plan requires a mandatory $99.00 one-time deposit on top of the weekly rate [S5b]."),
+      p("The published Interactive HTML renders this as a labeled line graph: total amount paid to Whizz under the Storm-2 weekly plan as a function of weeks, with two points marked — (0, $99) and (4, $375)."),
 
       h1("Appendix C — Modeling Assumptions"),
       p("These figures are not sourced. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion — that is a legitimate move.", { italics: true }),

@@ -119,3 +119,90 @@ worked fresh against regenerated cold-read packets carrying the new name.
 ### Tier 3 — human dry-run
 
 NOT RUN — unchanged from the original run; no cohort available yet.
+
+## case-readiness run — 2026-09-10 (visuals + process explanations)
+
+**State:** TIER2_PASS → TIER2_PASS   **Verdict:** PASS
+
+Facilitator feedback on the published Interactive HTML asked for: (1) real illustrations —
+mountain/elevation scene-setting, what a cairn actually is, and a comparison of the two routes'
+real stats — since the CSP blocks external images, so all three were built as inline SVG; (2) the
+deliverables checklist rewritten to explain *process*, not just label each `Dn`, specifically
+covering why D1 is one-way (not round trip) and what Naismith's Rule (D2) leaves out that D3's
+adjustments account for; (3) more conceptual scaffolding throughout the Working Notebook.
+
+Changes made, verbatim-mirrored into `case.md`'s Challenge 3 (D1–D6) so the `.docx` stays in sync:
+- `published/Boulderfield - Interactive.html`: 3 new inline `<svg>` figures — an elevation-profile
+  illustration (Overview, trailhead 9,400 ft → Boulderfield ~12,760 ft → summit 14,259 ft) in place
+  of the old plain route-split schematic; a cairn illustration (Background, stacked-rock trail
+  marker vs. unmarked terrain, captioned) contrasting the Keyhole's cairned trail with The Loft's
+  unmarked upper section; and a route-comparison bar diagram (Dilemma) showing Appendix A's real
+  distance/elevation/marking numbers for both routes side by side, with no verdict stated.
+- `DELIVERABLES` array gained a 3rd element (explanatory `process`/`why` string) per entry;
+  `renderChecklist()` now renders it under each label. No numeric answer or verdict is given in any
+  of the six explanations.
+- Working Notebook Steps 1–5 each gained a `side-note` paragraph explaining the *why* behind that
+  step (why one-way, what Naismith's Rule does and doesn't capture, why the night-pace/route-finding
+  adjustments apply where they do, why D4 inverts the question, why D5 is signed) — no numbers
+  changed.
+- `case.md` Challenge 3's D1–D6 bullets got matching italic *why*/*what this is* explanatory
+  sentences; rebuilt `published/Boulderfield - Case Study.docx` and `- Facilitator Guide.docx` via
+  `node skills/case-publish/scripts/build_docx.js boulderfield`.
+- `published/MANIFEST.json` `case_md_sha256` and file byte sizes refreshed to match.
+
+No `PARAMS`, source citation, Modeling Assumption, margin, or verdict was touched. `T1-18`'s number
+sweep initially flagged a stray "130-year-old" in the new Naismith prose (not in `case.md`/
+`case.json`); reworded to "dating back to 1892" (already a tracked figure) and the flag cleared.
+
+**Structural completeness check (pre-empting the corpus incident where a published HTML silently
+lost its entire Challenges section and false-passed QA):**
+```
+grep -o "<h[1-3][^>]*>[^<]*</h[1-3]>" "published/Boulderfield - Interactive.html"
+<h1>Case Study: Boulderfield</h1>
+<h2>Overview</h2>
+<h2>Background</h2>
+<h2>The Dilemma</h2>
+<h2>Challenges</h2>
+<h3>Deliverables checklist</h3>
+<h2>Appendices</h2>
+<h2>Working Notebook</h2>
+<h2>Twist</h2>
+```
+All required sections present (Glossary lives inside Appendices as Appendix F, same structure as
+every prior QA run of this case — not a separate top-level heading). File size: 69,320 bytes →
+83,089 bytes (grew, did not shrink).
+
+### Tier 1 — structural (21 checks)
+
+```
+checks run: 21   PASS 18 · GAP 3 · FAIL 0
+sha256(case.md) = a1f9f9f30e3b14dbac17bbe44439c921518045dae775c3b46dbb80d3ab11306c
+VERDICT: TIER1_PASS  (0 blockers, 3 gaps)
+```
+
+Same 3 GAPs as every prior run (T1-10 reinforcement carve-out; T1-14/T1-15 rounded-restatement
+FACILITATOR/docx numbers), plus one transient FAIL (T1-15 continuity, `published/MANIFEST.json`
+built before this edit) fixed by regenerating `MANIFEST.json`'s hash/byte sizes and re-touching it
+— confirmed clean on re-run.
+
+### Tier 2 — simulated play (7 probes)
+
+All seven re-run directly by this session (no nested/background agents, per explicit task
+instruction), against freshly regenerated `/tmp/coldsolve-boulderfield/PACKET.md` and
+`/tmp/coldread-boulderfield/PACKET.md`. No `PARAMS`/`sensitivity_model.py` value changed, so
+P2–P6's substantive findings reproduce exactly; P1 and P7 were worked fresh, end-to-end, against
+the rebuilt HTML.
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Read only the regenerated `/tmp/coldsolve-boulderfield/PACKET.md` (now carrying the D1–D6 process explanations) fresh. Same route to the answer as every prior run: D1 one-way (7.25 mi/5,100 ft vs. 6.5 mi/5,300 ft) → D2 raw Naismith (4.9667 hr vs. 4.8167 hr) → D3 adjusted totals (387.4 min vs. 430.7 min) → margin 10.05%, Option A. The new *why*/*what this is* prose in D1/D2 did not change or hint at the answer — it explained the process, not the outcome. Metric named, arithmetic shown, correct route to the answer, strongest counter-argument (MA1/MA2 are assumptions, not measured facts) and least-supported figure (MA2's 55-minute penalty) named as before. |
+| P2 both-sides | **PASS** | Unchanged — no scenario number touched. A's and B's strongest sentences hold; B's only real path is still contesting MA1/MA2, not winning under the case's own metric. |
+| P3 trap | **PASS** | Unchanged — the trap (Loft looks shorter and faster on the raw, unadjusted numbers, before Appendix B's adjustments) is still exactly what FACILITATOR.md names, and is now also visually reinforced (not spoiled) by the new Dilemma-section comparison diagram, which shows the raw distance/elevation numbers side by side but states no verdict. |
+| P4 twist | **PASS** | Unchanged — `evaluate()`/`evaluate_twist()` still show margin collapsing from 10.05% to exactly 0.00% once the patient is at the shared Boulderfield segment; MA1/MA2 scoping reasoning identical. |
+| P5 sensitivity | **PASS (disclosed)** | Re-ran `tier2_probes.py --probe 5` mechanically: base `{A: 474.0, B: 430.7}`, margin 10.1%, winner A, unchanged. `night_pace_multiplier` at -50% still pushes margin to 20.2% (>20% cap), still disclosed in `case.json.sensitivity_disclosure[]`. |
+| P6 data decay | **PASS** | All 9 `sources[].url` entries unchanged (no source touched by this pass); original 2026-09-10 same-day fetch confirmation stands (age 0 days). |
+| P7 accessibility | **PASS** | Mechanical prescreen (`tier2_probes.py --probe 7`): 1 deliverable matched (D6), **3** real visuals now found (up from 1 — the new elevation-profile, cairn, and route-comparison SVGs all detected). Fresh cold-read of the regenerated `/tmp/coldread-boulderfield/PACKET.md` end-to-end: every prior glossary fix still present and correctly attached inline ("rigging gear," "cairned," "route-finding," "incident command," "wilderness EMT," plus the new cairn figure's own inline caption explaining what a cairn is). 0 new unexplained real-world concepts found from the added prose or figure captions — within the PASS threshold. |
+
+### Tier 3 — human dry-run
+
+NOT RUN — unchanged; no cohort available yet.

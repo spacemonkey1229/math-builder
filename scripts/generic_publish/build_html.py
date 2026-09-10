@@ -145,7 +145,7 @@ def build(case_id):
         "{{CASE_STRAND_SUMMARY}}": cfg["strand_summary"],
         "{{CASE_SPECIFIC_CSS}}": cfg.get("extra_css", ""),
         "{{CASE_SPECIFIC_ICON_SYMBOLS}}": "",
-        "{{CASE_OVERVIEW_BANNER_SVG}}": "",
+        "{{CASE_OVERVIEW_BANNER_SVG}}": cfg.get("overview_banner_svg", ""),
         "{{CASE_OVERVIEW_TEXT}}": overview,
         "{{CASE_BACKGROUND_TEXT}}": background,
         "{{CASE_PROTAGONIST}}": cfg["protagonist"],

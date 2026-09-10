@@ -244,3 +244,76 @@ NOT RUN.
 
 ## Next step
 Tier 2 remains clean after the protagonist rename. No further action required for this pass.
+
+## case-readiness run — 2026-09-10 (user review remediation)
+**State:** TIER2_PASS   **Verdict:** PASS
+
+### What changed
+User review of the published Interactive HTML asked for three things, none touching
+`evaluate()`/`evaluate_twist()` or the `STORY_GLOSSARY` steel-angle/math-Angle term-collision fix
+(both confirmed byte-for-byte untouched via `git diff`):
+
+1. **Bridge visuals.** Appendix B already carried real, carefully-verified inline SVG technical
+   elevation diagrams (panel points, chord/diagonal lengths, triangle labels) for both options —
+   confirmed present and left untouched. What was missing was a picture of what each design
+   actually *looks like as a structure*, not just a line diagram of lengths and angles. Replaced
+   the Overview's two small abstract silhouette SVGs with two larger, labeled inline SVG
+   illustrations showing each truss as a real pony-truss footbridge over Miller's Creek — deck,
+   railing posts, banks, water — with The Warren Line's tall/deep 3-panel truss and The Low Line's
+   low/shallow 4-panel truss visually distinct at a glance, each clearly labeled and captioned.
+   `tier2_probes.py --probe 7`'s visual counter went from 2 → 4, confirming both are detected.
+2. **Suri's story.** Added a specific, vivid childhood memory (the third board past the north
+   bank that always gave underfoot and never broke) tied directly to how she separates
+   sentimentality from engineering rigor, in `case.md`'s Background, the Interactive HTML's
+   matching paragraph, and `FACILITATOR.md`'s Intro (plus one added facilitator prompt tying the
+   memory to D2's Triangle Inequality check). No plot, options, numbers, or deliverables changed.
+3. **Deliverables checklist as process guide.** Added a third array element to each
+   `DELIVERABLES` entry in the Interactive HTML (`D1`–`D5`) — a short "why this step" line
+   explaining the process/reasoning (e.g., why the Triangle Inequality Theorem gates
+   buildability before cost, why cost-per-linear-foot rather than raw totals is the fair
+   comparison) without stating any numeric answer or verdict. `renderChecklist()` updated to
+   render this line under each label.
+
+`published/Creek Span - Case Study.docx` and `Creek Span - Facilitator Guide.docx` rebuilt via
+`skills/case-publish/scripts/build_docx.js creek-span`; `Creek Span - Data.xlsx` unaffected in
+content (no case data changed) and resynced via `resync_artifacts.py --case creek-span`.
+`published/MANIFEST.json` updated by hand (`case_md_sha256`, file byte counts, note) since
+`resync_artifacts.py` only touches file mtimes, not MANIFEST content.
+
+### Structural completeness check (before Tier 1/2)
+`grep -o "<h[1-3][^>]*>[^<]*</h[1-3]>"` on the rebuilt Interactive HTML shows all expected
+sections present and unchanged: Overview, Background, Bridge & Truss Vocabulary, The Dilemma,
+Challenges, Deliverables checklist, Appendices, Working Notebook, Twist (plus the
+submission-packet template headings). File size grew 92,882 → 98,253 bytes (net addition, no
+truncation). `sensitivity_model.py` re-run standalone reproduces base margin 14.81% (A −21.2172
+vs. B −24.9073) and twist margin 7.84% (A −21.2172 vs. B −23.0210) exactly matching the
+Interactive HTML's ported `evaluate()`/`evaluate_twist()` JS and every figure already on record —
+confirms the JS was not touched or regressed.
+
+### Tier 1 — structural (21 checks), re-run
+PASS 19 · GAP 2 · FAIL 0. **0 BLOCKERs.** Same two pre-existing, already-documented GAPs as every
+prior run (T1-03 Option B fuzzy-match false positive; T1-10 reinforcement carve-out). T1-15/T1-16
+(continuity/hash staleness) cleared after the docx rebuild + MANIFEST/`case.json` resync. Verdict:
+**TIER1_PASS**.
+
+### Tier 2 — simulated play (7 probes), re-run
+No case math, sources, options, or twist logic changed — only visuals, character prose, and
+checklist process explanations — so every probe was re-verified against the rebuilt packet.
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Read `/tmp/coldsolve-creek-span/PACKET.md` (regenerated from the current `case.md`) cold and worked it by hand: A = (195.60+154.08)×$0.55 + 7×1.5×$30.18 = $509.21 → $21.22/ft; B = (301.14+44.94)×$0.55 + 9×1.5×$30.18 = $597.77 → $24.91/ft; margin 14.81%, A wins. Metric named (total fabricated cost per foot of span), MA1 named as most sensitive assumption, S4 named as least-supported figure — all unchanged from the case of record. |
+| P2 both-sides solve | **PASS** | A's best sentence: fewer joints (7 vs. 9), standard textbook geometry, wins the case's own metric by 14.81%. B's best sentence: zero-cost salvage honors the county's own "free steel is free steel" directive and actually beats A on raw material cost ($190.34 vs. $192.32). B collapses first, at the full D5 joint-labor tally (2 extra joints × 1.5 hr × $30.18/hr = $45.27, more than double B's material-cost edge). |
+| P3 trap check | **PASS** | Read `case.md` cold: the most plausible wrong path is reading "free salvage steel" and totaling B's material savings without first checking whether A could use the same salvage (it can't — 3.5+3.5=7<8, a hard geometric wall) — and, for Heroes who do catch that, stopping there and declaring B the winner on "free steel" alone without running the full D5 takeoff. `FACILITATOR.md`'s Data Deep Dive names exactly this two-layer trap. |
+| P4 twist integrity | **PASS** | Re-derived under the case's own stated facts: jointsB 9→8, labor = 8×1.5×$30.18 = $362.16, total = $552.50, $23.02/ft, margin 7.84% — matches `case.json.derived` exactly. No unstated convention required; winner unchanged. |
+| P5 assumption sensitivity | **PASS** | `sensitivity_model.py` mechanical sweep of MA1 ±50%: margin ranges 10.99%–16.70%, A wins throughout, no SPEC §2 cap breach. |
+| P6 data decay | **PASS** | Fetched all 3 distinct sourced URLs directly (WebFetch, this run): Engineers Edge (S1/S2/S3 — 3.21/4.89/7.17 lb/ft, all confirmed verbatim), SteelFlo (S4 — "$950–$1,250/ton" confirmed verbatim), BLS OOH (S5 — "$62,780" May 2025 confirmed verbatim). No dead links, no drifted figures. |
+| P7 accessibility cold-read | **PASS** | Regenerated `/tmp/coldread-creek-span/PACKET.md` from the rebuilt Interactive HTML (`n_visuals_found: 4`, up from 2 before the new Overview illustrations) and read it cold myself end-to-end. The known pre-existing packaging artifact (the math-Angle gloss trailing the correct "steel angle" structural gloss in the flattened cold-read text) is still present and still confirmed a packet-construction quirk, not a live-page defect — `autoLinkStoryGlossaryTerms`/term-collision fix untouched per `git diff`. P.E./AISC/A36/L2×2×1/4/Gusset Plate/Chord/Panel Point/Pony Truss all explained on first use. "Floodway ordinance" remains the sole borderline/soft real-world concept — 1 item, at/under the probe's 0–1 pass threshold — unchanged by the new visuals, story texture, or checklist explanations, none of which introduced new unexplained real-world jargon. |
+
+**7 of 7 probes PASS.** `case.json.qa.state` → `TIER2_PASS`, `qa.verdict` → `PASS`.
+
+### Tier 3 — human dry-run
+NOT RUN.
+
+## Next step
+Clean after this remediation pass. No further action required.

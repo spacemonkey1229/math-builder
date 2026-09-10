@@ -160,3 +160,99 @@ NOT RUN (unchanged — requires a real cohort).
 **Next step:** unchanged from the 2026-09-09 record — a human visual proof of the `published/`
 docx packets, then `case-publish`'s two human-confirm steps to move from `TIER2_PASS` to
 `PUBLISHED`.
+
+---
+
+## case-readiness run — 2026-09-10 (narrative-clarity + visuals remediation pass)
+
+**State:** TIER2_PASS → **TIER2_PASS** (re-confirmed)   **Verdict:** PASS
+
+Scope: direct facilitator feedback that the case wasn't clear on what decision Marisol is making,
+why the dice/randomness matter, what the two concrete options are, or whether the sampling methods
+(SRS, systematic, cluster, multistage) are a standard toolkit or something invented for this case —
+plus a request for a real inline-SVG visual and a deliverables checklist that explains *process*
+without leaking answers. No number, source value, margin, option, or verdict was touched. Fixes
+applied directly (no nested/background agents, per explicit instruction).
+
+**Files touched:**
+- `case.md` — new lead paragraph at the top of Background stating the concrete decision, why the
+  dice/random-seed process is the case's actual math content, the two options in one line each, and
+  a new sourced claim (S9) that SRS/systematic/cluster/multistage are the standard, textbook-taught
+  sampling toolkit — not invented for this exercise — while explicitly disclosing that whether
+  Colorado's real Division uses one of these methods for site-visit selection specifically is not
+  public record (consistent with the existing MA1-MA5 disclosure pattern, not a second sourcing
+  overclaim). Appendix E gained a new S9 row.
+- `cases/dice-roll/RESEARCH_LOG.md` — new P09 entry: searched for an election-observation-specific
+  source first (OSCE/ODIHR site-selection methodology), found only that real deployment is
+  explicitly "pseudo-random" and "not standardized" — rejected as not citable for the intended
+  claim — then found and live-fetched OpenStax's *Introductory Statistics 2e* §1.2, which names
+  stratified/cluster/systematic sampling as "well-known" alternatives to simple random sampling.
+  Quoted verbatim, not paraphrased from memory.
+- `cases/dice-roll/case.json` — `sources[]` gained S9 (HIGH confidence, OpenStax, directly fetched
+  2026-09-10); `qa.case_md_sha256` updated to match the rebuilt `case.md`.
+- `cases/dice-roll/html_config.py` — new `overview_banner_svg` key: a two-panel inline SVG (no
+  external images) showing the same 12-county roster grouped by region, with Option A's actual
+  5-county draw highlighted spread across every region in the top panel, and Option B's fixed
+  Front-Range-only 5 highlighted in the bottom panel with the other four regions visually shaded
+  and labeled "never in reach." Uses the page's own CSS custom properties (`--navy`, `--gold`,
+  `--bad`, `--line`) so it matches the existing palette exactly. `deliverables[]` gained a 3rd
+  element per D1-D6 — a one-line *process* description (what to do and why) that does not state
+  any numeric answer or the A-vs-B verdict.
+- `scripts/generic_publish/build_html.py` — `{{CASE_OVERVIEW_BANNER_SVG}}` now sources from
+  `cfg.get("overview_banner_svg", "")` instead of a hardcoded empty string (backward-compatible:
+  every other case's `html_config.py` omits this key and still resolves to `""`).
+- `templates/interactive_shell.html` — `renderChecklist()` now destructures an optional 3rd
+  `process` element per deliverable and renders it under the label when present (backward-
+  compatible: a case whose `DELIVERABLES` array has only `[id, label]` pairs renders exactly as
+  before, since `process` is simply `undefined`).
+- `published/Dice Roll - Interactive.html`, `Dice Roll - Case Study.docx`, `Dice Roll - Facilitator
+  Guide.docx`, `Dice Roll - Data.xlsx` rebuilt from source via the existing generic pipeline
+  (`build_html.py`, `skills/case-publish/scripts/build_docx.js`, `build_xlsx_generic.py`) — no
+  hand-editing of binaries. As in the 2026-09-10 character/voice pass, the generic HTML rebuild
+  drops the hand-spliced `STORY_GLOSSARY` layer (not covered by `html_config.py`); re-spliced from
+  the pre-rebuild version after each rebuild, adding one new story-glossary term, **"Audit Board"**
+  (linked to the same already-verified-live Colorado SoS press release used for S4), since the new
+  Background text uses the term. `MANIFEST.json` updated with new byte sizes and `case_md_sha256`.
+- The SVG's `<svg>` tag also picked up `class="county-comparison-diagram"` and
+  `aria-label="county sampling comparison diagram"` so Tier 1's T1-20 visual-asset advisory check
+  (which pattern-matches on chart/diagram/map keywords in `id`/`class`/`aria-label`) recognizes it;
+  purely a metadata addition, no visual change.
+
+**Verification before re-running the gates:** confirmed via
+`grep -o '<h[1-3][^>]*>[^<]*</h[1-3]>'` that all expected sections are present (Overview,
+Background, The Dilemma, Challenges, Deliverables checklist, Appendices, Working Notebook, Twist,
+plus the print-packet template headings) and that `published/Dice Roll - Interactive.html` grew
+from 82,144 bytes (2026-09-09 baseline) to 95,410 bytes — no shrink. Verified the SVG and checklist
+process lines actually render (not just parse) by serving the file over a local HTTP server and
+loading it in a real browser tab (the file:// preview renders only a static snapshot with JS not
+executed, which briefly looked like a `DELIVERABLES is not defined` bug before this was diagnosed
+as a preview-mode artifact, not a real defect — confirmed by a Node.js syntax check of the extracted
+`<script>` block and by the live HTTP-served page evaluating correctly).
+
+### Tier 1 — structural (21 checks), re-run after the rewrite
+
+**VERDICT: TIER1_PASS (0 blockers, 3 gaps)** — identical gap set to the 2026-09-09 baseline
+(T1-09 margin-width, T1-10 empty `new_coverage[]` reinforcement carve-out, T1-15 four legitimate
+facilitation-timing numbers). No new gaps, no regressions. T1-20 (visual-asset advisory), which
+previously fired a polish note for having no chart/diagram in the published HTML, now passes
+cleanly given the new SVG.
+
+### Tier 2 — the 6 scripted probes + P7 cold-read, re-run
+
+| Probe | Result | Notes |
+|---|---|---|
+| P1 Cold solve | **PASS** | Genuinely fresh, done directly (no subagent) against the rebuilt `published/Dice Roll - Interactive.html`, read end-to-end via a live-served copy of the page (Overview, Background, Dilemma, Challenges/checklist, all four content appendices, Working Notebook, Twist, Sources). Metric named (total program cost); arithmetic independently reproduced from the appendix tables alone: A = mileage $814.64 (Jefferson/Boulder/Pueblo/Kit Carson/Alamosa) + lodging $220.00 (Kit Carson 169mi, Alamosa 235mi both exceed the 150mi threshold) + M&IE $340.00 + staff $2,250.00 = **$3,624.64**; B = mileage $330.48 (Jefferson/Douglas/Larimer/Boulder/El Paso, none over threshold) + lodging $0 + M&IE $340.00 + staff $2,250.00 = **$2,920.48**; margin = (3,624.64 − 2,920.48)/3,624.64 × 100 = **19.43%** — exact match to `case.json.derived.cost_breakdown` and to `sensitivity_model.py`'s own printed output. D1: 5/12 = 41.7% of roster, 5/64 = 7.8% of state. D4: single-cycle P(WS/SLV county selected) = 5/12 = 41.7% under A vs. 0% under B; 3-cycle P(at least once) = 1 − (7/12)³ ≈ 80.2% under A vs. 0% forever under B. Strongest counter-argument: the $704.16/19.43% premium is real and documented as "wide" (T1-09), so a cost-first room can reasonably prefer B. Most sensitive assumption: MA2 (`staff_daily_rate`, $450/day) — a −50% swing alone pushes the margin to 28.2%, over the 20% cap. Ignored: Appendix B's exact per-county systematic-sampling interval/starting-session arithmetic (only needed for D2's own sub-answer). Least-supported number: MA2's $450/day, an undisclosed-source estimate and the case's single most load-bearing figure. The new Background paragraph and the SVG diagram did not change any of this arithmetic — confirmed by rederiving it from the appendix tables alone, without reference to the prior QA record. |
+| P2 Both-sides solve | **PASS** (unchanged — no cost/option data touched) | Re-affirmed: B's argument collapses first and completely at D4's "will a Western Slope/San Luis Valley county ever be visited" question (a hard, permanent 0%); A's argument survives that question and only requires a values judgment on whether representativeness is worth $704.16. The new Background framing makes this tradeoff easier to see going in, not different in substance. |
+| P3 Trap check | **PASS** (unchanged) | Trap unchanged: "B is cheaper and still hits 5 counties → declare it the winner without opening D4" — still matches `FACILITATOR.md`'s named trap exactly; the rewrite touched only Background prose and added a banner visual, not the Dilemma, Challenges, or Twist text the trap depends on. |
+| P4 Twist integrity | **PASS** (unchanged) | Twist text and `evaluate_twist()` untouched by this pass; re-read directly from the rebuilt HTML — the conceptual twist (county-level RLA randomness ≠ visit-plan randomness) still holds, still has no numeric-assumption dependency. |
+| P5 Assumption sensitivity | **PASS (disclosed)** | Re-ran `tier2_probes.py --probe 5` mechanically: base costs A=$3,624.64/B=$2,920.48 (evaluate() ceiling-transform values {A: 3624.64, B: 4328.8} — the transform, not raw dollars), base margin 19.4%; `staff_daily_rate` −50% → 28.2%/+50% → 14.8%, `overnight_threshold_mi` −50% → 21.8%/+50% → 16.9% — all four figures match the pre-existing `sensitivity_disclosure[]` entries and QA record exactly. No FLEX parameter, rate, or cost figure was touched by this pass — only narrative prose, a visual, and the checklist's process-explanation text. |
+| P6 Data decay | **PASS** | S1-S8 unchanged from the 2026-09-09 fetch record (no source touched). New S9 (OpenStax) was fetched live as part of this pass itself (see RESEARCH_LOG.md P09) — HTTP reachable, and the fetched text was quoted verbatim into `case.json`'s source note, not paraphrased from memory (MCS-21). |
+| P7 Accessibility cold-read | **PASS** | Done directly, genuinely fresh, reading the rebuilt `published/Dice Roll - Interactive.html` end-to-end via a live-served copy (not the static file:// snapshot). Confirmed the SVG diagram and the 6 deliverable "process" lines actually render in a real browser, not just parse. Real-world jargon check: the new Background text introduces no new unglossaried real-world term — "OpenStax" is a self-explanatory textbook citation, not jargon; the new STORY_GLOSSARY term "Audit Board" (added because the reworked Background now uses that exact phrase) auto-links correctly in the body text, confirmed via a live DOM check (`document.querySelectorAll('.sterm[data-sterm]')` returns "Audit Board" linked both in-body and in the story-glossary card). Final state unchanged from baseline: exactly 1 borderline unexplained real-world term ("salary band," Appendix D MA2, not required for any Challenge) — within the 0-1-concept PASS threshold. MCS-48's mechanical visual-flag false positive (D2/D3/D5 keyword-matched alongside D6) is unchanged and remains correctly cleared — only D6 requires a student-made visual; the new banner SVG is case-authored context, not a D6 answer. **Political neutrality explicitly re-confirmed**: grepped the full rebuilt `case.md` and published HTML for democrat/republican/party/candidate/election-outcome/fraud/liberal/conservative/trump/biden/gop/dnc language (excluding "bipartisan") — zero matches. The new Background paragraph and SVG diagram describe sampling methodology and program cost only; no claim about election administration, outcomes, or any party. |
+
+### Tier 3 — human dry-run
+
+NOT RUN (unchanged — requires a real cohort).
+
+---
+**Next step:** unchanged — a human visual proof of the rebuilt `published/` docx packets, then
+`case-publish`'s two human-confirm steps to move from `TIER2_PASS` to `PUBLISHED`.
