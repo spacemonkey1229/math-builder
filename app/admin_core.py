@@ -1160,6 +1160,116 @@ def do_set_weekly_debrief(store, label, url):
     store.set_setting(_WEEKLY_DEBRIEF_KEY, json.dumps({"label": label or "This week's debrief", "url": url}))
 
 
+_WEEKLY_CASES_KEY = "weekly_cases"
+
+
+def do_get_weekly_cases(store):
+    """Ordered list of case_ids the guide has marked as 'this week's set'.
+    A case on this list shows up on /class-review with its own debrief
+    section whether or not any student has submitted to it yet -- a
+    zero-submission case still needs to be walked through live, and before
+    this it was simply invisible on the page (indistinguishable from
+    broken)."""
+    raw = store.get_setting(_WEEKLY_CASES_KEY)
+    return json.loads(raw) if raw else []
+
+
+def do_set_weekly_cases(store, raw_text):
+    """raw_text is freeform, comma- or newline-separated -- a guide can type
+    either the case_id (the slug from its /class/<id> link) or the plain
+    title; both resolve against cases_index.json. Raises on the first token
+    that matches neither, naming it, rather than silently dropping it."""
+    tokens = [t.strip() for t in re.split(r'[,\n]+', raw_text or '') if t.strip()]
+    idx_path = os.path.join(os.path.dirname(_CASES_DIR), 'readmodel', 'cases_index.json')
+    with open(idx_path, encoding='utf-8') as f:
+        idx = json.load(f)
+    live = [c for c in idx['cases'] if c['status'] in ('published', 'legacy')]
+    by_id = {c['id'] for c in live}
+    by_title_slug = {slugify(c['title']): c['id'] for c in live}
+    case_ids = []
+    for t in tokens:
+        cid = t if t in by_id else by_title_slug.get(slugify(t))
+        if not cid:
+            raise ApiError(400, f"case not found: {t!r}")
+        if cid not in case_ids:
+            case_ids.append(cid)
+    store.set_setting(_WEEKLY_CASES_KEY, json.dumps(case_ids))
+    return case_ids
+
+
+def get_case_facilitator_brief(case_id):
+    """Facilitator-only cheat sheet for a live class debrief: the actual
+    dilemma, both options, each side's real argument, the margin, and the
+    deliverable list -- read straight off the case's own case.json. Unlike
+    get_case_brief() (which backs the public, unauthenticated /class/<id>
+    page), this surfaces the same balance/answer-key content the
+    Facilitator Guide docx carries, so it must only ever be called from the
+    passcode-gated /class-review page. Returns None if case.json is
+    missing (a bad/typo'd case_id in the weekly-cases list)."""
+    case_path = os.path.join(_CASES_DIR, case_id, 'case.json')
+    if not os.path.isfile(case_path):
+        return None
+    with open(case_path, encoding='utf-8') as f:
+        case = json.load(f)
+    balance = case.get('balance') or {}
+    deliverables = [
+        {"id": d.get("id"), "text": d.get("text")}
+        for d in (case.get('deliverables') or []) if d.get("text")
+    ]
+    return {
+        "id": case_id,
+        "title": case.get('title', case_id),
+        "protagonist": case.get('protagonist'),
+        "primary_metric": case.get('primary_metric'),
+        "options": case.get('options') or {},
+        "argument_a": balance.get('argument_a'),
+        "argument_b": balance.get('argument_b'),
+        "margin_pct": balance.get('margin_pct'),
+        "deliverables": deliverables,
+    }
+
+
+def build_class_review_view(store, case_id_filter=None):
+    """Assembles everything /class-review needs in one place, so the two
+    servers (admin_web/app.py, admin_server.py) share this instead of each
+    re-deriving it and risking drift. Sections cover the union of: this
+    week's case list (do_get_weekly_cases, shown even with 0 submissions)
+    and any case_id that actually has submissions -- so an old case that
+    fell off the weekly list is still reachable, never silently hidden."""
+    rows = do_list_class_submissions(store, case_id_filter)
+    weekly_cases = do_get_weekly_cases(store)
+    if case_id_filter:
+        ordered_case_ids = [case_id_filter]
+    else:
+        ordered_case_ids = list(weekly_cases)
+        extra = sorted(
+            {r['case_id'] for r in rows if r['case_id'] not in ordered_case_ids},
+            key=lambda cid: max(r['submitted_on'] or '' for r in rows if r['case_id'] == cid),
+            reverse=True,
+        )
+        ordered_case_ids += extra
+    case_titles, case_briefs, case_open_paths = {}, {}, {}
+    for cid in ordered_case_ids:
+        try:
+            brief_public = get_case_brief(cid)
+            case_titles[cid] = brief_public['title']
+            case_open_paths[cid] = brief_public['interactive_path']
+        except ApiError:
+            pass
+        brief = get_case_facilitator_brief(cid)
+        if brief:
+            case_briefs[cid] = brief
+    return {
+        "rows": rows,
+        "ordered_case_ids": ordered_case_ids,
+        "weekly_cases": weekly_cases,
+        "case_titles": case_titles,
+        "case_briefs": case_briefs,
+        "case_open_paths": case_open_paths,
+        "weekly_debrief": do_get_weekly_debrief(store),
+    }
+
+
 def _extract_pdf_text(pdf_bytes):
     """Best-effort text extraction from a submitted PDF. The "Submit" button
     produces these via the browser's own print-to-PDF on the student's typed

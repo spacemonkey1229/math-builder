@@ -119,26 +119,34 @@ document.getElementById('submit-btn').onclick = async function() {{
 </body></html>"""
 
 
-def render_class_review_html(rows, case_id=None, case_titles=None, weekly_debrief=None):
-    """case_titles: optional {case_id: title} map so groups can show a real
-    title instead of the bare slug. A case_id missing from the map (e.g. a
-    since-unpublished case) falls back to the slug itself -- never hidden.
-    weekly_debrief: optional {label, url} for the current debrief-prep page,
-    surfaced as a banner at the top so it's one click from the review list
-    instead of something the guide has to go dig up from chat history."""
-    case_titles = case_titles or {}
+def render_class_review_html(view, case_id=None):
+    """view is admin_core.build_class_review_view()'s return dict:
+      rows              -- submission rows (already filtered to case_id if given)
+      ordered_case_ids  -- this week's cases first (even at 0 submissions), then
+                           any other case with submissions, most recent first
+      case_titles       -- {case_id: real title}; a lookup miss falls back to
+                           the bare slug in the section header, never hidden
+      case_briefs       -- {case_id: facilitator cheat-sheet dict or absent}
+      case_open_paths   -- {case_id: /cases/.../Interactive.html path or None}
+      weekly_debrief    -- {label, url} for the current debrief-prep page, or None
+    Kept as one dict argument (rather than five positional ones) since both
+    servers just forward build_class_review_view()'s result straight through."""
+    rows, case_titles = view["rows"], view["case_titles"]
+    case_briefs, case_open_paths = view["case_briefs"], view["case_open_paths"]
+    weekly_debrief, weekly_cases = view["weekly_debrief"], view["weekly_cases"]
 
     debrief_banner = (
-        '<div style="margin-bottom:18px;padding:12px 16px;border:1px solid var(--rule);border-radius:8px;'
+        '<div style="margin-bottom:10px;padding:12px 16px;border:1px solid var(--rule);border-radius:8px;'
         'background:#EFF4EF;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
         + (f'<a href="{_html.escape(weekly_debrief["url"])}" target="_blank" rel="noopener" '
-           f'style="font-weight:600;color:var(--accent);text-decoration:none">&#8599; {_html.escape(weekly_debrief["label"])}</a>'
+           f'style="font-weight:600;color:var(--accent);text-decoration:none">&#8599; {_html.escape(weekly_debrief["label"])} '
+           '<span class="det" style="font-weight:400">(opens the full debrief-prep page in a new tab)</span></a>'
            if weekly_debrief else
-           '<span class="det">No debrief link set for this week yet.</span>')
+           '<span class="det">No debrief-prep link set for this week yet.</span>')
         + '<a href="#set-debrief" style="font-size:12.5px;color:var(--muted)" '
           'onclick="document.getElementById(\'debrief-form\').style.display=\'flex\';return false;">'
         + ('Change' if weekly_debrief else 'Set one') + '</a></div>'
-        '<form id="debrief-form" style="display:none;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center">'
+        '<form id="debrief-form" style="display:none;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">'
         '<input type="text" id="debrief-label" placeholder="Label, e.g. Week 2 Debrief" '
         f'value="{_html.escape(weekly_debrief["label"]) if weekly_debrief else ""}" style="flex:1;min-width:160px">'
         '<input type="url" id="debrief-url" placeholder="https://claude.ai/code/artifact/..." '
@@ -146,6 +154,58 @@ def render_class_review_html(rows, case_id=None, case_titles=None, weekly_debrie
         '<button type="button" class="btn ghost" id="save-debrief-btn">Save</button>'
         '</form>'
     )
+
+    cases_banner = (
+        '<div style="margin-bottom:18px;padding:12px 16px;border:1px solid var(--rule);border-radius:8px;'
+        'background:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+        + (f'<span class="det">This week\'s cases: <strong style="color:var(--ink)">'
+           + ', '.join(_html.escape(case_titles.get(c, c)) for c in weekly_cases) + '</strong>'
+           '<br>Each one below has its own debrief section -- with or without submissions -- so you can walk '
+           'through every case live.</span>'
+           if weekly_cases else
+           '<span class="det">No weekly case list set -- sections below only show cases with submissions. '
+           'Set the list to also see zero-submission cases.</span>')
+        + '<a href="#set-cases" style="font-size:12.5px;color:var(--muted);white-space:nowrap" '
+          'onclick="document.getElementById(\'cases-form\').style.display=\'flex\';return false;">'
+        + ('Change' if weekly_cases else 'Set this week\'s cases') + '</a></div>'
+        '<form id="cases-form" style="display:none;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-start">'
+        '<textarea id="cases-list" placeholder="One case per line -- either the id (roofline-call) or the title" '
+        f'style="flex:1;min-width:260px;min-height:70px">{_html.escape(chr(10).join(weekly_cases))}</textarea>'
+        '<button type="button" class="btn ghost" id="save-cases-btn">Save</button>'
+        '</form>'
+    )
+
+    def _brief_html(cid):
+        b = case_briefs.get(cid)
+        if not b:
+            return ''
+        options = b.get('options') or {}
+        opt_lines = "".join(
+            f'<li><strong>{_html.escape(k)}.</strong> {_html.escape(v)}</li>' for k, v in options.items()
+        )
+        deliverables = b.get('deliverables') or []
+        deliv_lines = "".join(
+            f'<li><strong>{_html.escape(d["id"] or "")}</strong> {_html.escape(d["text"])}</li>' for d in deliverables
+        )
+        open_path = case_open_paths.get(cid)
+        return (
+            '<details class="brief" style="margin:10px 0 16px;border:1px solid var(--rule);border-radius:8px;background:#fff" open>'
+            '<summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13.5px;color:var(--accent)">'
+            'Facilitator quick reference</summary>'
+            '<div style="padding:0 14px 14px;font-size:13.5px;line-height:1.5">'
+            + (f'<p><a class="btn ghost" href="{_html.escape(open_path)}" target="_blank" rel="noopener" '
+               'style="font-size:12.5px;padding:4px 10px;display:inline-block">Open the case (student view) &rarr;</a></p>'
+               if open_path else '')
+            + (f'<p class="det" style="margin:6px 0">{_html.escape(b["protagonist"])} &middot; {_html.escape(b["primary_metric"] or "")}</p>'
+               if b.get('protagonist') or b.get('primary_metric') else '')
+            + (f'<ul style="margin:8px 0;padding-left:18px">{opt_lines}</ul>' if opt_lines else '')
+            + (f'<p style="margin:8px 0"><strong>Option A\'s case:</strong> {_html.escape(b["argument_a"])}</p>' if b.get('argument_a') else '')
+            + (f'<p style="margin:8px 0"><strong>Option B\'s case:</strong> {_html.escape(b["argument_b"])}</p>' if b.get('argument_b') else '')
+            + (f'<p style="margin:8px 0" class="det">Real margin: {b["margin_pct"]}%</p>' if b.get('margin_pct') is not None else '')
+            + (f'<p style="margin:10px 0 4px"><strong>Deliverables to walk through:</strong></p><ol style="margin:0;padding-left:18px">{deliv_lines}</ol>'
+               if deliv_lines else '')
+            + '</div></details>'
+        )
 
     def _card(r):
         sid = r["id"]
@@ -180,18 +240,14 @@ def render_class_review_html(rows, case_id=None, case_titles=None, weekly_debrie
             + '</div></div>'
         )
 
-    if not rows:
-        body = '<p class="det">No submissions yet.</p>'
+    ordered_case_ids = view["ordered_case_ids"]
+    if not ordered_case_ids:
+        body = '<p class="det">No submissions yet, and no weekly case list set -- use "Set this week\'s cases" above.</p>'
     else:
         groups = {}
         for r in rows:
             groups.setdefault(r['case_id'], []).append(r)
-        # Sort groups by each group's most recent submission (newest case
-        # activity first), same "what needs attention" ordering the rest of
-        # this project's dashboards use -- not alphabetical by slug.
-        ordered = sorted(groups.items(),
-                          key=lambda kv: max((row['submitted_on'] or '') for row in kv[1]),
-                          reverse=True)
+
         def _links(cid):
             out = (f'<a href="/class-review/export?case_id={_html.escape(cid)}" '
                    f'style="font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none">'
@@ -203,18 +259,20 @@ def render_class_review_html(rows, case_id=None, case_titles=None, weekly_debrie
             if weekly_debrief:
                 out = (f'<a href="{_html.escape(weekly_debrief["url"])}#{_html.escape(cid)}" target="_blank" rel="noopener" '
                        f'style="font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none;margin-right:14px">'
-                       f'&#8599; View debrief</a>') + out
+                       f'&#8599; Debrief-prep writeup</a>') + out
             return out
 
         body = "".join(
-            f'<section style="margin-bottom:22px">'
+            f'<section style="margin-bottom:26px">'
             f'<h2 style="font-size:16px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">'
             f'<span>{_html.escape(case_titles.get(cid, cid))} '
-            f'<span class="det" style="font-weight:400">&middot; {len(group_rows)} submission{"s" if len(group_rows) != 1 else ""}</span></span>'
+            f'<span class="det" style="font-weight:400">&middot; {len(groups.get(cid, []))} submission{"s" if len(groups.get(cid, [])) != 1 else ""}</span></span>'
             f'<span>{_links(cid)}</span></h2>'
-            + "".join(_card(r) for r in group_rows)
+            + _brief_html(cid)
+            + ("".join(_card(r) for r in groups[cid]) if groups.get(cid) else
+               '<p class="det">No submissions yet for this case -- use the reference above to walk through it live.</p>')
             + '</section>'
-            for cid, group_rows in ordered
+            for cid in ordered_case_ids
         )
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>Class submissions — Math Builder</title>
@@ -224,9 +282,11 @@ body{{font-family:-apple-system,sans-serif;max-width:720px;margin:24px auto;padd
 .det{{color:#5F594E;font-size:12.5px}} .row{{display:flex;align-items:center;margin-top:6px}}
 input,textarea{{padding:6px 8px;border:1px solid #DED8CC;border-radius:6px;font-family:inherit}}
 .btn.ghost{{background:none;border:1px solid #22406B;color:#22406B;padding:5px 10px;border-radius:6px;cursor:pointer}}
+summary::-webkit-details-marker{{color:var(--accent)}}
 </style></head><body>
 <h1>Class submissions{' — ' + _html.escape(case_titles.get(case_id, case_id)) if case_id else ''}</h1>
 {debrief_banner}
+{cases_banner if not case_id else ''}
 {body}
 <script>
 document.querySelectorAll('[data-review]').forEach(function(b) {{
@@ -264,6 +324,18 @@ if (saveDebriefBtn) {{
     var res = await fetch('/api/weekly-debrief', {{method:'POST', headers:{{'Content-Type':'application/json'}},
       body: JSON.stringify({{label: label, url: url}})}});
     if (res.ok) location.reload(); else alert('Failed to save -- check the link starts with http:// or https://');
+  }};
+}}
+var saveCasesBtn = document.getElementById('save-cases-btn');
+if (saveCasesBtn) {{
+  saveCasesBtn.onclick = async function() {{
+    var cases = document.getElementById('cases-list').value;
+    var res = await fetch('/api/weekly-cases', {{method:'POST', headers:{{'Content-Type':'application/json'}},
+      body: JSON.stringify({{cases: cases}})}});
+    if (res.ok) {{ location.reload(); }} else {{
+      var out = await res.json().catch(function() {{ return {{}}; }});
+      alert('Failed to save -- ' + (out.error || 'check each line is a real case id or title'));
+    }}
   }};
 }}
 </script>

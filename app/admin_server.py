@@ -164,15 +164,8 @@ class Handler(BaseHTTPRequestHandler):
         if p.path == '/class-review':
             qs = urllib.parse.parse_qs(p.query)
             case_id = (qs.get('case_id') or [None])[0]
-            rows = admin_core.do_list_class_submissions(STORE, case_id)
-            case_titles = {}
-            for cid in {r['case_id'] for r in rows}:
-                try:
-                    case_titles[cid] = admin_core.get_case_brief(cid)['title']
-                except admin_core.ApiError:
-                    pass
-            weekly_debrief = admin_core.do_get_weekly_debrief(STORE)
-            body = render_class_review_html(rows, case_id, case_titles, weekly_debrief).encode('utf-8')
+            view = admin_core.build_class_review_view(STORE, case_id)
+            body = render_class_review_html(view, case_id).encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
@@ -338,6 +331,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"ok": True})
             elif p.path == '/api/weekly-debrief':
                 admin_core.do_set_weekly_debrief(STORE, b.get('label'), b.get('url'))
+                self._json(200, {"ok": True})
+            elif p.path == '/api/weekly-cases':
+                admin_core.do_set_weekly_cases(STORE, b.get('cases'))
                 self._json(200, {"ok": True})
             else:
                 self._json(404, {"error": "not found"})
