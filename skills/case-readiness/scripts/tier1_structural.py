@@ -2,7 +2,7 @@
 """
 TIER 1 — STRUCTURAL GATE  (machine, blocking)
 
-Twenty-two mechanical checks against SPEC.md.  Supersedes the inline script that
+Twenty-three mechanical checks against SPEC.md.  Supersedes the inline script that
 used to live in skills/case-qa/SKILL.md, with three defect fixes and six new
 continuity checks.
 
@@ -35,8 +35,9 @@ CHECK REGISTER  (name them by id in the QA report)
   T1-20  visual asset present, image sources cited          advisory    [NEW]
   T1-21  hover+hyperlink STORY-vocabulary glossary          MCS-47      [NEW, GAP not BLOCKER]
   T1-22  published HTML section parity with case.md         MCS-50      [NEW]
+  T1-23  published HTML inline <script> parses (real JS)    MCS-50      [NEW]
 """
-import argparse, json, os, re, sys, hashlib, unicodedata
+import argparse, json, os, re, sys, hashlib, unicodedata, subprocess, tempfile
 
 # ---------------------------------------------------------------- helpers ----
 DASH = r'[—–\-:]'          # em dash, en dash, hyphen, colon
@@ -1096,6 +1097,79 @@ def run(project, cid):
             R.ok('T1-22')  # T1-18 already BLOCKERs on missing HTML; don't double-report here
     else:
         R.polish('T1-22', "no published/ directory yet — MCS-50 has nothing to check")
+
+    # ---- T1-23 published HTML inline JS must parse (MCS-50) ----------------
+    # Found as a real, shipped defect 2026-09-10 (Pier Wheel, SAME case as T1-22,
+    # discovered in a SEPARATE later review after T1-22 already shipped and PASSED
+    # it): a single doubled backslash in a string literal (\\' instead of \')
+    # closed the string early, so the entire inline <script> failed to parse.
+    # Because a JS syntax error aborts the WHOLE script (nothing in the tag runs,
+    # not just the broken line), this silently killed every interactive feature
+    # on the page at once -- tab navigation, the deliverables checklist render,
+    # the live calculator, the Twist toggle -- while every text-based structural
+    # check, T1-22 included, stayed green, because none of them execute the
+    # script; they only grep it. A human had to open DevTools and read the
+    # console to find it. This check runs the actual JS engine (via `node
+    # --check`, a real syntax-only parse, nothing is executed) so that class of
+    # defect is caught mechanically too, not just missing sections.
+    if os.path.isdir(pub):
+        html_files = [fn for fn in os.listdir(pub) if fn.lower().endswith('.html')]
+        node_missing = False
+        any_checked = False
+        for fn in html_files:
+            fp = os.path.join(pub, fn)
+            txt = open(fp, encoding='utf-8', errors='ignore').read()
+            # Strip HTML comments FIRST -- found as a real false-positive while building
+            # this very check (2026-09-10, corpus sweep flagged 98/149 cases): an
+            # explanatory comment in templates/interactive_shell.html mentions the literal
+            # text "a <script> tag" in prose, which the naive regex below matched as a
+            # real opening tag, then grabbed everything up to the next literal </script>
+            # as if it were JS -- the exact same nested-comment failure class T1-18/T1-19
+            # already had to fix (see their own comment-stripping calls above). Strip
+            # comments the identical way before scanning for real <script> tags.
+            txt_nc = re.sub(r'(?is)<!--.*?-->', ' ', txt)
+            # Only inline <script> blocks (no src=) -- an external library load
+            # (e.g. a CDN script tag) has nothing of this case's own authorship
+            # to check and is irrelevant here.
+            blocks = re.findall(r'(?is)<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', txt_nc)
+            for i, block in enumerate(blocks):
+                if not block.strip():
+                    continue
+                any_checked = True
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False,
+                                                  encoding='utf-8') as tf:
+                    tf.write(block)
+                    tmp_path = tf.name
+                try:
+                    proc = subprocess.run(['node', '--check', tmp_path],
+                                           capture_output=True, text=True, timeout=15)
+                except FileNotFoundError:
+                    node_missing = True
+                    break
+                finally:
+                    os.unlink(tmp_path)
+                if proc.returncode != 0:
+                    err = proc.stderr.strip().splitlines()
+                    err_line = next((l for l in err if 'Error' in l), err[-1] if err else 'unknown error')
+                    R.blocker('T1-23', f"MCS-50 — published/{fn}'s inline <script> block "
+                                       f"#{i+1} fails to parse as JavaScript: {err_line}. "
+                                       f"A syntax error aborts the ENTIRE script, silently "
+                                       f"disabling every interactive feature on the page "
+                                       f"(nav, checklist, calculator, everything) while every "
+                                       f"text-based check stays green -- this is not a "
+                                       f"cosmetic issue.")
+            if node_missing:
+                break
+        if node_missing:
+            R.polish('T1-23', "`node` is not available in this environment -- T1-23's JS "
+                              "syntax check could not run. Run it manually (`node --check`) "
+                              "on any inline <script> before trusting this case's interactivity.")
+        elif any_checked:
+            R.ok('T1-23')
+        else:
+            R.ok('T1-23')
+    else:
+        R.polish('T1-23', "no published/ directory yet — MCS-50 has nothing to check")
 
     return R, h
 

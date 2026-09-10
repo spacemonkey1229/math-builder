@@ -103,6 +103,7 @@ Exit 0 = `TIER1_PASS`. Exit 1 = `BLOCKED`. Twenty-one checks:
 | T1-20 | visual asset present (chart/map/diagram/photo); image sources cited | advisory, never blocks |
 | T1-21 | hover+hyperlink STORY-vocabulary glossary (real-world domain terms, not math) | MCS-47, **GAP not BLOCKER** (see below) |
 | T1-22 | published HTML's own sections match `case.md`'s — the artifact a student actually opens, not just its source | MCS-50 |
+| T1-23 | published HTML's inline `<script>` actually parses as JavaScript (`node --check`) | MCS-50 |
 
 **T1-22 exists because `case.md` passing every check proves nothing about what shipped.** T1-01
 (structural sections present) and every other Tier 1 check up through T1-21 only ever read
@@ -117,6 +118,18 @@ missing section isn't a quality judgment call, it's a fact you can check with a 
 agent running P1/P7's cold-solve or cold-read must read the actual published HTML end-to-end,
 never `case.md` alone** — T1-22 is the mechanical backstop, but it should never be the only thing
 catching this.
+
+**T1-23 exists because sections-present alone still isn't enough to prove a page works.** A
+SEPARATE later review of the SAME case that added T1-22 (Pier Wheel, 2026-09-10) found the page
+still didn't work after T1-22 passed it — a human had to open a real browser and read the
+JavaScript console to find a syntax error (`Uncaught SyntaxError: Unexpected identifier 's'`) that
+had silently disabled every interactive feature on the page at once, tab navigation included, since
+a JS syntax error aborts the entire `<script>` block, not just the broken line. No text-based check,
+T1-22 included, can catch this — they grep the script, they don't execute it. T1-23 runs the actual
+JS engine (`node --check`, syntax-only, nothing is executed) against every inline `<script>` block
+in every published HTML. **Any agent verifying a case's interactivity must actually open it in a
+real browser and check the console for errors — reading the raw HTML text is not sufficient**,
+exactly as true for T1-23 as it is for T1-22.
 
 **T1-21 is deliberately a GAP, not a BLOCKER, unlike T1-19's identical mechanism for math
 vocabulary.** T1-19 sets a hard bar because SPEC already requires the case to teach the math it

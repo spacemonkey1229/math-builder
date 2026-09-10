@@ -174,9 +174,38 @@ MUTATIONS = [
     ("published HTML with all case.md sections present must not block", 'field-watch',
      lambda p: {**p, 'html': (p['html'] or '') + '\n<!-- selftest: harmless no-op marker -->\n'},
      False,
-     [r"T1-22.*MCS-50"],
+     [r"\[T1-22\]"],
      "field-watch's own already-shipped, correct HTML (unmutated) must not be flagged — "
      "T1-22 should be silent when every case.md section has a matching published heading"),
+
+    # ---- MCS-50 / T1-23 -- published HTML inline <script> must parse -------
+    # Uses cold-chain, not field-watch, for no particular reason beyond it being
+    # the suite's other well-exercised fixture case — cold-chain's inline script
+    # parses clean (confirmed directly via `node --check` before picking it).
+    # (Earlier draft of this check itself had a false-positive bug — see T1-23's
+    # own comment-stripping fix in tier1_structural.py — that briefly made it
+    # LOOK like field-watch, and 97 other real cases, had a genuine syntax error;
+    # they didn't. Keeping cold-chain here regardless, just to be safe.)
+    ("published HTML's inline script has a real JS syntax error", 'cold-chain',
+     lambda p: {**p, 'html': (p['html'] or '').replace(
+         '<script>', "<script>\nconst selftestBroken = 'a\\\\'bad string literal';\n", 1)},
+     True,
+     [r"\[T1-23\].*fails to parse as JavaScript"],
+     "reproduces a real shipped defect (Pier Wheel, 2026-09-10, found in a SEPARATE later "
+     "review than the one that added T1-22): a doubled backslash in a string literal closed "
+     "the string early, so the ENTIRE inline <script> failed to parse silently -- killing tab "
+     "nav, the deliverables checklist, the calculator, everything -- while every text-based "
+     "check, T1-22 included, stayed green, because none of them execute the script, only grep "
+     "it. A human had to open DevTools to find it. T1-23 runs `node --check` so a JS syntax "
+     "error is caught mechanically too"),
+
+    ("published HTML with valid inline script must not block", 'cold-chain',
+     lambda p: {**p, 'html': (p['html'] or '').replace(
+         '<script>', "<script>\nconst selftestValid = 'a perfectly fine string literal';\n", 1)},
+     False,
+     [r"\[T1-23\]"],
+     "a case whose inline script is syntactically valid JS (cold-chain's own real script, "
+     "plus one harmless added line) must not be flagged — T1-23 should be silent here"),
 ]
 
 

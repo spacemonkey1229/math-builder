@@ -321,3 +321,36 @@ run.
 
 ### Tier 3 — human dry-run
 NOT RUN
+
+---
+
+## 2026-09-10 (later same day) — second real defect found by a human, not a subagent
+
+Despite the fix above, a project-owner review of the LIVE page found it still didn't work —
+clicking any nav tab did nothing. Investigation: the browser console showed
+`Uncaught SyntaxError: Unexpected identifier 's'`. Root cause: `document.getElementById(...)
+.textContent = 'On the authority\\'s own per-meter-of-diameter score...'` — a doubled backslash
+(`\\'`) instead of a single escape (`\'`) closed the string one character early. A JS syntax
+error aborts the **entire** `<script>` block, not just the offending line, which is why every
+interactive feature on the page was dead at once (tab nav, the deliverables checklist render,
+the live calculator, the Twist toggle) even though the HTML's text content, including the
+rebuilt Challenges section from the earlier fix, was completely correct. No check that ran
+before this — not T1-18, not the newly-added T1-22, not any subagent's "fresh cold-read" —
+caught it, because all of them grep the script's text; none of them execute it.
+
+**Fixed**: switched the string to double-quotes (`"On the authority's own..."`), removing the
+need to escape the apostrophe at all. **Verified this time by actually opening the file in a
+real browser** (local HTTP server, not `file://`, which only renders a static snapshot):
+console clean (0 errors), Overview→Challenges tab click navigates correctly, full D1-D5
+deliverables checklist renders with its process-explanation text under each item.
+
+**A new mechanical safeguard was added so this class of defect is caught automatically going
+forward**: `T1-23` (`skills/case-readiness/scripts/tier1_structural.py`) extracts every inline
+`<script>` block from every published HTML and runs it through `node --check` — a real
+syntax-only parse. Swept clean across all 149 currently-published cases (after fixing a
+comment-stripping bug in the check's own first draft — see `DOCTRINE_LEDGER.md` MCS-50).
+
+`case.json.qa.tier2` verdicts (P1/P7 in particular) stand as previously recorded — the math,
+sources, and verdict were never in question; only the page's client-side interactivity was
+broken by this bug, and that is now confirmed fixed by direct observation, not by re-running a
+text-based probe.
