@@ -1,0 +1,1320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Creek Span — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  Source of record: cases/creek-span/case.md (sha256 1ae0bced11851c6b36ef63259d8510bbb9d84dc03fbc49a5606749c7cdf29b49),
+  cases/creek-span/case.json, cases/creek-span/sensitivity_model.py.
+
+  HARD LINE (MCS-37): this file must never print Creek Span's balance_test verdict
+  (margin_pct, the winner, or either option's final $/ft cost) as a static literal
+  anywhere outside a <script> tag. The Working Notebook's Step 5 calculator computes
+  it live from the case's own raw inputs (steel weights, price, wage, joint counts,
+  hours/joint) -- see the evaluate()/evaluate_twist() JS port below, ported line-for-
+  line from sensitivity_model.py's PARAMS/evaluate()/evaluate_twist().
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* ---- story-vocabulary glossary (MCS-39 extension, T1-21) — its own .sterm
+         class, own accent, own STORY_GLOSSARY data shape ({desc, link}), so it
+         never collides with T1-19's math-glossary regex. ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — Creek Span truss elevation diagrams. */
+  .trusslabel{font-family:var(--sans);font-size:9px;fill:#5b6472}
+  .trusslabel.b{font-family:var(--sans);font-size:9px;fill:#1a3a5c;font-weight:700}
+  .trusslabel.g{font-family:var(--sans);font-size:9px;fill:#8a7015;font-weight:700}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <!-- Creek Span uses only the shared icon set + inline decorative SVGs below. -->
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Creek Span</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Geometry &middot; Triangles</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <figure>
+    <div class="box-compare">
+      <div class="col">
+        <svg width="200" height="150" viewBox="0 0 200 150">
+          <rect x="10" y="120" width="180" height="14" fill="#eef3f8" stroke="#dfe4ea"/>
+          <line x1="10" y1="120" x2="190" y2="120" stroke="#1a3a5c" stroke-width="3"/>
+          <polyline points="10,120 70,45 130,45 190,120" fill="none" stroke="#1a3a5c" stroke-width="2.5"/>
+          <line x1="70" y1="45" x2="130" y2="45" stroke="#c9a227" stroke-width="2" stroke-dasharray="4 3"/>
+          <text x="100" y="40" text-anchor="middle" class="trusslabel g">even diagonals</text>
+          <text x="100" y="140" text-anchor="middle" class="trusslabel">deep, three-panel truss</text>
+        </svg>
+        <div class="label">The Warren Line</div>
+        <div class="sub">every diagonal cut new</div>
+      </div>
+      <div class="col">
+        <svg width="200" height="150" viewBox="0 0 200 150">
+          <rect x="10" y="120" width="180" height="14" fill="#eef3f8" stroke="#dfe4ea"/>
+          <line x1="10" y1="120" x2="190" y2="120" stroke="#1a3a5c" stroke-width="3"/>
+          <polyline points="10,120 55,98 100,98 145,98 190,120" fill="none" stroke="#1a3a5c" stroke-width="2.5"/>
+          <line x1="55" y1="98" x2="145" y2="98" stroke="#c9a227" stroke-width="2" stroke-dasharray="4 3"/>
+          <text x="100" y="92" text-anchor="middle" class="trusslabel g">shallow &mdash; flood clearance</text>
+          <text x="100" y="140" text-anchor="middle" class="trusslabel">shallow, four-panel truss</text>
+        </svg>
+        <div class="label">The Low Line</div>
+        <div class="sub">interior diagonals salvaged</div>
+      </div>
+    </div>
+    <figcaption>Side-view silhouettes, not to scale. No dimensions here &mdash; every real number lives in the Appendices below.</figcaption>
+  </figure>
+  <p class="lede">Priya Nakamura has two truss elevations pinned to the light table and a shop that stops cutting steel at four o'clock.</p>
+  <p>She's the newest P.E. at Ferrand &amp; Cole Structural, and this is the first bridge she's allowed to seal on her own stamp. The job is small &mdash; a footbridge over Miller's Creek, replacing the rail-trail's washed-out plank crossing &mdash; but the county's purchasing agent keeps forwarding her the same photo: a pallet of salvaged steel angle in the shop yard, pulled off a footbridge the county tore out last spring. &ldquo;Free steel is free steel,&rdquo; his email says. &ldquo;Use what we've got.&rdquo;</p>
+  <p>Priya has been staring at that pallet since Tuesday. She can see, just by eye, that the pieces are short &mdash; shorter than she'd normally spec for a truss this size. Whether &ldquo;short&rdquo; means &ldquo;won't reach&rdquo; is a different question, and it's the one her supervisor just asked her, standing in her doorway with her coat already on.</p>
+  <p>&ldquo;Shop's cutting new steel at four either way,&rdquo; she says. &ldquo;Which truss are we drawing &mdash; the one that needs new diagonals, or the one that can actually use what's sitting in the yard?&rdquo;</p>
+  <p>Priya pulls the tape measure off her desk and looks at the two elevations again.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Priya Nakamura is a staff structural engineer at Ferrand &amp; Cole Structural, a small civil engineering firm under contract to the Kestrel County Parks Department. Her job is to finalize the shop drawing for a replacement pedestrian truss bridge over Miller's Creek, on a heavily used rail-trail &mdash; a drawing the fabricator's shop will cut steel from directly, so every member length on it has to be a real, buildable length, not just a number that looks right on the elevation.</p>
+  <p>A truss is rigid for a specific geometric reason: a triangle is the only polygon whose shape is fixed once its three side lengths are set &mdash; a rectangle can rack into a parallelogram under load, but a triangle cannot deform without one of its sides changing length (see Appendix H for a sourced explanation). That is why every truss, regardless of style, is built as a chain of triangles rather than any other shape, and it is why the specific side lengths available to build each triangle &mdash; not just the finished silhouette &mdash; decide whether a truss design is even physically assembleable before a single number is checked for strength.</p>
+  <p>The county's parks department wants to reuse a pallet of salvaged structural steel angle &mdash; 24 pieces, each 3.5 feet long, pulled from a smaller footbridge the county decommissioned last year &mdash; as the truss's diagonal web members, to cut the new bridge's material cost. Two truss layouts are on the table for the same 24-foot span, and the salvaged pieces do not fit both of them the same way (see Appendix B and Appendix C).</p>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Bridge &amp; Truss Vocabulary</h3>
+    <p class="side-note">The math vocabulary Challenge 1 sends you to research lives in Appendix I below. These are the real structural-engineering terms this case's own story uses &mdash; hover any one for a plain definition, or click through to a real source.</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Sources: Wikipedia (&ldquo;Gusset plate,&rdquo; &ldquo;Truss&rdquo;) and garrettsbridges.com, &ldquo;Pony Truss.&rdquo; Links verified working 2026-09-09.</p>
+  </div>
+
+  <p><strong>The Warren Line</strong> frames the span as three 8-foot panels with no vertical posts, at a truss depth chosen so every web triangle is equilateral &mdash; the standard configuration for a Warren-style pony truss of this panel length, because equal-length web members put every diagonal into the same alternating pattern of tension and compression. That geometry needs every diagonal to be a full 8 feet long. Two of the salvaged 3.5-foot pieces, laid end-to-corner, cannot reach across an 8-foot panel and meet &mdash; the county's steel does not fit this design at all, and every diagonal has to be cut from new stock (see Appendix D).</p>
+  <p><strong>The Low Line</strong> frames the same 24-foot span as four shallower 6-foot panels, at a reduced truss depth required to clear the county's floodway ordinance for the walkway underside during high water. At that depth, two salvaged 3.5-foot pieces reach across a 6-foot panel with room to spare &mdash; the salvage fits, and every interior diagonal in this design can be built from the county's steel at no material cost. The shallower depth carries a real structural cost of its own: for the same span and load, a shallower truss puts more force into its top and bottom chords, so The Low Line's chord steel has to be a heavier structural section than The Warren Line's (see Appendix A) &mdash; and its four panels, versus three, mean one more pair of panel-point connections for the shop to fabricate (see Appendix E).</p>
+  <p>Structural steel is priced by the pound and gusset-plate fabrication is priced by the shop's labor rate (see Appendices D and F); every dollar figure in this case is either cited to a real source (see Appendix G) or stated as an explicit modeling assumption (see Appendix F) where no public figure exists. The vocabulary and &ldquo;how to&hellip;&rdquo; skills this case will ask of you are listed in Appendix I, where Challenge 1 sends you. (See Appendix H for further reading on truss triangulation and the Triangle Inequality Theorem.)</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Priya Nakamura, staff structural engineer. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Detail The Warren Line</h4>
+      <p style="margin:0">Three 8-foot equilateral-triangle panels, every diagonal cut from new steel &mdash; a deep truss with the county's own salvage failing to reach across the panel.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Detail The Low Line</h4>
+      <p style="margin:0">Four shallower 6-foot panels built from the county's salvaged 3.5-foot diagonals, with heavier chord steel and two extra gusset joints.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix I. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must include: a.) Use of the "how to&hellip;" resource you researched in Challenge 1. b.) At least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong>) a dimensioned elevation sketch of each truss option showing every panel point, every chord segment, and every web triangle formed by the diagonals, with each triangle's three side lengths labeled from Appendix B's geometry; <strong>D2</strong>) using the salvaged member's 3.5-foot length, apply the Triangle Inequality Theorem to determine whether two salvaged pieces can physically close the web triangle required by The Warren Line's 8-foot panel, and separately whether they can close the web triangle required by The Low Line's 6-foot panel &mdash; show the inequality check, not just the conclusion, for each; <strong>D3</strong>) using the side lengths from D1, classify every one of The Warren Line's web triangles by side length and by angle, and explain &mdash; using the actual side lengths, not just the name &mdash; why a triangle with these side lengths must also be an acute triangle; <strong>D4</strong>) using the side lengths from D1, classify The Low Line's repeating interior web triangle, naming its base and identifying the two legs, and determine whether it is acute or obtuse, then classify The Low Line's one non-repeating end triangle (see Appendix C) by side length, explain why it is not isosceles like the interior triangles, and determine whether it is acute or obtuse; <strong>D5</strong>) a full fabrication takeoff comparing both options: total chord steel weight, total diagonal steel weight actually purchased new (not the reused salvage), gusset-plate joint count, total fabricated cost, and that cost divided by the 24-foot span &mdash; the case's primary comparison number. State which option wins on that number and by how much.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. If you are absent the day of a discussion post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+<details open>
+  <summary>Appendix A &mdash; Structural Steel Angle Reference</summary>
+  <div class="inner">
+    <table id="apxA">
+      <tr><th></th><th>Value</th></tr>
+      <tr><td>Diagonal / web member size, both options</td><td>L2&times;2&times;1/4 structural steel angle</td></tr>
+      <tr><td>Weight per linear foot, L2&times;2&times;1/4 angle</td><td>3.21 lb/ft [S1]</td></tr>
+      <tr><td>Chord size, The Warren Line (deeper truss, lower chord force)</td><td>L3&times;3&times;1/4 structural steel angle</td></tr>
+      <tr><td>Weight per linear foot, L3&times;3&times;1/4 angle</td><td>4.89 lb/ft [S2]</td></tr>
+      <tr><td>Chord size, The Low Line (shallower truss, higher chord force)</td><td>L3&times;3&times;3/8 structural steel angle</td></tr>
+      <tr><td>Weight per linear foot, L3&times;3&times;3/8 angle</td><td>7.17 lb/ft [S3]</td></tr>
+    </table>
+    <p class="side-note">A shallower truss carries more force in its chords than a deeper one spanning the same distance under the same load, because the chord force in a truss scales inversely with the truss's depth (see Appendix H) &mdash; which is the real reason The Low Line's reduced depth forces a heavier chord section even though its span and loading are identical to The Warren Line's.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix B &mdash; The Truss Geometry</summary>
+  <div class="inner">
+    <p class="side-note">Priya's own layout for this crossing &mdash; not a public bridge plan (Ferrand &amp; Cole's project drawings are proprietary), but built entirely from real, standard Warren-truss geometry and the county's own floodway clearance requirement.</p>
+    <table id="apxB">
+      <tr><th></th><th>The Warren Line (A)</th><th>The Low Line (B)</th></tr>
+      <tr><td>Span</td><td>24 ft</td><td>24 ft</td></tr>
+      <tr><td>Panel count</td><td>3</td><td>4</td></tr>
+      <tr><td>Panel length (bottom and top chord)</td><td>8 ft</td><td>6 ft</td></tr>
+      <tr><td>Truss depth</td><td>6.93 ft</td><td>1.80 ft</td></tr>
+      <tr><td>Repeating web triangle side lengths</td><td>8 ft, 8 ft, 8 ft</td><td>6 ft, 3.5 ft, 3.5 ft</td></tr>
+      <tr><td>Repeating web triangle, by side length</td><td>equilateral</td><td>isosceles</td></tr>
+      <tr><td>Repeating web triangle, by angle</td><td>see Challenge D3</td><td>see Challenge D4</td></tr>
+    </table>
+    <p class="side-note">The Warren Line's depth (6.93 ft) is set so that every diagonal equals the 8-ft panel length &mdash; the textbook equilateral-triangle Warren configuration. The Low Line's depth (1.80 ft) is fixed not by truss theory but by the county's floodway clearance ordinance for the walkway underside (see Appendix H); the panel length that results from fitting the salvaged 3.5-ft diagonals across that depth is 6 ft, which is why The Low Line uses four panels instead of three over the same 24-ft span.</p>
+
+    <figure>
+      <svg width="720" height="220" viewBox="0 0 720 220">
+        <!-- The Warren Line (A) -->
+        <text x="10" y="18" class="trusslabel b">The Warren Line (A) &mdash; span 24 ft, 3 panels &times; 8 ft, depth 6.93 ft</text>
+        <g transform="translate(20,30)">
+          <!-- bottom chord -->
+          <line x1="0" y1="110" x2="288" y2="110" stroke="#1a3a5c" stroke-width="3"/>
+          <!-- top chord -->
+          <line x1="48" y1="27" x2="240" y2="27" stroke="#1a3a5c" stroke-width="3"/>
+          <!-- diagonals -->
+          <line x1="0" y1="110" x2="48" y2="27" stroke="#c9a227" stroke-width="2.2"/>
+          <line x1="48" y1="27" x2="96" y2="110" stroke="#c9a227" stroke-width="2.2"/>
+          <line x1="96" y1="110" x2="144" y2="27" stroke="#c9a227" stroke-width="2.2"/>
+          <line x1="144" y1="27" x2="192" y2="110" stroke="#c9a227" stroke-width="2.2"/>
+          <line x1="192" y1="110" x2="240" y2="27" stroke="#c9a227" stroke-width="2.2"/>
+          <line x1="240" y1="27" x2="288" y2="110" stroke="#c9a227" stroke-width="2.2"/>
+          <!-- panel points -->
+          <circle cx="0" cy="110" r="4" fill="#1a3a5c"/><circle cx="96" cy="110" r="4" fill="#1a3a5c"/>
+          <circle cx="192" cy="110" r="4" fill="#1a3a5c"/><circle cx="288" cy="110" r="4" fill="#1a3a5c"/>
+          <circle cx="48" cy="27" r="4" fill="#1a3a5c"/><circle cx="144" cy="27" r="4" fill="#1a3a5c"/><circle cx="240" cy="27" r="4" fill="#1a3a5c"/>
+          <!-- side length labels on one repeating triangle -->
+          <text x="10" y="72" class="trusslabel g">8 ft</text>
+          <text x="60" y="72" class="trusslabel g">8 ft</text>
+          <text x="60" y="120" class="trusslabel g">8 ft</text>
+          <text x="0" y="128" class="trusslabel">B0</text><text x="92" y="128" class="trusslabel">B1</text>
+          <text x="188" y="128" class="trusslabel">B2</text><text x="280" y="128" class="trusslabel">B3</text>
+          <text x="40" y="20" class="trusslabel">T0</text><text x="136" y="20" class="trusslabel">T1</text><text x="232" y="20" class="trusslabel">T2</text>
+          <text x="70" y="140" class="trusslabel">every web triangle: 8 ft / 8 ft / 8 ft (equilateral) &mdash; 7 panel-point joints total</text>
+        </g>
+
+        <!-- The Low Line (B) -->
+        <text x="10" y="178" class="trusslabel b">The Low Line (B) &mdash; span 24 ft, 4 panels &times; 6 ft, depth 1.80 ft</text>
+        <g transform="translate(20,182)">
+          <line x1="0" y1="0" x2="288" y2="0" stroke="#1a3a5c" stroke-width="3"/>
+        </g>
+      </svg>
+      <figcaption>The Warren Line's elevation: bottom-chord panel points B0&ndash;B3, top-chord panel points T0&ndash;T2, six 8-ft diagonals forming a chain of equilateral triangles. See the second elevation below for The Low Line's shallower geometry, its salvage-built interior triangles, and its one scalene end triangle.</figcaption>
+    </figure>
+
+    <figure>
+      <svg width="720" height="200" viewBox="0 0 720 200">
+        <text x="10" y="18" class="trusslabel b">The Low Line (B) &mdash; span 24 ft, 4 panels &times; 6 ft, depth 1.80 ft</text>
+        <g transform="translate(20,30)">
+          <!-- bottom chord -->
+          <line x1="0" y1="120" x2="288" y2="120" stroke="#1a3a5c" stroke-width="3"/>
+          <!-- top chord -->
+          <line x1="36" y1="98.4" x2="252" y2="98.4" stroke="#1a3a5c" stroke-width="3"/>
+          <!-- interior diagonals (salvage, 3.5 ft each) -->
+          <line x1="0" y1="120" x2="36" y2="98.4" stroke="#1f7a4d" stroke-width="2.2"/>
+          <line x1="36" y1="98.4" x2="72" y2="120" stroke="#1f7a4d" stroke-width="2.2"/>
+          <line x1="72" y1="120" x2="108" y2="98.4" stroke="#1f7a4d" stroke-width="2.2"/>
+          <line x1="108" y1="98.4" x2="144" y2="120" stroke="#1f7a4d" stroke-width="2.2"/>
+          <line x1="144" y1="120" x2="180" y2="98.4" stroke="#1f7a4d" stroke-width="2.2"/>
+          <line x1="180" y1="98.4" x2="216" y2="120" stroke="#1f7a4d" stroke-width="2.2"/>
+          <line x1="216" y1="120" x2="252" y2="98.4" stroke="#1f7a4d" stroke-width="2.2"/>
+          <line x1="252" y1="98.4" x2="288" y2="120" stroke="#1f7a4d" stroke-width="2.2"/>
+          <!-- sway brace (end panel, 7 ft, not to scale) -->
+          <line x1="0" y1="120" x2="108" y2="98.4" stroke="#a3312a" stroke-width="2" stroke-dasharray="5 3"/>
+          <text x="32" y="105" class="trusslabel" style="fill:#a3312a">sway brace, 7 ft</text>
+          <!-- panel points -->
+          <circle cx="0" cy="120" r="4" fill="#1a3a5c"/><circle cx="72" cy="120" r="4" fill="#1a3a5c"/>
+          <circle cx="144" cy="120" r="4" fill="#1a3a5c"/><circle cx="216" cy="120" r="4" fill="#1a3a5c"/><circle cx="288" cy="120" r="4" fill="#1a3a5c"/>
+          <circle cx="36" cy="98.4" r="4" fill="#1a3a5c"/><circle cx="108" cy="98.4" r="4" fill="#1a3a5c"/>
+          <circle cx="180" cy="98.4" r="4" fill="#1a3a5c"/><circle cx="252" cy="98.4" r="4" fill="#1a3a5c"/>
+          <text x="0" y="138" class="trusslabel">B0</text><text x="68" y="138" class="trusslabel">B1</text>
+          <text x="140" y="138" class="trusslabel">B2</text><text x="212" y="138" class="trusslabel">B3</text><text x="282" y="138" class="trusslabel">B4</text>
+          <text x="28" y="92" class="trusslabel">T0</text><text x="100" y="92" class="trusslabel">T1</text>
+          <text x="172" y="92" class="trusslabel">T2</text><text x="244" y="92" class="trusslabel">T3</text>
+          <text x="66" y="158" class="trusslabel g">interior triangle: 6 ft / 3.5 ft / 3.5 ft (isosceles)</text>
+          <text x="66" y="170" class="trusslabel" style="fill:#a3312a">end triangle (B0-T1 brace, B0-T0-B1 diagonal+chord): 7 ft / 6 ft / 3.5 ft (scalene)</text>
+        </g>
+      </svg>
+      <figcaption>The Low Line's elevation: five bottom-chord panel points (B0&ndash;B4), four top-chord panel points (T0&ndash;T3, offset at panel midpoints), eight 3.5-ft salvage diagonals forming a chain of isosceles triangles (green), plus the one non-repeating scalene end triangle formed by the 7-ft sway brace, the 6-ft top-chord segment it lands on, and the regular 3.5-ft salvage diagonal already framing that bay (red, schematic). 9 panel-point joints total.</figcaption>
+    </figure>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix C &mdash; Salvage Steel &amp; the End-Panel Detail</summary>
+  <div class="inner">
+    <table id="apxC">
+      <tr><th></th><th>Value</th></tr>
+      <tr><td>Salvaged steel angle pieces available</td><td>24 pieces, L2&times;2&times;1/4, 3.5 ft each</td></tr>
+      <tr><td>Source</td><td>Decommissioned footbridge, Kestrel County Parks Department yard</td></tr>
+      <tr><td>Interior web triangle diagonals needed, The Low Line</td><td>8 pieces (2 per panel &times; 4 panels)</td></tr>
+      <tr><td>Triangle Inequality check, The Warren Line (8-ft panel)</td><td>3.5 ft + 3.5 ft = 7.0 ft &mdash; compare to 8.0 ft (see Working Notebook Step 2)</td></tr>
+      <tr><td>Triangle Inequality check, The Low Line (6-ft panel)</td><td>3.5 ft + 3.5 ft = 7.0 ft &mdash; compare to 6.0 ft (see Working Notebook Step 2)</td></tr>
+    </table>
+    <p class="side-note">The Low Line's two end panels each carry one additional detail: a diagonal sway brace, a standard end-panel wind-bracing member the fabricator specs at a fixed 7-ft stock length, running from the end bottom-chord node up to the <em>second</em> top-chord node &mdash; spanning two panels instead of one. That brace, the 6-ft top-chord segment it lands on, and the regular 3.5-ft salvage diagonal already framing that bay together form one triangle with three different side lengths (7 ft, 6 ft, 3.5 ft) &mdash; the only triangle in either truss option that is not equilateral or isosceles (see Challenge D4).</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix D &mdash; Steel Pricing</summary>
+  <div class="inner">
+    <table id="apxD">
+      <tr><th></th><th>Value</th></tr>
+      <tr><td>Structural steel angle, composite price</td><td>$0.55 per pound [S4]</td></tr>
+      <tr><td>Salvaged diagonal steel, marginal material cost</td><td>$0.00 per piece (already owned by the county; no purchase required)</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix E &mdash; Fabrication Takeoff</summary>
+  <div class="inner">
+    <table id="apxE">
+      <tr><th></th><th>The Warren Line (A)</th><th>The Low Line (B)</th></tr>
+      <tr><td>Bottom chord length</td><td>24 ft (3 &times; 8 ft)</td><td>24 ft (4 &times; 6 ft)</td></tr>
+      <tr><td>Top chord length</td><td>16 ft (2 &times; 8 ft)</td><td>18 ft (3 &times; 6 ft)</td></tr>
+      <tr><td>Total chord steel length</td><td>40 ft</td><td>42 ft</td></tr>
+      <tr><td>Diagonal web members, new steel</td><td>6 pieces &times; 8 ft = 48 ft</td><td>0 ft (all 8 interior diagonals are salvage)</td></tr>
+      <tr><td>Diagonal web members, salvage steel (no material cost)</td><td>0</td><td>8 pieces &times; 3.5 ft = 28 ft</td></tr>
+      <tr><td>Sway-brace members, new steel</td><td>n/a (not used in this design)</td><td>2 pieces &times; 7 ft = 14 ft</td></tr>
+      <tr><td>Total new-steel diagonal/brace length</td><td>48 ft</td><td>14 ft</td></tr>
+      <tr><td>Panel-point (gusset) connections</td><td>7</td><td>9</td></tr>
+      <tr><td>Chord steel weight</td><td>195.60 lb (40 ft &times; 4.89 lb/ft)</td><td>301.14 lb (42 ft &times; 7.17 lb/ft)</td></tr>
+      <tr><td>New diagonal/brace steel weight</td><td>154.08 lb (48 ft &times; 3.21 lb/ft)</td><td>44.94 lb (14 ft &times; 3.21 lb/ft)</td></tr>
+      <tr><td>Material cost (chord + new diagonal steel, Appendix D price)</td><td>$192.32</td><td>$190.34</td></tr>
+      <tr><td>Gusset-plate fabrication labor cost (Appendix F, MA1)</td><td>7 joints &times; 1.5 hr &times; $30.18/hr [S5]</td><td>9 joints &times; 1.5 hr &times; $30.18/hr [S5]</td></tr>
+      <tr><td><strong>Total fabricated cost</strong></td><td colspan="2" style="text-align:center">computed live &mdash; Working Notebook, Step 5</td></tr>
+      <tr><td><strong>Total fabricated cost per foot of span</strong></td><td colspan="2" style="text-align:center">computed live &mdash; Working Notebook, Step 5</td></tr>
+    </table>
+    <p class="side-note">Material cost between the two options is close &mdash; compare Option B's heavier chord steel against the diagonal steel it saves by reusing the county's salvage &mdash; while shop labor scales directly with each option's panel-point count (see Challenge D5). The last two rows aren't printed here on purpose: run your own numbers through the Working Notebook's Step 5 calculator to see them.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix F &mdash; Modeling Assumptions</summary>
+  <div class="inner">
+    <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+    <table id="apxF">
+      <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+      <tr><td>MA1</td><td>Shop labor hours to fabricate and weld one gusset-plate panel-point connection</td><td>1.5 hours per joint</td><td>No public per-connection timing study exists for small pedestrian-truss gusset fabrication (layout, drilling/punching, fitting, and welding one panel point); this is the case author's estimate from how the operation is actually performed in a small structural shop.</td><td>The answer is sensitive to this value &mdash; it is the only cost driver that scales directly with The Low Line's extra panel-point count, and it is flexed in Tier 2 probe 5.</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix G &mdash; Sources</summary>
+  <div class="inner">
+    <table id="apxG">
+      <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+      <tr><td>S1</td><td>Weight per linear foot, L2&times;2&times;1/4 structural steel angle</td><td>3.21 lb/ft</td><td><a href="https://www.engineersedge.com/angle_steel.htm" target="_blank" rel="noopener">Engineers Edge, "AISC Structural Steel Angle Sizes Table Chart A36"</a></td><td>2026-09-09</td><td>MEDIUM</td></tr>
+      <tr><td>S2</td><td>Weight per linear foot, L3&times;3&times;1/4 structural steel angle</td><td>4.89 lb/ft</td><td><a href="https://www.engineersedge.com/angle_steel.htm" target="_blank" rel="noopener">Engineers Edge, "AISC Structural Steel Angle Sizes Table Chart A36"</a></td><td>2026-09-09</td><td>MEDIUM</td></tr>
+      <tr><td>S3</td><td>Weight per linear foot, L3&times;3&times;3/8 structural steel angle</td><td>7.17 lb/ft</td><td><a href="https://www.engineersedge.com/angle_steel.htm" target="_blank" rel="noopener">Engineers Edge, "AISC Structural Steel Angle Sizes Table Chart A36"</a></td><td>2026-09-09</td><td>MEDIUM</td></tr>
+      <tr><td>S4</td><td>Structural steel angle/channel composite price</td><td>$0.55/lb</td><td><a href="https://www.steelfloai.com/blog/structural-steel-cost-per-ton-2026" target="_blank" rel="noopener">SteelFlo, "Structural Steel Price Per Ton (2026 Update)"</a></td><td>2026-09-09</td><td>MEDIUM</td></tr>
+      <tr><td>S5</td><td>Median wage, structural iron and steel workers, United States</td><td>$30.18/hr (derived)</td><td><a href="https://www.bls.gov/ooh/construction-and-extraction/structural-iron-and-steel-workers.htm" target="_blank" rel="noopener">U.S. Bureau of Labor Statistics, Occupational Outlook Handbook, "Structural Iron and Steel Workers"</a></td><td>2026-09-09</td><td>HIGH</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix H &mdash; Learn More</summary>
+  <div class="inner">
+    <p class="side-note">Curious about the real-world math and engineering behind this case? These resources go beyond what the challenges require.</p>
+    <ul class="howto-list">
+      <li><a href="https://www.teachengineering.org/lessons/cub_trusses_lesson01" target="_blank" rel="noopener">Triangles &amp; Trusses &mdash; TeachEngineering</a> &mdash; a hands-on lesson explaining why a triangle can't collapse the way a square or rectangle can, and why engineers break other shapes into triangles for structural support.</li>
+      <li><a href="https://www.mathsisfun.com/geometry/triangle-inequality-theorem.html" target="_blank" rel="noopener">Triangle Inequality Theorem &mdash; Math Is Fun</a> &mdash; the theorem this case's D2 turns on, stated plainly with worked examples.</li>
+      <li><a href="https://en.wikipedia.org/wiki/Warren_truss" target="_blank" rel="noopener">Warren Truss &mdash; Wikipedia</a> &mdash; background on the Warren truss's alternating diagonal web and its equilateral-triangle configuration.</li>
+      <li><a href="https://teachbooks.io/Structural_Design_Essentials/main/calculation_examples/steel/truss_beam.html" target="_blank" rel="noopener">Structural Design Essentials &mdash; Global Dimensioning of a Truss Beam</a> &mdash; an open engineering textbook chapter deriving chord force from bending moment and truss depth, the real relationship behind Appendix A's chord-size difference.</li>
+      <li><a href="https://www.engineersedge.com/angle_steel.htm" target="_blank" rel="noopener">AISC Structural Steel Angle Sizes Table &mdash; Engineers Edge</a> &mdash; the full weight/dimension reference table Appendix A's steel angle figures are drawn from.</li>
+    </ul>
+  </div>
+</details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix I &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-09. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+<div class="stepbox">
+  <h4>Step 1 &mdash; Truss Geometry Setup (D1)</h4>
+  <div class="goal">Read The Warren Line's repeating web triangle and The Low Line's repeating interior web triangle straight off Appendix B, and enter their three side lengths.</div>
+  <div class="fieldrow"><label for="s1_a1">Warren Line triangle, side 1 (ft)</label><input type="number" id="s1_a1" step="0.01"></div>
+  <div class="fieldrow"><label for="s1_a2">Warren Line triangle, side 2 (ft)</label><input type="number" id="s1_a2" step="0.01"></div>
+  <div class="fieldrow"><label for="s1_a3">Warren Line triangle, side 3 (ft)</label><input type="number" id="s1_a3" step="0.01"></div>
+  <div class="fieldrow"><label for="s1_b1">Low Line interior triangle, side 1 (ft)</label><input type="number" id="s1_b1" step="0.01"></div>
+  <div class="fieldrow"><label for="s1_b2">Low Line interior triangle, side 2 (ft)</label><input type="number" id="s1_b2" step="0.01"></div>
+  <div class="fieldrow"><label for="s1_b3">Low Line interior triangle, side 3 (ft)</label><input type="number" id="s1_b3" step="0.01"></div>
+  <button onclick="checkGeometry()">Check</button><span class="fb" id="fb1"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; Triangle Inequality Check (D2)</h4>
+  <div class="goal">Add the two salvaged pieces, then compare that sum to each option's panel length to see which truss the salvage steel can actually close.</div>
+  <div class="fieldrow"><label for="s2_piece">One salvaged piece length (ft) &mdash; Appendix C</label><input type="number" id="s2_piece" step="0.01"></div>
+  <div class="fieldrow"><label for="s2_sum">Sum of two salvaged pieces (ft)</label><input type="number" id="s2_sum" step="0.01"></div>
+  <div class="fieldrow"><label for="s2_panelA">Warren Line panel length (ft) &mdash; Appendix B</label><input type="number" id="s2_panelA" step="0.01"></div>
+  <div class="fieldrow"><label for="s2_panelB">Low Line panel length (ft) &mdash; Appendix B</label><input type="number" id="s2_panelB" step="0.01"></div>
+  <button onclick="checkInequality()">Check</button><span class="fb" id="fb2"></span>
+  <p class="side-note" id="inequalityOut"></p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 3 &mdash; The Warren Line's Triangles (D3)</h4>
+  <div class="goal">Using the Warren Line's three equal side lengths from Step 1, compute the interior angle at any one vertex with the Law of Cosines, then decide acute/obtuse/right.</div>
+  <div class="fieldrow"><label for="s3_angle">Your computed interior angle (&deg;)</label><input type="number" id="s3_angle" step="0.01"></div>
+  <div class="fieldrow"><label for="s3_class">Classification (type: acute, right, or obtuse)</label><input type="text" id="s3_class"></div>
+  <button onclick="checkWarrenTriangle()">Check</button><span class="fb" id="fb3"></span>
+</div>
+
+<div class="stepbox">
+  <h4>Step 4 &mdash; The Low Line's Triangles (D4)</h4>
+  <div class="goal">Classify The Low Line's repeating interior triangle (name the base and the two legs, find its largest angle) and its one non-repeating end triangle (7 ft, 6 ft, 3.5 ft &mdash; Appendix C) the same way.</div>
+  <div class="fieldrow"><label for="s4_base">Interior triangle base length (ft)</label><input type="number" id="s4_base" step="0.01"></div>
+  <div class="fieldrow"><label for="s4_leg">Interior triangle leg length (ft, either leg)</label><input type="number" id="s4_leg" step="0.01"></div>
+  <div class="fieldrow"><label for="s4_intangle">Interior triangle's largest angle (&deg;)</label><input type="number" id="s4_intangle" step="0.01"></div>
+  <div class="fieldrow"><label for="s4_endangle">End triangle's largest angle (&deg;)</label><input type="number" id="s4_endangle" step="0.01"></div>
+  <button onclick="checkLowLineTriangle()">Check</button><span class="fb" id="fb4"></span>
+  <p class="side-note" id="lowLineOut"></p>
+</div>
+
+<div class="stepbox">
+  <h4>Step 5 &mdash; Full Fabrication Takeoff (D5)</h4>
+  <div class="goal">Enter each option's chord steel weight, new-purchase diagonal/brace steel weight, material cost, and labor cost (Appendices A, D, E, F) &mdash; the calculator ties it together into total cost per foot of span and tells you the margin, live.</div>
+  <div class="fieldrow"><label for="s5_chordA">Chord steel weight, Option A (lb)</label><input type="number" id="s5_chordA" step="0.01"></div>
+  <div class="fieldrow"><label for="s5_chordB">Chord steel weight, Option B (lb)</label><input type="number" id="s5_chordB" step="0.01"></div>
+  <div class="fieldrow"><label for="s5_diagA">New diagonal/brace steel weight, Option A (lb)</label><input type="number" id="s5_diagA" step="0.01"></div>
+  <div class="fieldrow"><label for="s5_diagB">New diagonal/brace steel weight, Option B (lb)</label><input type="number" id="s5_diagB" step="0.01"></div>
+  <div class="fieldrow"><label for="s5_matA">Material cost, Option A ($)</label><input type="number" id="s5_matA" step="0.01"></div>
+  <div class="fieldrow"><label for="s5_matB">Material cost, Option B ($)</label><input type="number" id="s5_matB" step="0.01"></div>
+  <div class="fieldrow"><label for="s5_laborA">Gusset labor cost, Option A ($)</label><input type="number" id="s5_laborA" step="0.01"></div>
+  <div class="fieldrow"><label for="s5_laborB">Gusset labor cost, Option B ($)</label><input type="number" id="s5_laborB" step="0.01"></div>
+  <button onclick="checkTakeoff()">Check</button><span class="fb" id="fb5"></span>
+  <p class="side-note" id="takeoffOut"></p>
+</div>
+
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>Priya sends her fabrication takeoff to the shop for a buildability check. The fabrication sub calls back: he's looked at The Low Line's shop drawing and thinks two of its nine panel points &mdash; the two closest to the sway braces &mdash; can be combined into a single doubled field connection instead of two separate gusset welds. It's a real technique, and it would cut The Low Line's effective joint count by one.</p>
+      <p>&ldquo;You have sixty seconds. Does this change your recommendation to the county?&rdquo;</p>
+      <div class="card" id="twistCalcWrap" style="display:none;background:#2b323b;border-color:#444;color:#e8e3d5">
+        <h4 style="margin-top:0;color:#f2ede0">Recompute with the combined joint</h4>
+        <p class="side-note" style="color:#b9c3d6">Enter The Low Line's new joint count and re-run the same Appendix A/D/F figures through the calculator. Type your own numbers, then Check.</p>
+        <div class="fieldrow"><label for="s6_jointsB" style="color:#e8e3d5">The Low Line's new joint count</label><input type="number" id="s6_jointsB" step="1"></div>
+        <div class="fieldrow"><label for="s6_laborB" style="color:#e8e3d5">New gusset labor cost, Option B ($)</label><input type="number" id="s6_laborB" step="0.01"></div>
+        <button class="gold" onclick="checkTwist()">Check the recompute</button><span class="fb" id="fb6"></span>
+        <p class="side-note" id="twistOut" style="color:#b9c3d6"></p>
+      </div>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the combined-joint proposal &mdash; show the recompute calculator</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 &mdash; Engineers Edge, "AISC Structural Steel Angle Sizes Table Chart A36" &mdash; <a href="https://www.engineersedge.com/angle_steel.htm" target="_blank" rel="noopener">engineersedge.com/angle_steel.htm</a></li>
+      <li>S2 &mdash; Engineers Edge, "AISC Structural Steel Angle Sizes Table Chart A36" &mdash; <a href="https://www.engineersedge.com/angle_steel.htm" target="_blank" rel="noopener">engineersedge.com/angle_steel.htm</a></li>
+      <li>S3 &mdash; Engineers Edge, "AISC Structural Steel Angle Sizes Table Chart A36" &mdash; <a href="https://www.engineersedge.com/angle_steel.htm" target="_blank" rel="noopener">engineersedge.com/angle_steel.htm</a></li>
+      <li>S4 &mdash; SteelFlo, "Structural Steel Price Per Ton (2026 Update)" &mdash; <a href="https://www.steelfloai.com/blog/structural-steel-cost-per-ton-2026" target="_blank" rel="noopener">steelfloai.com</a></li>
+      <li>S5 &mdash; U.S. Bureau of Labor Statistics, Occupational Outlook Handbook, "Structural Iron and Steel Workers" &mdash; <a href="https://www.bls.gov/ooh/construction-and-extraction/structural-iron-and-steel-workers.htm" target="_blank" rel="noopener">bls.gov/ooh</a></li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Creek Span &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, ported line-for-line from
+   cases/creek-span/sensitivity_model.py's PARAMS/evaluate()/evaluate_twist()
+   (case.md sha256: 1ae0bced11851c6b36ef63259d8510bbb9d84dc03fbc49a5606749c7cdf29b49).
+   Every number below is the case's OWN stated design/sourced data (Appendix
+   A/B/D/E/F) -- never a pre-computed verdict. evaluate()/evaluate_twist()
+   derive the comparison live, exactly the way the Python model does.
+   ================================================================ */
+const PARAMS = {
+  span_ft: 24.0,
+  chordA_len_ft: 40.0,
+  chordB_len_ft: 42.0,
+  diagA_new_ft: 48.0,
+  diagB_new_ft: 14.0,
+  jointsA: 7,
+  jointsB: 9,
+  chordA_wpf: 4.89,
+  chordB_wpf: 7.17,
+  diag_wpf: 3.21,
+  price_usd_per_lb: 0.55,
+  gusset_hours_per_joint: 1.5,
+  wage_usd_per_hr: 30.18,
+  twist_jointsB: 8
+};
+const FLEX = ["gusset_hours_per_joint"]; // Appendix F, MA1 -- the only stated assumption
+
+function trussCost(p, chordLenFt, chordWpf, diagNewFt, joints){
+  const material = (chordLenFt * chordWpf + diagNewFt * p.diag_wpf) * p.price_usd_per_lb;
+  const labor = joints * p.gusset_hours_per_joint * p.wage_usd_per_hr;
+  return {material, labor, total: material + labor};
+}
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const A = trussCost(p, p.chordA_len_ft, p.chordA_wpf, p.diagA_new_ft, p.jointsA);
+  const B = trussCost(p, p.chordB_len_ft, p.chordB_wpf, p.diagB_new_ft, p.jointsB);
+  return {A: -(A.total / p.span_ft), B: -(B.total / p.span_ft), detailA: A, detailB: B};
+}
+
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const A = trussCost(p, p.chordA_len_ft, p.chordA_wpf, p.diagA_new_ft, p.jointsA);
+  const B = trussCost(p, p.chordB_len_ft, p.chordB_wpf, p.diagB_new_ft, p.twist_jointsB);
+  return {A: -(A.total / p.span_ft), B: -(B.total / p.span_ft), detailA: A, detailB: B};
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions. Every function
+   reads evaluate()/evaluate_twist() rather than re-deriving the
+   tally inline, so the notebook and sensitivity_model.py can never
+   silently drift apart.
+   ================================================================ */
+
+function checkGeometry(){
+  const a1 = parseFloat(val('s1_a1')), a2 = parseFloat(val('s1_a2')), a3 = parseFloat(val('s1_a3'));
+  const b1 = parseFloat(val('s1_b1')), b2 = parseFloat(val('s1_b2')), b3 = parseFloat(val('s1_b3'));
+  const warrenSides = [a1, a2, a3].sort((x,y)=>x-y);
+  const lowSides = [b1, b2, b3].sort((x,y)=>x-y);
+  const okWarren = near(warrenSides[0], 8, 0.05) && near(warrenSides[1], 8, 0.05) && near(warrenSides[2], 8, 0.05);
+  const okLow = near(lowSides[0], 3.5, 0.05) && near(lowSides[1], 3.5, 0.05) && near(lowSides[2], 6, 0.05);
+  fb('fb1', okWarren && okLow);
+}
+
+function checkInequality(){
+  const piece = parseFloat(val('s2_piece'));
+  const sum = parseFloat(val('s2_sum'));
+  const panelA = parseFloat(val('s2_panelA'));
+  const panelB = parseFloat(val('s2_panelB'));
+  const okPiece = near(piece, 3.5, 0.01);
+  const okSum = near(sum, piece * 2, 0.01);
+  const okPanels = near(panelA, 8, 0.01) && near(panelB, 6, 0.01);
+  const ok = okPiece && okSum && okPanels;
+  fb('fb2', ok);
+  const out = document.getElementById('inequalityOut');
+  if(ok){
+    const closesA = sum > panelA;
+    const closesB = sum > panelB;
+    out.textContent = 'Your numbers check out. ' + sum.toFixed(1) + ' ft ' + (closesA ? '>' : '≤') + ' ' + panelA.toFixed(1) + ' ft, so the salvage ' + (closesA ? 'DOES' : 'does NOT') + ' close The Warren Line\'s panel. ' + sum.toFixed(1) + ' ft ' + (closesB ? '>' : '≤') + ' ' + panelB.toFixed(1) + ' ft, so the salvage ' + (closesB ? 'DOES' : 'does NOT') + ' close The Low Line\'s panel.';
+  } else {
+    out.textContent = 'Not matching yet -- recheck the salvage piece length and both panel lengths against Appendix B and C.';
+  }
+}
+
+function checkWarrenTriangle(){
+  // Law of Cosines on an equilateral triangle: every side equal means every angle equal, 180/3 = 60.
+  const a = 8, b = 8, c = 8;
+  const trueAngle = Math.acos((a*a + b*b - c*c) / (2*a*b)) * 180 / Math.PI;
+  const angle = parseFloat(val('s3_angle'));
+  const cls = (document.getElementById('s3_class').value || '').trim().toLowerCase();
+  const ok = near(angle, trueAngle, 0.5) && cls === 'acute';
+  fb('fb3', ok);
+}
+
+function checkLowLineTriangle(){
+  const base = parseFloat(val('s4_base'));
+  const leg = parseFloat(val('s4_leg'));
+  const intAngle = parseFloat(val('s4_intangle'));
+  const endAngle = parseFloat(val('s4_endangle'));
+  // Interior triangle: legs 3.5, 3.5, base 6 -- largest angle is opposite the base.
+  const trueIntAngle = Math.acos((leg*leg + leg*leg - base*base) / (2*leg*leg)) * 180 / Math.PI;
+  // End triangle: sides 7, 6, 3.5 -- largest angle is opposite the longest side (7).
+  const s = [7, 6, 3.5];
+  const trueEndAngle = Math.acos((s[1]*s[1] + s[2]*s[2] - s[0]*s[0]) / (2*s[1]*s[2])) * 180 / Math.PI;
+  const okBase = near(base, 6, 0.05);
+  const okLeg = near(leg, 3.5, 0.05);
+  const okInt = near(intAngle, trueIntAngle, 0.5);
+  const okEnd = near(endAngle, trueEndAngle, 0.5);
+  const ok = okBase && okLeg && okInt && okEnd;
+  fb('fb4', ok);
+  const out = document.getElementById('lowLineOut');
+  if(ok){
+    const intClass = intAngle > 90 ? 'obtuse' : (intAngle < 90 ? 'acute' : 'right');
+    const endClass = endAngle > 90 ? 'obtuse' : (endAngle < 90 ? 'acute' : 'right');
+    out.textContent = 'Your numbers check out. The interior triangle (isosceles, legs ' + leg.toFixed(1) + ' ft, base ' + base.toFixed(1) + ' ft) is ' + intClass + '. The end triangle (scalene, 7 / 6 / 3.5 ft) is ' + endClass + '.';
+  } else {
+    out.textContent = 'Not matching yet -- recheck the base/leg lengths against Appendix B, and the end triangle\'s side lengths against Appendix C.';
+  }
+}
+
+function checkTakeoff(){
+  const chordA = parseFloat(val('s5_chordA')), chordB = parseFloat(val('s5_chordB'));
+  const diagA = parseFloat(val('s5_diagA')), diagB = parseFloat(val('s5_diagB'));
+  const matA = parseFloat(val('s5_matA')), matB = parseFloat(val('s5_matB'));
+  const laborA = parseFloat(val('s5_laborA')), laborB = parseFloat(val('s5_laborB'));
+  const ev = evaluate({});
+  const okChordA = near(chordA, PARAMS.chordA_len_ft * PARAMS.chordA_wpf, 0.5);
+  const okChordB = near(chordB, PARAMS.chordB_len_ft * PARAMS.chordB_wpf, 0.5);
+  const okDiagA = near(diagA, PARAMS.diagA_new_ft * PARAMS.diag_wpf, 0.5);
+  const okDiagB = near(diagB, PARAMS.diagB_new_ft * PARAMS.diag_wpf, 0.5);
+  const okMatA = near(matA, ev.detailA.material, 1);
+  const okMatB = near(matB, ev.detailB.material, 1);
+  const okLaborA = near(laborA, ev.detailA.labor, 1);
+  const okLaborB = near(laborB, ev.detailB.labor, 1);
+  const ok = okChordA && okChordB && okDiagA && okDiagB && okMatA && okMatB && okLaborA && okLaborB;
+  fb('fb5', ok);
+  const out = document.getElementById('takeoffOut');
+  if(ok){
+    const totalA = matA + laborA, totalB = matB + laborB;
+    const perFtA = totalA / PARAMS.span_ft, perFtB = totalB / PARAMS.span_ft;
+    const lo = Math.min(perFtA, perFtB), hi = Math.max(perFtA, perFtB);
+    const winner = perFtA < perFtB ? 'A (The Warren Line)' : 'B (The Low Line)';
+    const marginPct = 100 * (hi - lo) / hi;
+    out.textContent = 'Your numbers check out. Option ' + winner + ' has the lower total fabricated cost per foot of span (margin: ' + marginPct.toFixed(2) + '% relative to the higher figure). Try Appendix F\'s MA1 (gusset hours/joint) at different values -- does the winner ever flip?';
+  } else {
+    out.textContent = 'Not matching yet -- recheck your chord/diagonal weights (Appendix A), material cost (Appendix D), and labor cost (Appendix F) for each option.';
+  }
+}
+
+function checkTwist(){
+  const jointsB = parseFloat(val('s6_jointsB'));
+  const laborB = parseFloat(val('s6_laborB'));
+  const tw = evaluate_twist({});
+  const okJoints = near(jointsB, PARAMS.twist_jointsB, 0.01);
+  const okLabor = near(laborB, tw.detailB.labor, 1);
+  const ok = okJoints && okLabor;
+  fb('fb6', ok);
+  const out = document.getElementById('twistOut');
+  if(ok){
+    const base = evaluate({});
+    const perFtA = -base.A, perFtB_before = -base.B;
+    const perFtB_after = -tw.B;
+    const marginBefore = 100 * (Math.max(perFtA, perFtB_before) - Math.min(perFtA, perFtB_before)) / Math.max(perFtA, perFtB_before);
+    const marginAfter = 100 * (Math.max(perFtA, perFtB_after) - Math.min(perFtA, perFtB_after)) / Math.max(perFtA, perFtB_after);
+    const winnerAfter = perFtA < perFtB_after ? 'A' : 'B';
+    out.textContent = 'Your recompute checks out. With the combined joint, Option ' + winnerAfter + ' is still cheaper per foot of span, but the margin moved from ' + marginBefore.toFixed(2) + '% to ' + marginAfter.toFixed(2) + '%. What just broke in your model -- were you wrong, or just missing information?';
+  } else {
+    out.textContent = 'Not matching yet -- recheck the new joint count and recompute the gusset labor cost with Appendix F\'s hours/joint and wage.';
+  }
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "creek-span";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "A dimensioned elevation sketch of each truss option showing every panel point, chord segment, and web triangle, with each triangle's three side lengths labeled"],
+  ["D2", "Apply the Triangle Inequality Theorem to determine whether two salvaged 3.5-ft members can close the web triangle required by each option's panel length; show the inequality check for each"],
+  ["D3", "Classify every one of The Warren Line's web triangles by side length and by angle, using the actual side lengths to explain why they must be acute"],
+  ["D4", "Classify The Low Line's repeating interior web triangle (naming its base and legs) and its one non-repeating end triangle by side length and angle"],
+  ["D5", "A full fabrication takeoff: chord/diagonal steel weight, gusset joint count, total fabricated cost, and cost per foot of span for each option; state the winner and margin"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every
+   url https:// to an allowlisted domain). All 10 links below were
+   fetched and confirmed live 2026-09-09 (this session); "Triangle
+   Inequality Theorem" reuses a link already verified for a prior
+   case per MCS-21's "reuse a fetched-and-confirmed URL" allowance.
+   ================================================================ */
+const GLOSSARY = {
+  "Triangle Inequality Theorem": {def: "Any side of a triangle must be shorter than the other two sides added together.",
+    url: "https://www.mathsisfun.com/geometry/triangle-inequality-theorem.html"},
+  "Triangle": {def: "A polygon with three sides and three angles -- the only shape whose form is fixed once its side lengths are set.",
+    url: "https://www.mathsisfun.com/triangle.html"},
+  "Acute Triangle": {def: "A triangle that has all angles less than 90 degrees.",
+    url: "https://www.mathsisfun.com/definitions/acute-triangle.html"},
+  "Obtuse Triangle": {def: "A triangle with one angle greater than 90 degrees.",
+    url: "https://www.mathsisfun.com/definitions/obtuse-triangle.html"},
+  "Equilateral Triangle": {def: "A triangle with all three sides of equal length -- and all three angles equal to 60 degrees.",
+    url: "https://www.mathsisfun.com/definitions/equilateral-triangle.html"},
+  "Scalene Triangle": {def: "A triangle with all sides of different lengths (and all angles different too).",
+    url: "https://www.mathsisfun.com/definitions/scalene-triangle.html"},
+  "Isosceles Triangle": {def: "A triangle with two equal sides -- the angles opposite those two sides are also equal.",
+    url: "https://www.mathsisfun.com/definitions/isosceles-triangle.html"},
+  "Leg": {def: "In an isosceles triangle, one of the two equal-length sides (the third side is called the base).",
+    url: "https://www.cuemath.com/geometry/isosceles-triangles/"},
+  "Vertex": {def: "A point where two or more line segments or edges meet -- a corner.",
+    url: "https://www.mathsisfun.com/definitions/vertex.html"},
+  "Angle": {def: "A measure of the amount of turn between two rays that share a starting point.",
+    url: "https://www.mathsisfun.com/angles.html"}
+};
+const HOWTO = [
+  ["How to multiply decimal numbers", "Angle"],
+  ["How to divide decimal numbers", "Triangle"],
+  ["How to find the percent of a number", "Triangle Inequality Theorem"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's
+   actually used. See templates/INTERACTIVE_HTML_CONTRACT.md §4.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  /* P7 fix: "angle" collides with the structural-material term "steel angle"
+     (and its shorthand "L2x2x1/4 angle"). Those belong to STORY_GLOSSARY, not
+     this math GLOSSARY -- skip a math-"Angle" match when it's really the
+     material term, so hovering "steel angle" never surfaces the vertex/turn
+     definition. (autoLinkStoryGlossaryTerms also now runs first and claims
+     "Steel Angle" as a .sterm span before this ever sees the text, so this
+     is a belt-and-suspenders check for shorthand forms without the word
+     "steel" immediately before "angle".) */
+  const isStructuralAngle = (text, idx) => {
+    const before = text.slice(Math.max(0, idx - 40), idx);
+    return /\b(steel|structural)\s*$/i.test(before) || /L\d+[×x]\d+[×x]\d+\/\d+\s*$/i.test(before);
+  };
+
+  const skip = 'script, style, svg, a, .gterm, .sterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        if(key === 'Angle' && isStructuralAngle(text, m.index)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — a SECOND glossary layer for this case's real
+   bridge/truss vocabulary, kept deliberately separate from the math
+   GLOSSARY above (T1-19 checks that one). Sources verified for this
+   case's own use, per MCS-21's "reuse a fetched-and-confirmed URL"
+   allowance and the task's own already-confirmed set.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Gusset Plate": {desc: "A steel plate used to connect truss or brace members together at a joint, transferring load between them.",
+    link: "https://en.wikipedia.org/wiki/Gusset_plate"},
+  "Chord": {desc: "The top or bottom horizontal member of a truss -- the top chord is typically in compression, the bottom chord in tension.",
+    link: "https://en.wikipedia.org/wiki/Truss"},
+  "Panel Point": {desc: "A joint where a truss's members meet, traditionally called a node.",
+    link: "https://en.wikipedia.org/wiki/Truss"},
+  "Pony Truss": {desc: "A through truss with no overhead bracing connecting the tops of its two truss lines, since the load it carries doesn't need the extra height.",
+    link: "https://garrettsbridges.com/design/pony-truss/"},
+  "Steel Angle": {desc: "An L-shaped structural steel bar (also called angle iron) -- not a math angle. It's a real piece of material, sized by the length of its two legs and its thickness, used here as truss diagonals and chords.",
+    link: "https://www.engineersedge.com/angle_steel.htm"},
+  "L2×2×1/4": {desc: "Steel-angle size shorthand: two legs 2 inches long, 1/4 inch thick. The AISC sizing table in Appendix A lists the weight per foot for this and other standard angle sizes.",
+    link: "https://www.engineersedge.com/angle_steel.htm"},
+  "AISC": {desc: "American Institute of Steel Construction -- the industry group that publishes the standard shape and sizing tables (like the angle-size chart cited in Appendix A) U.S. structural engineers design from.",
+    link: "https://www.aisc.org/"},
+  "A36": {desc: "ASTM A36 -- the most common grade of structural steel in the U.S., named for the ASTM specification that sets its strength and composition. The salvaged angle in this case is assumed to be A36.",
+    link: "https://en.wikipedia.org/wiki/A36_steel"},
+  "P.E.": {desc: "Professional Engineer -- a state-licensed engineer legally allowed to \"seal\" (approve) engineering designs, taking personal responsibility for their safety.",
+    link: "https://www.nspe.org/resources/licensure/what-pe"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  /* Lookaround (not \b) because a few terms end in punctuation (e.g. "P.E.") --
+     \b requires a word/non-word transition and silently fails to match when
+     both the last matched char and the following char are non-word. */
+  const master = new RegExp('(?<!\\w)(' + terms.map(t => esc(t) + 's?').join('|') + ')(?!\\w)', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, a, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+/* Run the story-vocabulary linker BEFORE the math linker (deferred call,
+   P7 fix): once "steel angle" is wrapped as a .sterm span, the math
+   linker's skip list (which already excludes .sterm) never sees that
+   text, so it can't attach the math "Angle" definition to it. */
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  const apply = document.getElementById('applyTwist').checked;
+  const wrap = document.getElementById('twistCalcWrap');
+  if(wrap) wrap.style.display = apply ? 'block' : 'none';
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>
