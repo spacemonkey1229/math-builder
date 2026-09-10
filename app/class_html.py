@@ -5,6 +5,7 @@ student_portal_html.py already are -- one render function, two thin routing
 shims on top.
 """
 import html as _html
+import re as _re
 
 
 def render_class_case_html(case, err=None):
@@ -335,17 +336,35 @@ def render_class_review_html(view, case_id=None):
                 + '</section>'
             )
 
-        # A week gets its own heading only when it has one (an unlabeled
-        # single group -- the pre-week-grouping shape, or a case_id-filtered
-        # drill-down page -- renders its cases with no extra wrapper at all,
-        # identical to how this page looked before weeks existed).
+        # A week gets its own heading (and anchor id) only when it has one
+        # (an unlabeled single group -- the pre-week-grouping shape, or a
+        # case_id-filtered drill-down page -- renders its cases with no
+        # extra wrapper at all, identical to how this page looked before
+        # weeks existed).
         body = "".join(
-            (f'<div style="font-size:19px;font-weight:700;margin:24px 0 12px;padding-top:4px;'
-             f'border-top:2px solid var(--accent)" role="heading" aria-level="2">{_html.escape(w["label"])}</div>'
+            (f'<div id="week-{i}" style="font-size:19px;font-weight:700;margin:24px 0 12px;padding-top:4px;'
+             f'scroll-margin-top:14px;border-top:2px solid var(--accent)" role="heading" aria-level="2">'
+             f'{_html.escape(w["label"])}</div>'
              if w.get('label') else '')
             + "".join(_case_section(cid) for cid in w['cases'])
-            for w in weeks
+            for i, w in enumerate(weeks)
         )
+
+    # A jump-nav bar across the named weeks -- only worth showing once
+    # there's more than one to jump between; a single week (or none) has
+    # nothing for it to usefully do.
+    labeled = [(i, w['label']) for i, w in enumerate(weeks) if w.get('label')]
+    week_nav = (
+        '<nav style="position:sticky;top:0;z-index:5;margin:0 -16px 14px;padding:10px 16px;'
+        'background:#FAF8F4;border-bottom:1px solid var(--rule);display:flex;gap:14px;flex-wrap:wrap;'
+        'font-size:12.5px">'
+        + "".join(
+            f'<a href="#week-{i}" style="color:var(--accent);font-weight:600;text-decoration:none">{_html.escape(label)}</a>'
+            for i, label in labeled
+        )
+        + '</nav>'
+        if len(labeled) > 1 else ''
+    )
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>Class submissions — Math Builder</title>
 <style>
@@ -370,6 +389,7 @@ summary::-webkit-details-marker{{color:var(--accent)}}
 <h1>Class submissions{' — ' + _html.escape(case_titles.get(case_id, case_id)) if case_id else ''}</h1>
 {debrief_banner}
 {cases_banner if not case_id else ''}
+{week_nav if not case_id else ''}
 {body}
 <script>
 document.querySelectorAll('[data-review]').forEach(function(b) {{
