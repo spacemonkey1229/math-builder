@@ -199,6 +199,7 @@ def render_class_review_html(view, case_id=None):
             + (f'<p class="det" style="margin:6px 0">{_html.escape(b["protagonist"])} &middot; {_html.escape(b["primary_metric"] or "")}</p>'
                if b.get('protagonist') or b.get('primary_metric') else '')
             + (f'<ul style="margin:8px 0;padding-left:18px">{opt_lines}</ul>' if opt_lines else '')
+            + (f'<div class="case-figs">{"".join(b["figures"])}</div>' if b.get('figures') else '')
             + (f'<p style="margin:8px 0"><strong>Option A\'s case:</strong> {_html.escape(b["argument_a"])}</p>' if b.get('argument_a') else '')
             + (f'<p style="margin:8px 0"><strong>Option B\'s case:</strong> {_html.escape(b["argument_b"])}</p>' if b.get('argument_b') else '')
             + (f'<p style="margin:8px 0" class="det">Real margin: {b["margin_pct"]}%</p>' if b.get('margin_pct') is not None else '')
@@ -283,6 +284,13 @@ body{{font-family:-apple-system,sans-serif;max-width:720px;margin:24px auto;padd
 input,textarea{{padding:6px 8px;border:1px solid #DED8CC;border-radius:6px;font-family:inherit}}
 .btn.ghost{{background:none;border:1px solid #22406B;color:#22406B;padding:5px 10px;border-radius:6px;cursor:pointer}}
 summary::-webkit-details-marker{{color:var(--accent)}}
+.case-figs{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:10px 0}}
+.case-figs figure{{margin:0;padding:12px;border:1px solid var(--rule);border-radius:8px;background:#fff;text-align:center}}
+.case-figs figure svg,.case-figs figure img{{max-width:100%;height:auto;display:block;margin:0 auto}}
+.case-figs figcaption{{font-size:11px;color:var(--muted);margin-top:8px;text-align:left;line-height:1.4}}
+.case-figs .box-compare{{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;text-align:center}}
+.case-figs .box-compare .label{{font-weight:600;font-size:12.5px;margin-top:4px}}
+.case-figs .box-compare .sub{{font-size:11px;color:var(--muted)}}
 </style></head><body>
 <h1>Class submissions{' — ' + _html.escape(case_titles.get(case_id, case_id)) if case_id else ''}</h1>
 {debrief_banner}

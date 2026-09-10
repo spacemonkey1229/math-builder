@@ -1226,7 +1226,30 @@ def get_case_facilitator_brief(case_id):
         "argument_b": balance.get('argument_b'),
         "margin_pct": balance.get('margin_pct'),
         "deliverables": deliverables,
+        "figures": _extract_case_figures(case_id, case.get('title', case_id)),
     }
+
+
+_FIGURE_RE = re.compile(r'<figure\b.*?</figure>', re.DOTALL | re.IGNORECASE)
+
+
+def _extract_case_figures(case_id, title):
+    """Pulls the real <figure>...</figure> diagrams/photos straight out of
+    the case's own published Interactive.html -- the same enrichment pass
+    that added story glossaries to the corpus also added labeled SVG
+    diagrams and sourced photos inside <figure>/<figcaption> blocks, one per
+    visual concept. Returning the raw markup (not a description of it) is
+    what actually answers "we're also visual learners": the guide sees the
+    identical diagram a student sees, not a text summary of one. Capped at
+    6 so one very visual case can't blow out the whole review page; trusted
+    project content, never user-supplied, so no escaping is needed."""
+    filename, exists = _case_interactive_info(case_id, title)
+    if not exists:
+        return []
+    path = os.path.join(_CASES_DIR, case_id, 'published', filename)
+    with open(path, encoding='utf-8') as f:
+        html_src = f.read()
+    return _FIGURE_RE.findall(html_src)[:6]
 
 
 def build_class_review_view(store, case_id_filter=None):
