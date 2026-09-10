@@ -1216,6 +1216,7 @@ def get_case_facilitator_brief(case_id):
         {"id": d.get("id"), "text": d.get("text")}
         for d in (case.get('deliverables') or []) if d.get("text")
     ]
+    solution = _extract_facilitator_solution(case_id)
     return {
         "id": case_id,
         "title": case.get('title', case_id),
@@ -1227,7 +1228,120 @@ def get_case_facilitator_brief(case_id):
         "margin_pct": balance.get('margin_pct'),
         "deliverables": deliverables,
         "figures": _extract_case_figures(case_id, case.get('title', case_id)),
+        "solution_steps": solution["steps"] if solution else [],
+        "solution_tables": solution["tables"] if solution else [],
     }
+
+
+# A docx text run is <w:t> (optionally with attributes, e.g. xml:space=
+# "preserve") -- NOT bare "w:t[^>]*>", which also matches <w:tcPr>, <w:tbl>,
+# <w:tc> etc. since they all start with the substring "w:t". Requiring a
+# space or ">" right after "w:t" is what keeps this to real text runs.
+_DOCX_RUN_TEXT_RE = re.compile(r'<w:t(?:\s[^>]*)?>(.*?)</w:t>', re.DOTALL)
+_DOCX_TABLE_RE = re.compile(r'<w:tbl>.*?</w:tbl>', re.DOTALL)
+_DOCX_ROW_RE = re.compile(r'<w:tr\b.*?</w:tr>', re.DOTALL)
+_DOCX_CELL_RE = re.compile(r'<w:tc\b.*?</w:tc>', re.DOTALL)
+_FACILITATOR_ONLY_RE = re.compile(r'^facilitator[- ]only[:.]?\s*', re.IGNORECASE)
+
+
+def _docx_xml_text(xml_fragment):
+    return _html_unescape(''.join(_DOCX_RUN_TEXT_RE.findall(xml_fragment))).strip()
+
+
+def _html_unescape(s):
+    import html as _h
+    return _h.unescape(s)
+
+
+def _extract_facilitator_solution(case_id):
+    """The actual worked solution, straight out of the case's own
+    Facilitator Guide docx -- not a summary of it. Two things, specifically:
+      steps  -- every paragraph the guide itself labels "Facilitator-only"
+                (the real formulas/arithmetic: e.g. "Pitch angle = arctan(
+                6/12) = 26.57 deg..."), in document order.
+      tables -- every table in the document (the Socratic timing plan, and
+                any worked-numbers tables like per-moment gain-before-
+                feedback figures), as plain row/cell text.
+    This is exactly the answer-key content is_student_published_file() (see
+    its docstring) exists to keep away from the public /cases/.../published/
+    route -- so this function must only ever be called from the passcode-
+    gated /class-review page, same boundary as get_case_facilitator_brief's
+    balance/argument fields. Returns None if there's no Facilitator Guide
+    on this case's manifest, or the docx can't be read."""
+    manifest_path = os.path.join(_CASES_DIR, case_id, 'published', 'MANIFEST.json')
+    if not os.path.isfile(manifest_path):
+        return None
+    try:
+        with open(manifest_path, encoding='utf-8') as f:
+            manifest = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+    entry = next(
+        (e for e in manifest.get('files', [])
+         if e.get('audience') == 'facilitator' and 'Facilitator Guide' in (e.get('name') or '')),
+        None,
+    )
+    if not entry:
+        return None
+    docx_path = os.path.join(_CASES_DIR, case_id, 'published', entry['name'])
+    if not os.path.isfile(docx_path):
+        return None
+    import zipfile
+    try:
+        with zipfile.ZipFile(docx_path) as z:
+            xml = z.read('word/document.xml').decode('utf-8')
+    except (zipfile.BadZipFile, KeyError, OSError):
+        return None
+    para_xmls = re.findall(r'<w:p\b.*?</w:p>', xml, re.DOTALL)
+    texts = [_docx_xml_text(p) for p in para_xmls]
+    is_heading = [bool(re.search(r'w:pStyle w:val="Heading', p)) for p in para_xmls]
+
+    def _is_note_start(t):
+        low = t.lower()
+        return low.startswith('facilitator-only') or low.startswith('facilitator only')
+
+    steps = []
+    i = 0
+    while i < len(texts):
+        text = texts[i]
+        if not _is_note_start(text):
+            i += 1
+            continue
+        # A note runs across as many consecutive paragraphs as the docx
+        # actually used for it (some notes span 5+ short <w:p> lines with no
+        # blank line between them) -- stop at a blank paragraph, a real
+        # section heading (Word style "HeadingN" -- e.g. the next section's
+        # "Twist" header), or the next note's own "Facilitator-only" prefix,
+        # so a note like field-watch's multi-line algebra derivation isn't
+        # truncated to its first line, but also doesn't run past its own end
+        # into whatever section comes next.
+        chunk = [text]
+        j = i + 1
+        while j < len(texts) and texts[j].strip() and not is_heading[j] and not _is_note_start(texts[j]):
+            chunk.append(texts[j])
+            j += 1
+        combined = ' '.join(chunk)
+        lower = combined.lower()
+        # Two things share this prefix and aren't a solution step: the
+        # document's own top-of-file warning banner ("FACILITATOR-ONLY --
+        # contains the balance... Do not share/distribute...") and bare
+        # section headings like "Facilitator-Only Numbers" (no content of
+        # their own, just introduce the table that follows).
+        if 'do not share' not in lower and 'do not distribute' not in lower:
+            stripped = _FACILITATOR_ONLY_RE.sub('', combined).strip()
+            if len(stripped) >= 15:
+                steps.append(stripped)
+        i = j
+    tables = []
+    for tbl_xml in _DOCX_TABLE_RE.findall(xml)[:4]:
+        rows = []
+        for row_xml in _DOCX_ROW_RE.findall(tbl_xml):
+            cells = [_docx_xml_text(c) for c in _DOCX_CELL_RE.findall(row_xml)]
+            if any(cells):
+                rows.append(cells)
+        if rows:
+            tables.append(rows)
+    return {"steps": steps, "tables": tables}
 
 
 _FIGURE_RE = re.compile(r'<figure\b.*?</figure>', re.DOTALL | re.IGNORECASE)

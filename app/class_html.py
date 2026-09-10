@@ -175,6 +175,14 @@ def render_class_review_html(view, case_id=None):
         '</form>'
     )
 
+    def _table_html(rows):
+        head, *body = rows
+        thead = "".join(f'<th>{_html.escape(c)}</th>' for c in head)
+        tbody = "".join(
+            '<tr>' + "".join(f'<td>{_html.escape(c)}</td>' for c in row) + '</tr>' for row in body
+        )
+        return f'<table><thead><tr>{thead}</tr></thead><tbody>{tbody}</tbody></table>'
+
     def _brief_html(cid):
         b = case_briefs.get(cid)
         if not b:
@@ -188,6 +196,36 @@ def render_class_review_html(view, case_id=None):
             f'<li><strong>{_html.escape(d["id"] or "")}</strong> {_html.escape(d["text"])}</li>' for d in deliverables
         )
         open_path = case_open_paths.get(cid)
+
+        # Split the docx's tables into the Socratic pacing plan (its own
+        # first row is literally "Time"/"Move") vs. any real worked-numbers
+        # tables (per-moment calculations etc.) -- the latter are shown
+        # under Step-by-step, the former stays a separate pacing aid so the
+        # two don't read as the same kind of thing.
+        solution_tables = b.get('solution_tables') or []
+        pacing_table = next((t for t in solution_tables if t[0][:2] == ['Time', 'Move']), None)
+        data_tables = [t for t in solution_tables if t is not pacing_table]
+        steps = b.get('solution_steps') or []
+
+        solution_block = ''
+        if steps or data_tables:
+            step_items = "".join(f'<li>{_html.escape(s)}</li>' for s in steps)
+            tables_html = "".join(_table_html(t) for t in data_tables)
+            solution_block = (
+                '<div style="margin:14px 0;padding:12px;border:1px solid var(--rule);border-radius:8px;background:#FBFAF6">'
+                '<p style="margin:0 0 8px;font-weight:700;color:var(--accent)">&#128209; How to solve it &mdash; step by step</p>'
+                + (f'<ol style="margin:0 0 8px;padding-left:18px">{step_items}</ol>' if step_items else '')
+                + (f'<div class="case-solution">{tables_html}</div>' if tables_html else '')
+                + '</div>'
+            )
+
+        pacing_block = (
+            '<details style="margin:8px 0"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">'
+            '&#128337; Suggested discussion pacing</summary>'
+            f'<div class="case-solution" style="margin-top:6px">{_table_html(pacing_table)}</div></details>'
+            if pacing_table else ''
+        )
+
         return (
             '<details class="brief" style="margin:10px 0 16px;border:1px solid var(--rule);border-radius:8px;background:#fff" open>'
             '<summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13.5px;color:var(--accent)">'
@@ -200,11 +238,13 @@ def render_class_review_html(view, case_id=None):
                if b.get('protagonist') or b.get('primary_metric') else '')
             + (f'<ul style="margin:8px 0;padding-left:18px">{opt_lines}</ul>' if opt_lines else '')
             + (f'<div class="case-figs">{"".join(b["figures"])}</div>' if b.get('figures') else '')
+            + solution_block
             + (f'<p style="margin:8px 0"><strong>Option A\'s case:</strong> {_html.escape(b["argument_a"])}</p>' if b.get('argument_a') else '')
             + (f'<p style="margin:8px 0"><strong>Option B\'s case:</strong> {_html.escape(b["argument_b"])}</p>' if b.get('argument_b') else '')
             + (f'<p style="margin:8px 0" class="det">Real margin: {b["margin_pct"]}%</p>' if b.get('margin_pct') is not None else '')
             + (f'<p style="margin:10px 0 4px"><strong>Deliverables to walk through:</strong></p><ol style="margin:0;padding-left:18px">{deliv_lines}</ol>'
                if deliv_lines else '')
+            + pacing_block
             + '</div></details>'
         )
 
@@ -291,6 +331,10 @@ summary::-webkit-details-marker{{color:var(--accent)}}
 .case-figs .box-compare{{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;text-align:center}}
 .case-figs .box-compare .label{{font-weight:600;font-size:12.5px;margin-top:4px}}
 .case-figs .box-compare .sub{{font-size:11px;color:var(--muted)}}
+.case-solution{{overflow-x:auto}}
+.case-solution table{{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px;font-variant-numeric:tabular-nums}}
+.case-solution th,.case-solution td{{border:1px solid var(--rule);padding:5px 8px;text-align:left;white-space:nowrap}}
+.case-solution th{{background:#F0EDE3;font-weight:600}}
 </style></head><body>
 <h1>Class submissions{' — ' + _html.escape(case_titles.get(case_id, case_id)) if case_id else ''}</h1>
 {debrief_banner}
