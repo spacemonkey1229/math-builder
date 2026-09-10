@@ -1164,37 +1164,73 @@ _WEEKLY_CASES_KEY = "weekly_cases"
 
 
 def do_get_weekly_cases(store):
-    """Ordered list of case_ids the guide has marked as 'this week's set'.
-    A case on this list shows up on /class-review with its own debrief
-    section whether or not any student has submitted to it yet -- a
-    zero-submission case still needs to be walked through live, and before
-    this it was simply invisible on the page (indistinguishable from
-    broken)."""
+    """The guide's case list, as an ordered list of {"label": "Week 1",
+    "cases": [case_id, ...]} groups. A case in here shows up on
+    /class-review with its own debrief section whether or not any student
+    has submitted to it yet -- a zero-submission case still needs to be
+    walked through live, and before this it was simply invisible on the
+    page (indistinguishable from broken).
+
+    Back-compat: the setting used to be a bare JSON list of case_ids (no
+    week grouping) -- that shape is read back as a single unlabeled group
+    rather than discarded, so a guide's existing list survives this
+    feature's addition instead of vanishing until they re-enter it."""
     raw = store.get_setting(_WEEKLY_CASES_KEY)
-    return json.loads(raw) if raw else []
+    if not raw:
+        return []
+    data = json.loads(raw)
+    if isinstance(data, list):
+        return [{"label": None, "cases": data}] if data else []
+    return data.get("weeks", [])
 
 
 def do_set_weekly_cases(store, raw_text):
-    """raw_text is freeform, comma- or newline-separated -- a guide can type
-    either the case_id (the slug from its /class/<id> link) or the plain
-    title; both resolve against cases_index.json. Raises on the first token
-    that matches neither, naming it, rather than silently dropping it."""
-    tokens = [t.strip() for t in re.split(r'[,\n]+', raw_text or '') if t.strip()]
+    """raw_text is one or more week blocks separated by a blank line, each
+    block's first line the week's label (e.g. "Week 1") and every line
+    after it a case -- either the case_id (the slug from its /class/<id>
+    link) or the plain title, both resolved against cases_index.json:
+        Week 1
+        apron-order
+        field-watch
+
+        Week 2
+        feedback
+    A single block with no blank-line separators is treated as one
+    unlabeled group (so a guide who only ever used the flat list isn't
+    forced to add a label). Raises on the first case token that resolves to
+    nothing, naming it and which week it was under, rather than silently
+    dropping it."""
+    blocks = [b for b in re.split(r'\n\s*\n', (raw_text or '').strip()) if b.strip()]
     idx_path = os.path.join(os.path.dirname(_CASES_DIR), 'readmodel', 'cases_index.json')
     with open(idx_path, encoding='utf-8') as f:
         idx = json.load(f)
     live = [c for c in idx['cases'] if c['status'] in ('published', 'legacy')]
     by_id = {c['id'] for c in live}
     by_title_slug = {slugify(c['title']): c['id'] for c in live}
-    case_ids = []
-    for t in tokens:
-        cid = t if t in by_id else by_title_slug.get(slugify(t))
-        if not cid:
-            raise ApiError(400, f"case not found: {t!r}")
-        if cid not in case_ids:
-            case_ids.append(cid)
-    store.set_setting(_WEEKLY_CASES_KEY, json.dumps(case_ids))
-    return case_ids
+
+    def _resolve(t):
+        return t if t in by_id else by_title_slug.get(slugify(t))
+
+    weeks = []
+    for block in blocks:
+        lines = [l.strip() for l in block.split('\n') if l.strip()]
+        label, case_lines = lines[0], lines[1:]
+        # A block with only one line is a single case with no label line
+        # above it (a guide who typed one flat list, no blank-line breaks
+        # at all) -- treat that whole block as cases under an unlabeled
+        # group instead of mistaking the case for a label with 0 cases.
+        if not case_lines and _resolve(label):
+            label, case_lines = None, lines
+        case_ids = []
+        for t in case_lines:
+            cid = _resolve(t)
+            if not cid:
+                raise ApiError(400, f"case not found: {t!r}" + (f" (under {label!r})" if label else ""))
+            if cid not in case_ids:
+                case_ids.append(cid)
+        weeks.append({"label": label, "cases": case_ids})
+    store.set_setting(_WEEKLY_CASES_KEY, json.dumps({"weeks": weeks}))
+    return weeks
 
 
 def get_case_facilitator_brief(case_id):
@@ -1369,24 +1405,27 @@ def _extract_case_figures(case_id, title):
 def build_class_review_view(store, case_id_filter=None):
     """Assembles everything /class-review needs in one place, so the two
     servers (admin_web/app.py, admin_server.py) share this instead of each
-    re-deriving it and risking drift. Sections cover the union of: this
-    week's case list (do_get_weekly_cases, shown even with 0 submissions)
-    and any case_id that actually has submissions -- so an old case that
-    fell off the weekly list is still reachable, never silently hidden."""
+    re-deriving it and risking drift. Sections cover the union of: the
+    guide's week groups (do_get_weekly_cases -- e.g. Week 1/Week 2, shown
+    even with 0 submissions) and any case_id that actually has submissions
+    but fell off every week group -- appended as its own trailing "Other"
+    group rather than silently hidden."""
     rows = do_list_class_submissions(store, case_id_filter)
-    weekly_cases = do_get_weekly_cases(store)
+    raw_weeks = do_get_weekly_cases(store)
     if case_id_filter:
-        ordered_case_ids = [case_id_filter]
+        weeks = [{"label": None, "cases": [case_id_filter]}]
     else:
-        ordered_case_ids = list(weekly_cases)
+        weeks = [dict(w) for w in raw_weeks]
+        already_listed = {cid for w in weeks for cid in w['cases']}
         extra = sorted(
-            {r['case_id'] for r in rows if r['case_id'] not in ordered_case_ids},
+            {r['case_id'] for r in rows if r['case_id'] not in already_listed},
             key=lambda cid: max(r['submitted_on'] or '' for r in rows if r['case_id'] == cid),
             reverse=True,
         )
-        ordered_case_ids += extra
+        if extra:
+            weeks.append({"label": "Other", "cases": extra})
     case_titles, case_briefs, case_open_paths = {}, {}, {}
-    for cid in ordered_case_ids:
+    for cid in {cid for w in weeks for cid in w['cases']}:
         try:
             brief_public = get_case_brief(cid)
             case_titles[cid] = brief_public['title']
@@ -1398,8 +1437,8 @@ def build_class_review_view(store, case_id_filter=None):
             case_briefs[cid] = brief
     return {
         "rows": rows,
-        "ordered_case_ids": ordered_case_ids,
-        "weekly_cases": weekly_cases,
+        "weeks": weeks,
+        "raw_weeks": raw_weeks,
         "case_titles": case_titles,
         "case_briefs": case_briefs,
         "case_open_paths": case_open_paths,

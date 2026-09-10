@@ -121,19 +121,23 @@ document.getElementById('submit-btn').onclick = async function() {{
 
 def render_class_review_html(view, case_id=None):
     """view is admin_core.build_class_review_view()'s return dict:
-      rows              -- submission rows (already filtered to case_id if given)
-      ordered_case_ids  -- this week's cases first (even at 0 submissions), then
-                           any other case with submissions, most recent first
-      case_titles       -- {case_id: real title}; a lookup miss falls back to
-                           the bare slug in the section header, never hidden
-      case_briefs       -- {case_id: facilitator cheat-sheet dict or absent}
-      case_open_paths   -- {case_id: /cases/.../Interactive.html path or None}
-      weekly_debrief    -- {label, url} for the current debrief-prep page, or None
-    Kept as one dict argument (rather than five positional ones) since both
+      rows           -- submission rows (already filtered to case_id if given)
+      weeks          -- ordered [{"label": "Week 1" or None, "cases": [case_id,...]}, ...] --
+                        the guide's own groups, plus a trailing "Other" group for any
+                        case_id with submissions that isn't in a group. A case shows up
+                        with its own debrief section even at 0 submissions.
+      raw_weeks      -- weeks as actually configured (no "Other" group) -- used only
+                        to repopulate the edit textarea in its original form.
+      case_titles    -- {case_id: real title}; a lookup miss falls back to
+                        the bare slug in the section header, never hidden
+      case_briefs    -- {case_id: facilitator cheat-sheet dict or absent}
+      case_open_paths-- {case_id: /cases/.../Interactive.html path or None}
+      weekly_debrief -- {label, url} for the current debrief-prep page, or None
+    Kept as one dict argument (rather than several positional ones) since both
     servers just forward build_class_review_view()'s result straight through."""
     rows, case_titles = view["rows"], view["case_titles"]
     case_briefs, case_open_paths = view["case_briefs"], view["case_open_paths"]
-    weekly_debrief, weekly_cases = view["weekly_debrief"], view["weekly_cases"]
+    weekly_debrief, weeks, raw_weeks = view["weekly_debrief"], view["weeks"], view["raw_weeks"]
 
     debrief_banner = (
         '<div style="margin-bottom:10px;padding:12px 16px;border:1px solid var(--rule);border-radius:8px;'
@@ -155,23 +159,38 @@ def render_class_review_html(view, case_id=None):
         '</form>'
     )
 
+    def _weeks_to_text(weeks_list):
+        blocks = []
+        for w in weeks_list:
+            lines = ([w['label']] if w.get('label') else []) + list(w['cases'])
+            blocks.append('\n'.join(lines))
+        return '\n\n'.join(blocks)
+
+    cases_summary = ' &middot; '.join(
+        f'{_html.escape(w["label"])} ({len(w["cases"])} case{"s" if len(w["cases"]) != 1 else ""})'
+        if w.get('label') else
+        ', '.join(_html.escape(case_titles.get(c, c)) for c in w['cases'])
+        for w in raw_weeks
+    )
     cases_banner = (
         '<div style="margin-bottom:18px;padding:12px 16px;border:1px solid var(--rule);border-radius:8px;'
         'background:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-        + (f'<span class="det">This week\'s cases: <strong style="color:var(--ink)">'
-           + ', '.join(_html.escape(case_titles.get(c, c)) for c in weekly_cases) + '</strong>'
+        + (f'<span class="det">This term\'s cases: <strong style="color:var(--ink)">{cases_summary}</strong>'
            '<br>Each one below has its own debrief section -- with or without submissions -- so you can walk '
            'through every case live.</span>'
-           if weekly_cases else
-           '<span class="det">No weekly case list set -- sections below only show cases with submissions. '
+           if raw_weeks else
+           '<span class="det">No case list set -- sections below only show cases with submissions. '
            'Set the list to also see zero-submission cases.</span>')
         + '<a href="#set-cases" style="font-size:12.5px;color:var(--muted);white-space:nowrap" '
           'onclick="document.getElementById(\'cases-form\').style.display=\'flex\';return false;">'
-        + ('Change' if weekly_cases else 'Set this week\'s cases') + '</a></div>'
+        + ('Change' if raw_weeks else 'Set the case list') + '</a></div>'
         '<form id="cases-form" style="display:none;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-start">'
-        '<textarea id="cases-list" placeholder="One case per line -- either the id (roofline-call) or the title" '
-        f'style="flex:1;min-width:260px;min-height:70px">{_html.escape(chr(10).join(weekly_cases))}</textarea>'
+        '<textarea id="cases-list" rows="8" placeholder="Week 1&#10;apron-order&#10;field-watch&#10;&#10;Week 2&#10;feedback" '
+        f'style="flex:1;min-width:260px;min-height:120px;font-family:monospace">{_html.escape(_weeks_to_text(raw_weeks))}</textarea>'
         '<button type="button" class="btn ghost" id="save-cases-btn">Save</button>'
+        '<p class="det" style="flex-basis:100%;margin:0">One week per block, separated by a blank line -- '
+        'first line of each block is its label (e.g. &quot;Week 1&quot;), then one case per line '
+        '(id or title). Skip the label line entirely for one unlabeled group.</p>'
         '</form>'
     )
 
@@ -281,9 +300,9 @@ def render_class_review_html(view, case_id=None):
             + '</div></div>'
         )
 
-    ordered_case_ids = view["ordered_case_ids"]
-    if not ordered_case_ids:
-        body = '<p class="det">No submissions yet, and no weekly case list set -- use "Set this week\'s cases" above.</p>'
+    all_case_ids = [cid for w in weeks for cid in w['cases']]
+    if not all_case_ids:
+        body = '<p class="det">No submissions yet, and no case list set -- use "Set the case list" above.</p>'
     else:
         groups = {}
         for r in rows:
@@ -303,17 +322,29 @@ def render_class_review_html(view, case_id=None):
                        f'&#8599; Debrief-prep writeup</a>') + out
             return out
 
+        def _case_section(cid):
+            return (
+                f'<section style="margin-bottom:26px">'
+                f'<h2 style="font-size:16px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+                f'<span>{_html.escape(case_titles.get(cid, cid))} '
+                f'<span class="det" style="font-weight:400">&middot; {len(groups.get(cid, []))} submission{"s" if len(groups.get(cid, [])) != 1 else ""}</span></span>'
+                f'<span>{_links(cid)}</span></h2>'
+                + _brief_html(cid)
+                + ("".join(_card(r) for r in groups[cid]) if groups.get(cid) else
+                   '<p class="det">No submissions yet for this case -- use the reference above to walk through it live.</p>')
+                + '</section>'
+            )
+
+        # A week gets its own heading only when it has one (an unlabeled
+        # single group -- the pre-week-grouping shape, or a case_id-filtered
+        # drill-down page -- renders its cases with no extra wrapper at all,
+        # identical to how this page looked before weeks existed).
         body = "".join(
-            f'<section style="margin-bottom:26px">'
-            f'<h2 style="font-size:16px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-            f'<span>{_html.escape(case_titles.get(cid, cid))} '
-            f'<span class="det" style="font-weight:400">&middot; {len(groups.get(cid, []))} submission{"s" if len(groups.get(cid, [])) != 1 else ""}</span></span>'
-            f'<span>{_links(cid)}</span></h2>'
-            + _brief_html(cid)
-            + ("".join(_card(r) for r in groups[cid]) if groups.get(cid) else
-               '<p class="det">No submissions yet for this case -- use the reference above to walk through it live.</p>')
-            + '</section>'
-            for cid in ordered_case_ids
+            (f'<div style="font-size:19px;font-weight:700;margin:24px 0 12px;padding-top:4px;'
+             f'border-top:2px solid var(--accent)" role="heading" aria-level="2">{_html.escape(w["label"])}</div>'
+             if w.get('label') else '')
+            + "".join(_case_section(cid) for cid in w['cases'])
+            for w in weeks
         )
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>Class submissions — Math Builder</title>
