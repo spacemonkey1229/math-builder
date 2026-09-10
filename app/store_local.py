@@ -62,7 +62,8 @@ class LocalFileStore:
     def add_class_submission(self, row):
         rows = self._load_class_submissions()
         rows.append({**row, "submitted_on": datetime.datetime.now().isoformat(),
-                     "reviewed_on": None, "reviewed_by": None, "review_note": None})
+                     "reviewed_on": None, "reviewed_by": None, "review_note": None,
+                     "assessment": None, "assessed_on": None})
         self._save_class_submissions(rows)
 
     def list_class_submissions(self, case_id=None):
@@ -79,6 +80,22 @@ class LocalFileStore:
         row['reviewed_by'] = reviewed_by
         row['review_note'] = review_note
         self._save_class_submissions(rows)
+
+    def set_submission_assessment(self, submission_id, assessment):
+        rows = self._load_class_submissions()
+        row = next((r for r in rows if r['id'] == submission_id), None)
+        if not row:
+            raise ApiError(404, f"class submission {submission_id} not found")
+        row['assessment'] = assessment
+        row['assessed_on'] = datetime.datetime.now().isoformat()
+        self._save_class_submissions(rows)
+
+    def delete_class_submission(self, submission_id):
+        rows = self._load_class_submissions()
+        remaining = [r for r in rows if r['id'] != submission_id]
+        if len(remaining) == len(rows):
+            raise ApiError(404, f"class submission {submission_id} not found")
+        self._save_class_submissions(remaining)
 
     @contextlib.contextmanager
     def materialized_project(self, file_paths=None):

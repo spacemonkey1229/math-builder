@@ -85,6 +85,8 @@ _MIGRATIONS = (
         key   text PRIMARY KEY,
         value text
     )""",
+    "ALTER TABLE class_submissions ADD COLUMN IF NOT EXISTS assessment text",
+    "ALTER TABLE class_submissions ADD COLUMN IF NOT EXISTS assessed_on timestamptz",
 )
 
 
@@ -389,6 +391,7 @@ class PostgresStore:
         for r in rows:
             r['submitted_on'] = r['submitted_on'].isoformat() if r['submitted_on'] else None
             r['reviewed_on'] = r['reviewed_on'].isoformat() if r['reviewed_on'] else None
+            r['assessed_on'] = r['assessed_on'].isoformat() if r.get('assessed_on') else None
         return rows
 
     def review_class_submission(self, submission_id, review_note, reviewed_by):
@@ -398,6 +401,24 @@ class PostgresStore:
                     """UPDATE class_submissions SET reviewed_on = now(), reviewed_by = %s, review_note = %s
                        WHERE id = %s""",
                     (reviewed_by, review_note, submission_id))
+                if cur.rowcount == 0:
+                    raise ApiError(404, f"class submission {submission_id} not found")
+            conn.commit()
+
+    def set_submission_assessment(self, submission_id, assessment):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE class_submissions SET assessment = %s, assessed_on = now() WHERE id = %s",
+                    (assessment, submission_id))
+                if cur.rowcount == 0:
+                    raise ApiError(404, f"class submission {submission_id} not found")
+            conn.commit()
+
+    def delete_class_submission(self, submission_id):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM class_submissions WHERE id = %s", (submission_id,))
                 if cur.rowcount == 0:
                     raise ApiError(404, f"class submission {submission_id} not found")
             conn.commit()

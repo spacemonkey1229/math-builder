@@ -586,6 +586,22 @@ def api_class_review():
     return {"ok": True}
 
 
+@app.route('/api/class-review/assess', methods=['POST'])
+@json_api
+def api_class_review_assess():
+    b = request.get_json(force=True) or {}
+    admin_core.do_set_submission_assessment(get_store(), b['submission_id'], b.get('assessment'))
+    return {"ok": True}
+
+
+@app.route('/api/class-review/delete', methods=['POST'])
+@json_api
+def api_class_review_delete():
+    b = request.get_json(force=True) or {}
+    admin_core.do_delete_class_submission(get_store(), b['submission_id'])
+    return {"ok": True}
+
+
 @app.route('/class-photo/<path:rel_path>')
 def class_photo(rel_path):
     # Same Vercel WSGI quirk documented on case_interactive_html() above:

@@ -330,6 +330,12 @@ class Handler(BaseHTTPRequestHandler):
             elif p.path == '/api/class-review':
                 admin_core.do_review_class_submission(STORE, b['submission_id'], b.get('review_note'), 'guide')
                 self._json(200, {"ok": True})
+            elif p.path == '/api/class-review/assess':
+                admin_core.do_set_submission_assessment(STORE, b['submission_id'], b.get('assessment'))
+                self._json(200, {"ok": True})
+            elif p.path == '/api/class-review/delete':
+                admin_core.do_delete_class_submission(STORE, b['submission_id'])
+                self._json(200, {"ok": True})
             elif p.path == '/api/weekly-debrief':
                 admin_core.do_set_weekly_debrief(STORE, b.get('label'), b.get('url'))
                 self._json(200, {"ok": True})

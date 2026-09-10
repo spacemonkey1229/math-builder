@@ -1123,6 +1123,23 @@ def do_review_class_submission(store, submission_id, review_note, reviewed_by):
     store.review_class_submission(submission_id, review_note, reviewed_by)
 
 
+def do_set_submission_assessment(store, submission_id, assessment):
+    """A persisted strengths/opportunities note per submission -- distinct
+    from review_note/reviewed_on, which just track "a guide looked at this."
+    This is meant for the actual read of the work (what's well understood,
+    where the gaps are), written once (by a guide, or pasted in from a
+    Claude conversation that read the exported bundle) and then visible on
+    the review page from then on, not re-derived every time."""
+    assessment = (assessment or "").strip()
+    if not assessment:
+        raise ApiError(400, "assessment text is required")
+    store.set_submission_assessment(submission_id, assessment)
+
+
+def do_delete_class_submission(store, submission_id):
+    store.delete_class_submission(submission_id)
+
+
 _WEEKLY_DEBRIEF_KEY = "weekly_debrief"
 
 

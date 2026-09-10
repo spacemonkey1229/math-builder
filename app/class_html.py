@@ -148,10 +148,16 @@ def render_class_review_html(rows, case_id=None, case_titles=None, weekly_debrie
     )
 
     def _card(r):
+        sid = r["id"]
+        assessment = (r.get('assessment') or '').strip()
         return (
-            '<div class="sub-panel" style="margin-bottom:10px;padding:10px;border:1px solid var(--rule);border-radius:8px">'
-            f'<strong>{_html.escape(r["student_name"])}</strong> '
-            f'<span class="det">&middot; {_html.escape(r["submitted_on"] or "")}</span>'
+            f'<div class="sub-panel" style="margin-bottom:10px;padding:10px;border:1px solid var(--rule);border-radius:8px" data-submission="{sid}">'
+            f'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'
+            f'<span><strong>{_html.escape(r["student_name"])}</strong> '
+            f'<span class="det">&middot; {_html.escape(r["submitted_on"] or "")}</span></span>'
+            f'<button class="btn ghost" data-delete="{sid}" '
+            'style="font-size:11.5px;padding:3px 8px;border-color:var(--flag);color:var(--flag)" '
+            'title="Remove this submission">Delete</button></div>'
             + (f'<p>{_html.escape(r["answer_text"])}</p>' if r.get('answer_text') else '')
             + (f'<p><a href="/class-photo/{_html.escape(r["pdf_path"])}" target="_blank">View PDF</a></p>'
                if r.get('pdf_path') else '')
@@ -159,9 +165,19 @@ def render_class_review_html(rows, case_id=None, case_titles=None, weekly_debrie
                if r.get('photo_path') else '')
             + (f'<p class="det">Reviewed by {_html.escape(r["reviewed_by"] or "")}: {_html.escape(r["review_note"] or "")}</p>'
                if r.get('reviewed_on') else
-               '<div class="row"><input type="text" placeholder="review note" id="note-' + r["id"] + '" style="flex:1;margin-right:6px">'
-               '<button class="btn ghost" data-review="' + r["id"] + '">Mark reviewed</button></div>')
-            + '</div>'
+               '<div class="row"><input type="text" placeholder="review note" id="note-' + sid + '" style="flex:1;margin-right:6px">'
+               '<button class="btn ghost" data-review="' + sid + '">Mark reviewed</button></div>')
+            # Assessment: a persisted strengths/opportunities read of the actual
+            # work, separate from the reviewed/review-note tracking above --
+            # shown once written (by a guide, or pasted in from a Claude
+            # conversation that read the export bundle) and always editable.
+            + '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--rule)">'
+            + (f'<p class="det" style="font-weight:700;color:var(--accent);margin:0 0 3px">ASSESSMENT</p><p style="margin:0 0 6px">{_html.escape(assessment)}</p>'
+               if assessment else '<p class="det" style="margin:0 0 6px">No assessment yet.</p>')
+            + f'<div class="row"><textarea placeholder="Strengths / opportunities from reading this student\'s work" '
+              f'id="assess-{sid}" style="flex:1;min-height:44px;margin-right:6px;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font:inherit">{_html.escape(assessment)}</textarea>'
+            + f'<button class="btn ghost" data-assess="{sid}" style="align-self:flex-end">Save</button></div>'
+            + '</div></div>'
         )
 
     if not rows:
@@ -176,14 +192,26 @@ def render_class_review_html(rows, case_id=None, case_titles=None, weekly_debrie
         ordered = sorted(groups.items(),
                           key=lambda kv: max((row['submitted_on'] or '') for row in kv[1]),
                           reverse=True)
+        def _links(cid):
+            out = (f'<a href="/class-review/export?case_id={_html.escape(cid)}" '
+                   f'style="font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none">'
+                   f'&#8595; Export for debrief</a>')
+            # Per-case debrief pages built this session anchor each case's own
+            # section as #<case_id> (see the Week 2 Debrief Prep artifact) --
+            # jump straight to this case's own dilemma/answer-key/concepts
+            # instead of the top of a page covering several cases at once.
+            if weekly_debrief:
+                out = (f'<a href="{_html.escape(weekly_debrief["url"])}#{_html.escape(cid)}" target="_blank" rel="noopener" '
+                       f'style="font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none;margin-right:14px">'
+                       f'&#8599; View debrief</a>') + out
+            return out
+
         body = "".join(
             f'<section style="margin-bottom:22px">'
             f'<h2 style="font-size:16px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">'
             f'<span>{_html.escape(case_titles.get(cid, cid))} '
             f'<span class="det" style="font-weight:400">&middot; {len(group_rows)} submission{"s" if len(group_rows) != 1 else ""}</span></span>'
-            f'<a href="/class-review/export?case_id={_html.escape(cid)}" '
-            f'style="font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none">'
-            f'&#8595; Export for debrief</a></h2>'
+            f'<span>{_links(cid)}</span></h2>'
             + "".join(_card(r) for r in group_rows)
             + '</section>'
             for cid, group_rows in ordered
@@ -194,7 +222,7 @@ def render_class_review_html(rows, case_id=None, case_titles=None, weekly_debrie
 :root{{--rule:#DED8CC;--accent:#22406B;--muted:#5F594E}}
 body{{font-family:-apple-system,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;background:#FAF8F4;color:#16140F}}
 .det{{color:#5F594E;font-size:12.5px}} .row{{display:flex;align-items:center;margin-top:6px}}
-input{{padding:6px 8px;border:1px solid #DED8CC;border-radius:6px}}
+input,textarea{{padding:6px 8px;border:1px solid #DED8CC;border-radius:6px;font-family:inherit}}
 .btn.ghost{{background:none;border:1px solid #22406B;color:#22406B;padding:5px 10px;border-radius:6px;cursor:pointer}}
 </style></head><body>
 <h1>Class submissions{' — ' + _html.escape(case_titles.get(case_id, case_id)) if case_id else ''}</h1>
@@ -208,6 +236,24 @@ document.querySelectorAll('[data-review]').forEach(function(b) {{
     var res = await fetch('/api/class-review', {{method:'POST', headers:{{'Content-Type':'application/json'}},
       body: JSON.stringify({{submission_id: id, review_note: note}})}});
     if (res.ok) location.reload(); else alert('Failed to save review.');
+  }};
+}});
+document.querySelectorAll('[data-assess]').forEach(function(b) {{
+  b.onclick = async function() {{
+    var id = b.dataset.assess;
+    var assessment = document.getElementById('assess-' + id).value;
+    var res = await fetch('/api/class-review/assess', {{method:'POST', headers:{{'Content-Type':'application/json'}},
+      body: JSON.stringify({{submission_id: id, assessment: assessment}})}});
+    if (res.ok) location.reload(); else alert('Failed to save -- assessment text is required.');
+  }};
+}});
+document.querySelectorAll('[data-delete]').forEach(function(b) {{
+  b.onclick = async function() {{
+    var id = b.dataset.delete;
+    if (!confirm('Delete this submission? This cannot be undone.')) return;
+    var res = await fetch('/api/class-review/delete', {{method:'POST', headers:{{'Content-Type':'application/json'}},
+      body: JSON.stringify({{submission_id: id}})}});
+    if (res.ok) location.reload(); else alert('Failed to delete.');
   }};
 }});
 var saveDebriefBtn = document.getElementById('save-debrief-btn');
