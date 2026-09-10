@@ -102,6 +102,21 @@ Exit 0 = `TIER1_PASS`. Exit 1 = `BLOCKED`. Twenty-one checks:
 | T1-19 | hover+hyperlink math glossary, verified domains | MCS-39 |
 | T1-20 | visual asset present (chart/map/diagram/photo); image sources cited | advisory, never blocks |
 | T1-21 | hover+hyperlink STORY-vocabulary glossary (real-world domain terms, not math) | MCS-47, **GAP not BLOCKER** (see below) |
+| T1-22 | published HTML's own sections match `case.md`'s — the artifact a student actually opens, not just its source | MCS-50 |
+
+**T1-22 exists because `case.md` passing every check proves nothing about what shipped.** T1-01
+(structural sections present) and every other Tier 1 check up through T1-21 only ever read
+`case.md`. A hand-built or partially-rebuilt `published/*.html` can silently drop an entire
+section — this happened for real (Pier Wheel, 2026-09-10: the Challenges/Deliverables section
+vanished from the shipped page while `case.md` had it intact throughout) and a prior gate pass
+still recorded `TIER2_PASS`, because its own P1 cold-solve was performed against `case.md`, not
+the file a student would actually open. T1-22 closes that specific gap: for every section T1-01
+finds in `case.md` (Overview/Background/Dilemma/Challenges/Appendices), it requires a matching
+`<h1-4>` heading somewhere in the case's published HTML. This is a hard BLOCKER, not a GAP — a
+missing section isn't a quality judgment call, it's a fact you can check with a `grep`. **Any
+agent running P1/P7's cold-solve or cold-read must read the actual published HTML end-to-end,
+never `case.md` alone** — T1-22 is the mechanical backstop, but it should never be the only thing
+catching this.
 
 **T1-21 is deliberately a GAP, not a BLOCKER, unlike T1-19's identical mechanism for math
 vocabulary.** T1-19 sets a hard bar because SPEC already requires the case to teach the math it

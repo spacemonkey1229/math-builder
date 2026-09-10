@@ -158,6 +158,25 @@ MUTATIONS = [
      "a clean story glossary already clearing the term-count floor with real https:// links to "
      "real, diverse (non-math-education) domains must not be flagged — T1-21 should be silent on "
      "field-watch's own already-shipped, correct glossary"),
+
+    # ---- MCS-50 / T1-22 -- published HTML section parity with case.md ------
+    ("published HTML silently drops the entire Challenges section", 'field-watch',
+     lambda p: {**p, 'html': (p['html'] or '').replace(
+         '<h2>Challenges</h2>', '<h2>Challenges-Renamed-For-Test</h2>')},
+     True,
+     [r"T1-22.*MCS-50.*\['Challenges'\].*no published Interactive HTML.*matching heading"],
+     "reproduces the exact shipped defect (Pier Wheel, 2026-09-10): case.md had a complete "
+     "Challenges section but the published Interactive HTML's heading was missing/renamed, and "
+     "no check before T1-22 ever compared the published artifact's own headings against case.md — "
+     "T1-01 only ever checked case.md, so this shipped and a prior gate pass wrongly recorded "
+     "TIER2_PASS"),
+
+    ("published HTML with all case.md sections present must not block", 'field-watch',
+     lambda p: {**p, 'html': (p['html'] or '') + '\n<!-- selftest: harmless no-op marker -->\n'},
+     False,
+     [r"T1-22.*MCS-50"],
+     "field-watch's own already-shipped, correct HTML (unmutated) must not be flagged — "
+     "T1-22 should be silent when every case.md section has a matching published heading"),
 ]
 
 

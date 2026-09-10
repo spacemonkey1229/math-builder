@@ -2,7 +2,7 @@
 """
 TIER 1 — STRUCTURAL GATE  (machine, blocking)
 
-Nineteen mechanical checks against SPEC.md.  Supersedes the inline script that
+Twenty-two mechanical checks against SPEC.md.  Supersedes the inline script that
 used to live in skills/case-qa/SKILL.md, with three defect fixes and six new
 continuity checks.
 
@@ -34,6 +34,7 @@ CHECK REGISTER  (name them by id in the QA report)
   T1-19  hover+hyperlink glossary, verified domains         MCS-39      [NEW]
   T1-20  visual asset present, image sources cited          advisory    [NEW]
   T1-21  hover+hyperlink STORY-vocabulary glossary          MCS-47      [NEW, GAP not BLOCKER]
+  T1-22  published HTML section parity with case.md         MCS-50      [NEW]
 """
 import argparse, json, os, re, sys, hashlib, unicodedata
 
@@ -1046,6 +1047,55 @@ def run(project, cid):
         R.ok('T1-21')
     else:
         R.polish('T1-21', "no published/ directory yet — MCS-47 has nothing to check")
+
+    # ---- T1-22 published HTML section parity with case.md (MCS-50) ---------
+    # Found as a real, shipped defect 2026-09-10 (Pier Wheel): case.md always had
+    # a complete Challenges section (it's the source an author writes first), but
+    # the published Interactive HTML silently dropped the entire section during a
+    # hand-build/rebuild -- 29KB vs. 70-100KB for every peer case in the same
+    # batch. T1-01 above only checks case.md; nothing before this check ever
+    # verified the PUBLISHED artifact -- the thing a student actually opens --
+    # mirrors it. A prior readiness-gate pass still wrongly recorded TIER2_PASS
+    # because its own P1 cold-solve read case.md instead of the shipped HTML.
+    # This check exists so that failure mode is caught mechanically, every time,
+    # regardless of any single agent's diligence.
+    HTML_SECTION_CHECKS = [
+        ("Overview",   r'(?is)<h[1-4][^>]*>\s*Overview\s*<'),
+        ("Background", r'(?is)<h[1-4][^>]*>\s*Background\s*<'),
+        ("Dilemma",    r'(?is)<h[1-4][^>]*>\s*(the\s+)?Dilemma\s*<'),
+        ("Challenges", r'(?is)<h[1-4][^>]*>\s*Challenges\s*<'),
+        ("Appendices", r'(?is)<h[1-4][^>]*>\s*Appendices\s*<'),
+    ]
+    md_has = {name: bool(re.search(pat, md))
+              for name, pat in [("Overview",    r'(?im)^#+\s*Overview'),
+                                 ("Background",  r'(?im)^#+\s*Background'),
+                                 ("Dilemma",     r'(?im)^#+\s*(The )?Dilemma'),
+                                 ("Challenges",  r'(?im)^#+\s*Challenges'),
+                                 ("Appendices",  r'(?im)^#+\s*Appendix\s+A')]}
+    if os.path.isdir(pub):
+        html_files = [fn for fn in os.listdir(pub) if fn.lower().endswith('.html')]
+        if html_files:
+            combined = ' '.join(
+                re.sub(r'(?is)<script.*?</script>|<style.*?</style>|<!--.*?-->', ' ',
+                       open(os.path.join(pub, fn), encoding='utf-8', errors='ignore').read())
+                for fn in html_files
+            )
+            missing_sections = [name for name, pat in HTML_SECTION_CHECKS
+                                 if md_has[name] and not re.search(pat, combined)]
+            if missing_sections:
+                R.blocker('T1-22', f"MCS-50 — case.md has section(s) {missing_sections} but no "
+                                   f"published Interactive HTML in {html_files} has a matching "
+                                   f"heading. The published artifact is what a student actually "
+                                   f"opens -- a section can exist in case.md and still be missing "
+                                   f"from what ships. Rebuild the HTML so every case.md section is "
+                                   f"present, then re-run this check against the rebuilt file, not "
+                                   f"case.md.")
+            else:
+                R.ok('T1-22')
+        else:
+            R.ok('T1-22')  # T1-18 already BLOCKERs on missing HTML; don't double-report here
+    else:
+        R.polish('T1-22', "no published/ directory yet — MCS-50 has nothing to check")
 
     return R, h
 
