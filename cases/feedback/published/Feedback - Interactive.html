@@ -1051,7 +1051,18 @@ restorePick();
    CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
    pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
    ================================================================ */
-const DELIVERABLES = [["D1","Rectangular-to-polar conversion table (both wedges)"],["D2","Cardioid polar-equation graph with both wedges' theta and dB marked"],["D3","Parametric equations of the cross, parameter eliminated, crossing y=2"],["D4","Gain-before-feedback table, every checked moment, both wedges"],["D5","Final decision table: worst moment per wedge, margin, recommendation"]];
+const DELIVERABLES = [
+  ["D1","Rectangular-to-polar conversion table (both wedges)",
+    "Why convert to polar at all: the mic doesn't care how far a wedge sits in x and y, it cares how far away it is and how far off its on-axis heading it sits, because that second number is what the cardioid pattern actually reads. Convert each wedge's (x,y) into (r, theta) measured off the mic's front, and show the full conversion — a wedge that looks close on a stage plot can still turn out to sit at a wide angle once you actually do the trig, so don't eyeball it."],
+  ["D2","Cardioid polar-equation graph with both wedges' theta and dB marked",
+    "Why graph the pattern before combining anything: a single rejection number for each wedge is easy to state and easy to misread, but seeing the whole cardioid sweep over a full revolution shows you where the pattern is forgiving and where it drops off fast. Plot the equation over the full 360 degrees, then mark each wedge's own theta from D1 on that same curve — that's what turns an abstract shape into a picture of what each wedge is actually up against."],
+  ["D3","Parametric equations of the cross, parameter eliminated, crossing y=2",
+    "Why the performer's motion needs its own equations before it can feed into anything else: the mic Dana carries doesn't stay at one fixed point, so a single static (x,y) can't describe where it is throughout the bridge cross. Write her path as x(t) and y(t), eliminate the parameter to get the path's own rectangular equation, and use it to pin down where she crosses the follow-spot line y=2 — that's the moment boundary the later gain-before-feedback checks need, not a number you can just read off a stage plot."],
+  ["D4","Gain-before-feedback table, every checked moment, both wedges",
+    "Why this step comes after D1-D3, not before: a single gain-before-feedback number only means something once you have a real (r, theta) pair to plug in, and the mic's position keeps changing as Dana moves. Recompute distance and pattern-rejection fresh at each checked moment — the static verse and both ends of the bridge cross — for both wedges, and show the arithmetic; reusing an earlier moment's (r, theta) instead of re-deriving it from where the mic actually is at that instant is the single easiest way to produce a table that looks complete but isn't."],
+  ["D5","Final decision table: worst moment per wedge, margin, recommendation",
+    "Why the worst moment, not the best or the average: a monitor wedge only fails once, at whichever instant its gain-before-feedback score is lowest, so that single floor — not a flattering best-case number — is what actually governs whether a wedge is safe to commit to. Pull each wedge's single lowest GBF score across every checked moment, compare the two floors, and state the margin between them; a wedge that looks great everywhere except one moment is only as safe as that one moment."]
+];
 
 /* ================================================================
    CASE-AGNOSTIC — checklist render + localStorage persistence.
@@ -1059,11 +1070,12 @@ const DELIVERABLES = [["D1","Rectangular-to-polar conversion table (both wedges)
    ================================================================ */
 function renderChecklist(){
   const el = document.getElementById('dchecklist');
-  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,explain])=>{
     const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
     const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
     return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
       <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${explain ? `<div class="side-note" style="border-top:none;margin-top:2px;padding-top:0">${explain}</div>` : ''}
       <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
   }).join('');
 }

@@ -1021,12 +1021,18 @@ restorePick();
 const DELIVERABLES = [
   ['ch1','Challenge 1 -- posted a "how to..." resource link'],
   ['ch2','Challenge 2 -- 250+ word pitch, with visual'],
-  ['D1','D1 -- model-and-derivative worksheet'],
-  ['D2','D2 -- tangent-line projection'],
-  ['D3','D3 -- critical-point table, previous wave'],
-  ['D4','D4 -- concavity sign chart, current wave'],
-  ['D5','D5 -- retrospective optimisation, previous wave'],
-  ['D6','D6 -- the decision table and recommendation'],
+  ['D1','D1 -- model-and-derivative worksheet',
+    "Why check the fit before differentiating: the derivative you're about to take belongs to the smooth cubic, not to the jagged reported counts underneath it, so the first move is confirming the model actually tracks the real series at more than one week before you trust anything computed from it. Differentiate term by term with the power rule rather than estimating a slope by eye, then evaluate that derivative at the decision week to get the instantaneous rate -- a single week's exact climb rate -- and set it beside the average rate over the last two reported weeks so you can see how much the average already lags what the model says is happening right now. The closing note on differentiability is the same idea from the other direction: a chart made of individual weekly counts has no slope at any of its own points, only a step from one point to the next, which is exactly why a fitted curve is needed before 'rate of change' means anything here."],
+  ['D2','D2 -- tangent-line projection',
+    "Why a tangent line, not just the curve itself: a straight line built from the model's value and slope at one instant is the simplest possible short-term projection, and comparing the week it reaches the board's level against the week the curve itself reaches that level shows directly what a linear approximation costs you when the real function is curving away from a straight line. Build the tangent from the point and slope you already found in D1 rather than re-deriving anything, then solve each -- line and curve -- for where it crosses the board's stated number. The gap between those two answers is the whole point of the exercise: it's a concrete measure of how fast a straight-line guess falls behind a model that is itself accelerating."],
+  ['D3','D3 -- critical-point table, previous wave',
+    "Why the previous wave and not the current one: the previous wave already ran its full course, so its fitted model has genuine local highs and lows to find, unlike the current wave which is still climbing. Locate every critical point inside that window by setting the derivative to zero, then use the first derivative test -- checking the sign of the derivative just before and just after each candidate -- rather than guessing from the shape of the graph, since a sign test is what actually proves maximum versus minimum instead of just suggesting it. Flag any critical point whose fitted case count comes out negative or otherwise impossible: a cubic fitted to real data can wander outside what the data could ever mean, and that's a limit of the model worth naming rather than quietly ignoring."],
+  ['D4','D4 -- concavity sign chart, current wave',
+    "Why concavity, not just the count itself: a level-based trigger can only fire after the case count has already climbed past some number, but a change in concavity marks a change in how fast the count is climbing, which shows up before the level does. Take the derivative a second time, set it to zero, and find the week where its sign flips -- that's the week the curve stops accelerating and starts decelerating, even while it may still be going up. Marking that week on the graph and stating plainly what 'the curve turned' means in plain language is what makes this the earliest defensible warning available to Dr. Vance: it's a claim about the shape of the trend, not about a threshold anyone has to wait to cross."],
+  ['D5','D5 -- retrospective optimisation, previous wave',
+    "Why an objective function and not a guess: G(w) = P(w) + P(w+1) turns 'which two-week window covered the most cases' into a function you can actually optimize instead of eyeballing a table, with w standing for the closure's start week. Differentiate that objective, set it to zero to find the candidate start week, and then run the first derivative test to confirm the candidate is a maximum rather than a minimum or an inflection -- an optimization problem isn't finished until you've checked which kind of critical point you found. Measuring that optimal week's distance from the concavity turn you found in D4 connects this retrospective exercise back to the live decision: it's a way to ask, after the fact, how close a concavity-based trigger would have landed to the actual best possible timing."],
+  ['D6','D6 -- the decision table and recommendation',
+    "Why the rate of change belongs in the decision table: the chain-weighted formula in Appendix D already builds a transmission prevented in one week into a chain of transmissions it would otherwise have caused, and that chain's size depends on how fast the case count is climbing when the closure lands, not just how large it is. Evaluating the model's rate of change at the first and last week of each plan's closure window is what lets you explain, in the language of derivatives rather than just the raw output numbers, why closing during one part of the curve buys more prevented chains than closing during another. Building the table itself -- plan by plan, from Appendix D's stated steps -- before writing your recommendation keeps the arithmetic and the judgment call in separate places, so the numbers are checkable independent of which way you come down."],
   ['ch4','Challenge 4 -- appendix of your work/process'],
   ['ch5','Challenge 5 -- discussion participation (2x, or 500-word makeup)']
 ];
@@ -1036,11 +1042,12 @@ const DELIVERABLES = [
    ================================================================ */
 function renderChecklist(){
   const el = document.getElementById('dchecklist');
-  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,explain])=>{
     const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
     const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
     return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
       <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${explain ? `<div class="side-note" style="border-top:none;margin-top:2px;padding-top:0">${explain}</div>` : ''}
       <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
   }).join('');
 }
