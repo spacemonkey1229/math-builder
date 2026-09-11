@@ -317,3 +317,84 @@ NOT RUN.
 
 ## Next step
 Clean after this remediation pass. No further action required.
+
+## case-readiness run — 2026-09-10 (live-browser mechanical audit, Pier Wheel bug class)
+
+**State:** TIER2_PASS   **Verdict:** PASS (no defects found; nothing changed in the published HTML or the model)
+
+### Why this run
+Pier Wheel's published Interactive.html was found to carry two real, user-caught bugs (a doubled-backslash
+JS syntax error that silently broke the entire script, and a Working Notebook slider whose `max` sat below
+one option's real computed ceiling) that every prior "verified" pass missed because those passes only read
+source/grepped text and never actually drove the live page. This run repeats that same mechanical audit on
+`published/Creek Span - Interactive.html`, live, over local HTTP (not `file://`), to check whether the same
+bug class is present here. `evaluate()`/`evaluate_twist()` and the `STORY_GLOSSARY` steel-angle/math-Angle
+term-collision fix were carefully verified earlier today's runs above — this pass RE-verified them live
+rather than assuming, per instruction, but did not touch them since they checked out correct again.
+
+### Method and findings
+1. **Served over local HTTP** (`python3 -m http.server`, not `file://`) and loaded in a real browser.
+   Console: 0 errors on load, and 0 errors thrown across every subsequent DOM-driven interaction below.
+2. **Extracted the one inline `<script>` block** (HTML comments stripped first) and ran it through
+   `node --check`: syntactically valid. No Pier-Wheel-class doubled-backslash or similar break.
+3. **Searched the Working Notebook / calculator section for every `<input type="range">` or numeric input
+   with `min`/`max`.** Result: `grep -n 'type="range"\|min="\|max="'` over the full published HTML returns
+   **zero matches**. This case's Working Notebook (Steps 1-6) uses free-form `<input type="number">` fields
+   with no `min`/`max` clamp at all — so the specific bug class that hit Pier Wheel (a slider `max` cutting
+   off part of the real exploration space) **cannot occur here by construction**: there is no bound to be
+   wrong. Confirmed this is a genuine design difference, not an oversight — every Step 1-6 field accepts any
+   typed value and is graded by tolerance-based comparison (`near()`), not range-restricted.
+4. **Drove the calculator via real DOM events** (`el.value = X; el.dispatchEvent(new Event('input'))`) for
+   all of Steps 1-6, matching Appendix B/C/D/E/F's real numbers: `checkGeometry`, `checkInequality`,
+   `checkWarrenTriangle`, `checkLowLineTriangle`, `checkTakeoff`, and `checkTwist` (after clicking the real
+   `#twistBtn` reveal button and toggling `#applyTwist`) all returned "✓" live, and `checkTakeoff`'s live
+   output read *"Option A (The Warren Line)... margin: 14.81%..."*, `checkTwist`'s live output read
+   *"...margin moved from 14.81% to 7.84%..."* — both exact matches to `sensitivity_model.py`'s
+   `evaluate()`/`evaluate_twist()`, confirming the ported JS is still byte-for-byte consistent with the
+   Python model.
+5. **Swept `gusset_hours_per_joint` from 0 to 10** (far wider than the case's own ±50% flex range of
+   0.75-2.25) through the live page's `evaluate()`/`evaluate_twist()`: no `NaN`, no console error, at any
+   point. Noted (not a defect) that at `h=0` the winner flips to B on material cost alone — expected and
+   consistent with the case's own "material cost is close to a wash" narrative and `checkTakeoff`'s own
+   prompt ("does the winner ever flip?"); the case's stated flex range (0.75-2.25) never reaches that flip
+   point, matching `case.json`'s recorded sensitivity note (10.99%-16.70%).
+6. **Exercised every other interactive element live**: the Dilemma pick radios (`#pickA`/`#pickB`, real
+   `.click()`, `localStorage` persists correctly, pill text updates correctly both directions); the
+   deliverables checklist (`#chk_D1` toggle persists to `localStorage` and back); the Twist reveal button
+   and `#applyTwist` toggle (Step 6 fields correctly hidden until both are triggered, in that order); both
+   glossaries live in the rendered DOM — confirmed 2 `.sterm[data-sterm="Steel Angle"]` spans (correct
+   structural definition) and the math `.gterm[data-term="Angle"]` links only ever landing on genuine
+   math uses (D1, the Appendix I vocabulary list, the "How to multiply decimals" HOWTO entry) — zero
+   collisions, the P7-fix documented in the 2026-09-09 entries above is still intact.
+7. **Fresh full-page read** (`get_page_text`, end to end) and a **fresh P1 cold-solve + fresh P7 cold-read**
+   (regenerated packets, read personally, no nested/background agent): both reproduce the same PASS
+   findings already on record (A wins at $21.22/ft vs. B's $24.91/ft, 14.81% margin; "floodway ordinance"
+   remains the sole borderline unexplained real-world term, at/under P7's 0-1 threshold; the math-Angle
+   packaging artifact in the flattened cold-read packet text is confirmed once more to be a packet-builder
+   quirk, not a live-page defect, since the live DOM check in step 6 shows no such collision).
+
+**Verdict: no real defect of the Pier Wheel bug class (or any other) found.** Nothing in
+`published/Creek Span - Interactive.html` or `sensitivity_model.py` was changed by this pass.
+
+### Tier 1 — structural (23 checks), re-run
+PASS 21 · GAP 2 · FAIL 0. **0 BLOCKERs.** Same two pre-existing, already-documented GAPs (T1-03 Option B
+fuzzy-match false positive; T1-10 reinforcement carve-out). Verdict: **TIER1_PASS**.
+
+### Tier 2 — simulated play (7 probes), re-run
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Fresh packet, fresh read: A $21.22/ft vs. B $24.91/ft, margin 14.81%, metric named, MA1 named as most sensitive, S4 (steel $/lb, blog-midpoint-derived) named as least-supported figure. |
+| P2 both-sides solve | **PASS** | Unchanged from the 2026-09-10 run above — not re-litigated since no math/prose affecting either side's argument changed in this pass. |
+| P3 trap check | **PASS** | Unchanged — the free-steel/geometry-fit trap is still exactly what `FACILITATOR.md` names. |
+| P4 twist integrity | **PASS** | Re-confirmed live in-browser this run (see Method §4/§6): `checkTwist()`'s live output reproduces 23.02/ft and 7.84% margin exactly; winner unchanged. |
+| P5 assumption sensitivity | **PASS** | Mechanical rerun: -50% -> 10.99% margin, +50% -> 16.70% margin, A wins throughout; also swept live in-browser 0-10 hr/joint (Method §5) with no NaN/errors across the full range. |
+| P6 data decay | **PASS** | Not re-fetched this pass (no source claims touched); stands on the 2026-09-10 WebFetch verification above. |
+| P7 accessibility cold-read | **PASS** | Fresh packet, fresh cold read (see Method §7): same 1 borderline item ("floodway ordinance"), same confirmed-harmless packaging artifact, 0 new unexplained concepts. |
+
+**7 of 7 probes PASS.** `case.json.qa.state` stays `TIER2_PASS`, `qa.verdict` stays `PASS`.
+
+### Tier 3 — human dry-run
+NOT RUN.
+
+## Next step
+Clean. No defects found by this mechanical live-browser audit; no further action required.
