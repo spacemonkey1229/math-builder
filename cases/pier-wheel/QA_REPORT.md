@@ -354,3 +354,35 @@ comment-stripping bug in the check's own first draft — see `DOCTRINE_LEDGER.md
 sources, and verdict were never in question; only the page's client-side interactivity was
 broken by this bug, and that is now confirmed fixed by direct observation, not by re-running a
 text-based probe.
+
+## 2026-09-10 (later still) — third real defect: wrong page architecture, not a scroll bug
+
+The JS-syntax fix above made the script parse, but a project-owner review of the LIVE page
+still found it confusing — "should be on one page... with links that take you to different
+pages... like all the other cases." Investigation via direct in-browser inspection (not grep):
+`document.getElementById(...)` on every section showed `background`, `dilemma`, `challenges`,
+`appendices`, `notebook`, `twist`, and `glossary` all at `display:none`, with only `overview`
+visible — confirmed against `section[hidden]{display:none}` in the CSS and `<a data-tab="...">`
+nav links carrying **no `href` at all**. This is a fundamentally different page architecture
+than every sibling case in this batch: Creek Span (and the rest) render all sections
+simultaneously as one continuously-scrollable document, with real `href="#id"` anchor links and
+a scroll-position-based active-tab highlighter — confirmed directly via the same inspection
+against `cases/creek-span/published/Creek Span - Interactive.html`. Pier Wheel's earlier
+"structural parity" rebuild (added the Twist section + Dilemma-pick widget) had built a
+click-to-swap tab system instead of matching that pattern, even though its own report claimed
+parity with siblings.
+
+**Fixed**: gave every nav `<a>` a real `href="#id"`; removed the `hidden` attribute from every
+`<section>` and the now-dead `section[hidden]{display:none}` CSS rule so all sections render at
+once; replaced the old click-handler (which toggled `.hidden` via `data-tab`) with the same
+scroll-position active-highlight `<script>` block every sibling case already uses.
+
+**Verified directly in-browser, not by grep**: all 8 sections report `display:block`
+simultaneously with real non-zero heights (total page height ~50,421px — a genuinely full page,
+not a stub); every nav link's `href` resolves to a real section id; clicking a nav link (via a
+real DOM `.click()`, not just checking markup) performs a real anchor-jump scroll; console
+clean, 0 errors; `node --check` on the rebuilt inline `<script>` still parses clean.
+
+Re-ran the full gate fresh: `tier1_structural.py` — `TIER1_PASS`, 0 blockers, same 3
+pre-existing accepted GAPs, `T1-22` and `T1-23` both PASS. No change to any number, source,
+option, or the verdict — this was a page-architecture and JS-correctness fix only.
