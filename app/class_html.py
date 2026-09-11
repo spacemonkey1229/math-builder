@@ -120,6 +120,154 @@ document.getElementById('submit-btn').onclick = async function() {{
 </body></html>"""
 
 
+_LEVEL_COLORS = {
+    "prealg": ("#A6472A", "#F5E4DC"),
+    "alg":    ("#3D5A99", "#E5E9F5"),
+    "geo":    ("#2B6E63", "#E4F0EC"),
+    "adv":    ("#347F80", "#E1EFEE"),
+    "adv2":   ("#1F5F6B", "#DDEBEC"),
+    "disc":   ("#96631E", "#F5EADA"),
+    "stat":   ("#7A4C9E", "#EFE5F5"),
+}
+_DEFAULT_LEVEL_COLOR = ("#5F594E", "#EDEAE1")
+
+
+def render_catalog_html(weeks_data):
+    """The public, unauthenticated /catalog page -- a real-time "Weekly Case
+    Catalog" built straight from whatever the guide has configured via
+    /class-review's own week-list editor (admin_core.get_public_catalog(),
+    which itself reuses do_get_weekly_cases() + the public-safe
+    get_case_brief(), never get_case_facilitator_brief()). weeks_data is
+    get_public_catalog()'s return: [{"label": "Week 1"|None, "cases": [
+    {id, title, interactive_path, level, level_key, blurb, skills_focus,
+    career_note}, ...]}, ...].
+
+    Deliberately shows no margin/percentage figure anywhere -- that data is
+    intentionally absent from get_case_brief() and must stay absent here
+    too (MCS-45's public/gated boundary). "Open" always points at
+    interactive_path (the direct Interactive.html), never /class/<id> --
+    this is a browsing/discovery page, not the submission flow.
+
+    All weeks render into the page at once; a <select> toggles which one is
+    visible via a few lines of client-side JS -- no reload, no backend
+    query param."""
+    has_any = any(w['cases'] for w in weeks_data)
+
+    def _level_pill(level, level_key):
+        fg, bg = _LEVEL_COLORS.get(level_key or '', _DEFAULT_LEVEL_COLOR)
+        return (f'<span class="level-pill" style="color:{fg};background:{bg}">'
+                f'{_html.escape(level or "Unrated")}</span>')
+
+    def _row(c):
+        open_cell = (
+            f'<a class="openlink" href="{_html.escape(c["interactive_path"])}" target="_blank" rel="noopener">Open &rarr;</a>'
+            if c.get('interactive_path') else
+            '<span class="det">Not yet available</span>'
+        )
+        return (
+            '<tr>'
+            f'<td>{_level_pill(c.get("level"), c.get("level_key"))}</td>'
+            f'<td><div class="case-name">{_html.escape(c["title"])}</div></td>'
+            f'<td class="desc">{_html.escape(c.get("blurb") or "")}</td>'
+            f'<td class="skills">{_html.escape(c.get("skills_focus") or "")}</td>'
+            f'<td class="career">{_html.escape(c.get("career_note") or "")}</td>'
+            f'<td>{open_cell}</td>'
+            '</tr>'
+        )
+
+    def _week_section(i, w):
+        label = w.get('label') or 'This week'
+        rows = "".join(_row(c) for c in w['cases'])
+        return (
+            f'<section class="week-panel" id="week-panel-{i}" data-week="{i}"{"" if i == 0 else " hidden"}>'
+            '<div class="tablewrap"><table>'
+            '<colgroup><col class="c-level"><col class="c-case"><col class="c-desc">'
+            '<col class="c-skills"><col class="c-career"><col class="c-link"></colgroup>'
+            '<thead><tr><th>Level</th><th>Case</th><th>The dilemma</th>'
+            '<th>Skills focus</th><th>Career / life skills</th><th>Open</th></tr></thead>'
+            f'<tbody>{rows}</tbody>'
+            '</table></div>'
+            '</section>'
+        )
+
+    options_html = "".join(
+        f'<option value="{i}">{_html.escape(w.get("label") or "This week")} '
+        f'({len(w["cases"])} case{"s" if len(w["cases"]) != 1 else ""})</option>'
+        for i, w in enumerate(weeks_data)
+    )
+    selector_html = (
+        f'<div class="week-select"><label for="week-picker">Showing</label>'
+        f'<select id="week-picker">{options_html}</select></div>'
+        if len(weeks_data) > 1 else ''
+    )
+    sections_html = (
+        "".join(_week_section(i, w) for i, w in enumerate(weeks_data))
+        if has_any else
+        '<p class="empty-note">No cases are published to the catalog yet -- check back soon.</p>'
+    )
+
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Case Catalog — Math Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<style>
+:root{{
+  --ink:#1a2e44; --ink-soft:#3d5266; --ground:#faf8f4; --surface:#ffffff;
+  --line:#e4ded2; --muted:#6b6459; --gold:#b4802b; --gold-ink:#7a5620;
+  --shadow:0 1px 2px rgba(26,46,68,.06), 0 6px 20px rgba(26,46,68,.05);
+}}
+*{{box-sizing:border-box}}
+body{{margin:0;background:var(--ground);color:var(--ink);font-family:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}}
+.wrap{{max-width:1180px;margin:0 auto;padding:40px 20px 64px}}
+header.page{{display:flex;flex-direction:column;gap:10px;padding-bottom:24px;margin-bottom:24px;border-bottom:1px solid var(--line)}}
+.eyebrow{{font-size:12.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink)}}
+h1{{font-family:"Fraunces",ui-serif,Georgia,serif;font-weight:600;font-size:clamp(26px,4vw,36px);line-height:1.1;margin:0}}
+p.sub{{color:var(--muted);font-size:15px;max-width:62ch;line-height:1.55;margin:0}}
+.week-select{{display:flex;align-items:center;gap:10px;margin-top:8px}}
+.week-select label{{font-size:12.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}}
+.week-select select{{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}}
+.tablewrap{{overflow-x:auto;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);background:var(--surface)}}
+table{{border-collapse:collapse;width:100%;min-width:880px}}
+thead th{{text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:14px 16px;border-bottom:1px solid var(--line)}}
+tbody td{{padding:16px;vertical-align:top;border-bottom:1px solid var(--line);font-size:14px;line-height:1.5;color:var(--ink-soft)}}
+tbody tr:last-child td{{border-bottom:none}}
+tbody tr:hover td{{background:rgba(180,128,43,.05)}}
+col.c-level{{width:140px}} col.c-case{{width:150px}} col.c-desc{{width:auto}}
+col.c-skills{{width:200px}} col.c-career{{width:220px}} col.c-link{{width:90px}}
+.level-pill{{display:inline-block;padding:5px 11px;border-radius:999px;font-family:"Fraunces",ui-serif,serif;font-weight:600;font-size:13px;white-space:nowrap}}
+.case-name{{font-family:"Fraunces",ui-serif,serif;font-weight:600;font-size:15.5px;color:var(--ink);line-height:1.28}}
+.openlink{{display:inline-block;font-weight:600;font-size:13px;color:var(--gold-ink);text-decoration:none;padding:6px 12px;border-radius:8px;border:1px solid var(--gold);white-space:nowrap}}
+.openlink:hover{{background:rgba(180,128,43,.12)}}
+.empty-note{{color:var(--muted);font-size:14.5px}}
+footer.note{{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6;max-width:70ch}}
+@media (max-width:760px){{
+  .tablewrap{{border-radius:0;border-left:none;border-right:none;margin:0 -20px;width:calc(100% + 40px)}}
+}}
+</style></head><body>
+<div class="wrap">
+  <header class="page">
+    <span class="eyebrow">Math Builder &middot; Weekly Cases</span>
+    <h1>Weekly Case Catalog</h1>
+    <p class="sub">Real, professional dilemmas with the math underneath them &mdash; pick a week to see what's live. No login required to open a case.</p>
+    {selector_html}
+  </header>
+  {sections_html}
+  <footer class="note">Each case is a binary decision under real constraints, worked through with real numbers. "Open" launches the student-facing interactive page in a new tab.</footer>
+</div>
+<script>
+var picker = document.getElementById('week-picker');
+if (picker) {{
+  picker.addEventListener('change', function() {{
+    document.querySelectorAll('.week-panel').forEach(function(el) {{
+      el.hidden = (el.dataset.week !== picker.value);
+    }});
+  }});
+}}
+</script>
+</body></html>"""
+
+
 def render_class_review_html(view, case_id=None):
     """view is admin_core.build_class_review_view()'s return dict:
       rows           -- submission rows (already filtered to case_id if given)

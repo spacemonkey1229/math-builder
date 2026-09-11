@@ -27,7 +27,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import admin_core
 from admin_html import render_admin_html
-from class_html import render_class_case_html, render_class_review_html
+from class_html import render_class_case_html, render_class_review_html, render_catalog_html
 from store_local import LocalFileStore
 
 STORE = None  # set in main()
@@ -149,6 +149,18 @@ class Handler(BaseHTTPRequestHandler):
             if path is None:
                 return self._json(404, {"error": "not found"})
             return self._serve_html_file(path, "not found")
+        if p.path == '/catalog':
+            # Public, unauthenticated -- see admin_web/app.py's own /catalog
+            # route docstring and MCS-45. This local server has no login
+            # gate at all, but the route is kept identical (same render call,
+            # same admin_core.get_public_catalog()) so both servers stay in
+            # parity, per this project's own doctrine.
+            body = render_catalog_html(admin_core.get_public_catalog(STORE)).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         m = re.match(r'^/class/([a-z0-9][a-z0-9-]*)$', urllib.parse.unquote(p.path))
         if m:
             try:

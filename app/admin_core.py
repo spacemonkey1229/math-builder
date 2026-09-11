@@ -1233,6 +1233,52 @@ def do_set_weekly_cases(store, raw_text):
     return weeks
 
 
+def get_public_catalog(store):
+    """Public info for the new /catalog page: the guide's live weekly-cases
+    groups (do_get_weekly_cases), each case resolved through get_case_brief()
+    (public-safe -- id/title/primary_metric/options/interactive_path, never
+    the facilitator brief) plus case.json's own catalog{} block (level,
+    blurb, skills_focus, career_note) read directly off disk -- that field
+    carries no gated data (see cases/<id>/case.json's own catalog key), so
+    reading it here is safe on this unauthenticated route.
+
+    A case_id that fails to resolve (a stale/typo'd entry in the guide's own
+    weekly-cases list, or a case with no catalog{} block yet) is skipped
+    with a note, not raised -- one bad entry must never take down the whole
+    public catalog page. Returns an ordered list of {label, cases: [...]}
+    matching do_get_weekly_cases()'s own shape, so render_catalog_html() can
+    render weeks in the same order the guide configured them."""
+    weeks = do_get_weekly_cases(store)
+    out = []
+    for w in weeks:
+        rows = []
+        for case_id in w['cases']:
+            try:
+                brief = get_case_brief(case_id)
+            except ApiError:
+                continue  # unknown/unpublished case_id -- skip, don't crash the page
+            case_path = os.path.join(_CASES_DIR, case_id, 'case.json')
+            catalog = None
+            if os.path.isfile(case_path):
+                try:
+                    with open(case_path, encoding='utf-8') as f:
+                        catalog = json.load(f).get('catalog')
+                except (json.JSONDecodeError, OSError):
+                    catalog = None
+            if not catalog:
+                continue  # no catalog{} metadata authored yet -- omit, don't crash
+            rows.append({
+                "id": brief['id'], "title": brief['title'],
+                "interactive_path": brief['interactive_path'],
+                "level": catalog.get('level'), "level_key": catalog.get('level_key'),
+                "blurb": catalog.get('blurb'), "skills_focus": catalog.get('skills_focus'),
+                "career_note": catalog.get('career_note'),
+            })
+        if rows:
+            out.append({"label": w.get('label'), "cases": rows})
+    return out
+
+
 def get_case_facilitator_brief(case_id):
     """Facilitator-only cheat sheet for a live class debrief: the actual
     dilemma, both options, each side's real argument, the margin, and the

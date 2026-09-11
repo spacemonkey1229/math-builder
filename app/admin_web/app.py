@@ -156,8 +156,12 @@ def require_auth():
     # redacted, role-locked builds -- guide notes and the full read-model
     # stripped out, unlike dashboard.html which keeps the full data behind
     # its cosmetic-only Guide/Student toggle and must stay behind the
-    # passcode.
-    if request.path in ('/login', '/logout', '/student-login', '/student-logout') \
+    # passcode. /catalog is exempted here too -- a public, real-time
+    # weekly-case browse page (see admin_core.get_public_catalog()); it only
+    # ever reads get_case_brief() + case.json's own catalog{} block, never
+    # get_case_facilitator_brief() or balance/qa data, same MCS-45 boundary
+    # the /class/<case_id> exemption below already relies on.
+    if request.path in ('/login', '/logout', '/student-login', '/student-logout', '/catalog') \
             or _STUDENT_FILE_RE.match(request.path) \
             or request.path.startswith('/static') or request.path.startswith('/cases/'):
         return
@@ -513,7 +517,18 @@ def api_student_rate():
 # page (same reuse pattern as admin_html.py/student_portal_html.py).
 import html as _html
 
-from class_html import render_class_case_html, render_class_review_html
+from class_html import render_class_case_html, render_class_review_html, render_catalog_html
+
+
+@app.route('/catalog')
+def catalog_page():
+    # Public, unauthenticated on purpose (see require_auth() above and
+    # MCS-45) -- a real-time, always-current view of whatever the guide has
+    # configured via /class-review's own week-list editor. get_public_catalog
+    # calls do_get_weekly_cases()/get_case_brief() fresh on every request, so
+    # this never drifts from the guide's actual live list, and never reads
+    # gated content (no get_case_facilitator_brief(), no balance/qa fields).
+    return render_catalog_html(admin_core.get_public_catalog(get_store()))
 
 
 @app.route('/class/<case_id>')
