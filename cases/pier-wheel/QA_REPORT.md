@@ -386,3 +386,35 @@ clean, 0 errors; `node --check` on the rebuilt inline `<script>` still parses cl
 Re-ran the full gate fresh: `tier1_structural.py` — `TIER1_PASS`, 0 blockers, same 3
 pre-existing accepted GAPs, `T1-22` and `T1-23` both PASS. No change to any number, source,
 option, or the verdict — this was a page-architecture and JS-correctness fix only.
+
+---
+
+## 2026-09-10 — Working Notebook slider range too narrow for Option B (real, user-caught bug)
+
+**Found by**: direct human review of the live Vercel page — MA1 (qualifying sightline height)
+was correctly implemented in the JS math, but the `qh` slider's `max="130"` silently made it
+impossible to drag the qualifying-height line up to or past Option B's real ceiling.
+
+**Root cause, confirmed by hand**: Option B's real diameter is 158.5 m (Las Vegas High Roller
+spec) with a 2 m boarding clearance, giving a real max rider height of 160.5 m — 30.5 m above
+the slider's old cap. Option A's max rider height (122 m) was fully explorable, so the bug was
+asymmetric: a student exploring Option A saw the full sensitivity picture; a student exploring
+Option B silently could not, with no error or indication anything was being cut off. A prior
+fix pass had already documented this slider's bounds in `case.json.derived.ui_slider_bounds`
+as "arbitrary UI bounds, not case data" without ever checking the bound against the case's own
+real numbers.
+
+**Fixed**: raised `qh`'s `max` from `130` to `170` (comfortably above B's real 160.5 m ceiling).
+Verified live, numerically, not just by inspection: swept `qh` from 76.2 through 170 via real
+DOM events and confirmed `dwellMinutes()`'s `Math.acos` clamp (`Math.max(-1, Math.min(1, rhs))`)
+handles every value in range without NaN — Option A's dwell correctly hits exactly 0 at 122 m,
+Option B's at 160.5 m, both matching hand-computed values. Also exercised every other
+interactive control on the page directly (`bc` slider at both extremes, the Dilemma pick
+widget, the deliverables checklist, both glossaries, the Twist box) — all functioned correctly,
+0 console errors throughout. Updated `case.json.derived.ui_slider_bounds` to the corrected
+value with a note explaining the real-number basis, so this bound is now checkable against case
+data rather than "arbitrary."
+
+Re-ran the full gate: `tier1_structural.py` — `TIER1_PASS`, 0 blockers, 3 pre-existing accepted
+GAPs (T1-18's new orphan-number flag on `170.0` resolved by recording it in
+`case.json.derived`). No change to any option, source, or the verdict.
