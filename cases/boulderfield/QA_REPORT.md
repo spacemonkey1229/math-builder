@@ -206,3 +206,103 @@ the rebuilt HTML.
 ### Tier 3 — human dry-run
 
 NOT RUN — unchanged; no cohort available yet.
+
+---
+
+## 2026-09-10 — live mechanical audit (real browser, real DOM events; T1-23/MCS-50-style)
+
+Prompted by the Pier Wheel corpus incident (a doubled-backslash JS syntax error broke that case's
+entire script while every text-based check stayed green, plus an under-ranged Working Notebook
+slider) — this session served `published/Boulderfield - Interactive.html` over local HTTP
+(`python3 -m http.server`, not `file://`) and drove it in a real browser instead of re-reading
+source.
+
+**Console / script integrity:**
+- Zero console errors on load, and zero after exercising every interactive element.
+- The page's one inline `<script>` block (27,565 chars, extracted after stripping HTML comments so
+  a literal "`<script>`" mention inside a comment couldn't fool the extraction) passed
+  `node --check` cleanly.
+
+**Slider/numeric-input audit (Pier Wheel bug class: does an input's range cut off a real,
+meaningful part of either option's exploration space?):**
+- This case's Working Notebook has **no `<input type="range">` sliders at all** — it is a
+  numeric-entry calculator (`<input type="number">`, Steps 1-5) that checks a typed answer against
+  the case's own computed value, not a slider-driven what-if tool. The Pier Wheel bug class (a
+  `max` attribute below one option's real computed ceiling) does not apply to this case's UI shape.
+  Confirmed by `grep -n "<input" "published/Boulderfield - Interactive.html"` — 15 inputs total: 2
+  radio (pick widget), 12 `type="number"` (Working Notebook Steps 1-5), 1 `type="checkbox"` (Twist
+  toggle) — no range/slider inputs anywhere in the file.
+
+**Working Notebook, driven live with real DOM events (`el.value = X; el.dispatchEvent(new
+Event('input'))`), checked against `sensitivity_model.py`'s real output:**
+- Step 1 (one-way distance): 7.25 mi / 6.5 mi → ✓ / ✓
+- Step 2 (raw Naismith hr): 4.9667 / 4.8167 → ✓ / ✓
+- Step 3 (adjusted total min / margin): 387.4 / 430.7 / 10.05% → ✓ / ✓ / ✓
+- Step 4 (required pace mph, `budgetHr = 7 + 46/60` from 2:14 a.m. to the MA5 10:00 a.m. deadline):
+  hand-derived A = 2.12 mph, B = 2.48 mph → both ✓ (confirms `checkStep4()`'s own equation, not just
+  that it renders)
+- Step 5 (signed temp/wind chill): 16 / 11 / -3 / -12 / 19 / 23 → all 6 ✓, matches
+  `case.json.derived.temperature_breakdown` exactly
+
+**Other interactive elements, all driven live:**
+- Dilemma pick widget: clicking `#pickA` then `#pickB` correctly updated "Current pick: A" → "B".
+- Deliverables checklist: 6 items rendered (matches case.md's 6 D-labels); toggling a checkbox
+  correctly flipped `.checked` state.
+- Both glossaries rendered: math glossary 10 terms (MCS-39 requires ≥8 — ✓), story glossary 6 terms.
+- Twist: `revealTwist()` correctly un-hid the narrative; toggling `#applyTwist` on produced "Option
+  A and Option B now come out to the exact same total time" (margin → 0.00%, matches
+  `evaluate_twist()`'s real output), toggling off correctly cleared the result text.
+- Full end-to-end `get_page_text` read: no broken/incomplete/inconsistent prose found.
+
+**One real defect found and fixed** (citation-label only — no `PARAMS` value, margin, source URL,
+or verdict touched):
+
+Appendix A's route-statistics table cited the Boulderfield's `~12,760 ft` elevation as `[S4]`. S4
+(per `case.json.sources[]` and `case.md` Appendix E) is Wikipedia's Naismith's Rule article — an
+unrelated citation. The real basis for `~12,760 ft` is arithmetic: trailhead 9,400 ft + MA-BF's
+stated 3,360 ft one-way gain = 12,760 ft — i.e. it's derived from the `MA-BF` modeling assumption,
+same as the two table rows directly below it (`~11.0 mi RT (5.5 mi one-way) [MA-BF]`,
+`~3,360 ft [MA-BF]`), not an independently sourced figure. Fixed the tag to `[MA-BF]` in both
+`case.md` (line 168) and `published/Boulderfield - Interactive.html`'s Appendix A table.
+
+While tracing this, also found the published HTML's footer Sources `<ul>` silently dropped S4 as
+its own line item — it mislabeled the Naismith/Wikipedia bullet `[S5]` instead of `[S4]`, and folded
+S5 (NPS "All About Weather") into S9's bullet instead of listing it separately, so a reader clicking
+"[S4]" or "[S5]" in the body text would land on the wrong footer line or find nothing. `case.md`'s
+own Appendix E source table (the source of record) was already correct with all 9 sources properly
+numbered — only the derived/duplicated HTML footer list was wrong. Rewrote the footer's 9 `<li>`
+entries so `[S1]`-`[S9]` each map to their own correct citation, one per line.
+
+Also patched the same `[S4]` → `[MA-BF]` string inside `published/Boulderfield - Data.xlsx`'s
+Appendix A worksheet (`xl/worksheets/sheet2.xml`), which carried the identical wrong tag baked into
+its inline string; workbook reopens cleanly in openpyxl after the patch (4 data sheets + README, all
+present).
+
+**Rebuild:** `case.md`'s hash changed, so Tier 1's continuity check (T1-15) correctly flagged
+`published/*.docx`/`.xlsx`/`MANIFEST.json` as stale. Rebuilt both `.docx` files via
+`node skills/case-publish/scripts/build_docx.js boulderfield`; `MANIFEST.json`'s
+`case_md_sha256` and byte sizes refreshed to match. `case.json.qa.case_md_sha256` updated to the
+new hash (`17f98cc4...`); `qa.tier2_notes` appended noting the fix.
+
+**Gate re-run:**
+```
+Tier 1: checks run 23   PASS 20 · GAP 3 · FAIL 0   VERDICT: TIER1_PASS  (0 blockers, 3 gaps)
+```
+Same 3 pre-existing GAPs as every prior run (T1-10 reinforcement carve-out; T1-14/T1-15
+rounded-restatement FACILITATOR/docx numbers) — none introduced or changed by this pass.
+
+Tier 2 — all 6 scripted probes (`tier2_probes.py --probe N` for N=1..6) plus P7 re-run:
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** | Regenerated `/tmp/coldsolve-boulderfield/PACKET.md` carries the corrected `[MA-BF]` tag; D1-D6 route to the answer (margin 10.05%, Option A) is unchanged — a citation-label fix on a non-load-bearing elevation figure cannot affect the arithmetic path. |
+| P2 both-sides | **PASS** | Unchanged — no scenario number touched. |
+| P3 trap | **PASS** | Unchanged — the trap (Loft looks shorter/faster on raw numbers before Appendix B's adjustments) is untouched by this fix. |
+| P4 twist | **PASS** | Unchanged — `evaluate_twist()` still collapses the margin to exactly 0.00%, confirmed live in-browser (see above). |
+| P5 sensitivity | **PASS (disclosed)** | Mechanically re-run: base `{A: 474.0, B: 430.7}`, margin 10.1%, winner A — identical to every prior run. `night_pace_multiplier` at -50% still breaks the 20% cap, still disclosed in `sensitivity_disclosure[]`. |
+| P6 data decay | **PASS** | All 9 `sources[].url` entries unchanged by this fix (only a citation *label*, not a URL, was corrected); same-day fetch confirmation stands (age 0 days). |
+| P7 accessibility | **PASS** | Mechanical prescreen: 1 deliverable matched (D6), 3 real visuals found — unchanged. Fresh full-page `get_page_text` read end-to-end found no broken/incomplete/inconsistent prose. |
+
+VERDICT: **TIER2_PASS**, unchanged from the prior run — no `PARAMS` value, margin, source URL, or
+verdict was touched by this pass; the one real fix was a mislabeled citation tag now pointing to the
+correct assumption.

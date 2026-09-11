@@ -165,7 +165,7 @@ own stated summit elevation of 14,259 ft (SEE APPENDIX E) [S1] [S3].
 
 | | Trailhead | The Boulderfield (shared waypoint) | The Keyhole Route | The Loft |
 |---|---|---|---|---|
-| Elevation | 9,400 ft [S1] | ~12,760 ft [S4] | Summit 14,259 ft [S1] [S3] | Summit 14,259 ft [S1] |
+| Elevation | 9,400 ft [S1] | ~12,760 ft [MA-BF] | Summit 14,259 ft [S1] [S3] | Summit 14,259 ft [S1] |
 | Round-trip distance | — | ~11.0 mi RT (5.5 mi one-way) [MA-BF] | 14.5 mi [S1] | 13.0 mi [S2] |
 | Round-trip elevation gain | — | ~3,360 ft [MA-BF] | 5,100 ft [S1] | 5,300 ft [S2] |
 | Surface / marking | — | — | Maintained, cairned, NPS-signed standard route [S1] | Unmaintained, largely unmarked above the Boulderfield split [S2] |
