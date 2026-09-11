@@ -256,3 +256,108 @@ NOT RUN (unchanged — requires a real cohort).
 ---
 **Next step:** unchanged — a human visual proof of the rebuilt `published/` docx packets, then
 `case-publish`'s two human-confirm steps to move from `TIER2_PASS` to `PUBLISHED`.
+
+---
+
+## case-readiness run — 2026-09-10 (UAT-defect remediation pass)
+
+**State:** TIER2_PASS → **TIER2_PASS** (re-confirmed)   **Verdict:** PASS
+
+Scope: a simulated 5-student UAT read `published/Dice Roll - Interactive.html` end-to-end and
+live-rendered it in a browser, and found 4 real, concrete defects plus 1 clarity issue. All 4
+required items fixed for real; the 5th (time allowed) fixed too. No nested/background agents used,
+per explicit instruction. Every fix was verified in a real browser via a local HTTP server
+(`python3 -m http.server`), never `file://` and never grep-only.
+
+### Defects fixed
+
+1. **Appendix E existed nowhere in the published HTML** — it was present in full in `case.md` all
+   along (Sources table, S1-S9) but silently dropped from the HTML build, so both "SEE APPENDICES D
+   AND E" (Background) and "Appendix B, Appendix E S4" (Twist) resolved to nothing a reader could
+   find. Added a real `<details>Appendix E — Sources</details>` block to the published HTML between
+   Appendix D and Appendix F, mirroring `case.md`'s own Appendix E table exactly (Claim/Value/
+   Source/Date/Confidence columns), with each row linking to its matching footer citation anchor.
+   Both existing Appendix-E references now resolve correctly — confirmed by reading the live DOM
+   (`document.querySelectorAll` for the new `<details>` and its table rows).
+
+2. **Width-dependent SVG overlap, confirmed at normal desktop width** — Panel B's italic red "never
+   in reach" annotation (`x="437" y="426"`) sat directly on top of the Boulder ✓ / El Paso ✓ county
+   labels (Front Range column rows extend to `y=456`, past the annotation's row). Repositioned the
+   annotation as two lines below all county rows (`y=476`/`y=491`), pushed the legend row down to
+   `y=527` with a separating rule, and grew the `viewBox` from `0 0 760 500` to `0 0 760 545` to fit.
+   Verified with real browser screenshots at both 1280px and 800px viewport width — clean at both,
+   no overlap, confirmed both visually and via `get_page_text`/DOM inspection.
+
+3. **D2 (Statewide Draw's systematic-sampling interval) had no Working Notebook step** — added Step
+   5 ("The Statewide Draw's systematic-sampling interval (D2)"), matching the existing steps'
+   pattern exactly: a goal box, 10 `.fieldrow` input fields (interval *k* and starting session for
+   each of the 5 realized-draw counties — Jefferson/Boulder/Pueblo/Kit Carson/Alamosa), and a Check
+   button wired to a new `checkStep5()` function that reads `PARAMS.a_sessions` and
+   `PARAMS.sessions_target_per_county` (no hardcoded answer key). *k* is checked for an exact match
+   (`Math.floor(scheduled/target)`); the starting session is checked only for falling inside the
+   valid `[1, k]` range, since the actual starting point is the student's own random pick, not a
+   fixed answer — verified directly via `checkStep5()` calls: `fb ok` on correct values (k=9 for
+   Jefferson), `fb bad` after deliberately setting an incorrect k=5.
+
+4. **Inline `[S#]` citation tags were plain unlinked text** — all 38 occurrences of `[S1]`…`[S9]`
+   in the body (Background, Appendix A/B/C prose and table cells) were programmatically wrapped in
+   `<a href="#src-Sn" class="cite-link">` links; each footer `<li>` gained a matching `id="src-Sn"`
+   plus a small back-arrow (`↩`, `history.back()`) so a reader can jump down and back without losing
+   their place. `:target` CSS highlights the destination `<li>` on arrival. Verified by clicking a
+   live `[S1]` link via direct DOM `.click()` and confirming `location.hash`, `li.matches(':target')`,
+   and the back-arrow's presence in the DOM.
+
+5. **(Time allowed) Background's dense opening paragraph** — split into five shorter paragraphs and
+   pulled the single most-missed sentence ("the audit itself is required in all 64 counties
+   regardless of Marisol's choice; only the in-person visit selection is being decided") into its
+   own `.card`-style callout, matching the pattern already used elsewhere in this corpus (e.g.
+   `apron-order`, `bioreactor-bid`). Mirrored into `case.md` as a `>` blockquote in the same
+   position so the two stay in sync; `Dice Roll - Case Study.docx` and `Dice Roll - Facilitator
+   Guide.docx` were rebuilt from the updated `case.md` via `skills/case-publish/scripts/build_docx.js`
+   (confirmed the new callout text landed in the rebuilt docx via `python-docx` text extraction) and
+   `Dice Roll - Data.xlsx` was rebuilt via `scripts/generic_publish/build_xlsx_generic.py` (Tier 1's
+   staleness check flagged it after the `case.md` edit; content unchanged, timestamp refreshed).
+   `MANIFEST.json` and `case.json.qa.case_md_sha256` updated to match.
+
+**Also fixed in passing:** the D2 Working Notebook side-note originally stated "Pueblo's 9÷2 = 4.5
+rounds down to 4," introducing a new number (4.5) not present anywhere in `case.md`/`case.json` and
+tripping Tier 1's T1-18 continuity check as a GAP; reworded to describe the non-even division
+without stating the intermediate decimal, clearing the check back to PASS.
+
+### Verification (real browser, not grep-only)
+
+Served `published/Dice Roll - Interactive.html` over `python3 -m http.server` and drove it with a
+live browser tab: confirmed Appendix E renders with real content; confirmed the SVG has no overlap
+at 1280px and 800px (screenshots); confirmed Step 5's Check button flips `ok`/`bad` correctly against
+both correct and deliberately-wrong input; confirmed a citation link jump sets `location.hash`,
+triggers `:target`, and lands the back-arrow in view; confirmed zero political/partisan terms via
+full-text grep (democrat/republican/party/candidate/fraud/liberal/conservative/trump/biden/gop/dnc —
+zero matches). **`read_console_messages` returned zero entries (0 errors) throughout the entire
+session**, including after all form interactions and citation-link clicks.
+
+### Tier 1 — structural (23 checks), re-run after fixes
+
+**VERDICT: TIER1_PASS (0 blockers, 3 gaps)** — identical gap set to the established baseline (T1-09
+margin-width, T1-10 empty `new_coverage[]` reinforcement carve-out, T1-15 four legitimate
+facilitation-timing numbers). T1-18 (a transient GAP introduced mid-pass by the "4.5" side-note
+number) was caught and fixed before this final run — no regression versus baseline.
+
+### Tier 2 — the 6 scripted probes + P7 cold-read, re-run
+
+| Probe | Result | Notes |
+|---|---|---|
+| P1 Cold solve | **PASS** | Genuinely fresh, done directly (no subagent), reading only `/tmp/coldsolve-dice-roll/PACKET.md` regenerated from the post-fix `case.md` (confirmed the new callout text appears in the regenerated packet). Metric named (total program cost). Arithmetic independently reproduced: A = mileage $814.64 + lodging $220.00 (Kit Carson 169mi, Alamosa 235mi both exceed the 150mi threshold) + M&IE $340.00 + staff $2,250.00 = **$3,624.64**; B = mileage $330.48 (none of B's 5 counties exceed 150mi) + M&IE $340.00 + staff $2,250.00 = **$2,920.48**; margin = (3,624.64−2,920.48)/3,624.64×100 = **19.43%**, B cheaper — exact match to the established baseline. D1: 5/12=41.7% of roster, 5/64=7.8% of state. D4: single-cycle P(remote county selected)=5/12=41.7% under A vs. 0% under B; 3-cycle P(at least once)=1−(7/12)³≈80.2% under A vs. 0% forever under B. Strongest counter-argument: the $704.16/19.43% premium is real and documented as "wide" (T1-09). Assumption named as most sensitive: MA2 (`staff_daily_rate`) — though applied identically in dollar terms to both options, a swing in it still moves the *percentage* margin because it changes each option's total by a different proportion. Ignored: Appendix B's per-county interval/start-point arithmetic (D2's own sub-answer, not the A-vs-B decision). Least-supported number: MA2's $450/day, an undisclosed-source estimate. |
+| P2 Both-sides solve | **PASS** (unchanged — no cost/option data touched) | Re-affirmed: B's argument collapses first and completely at D4's "will a Western Slope/San Luis Valley county ever be visited" question (a hard, permanent 0%); A's argument survives that question and only requires a values judgment on whether representativeness is worth $704.16. |
+| P3 Trap check | **PASS** (unchanged) | Trap unchanged: "B is cheaper and still hits 5 counties → declare it the winner without opening D4" — matches `FACILITATOR.md`'s named trap; this pass touched only Appendix E, the SVG, the Working Notebook, citation links, and Background prose — not the Dilemma, Challenges, or Twist text the trap depends on. |
+| P4 Twist integrity | **PASS** (unchanged) | Twist text and `evaluate_twist()` untouched by this pass (the Twist's "Appendix E S4" reference now correctly resolves, which is a defect fix, not a content change); the conceptual twist (county-level RLA randomness ≠ visit-plan randomness) still holds, still has no numeric-assumption dependency. |
+| P5 Assumption sensitivity | **PASS (disclosed)** | Re-ran `tier2_probes.py --probe 5` mechanically: base margin 19.4% (B cheaper); `staff_daily_rate` −50%→28.2%/+50%→14.8%; `overnight_threshold_mi` −50%→21.8%/+50%→16.9% — all four figures match the established `sensitivity_disclosure[]` record exactly. No FLEX parameter, rate, or cost figure was touched by this pass. |
+| P6 Data decay | **PASS** (unchanged — no source citation, URL, or cited value touched) | S1-S9 unchanged from the prior fetch record; this pass only added anchor-jump wiring around the existing citations, not new claims or sources. |
+| P7 Accessibility cold-read | **PASS** | Done directly, genuinely fresh, against the rebuilt, live-HTTP-served HTML. Confirmed the new Appendix E, SVG fix, Step 5, and citation links all actually render and function (not just parse) via direct browser interaction. Real-world jargon check: the Background restructuring and new callout reuse only already-glossaried terms (audit, observer, county); no new unglossaried real-world term introduced. Final state unchanged from baseline: exactly 1 borderline unexplained real-world term ("salary band," Appendix D MA2, not required for any Challenge). **Political neutrality explicitly re-confirmed**: full-text grep of the rebuilt HTML for democrat/republican/party/candidate/election-outcome/fraud/liberal/conservative/trump/biden/gop/dnc (excluding "bipartisan") returned zero matches. |
+
+### Tier 3 — human dry-run
+
+NOT RUN (unchanged — requires a real cohort).
+
+---
+**Next step:** unchanged — a human visual proof of the rebuilt `published/` docx packets, then
+`case-publish`'s two human-confirm steps to move from `TIER2_PASS` to `PUBLISHED`.
