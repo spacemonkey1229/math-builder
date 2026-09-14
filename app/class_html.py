@@ -484,33 +484,53 @@ def render_class_review_html(view, case_id=None):
                 + '</section>'
             )
 
-        # A week gets its own heading (and anchor id) only when it has one
-        # (an unlabeled single group -- the pre-week-grouping shape, or a
-        # case_id-filtered drill-down page -- renders its cases with no
-        # extra wrapper at all, identical to how this page looked before
-        # weeks existed).
-        body = "".join(
-            (f'<div id="week-{i}" style="font-size:19px;font-weight:700;margin:24px 0 12px;padding-top:4px;'
-             f'scroll-margin-top:14px;border-top:2px solid var(--accent)" role="heading" aria-level="2">'
-             f'{_html.escape(w["label"])}</div>'
-             if w.get('label') else '')
-            + "".join(_case_section(cid) for cid in w['cases'])
-            for i, w in enumerate(weeks)
-        )
+        def _week_counts(case_ids):
+            subs = [r for cid in case_ids for r in groups.get(cid, [])]
+            unreviewed = sum(1 for r in subs if not r.get('reviewed_on'))
+            return len(subs), unreviewed
 
-    # A jump-nav bar across the named weeks -- only worth showing once
-    # there's more than one to jump between; a single week (or none) has
-    # nothing for it to usefully do.
+        # A week gets its own collapsible <details> block (and anchor id)
+        # only when it has a label (an unlabeled single group -- the
+        # pre-week-grouping shape, or a case_id-filtered drill-down page --
+        # renders its cases with no extra wrapper at all, identical to how
+        # this page looked before weeks existed). <details>/<summary> gives
+        # a native disclosure arrow for free; state is restored/persisted
+        # client-side per week (see the script block below) so a guide's
+        # open/closed choices survive a reload.
+        def _week_block(i, w):
+            if not w.get('label'):
+                return "".join(_case_section(cid) for cid in w['cases'])
+            total, unreviewed = _week_counts(w['cases'])
+            badge = (f' &middot; <span class="week-badge">{unreviewed} to review</span>'
+                     if unreviewed else '')
+            return (
+                f'<details class="week-block" id="week-{i}" open>'
+                f'<summary><span class="week-title">{_html.escape(w["label"])}</span>'
+                f'<span class="week-meta">{total} submission{"s" if total != 1 else ""}{badge}</span>'
+                '</summary>'
+                f'<div class="week-body">{"".join(_case_section(cid) for cid in w["cases"])}</div>'
+                '</details>'
+            )
+
+        body = "".join(_week_block(i, w) for i, w in enumerate(weeks))
+
+    # A jump-nav bar across the named weeks, plus expand/collapse-all
+    # shortcuts -- only worth showing once there's more than one week to
+    # jump between; a single week (or none) has nothing for it to usefully
+    # do.
     labeled = [(i, w['label']) for i, w in enumerate(weeks) if w.get('label')]
     week_nav = (
-        '<nav style="position:sticky;top:0;z-index:5;margin:0 -16px 14px;padding:10px 16px;'
+        '<nav class="week-nav" style="position:sticky;top:0;z-index:5;margin:0 -16px 14px;padding:10px 16px;'
         'background:#FAF8F4;border-bottom:1px solid var(--rule);display:flex;gap:14px;flex-wrap:wrap;'
-        'font-size:12.5px">'
+        'align-items:center;font-size:12.5px">'
         + "".join(
             f'<a href="#week-{i}" style="color:var(--accent);font-weight:600;text-decoration:none">{_html.escape(label)}</a>'
             for i, label in labeled
         )
-        + '</nav>'
+        + '<span style="flex:1"></span>'
+        '<button type="button" class="btn ghost" id="week-expand-all" style="font-size:11.5px;padding:3px 8px">Expand all</button>'
+        '<button type="button" class="btn ghost" id="week-collapse-all" style="font-size:11.5px;padding:3px 8px">Collapse all</button>'
+        '</nav>'
         if len(labeled) > 1 else ''
     )
     return f"""<!doctype html><html><head><meta charset="utf-8">
@@ -522,6 +542,17 @@ body{{font-family:-apple-system,sans-serif;max-width:720px;margin:24px auto;padd
 input,textarea{{padding:6px 8px;border:1px solid #DED8CC;border-radius:6px;font-family:inherit}}
 .btn.ghost{{background:none;border:1px solid #22406B;color:#22406B;padding:5px 10px;border-radius:6px;cursor:pointer}}
 summary::-webkit-details-marker{{color:var(--accent)}}
+.week-block{{border:1px solid var(--rule);border-radius:8px;margin:20px 0;background:#fff;scroll-margin-top:56px}}
+.week-block > summary{{cursor:pointer;list-style:none;padding:12px 14px;display:flex;align-items:baseline;
+  justify-content:space-between;gap:10px;flex-wrap:wrap}}
+.week-block > summary::-webkit-details-marker{{display:none}}
+.week-block > summary::before{{content:"\\25B8";display:inline-block;margin-right:8px;color:var(--accent);
+  transition:transform .15s ease}}
+.week-block[open] > summary::before{{transform:rotate(90deg)}}
+.week-title{{font-size:17px;font-weight:700}}
+.week-meta{{font-size:12.5px;font-weight:400;color:var(--muted)}}
+.week-badge{{font-weight:600;color:#A93A1E}}
+.week-body{{padding:0 14px 14px}}
 .case-figs{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:10px 0}}
 .case-figs figure{{margin:0;padding:12px;border:1px solid var(--rule);border-radius:8px;background:#fff;text-align:center}}
 .case-figs figure svg,.case-figs figure img{{max-width:100%;height:auto;display:block;margin:0 auto}}
@@ -575,6 +606,34 @@ if (saveDebriefBtn) {{
     var res = await fetch('/api/weekly-debrief', {{method:'POST', headers:{{'Content-Type':'application/json'}},
       body: JSON.stringify({{label: label, url: url}})}});
     if (res.ok) location.reload(); else alert('Failed to save -- check the link starts with http:// or https://');
+  }};
+}}
+document.querySelectorAll('.week-block').forEach(function(d) {{
+  var key = 'mb-week-open-' + d.id;
+  try {{
+    var saved = localStorage.getItem(key);
+    if (saved !== null) d.open = saved === '1';
+  }} catch (e) {{}}
+  d.addEventListener('toggle', function() {{
+    try {{ localStorage.setItem(key, d.open ? '1' : '0'); }} catch (e) {{}}
+  }});
+}});
+document.querySelectorAll('.week-nav a[href^="#week-"]').forEach(function(a) {{
+  a.addEventListener('click', function() {{
+    var target = document.getElementById(a.getAttribute('href').slice(1));
+    if (target && target.tagName === 'DETAILS') target.open = true;
+  }});
+}});
+var expandAllBtn = document.getElementById('week-expand-all');
+if (expandAllBtn) {{
+  expandAllBtn.onclick = function() {{
+    document.querySelectorAll('.week-block').forEach(function(d) {{ d.open = true; }});
+  }};
+}}
+var collapseAllBtn = document.getElementById('week-collapse-all');
+if (collapseAllBtn) {{
+  collapseAllBtn.onclick = function() {{
+    document.querySelectorAll('.week-block').forEach(function(d) {{ d.open = false; }});
   }};
 }}
 var saveCasesBtn = document.getElementById('save-cases-btn');
