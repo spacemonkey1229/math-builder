@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: FlowState — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  See templates/INTERACTIVE_HTML_CONTRACT.md for the shape contract this file follows.
+  case.md sha256 as of this build: 5f265292ff58ad2e56a4f82bc9e0f7f2d93158e05bd2aa1345cc62d70990f216
+  HARD LINE (MCS-37): this file must never print the case's balance verdict (which plan
+  wins, the margin, the subscriber totals) as a static literal anywhere outside a <script>
+  tag. The Working Notebook computes both plans' projected subscribers live from the case's
+  own numbers; it never hands over the recommendation.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+  .apxnote{font-family:var(--sans);font-size:.82rem;color:var(--sub)}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:280px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  /* ---- math glossary hover + hyperlink terms (T1-19) ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ---- story (real-world advertising/marketing vocabulary) glossary -- separate class/color from .gterm ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* CSV export -- present on every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+
+  /* CASE-SPECIFIC — reach-per-dollar bar chart */
+  .barlabel{font-family:sans-serif;font-size:11px;fill:#20262e}
+  .barval{font-family:sans-serif;font-size:10.5px;fill:#5b6472}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-bottle" viewBox="0 0 24 24"><path d="M9 2h6v3l2 3v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8l2-3z"/><path d="M9 11h6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Launchpad</div>
+        <h1>Case Study: FlowState</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">HS</span>
+      <span class="pill">Percent &middot; Ratio/Proportion &middot; Systems of Equations</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Priya Nakamura is standing in the loading dock at 6:15 in the morning, watching a forklift lower the last crate of FlowState demo units onto a truck bound for the convention center, when her phone buzzes with the subject line she's been dreading: "Board call moved up — need your channel plan by end of day."</p>
+  <p>She should feel good. The bottle works. The cartridge clicks in, reads the wearer's fitness tracker over Bluetooth, and doses the electrolyte-and-flavor mix before anyone even feels thirsty. Investors love the demo. What she doesn't have yet is a launch.</p>
+  <p>Two folders sit on the passenger seat of her car, each one a complete media plan against the same fixed advertising budget, each one already approved and ready to submit. One leans hard into television and radio — loud, broad, hard to miss. The other leans into search and a single fitness-magazine placement — narrower, but aimed at people already looking for exactly this. Solstice Labs gets one shot at the trade show, and one number on the board slide afterward: how many of the people they reached actually became paying subscribers.</p>
+  <p>Her manufacturing lead taps on the car window. The truck is loaded and pulling out. The board call is in nine hours.</p>
+  <p>Priya picks up both folders, one in each hand, and does not open either one yet.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Priya Nakamura is the VP of Marketing at Solstice Labs, a small consumer-hardware startup. She is personally accountable to the board for the result of Solstice Labs' first product launch: FlowState, a reusable smart bottle whose snap-in cartridge automatically doses electrolytes and flavor based on the wearer's paired fitness-tracker activity and sweat-rate data, rather than a fixed pre-mixed recipe. The company's pitch is simple — "the first bottle that adjusts your hydration mix to what your body is actually doing" — and Priya's job is to turn a fixed launch budget into as many <em>paying</em> subscribers as it can buy.</p>
+  <p>Before launch, Solstice Labs ran a pre-launch survey and pilot that measured an AIDA-style conversion funnel — awareness, interest, trial, and paid adoption — across two population segments the company is targeting: <strong>Segment 1, student athletes ages 13–22</strong>, and <strong>Segment 2, working professionals ages 25–45</strong> (see Appendix B). Five advertising channels are available for the launch, each with a real, researched cost benchmark and its own demographic skew: SEO/paid search, a sports/fitness-focused cable TV package, a general daytime/primetime broadcast TV package, drive-time radio, and a full-page placement in a health/fitness magazine (see Appendix A).</p>
+  <p>Priya's team has pre-built exactly two allocation plans against Solstice Labs' fixed launch advertising budget (see Appendix C), and she must submit exactly one to the board before the trade-show deadline. <strong>The Broadcast Blitz</strong> puts the majority of the budget into the two TV packages and radio — mass reach, broad demographics, a channel mix built for raw awareness. <strong>The Precision Funnel</strong> puts the majority of the budget into SEO and the magazine placement — narrower reach, aimed at an audience that is already looking for a product like this one. Whichever plan Priya submits governs the entire launch budget; there is no blended plan and no second submission once the trade-show window closes.</p>
+  <p>The funnel conversion rates that translate a channel's audience into paying subscribers are documented in Appendix D, along with a note on which of those rates come from real published industry benchmarks and which are modeling assumptions specific to Solstice Labs' own product and pilot (see Appendix E for the full assumption list, each with its basis). Every sourced figure in this case is documented in Appendix F. The vocabulary and "how to…" skills this case will ask of you are listed in Appendix G — that is where Challenge 1 sends you.</p>
+  <p>She has to submit one form.</p>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Advertising &amp; Marketing Vocabulary</h3>
+    <p class="side-note" style="border-top:none;padding-top:0;margin-top:0">The math vocabulary Challenge 1 sends you to research lives in Appendix G below. These are the real advertising-industry terms this case's own story uses — hover any one for a plain definition, or click through to a real source.</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Sources: Wikipedia (&ldquo;Cost per mille,&rdquo; &ldquo;Pay-per-click,&rdquo; &ldquo;AIDA (marketing),&rdquo; &ldquo;Purchase funnel,&rdquo; &ldquo;Media planning,&rdquo; &ldquo;Drive time,&rdquo; &ldquo;Churn rate,&rdquo; &ldquo;Cable television&rdquo;). Links verified working 2026-09-11.</p>
+  </div>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Priya Nakamura. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Broadcast Blitz</h4>
+      <p style="margin:0">Submit the plan that puts the majority of the budget into the two TV packages and drive-time radio — mass reach, broad demographics.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Precision Funnel</h4>
+      <p style="margin:0">Submit the plan that puts the majority of the budget into SEO/paid search and the magazine placement — narrower reach, aimed at people already looking for a product like this one.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must include: (a) use of the "how to&hellip;" resource you researched in Challenge 1; (b) at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include:
+      <ul>
+        <li><strong>D1</strong> &mdash; A segmented funnel table for <em>both</em> plans: for every channel and every segment, chain the percentages together — audience reached, times the segment's share of that audience, times the awareness rate, times the interest-given-awareness rate, times the trial-given-interest rate, times the adoption-given-trial rate — down to a projected number of paying subscribers. Show every intermediate percent step; do not skip from reach straight to subscribers. Appendix D does not give you an awareness rate or an interest rate for the print/magazine channel — state and justify your own values for those two rates before you can finish this table.</li>
+        <li><strong>D2</strong> &mdash; A reach-per-dollar and cost-per-acquisition table for every channel in both plans: how many people does a dollar reach in each channel, and once you have D1's subscriber totals, what does each plan actually pay per paying subscriber it acquires?</li>
+        <li><strong>D3</strong> &mdash; A weighted-total comparison: the total projected paying subscribers for Plan A and for Plan B, found by summing D1's channel-by-segment results, and the percent margin between them.</li>
+        <li><strong>D4</strong> &mdash; A budget-shift system of equations. Group the five channels into a broadcast-leaning bucket (the two TV packages plus radio) and a precision-leaning bucket (SEO plus print). Using the per-dollar subscriber yield of each bucket, set up a system of two linear equations and solve it to find the exact dollar split that would make the two plans produce the <em>same</em> number of subscribers. Show your work algebraically, not just by guess-and-check.</li>
+        <li><strong>D5</strong> &mdash; A one-paragraph written recommendation that names which plan you are submitting, states the reach-per-dollar and cost-per-acquisition case for it from D2, and explicitly addresses how many dollars of reallocation (from D4) it would take to flip your recommendation — and whether you think that reallocation is realistic.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. If you are absent the day of a discussion post 500 "excellent" words on the questions above.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apxA">
+    <summary>Appendix A &mdash; Channel Cost Benchmarks</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D1, D2). All figures are real, published benchmarks for the relevant channel type — none of these five figures is a Solstice Labs–specific assumption.</p>
+      <table id="tblApxA">
+        <tr><th>Channel</th><th>Cost benchmark</th><th>Value used</th><th>Where it lands</th></tr>
+        <tr><td>SEO / paid search</td><td>Cost per click (CPC), Health &amp; Fitness category</td><td class="num">$5.00 per click [S1]</td><td>Used directly — reach is measured in engaged website clicks</td></tr>
+        <tr><td>TV — Sports/Fitness cable package</td><td>Cable TV CPM (cost per 1,000 viewers)</td><td class="num">$14.00 CPM [S2]</td><td>Lower end of the sourced $10&ndash;$30 cable range — niche/targeted cable inventory typically prices below broad primetime cable</td></tr>
+        <tr><td>TV — General daytime/primetime broadcast package</td><td>National linear broadcast TV CPM</td><td class="num">$30.00 CPM [S14]</td><td>Lower-middle of the sourced $25&ndash;$40 national-linear-broadcast range</td></tr>
+        <tr><td>Radio — drive-time spots</td><td>Radio CPM (cost per 1,000 listeners)</td><td class="num">$10.00 CPM (informed by [S3])</td><td>Cross-checked against a real medium-market weekly package cost</td></tr>
+        <tr><td>Print — health/fitness magazine, full-page placement</td><td>Magazine CPM (cost per 1,000 readers), 100,000-circulation tier</td><td class="num">$63.00 CPM [S4]</td><td>Used directly</td></tr>
+      </table>
+      <p class="side-note">Not used by either plan, included for reference only: podcast advertising CPM runs $12&ndash;$55, most advertisers paying $15&ndash;$30 [S3] — priced out during planning because no podcast in the fitness/wellness space would commit to a launch-week flight on short notice.</p>
+    </div>
+  </details>
+
+  <details id="apxB">
+    <summary>Appendix B &mdash; The Two Segments</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background, Appendix D, and Challenge 3 (D1).</p>
+      <table id="tblApxB">
+        <tr><th>Segment</th><th>Definition</th><th>Role in the pilot</th></tr>
+        <tr><td>Segment 1</td><td>Student athletes, ages 13&ndash;22</td><td>Higher activity/sweat-rate variability; stronger initial product-fit enthusiasm but a shorter, more price-sensitive subscription horizon</td></tr>
+        <tr><td>Segment 2</td><td>Working professionals, ages 25&ndash;45</td><td>Lower activity variability on average, but greater and steadier subscription spending once adopted</td></tr>
+      </table>
+      <p class="side-note"><strong>Market context.</strong> The global smart water bottle market was valued at $550.99 million in 2025 and is projected to grow to $1,043.88 million by 2034, a 7.49% CAGR, with North America at a 37.79% share [S10]. Wearable-device ownership skews younger — 37% of U.S. adults own a smartwatch overall, rising to 44% among adults 18&ndash;49 [S11]. Gen Z and Millennials are about 36% of the U.S. adult population but account for roughly 41% of annual U.S. wellness spending [S12]. Neither finding names FlowState specifically, so the segment-level product-fit claims above remain Modeling Assumptions (MA5, MA9).</p>
+    </div>
+  </details>
+
+  <details id="apxC">
+    <summary>Appendix C &mdash; The Two Allocation Plans</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Dilemma. Solstice Labs' fixed total launch advertising budget is <strong>$60,000</strong> (MA1). Both plans spend the entire $60,000.</p>
+      <table id="tblApxC">
+        <tr><th>Channel</th><th>Plan A — Broadcast Blitz</th><th>Plan B — Precision Funnel</th></tr>
+        <tr><td>TV — Sports/Fitness</td><td class="num">$18,000</td><td class="num">$6,000</td></tr>
+        <tr><td>TV — General broadcast</td><td class="num">$18,000</td><td class="num">$6,000</td></tr>
+        <tr><td>Radio — drive-time</td><td class="num">$12,000</td><td class="num">$6,000</td></tr>
+        <tr><td>SEO / paid search</td><td class="num">$8,000</td><td class="num">$26,000</td></tr>
+        <tr><td>Print — magazine</td><td class="num">$4,000</td><td class="num">$16,000</td></tr>
+        <tr><td><strong>Total</strong></td><td class="num"><strong>$60,000</strong></td><td class="num"><strong>$60,000</strong></td></tr>
+      </table>
+
+      <figure>
+        <svg viewBox="0 0 720 300" role="img" aria-label="Bar chart of reach per dollar for each of the five advertising channels">
+          <title>Reach per dollar, by channel</title>
+          <text x="10" y="20" class="barlabel" font-weight="700">Reach per dollar spent, by channel (people or clicks per $1)</text>
+          <!-- axis -->
+          <line x1="140" y1="40" x2="140" y2="250" stroke="#5b6472" stroke-width="1"/>
+          <line x1="140" y1="250" x2="700" y2="250" stroke="#5b6472" stroke-width="1"/>
+          <!-- bars: scale 5.6px per unit, max radio=100 -->
+          <!-- TV Sports 71.43 -->
+          <rect x="140" y="70" width="400" height="26" fill="#1a3a5c"/>
+          <text x="130" y="88" text-anchor="end" class="barlabel">TV Sports</text>
+          <text x="548" y="88" class="barval">71.4 / $1</text>
+          <!-- TV General 33.33 -->
+          <rect x="140" y="105" width="187" height="26" fill="#1a3a5c"/>
+          <text x="130" y="123" text-anchor="end" class="barlabel">TV General</text>
+          <text x="335" y="123" class="barval">33.3 / $1</text>
+          <!-- Radio 100 -->
+          <rect x="140" y="140" width="560" height="26" fill="#1a3a5c"/>
+          <text x="130" y="158" text-anchor="end" class="barlabel">Radio</text>
+          <text x="668" y="158" class="barval">100.0 / $1</text>
+          <!-- Print 15.87 -->
+          <rect x="140" y="175" width="89" height="26" fill="#1a3a5c"/>
+          <text x="130" y="193" text-anchor="end" class="barlabel">Print</text>
+          <text x="237" y="193" class="barval">15.9 / $1</text>
+          <!-- SEO 0.2 (clicks, not people -- shown separately, scaled x100 with note) -->
+          <rect x="140" y="210" width="4" height="26" fill="#c9a227"/>
+          <text x="130" y="228" text-anchor="end" class="barlabel">SEO*</text>
+          <text x="152" y="228" class="barval">0.2 clicks / $1</text>
+          <text x="140" y="270" class="barval">*SEO reach is measured in clicks, not people — not directly comparable to the other four bars' raw reach.</text>
+        </svg>
+        <figcaption>Reach per dollar by channel — a genuinely different quantity from cost-per-acquisition (Working Notebook, D2), since it says nothing yet about how well that reach converts to a paying subscriber.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details id="apxD">
+    <summary>Appendix D &mdash; Funnel Conversion Rates</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D1, D2, D3). SEO/paid search skips the awareness and interest stages: a paid-search click is already 100% aware and 100% interested by construction.</p>
+      <table id="tblApxD">
+        <tr><th>Channel</th><th>Segment split (S1/S2)</th><th>Awareness rate</th><th>Interest rate (given aware)</th><th>Trial-conversion rate (given interested)</th></tr>
+        <tr><td>TV — Sports/Fitness</td><td>65% / 35%</td><td class="num">22%</td><td class="num">10%</td><td class="num">1.17%</td></tr>
+        <tr><td>TV — General broadcast</td><td>30% / 70%</td><td class="num">22%</td><td class="num">10%</td><td class="num">1.17%</td></tr>
+        <tr><td>Radio — drive-time</td><td>25% / 75%</td><td class="num">12%</td><td class="num">8%</td><td class="num">1.17%</td></tr>
+        <tr><td>Print — magazine</td><td>20% / 80%</td><td class="num"><em>you assume</em></td><td class="num"><em>you assume</em></td><td class="num">1.17%</td></tr>
+        <tr><td>SEO / paid search</td><td>45% / 55%</td><td class="num">100% (by construction)</td><td class="num">100% (by construction)</td><td class="num">6.8%</td></tr>
+      </table>
+      <p class="side-note">1.17% is the real, published median site-conversion rate across direct-to-consumer ecommerce stores [S6]. SEO uses 6.8%, the real published average conversion rate for Health &amp; Fitness–category paid-search clicks [S1].</p>
+      <table id="tblApxDAdopt">
+        <tr><th>Segment</th><th>Adoption rate (trial &rarr; paying subscriber)</th><th>Basis</th></tr>
+        <tr><td>Segment 1 (student athletes, 13&ndash;22)</td><td class="num">35.8%</td><td>"Followers" tier, D2C subscription brands [S7]</td></tr>
+        <tr><td>Segment 2 (working professionals, 25&ndash;45)</td><td class="num">52.0%</td><td>"Average" tier, D2C subscription brands [S7]</td></tr>
+      </table>
+      <p class="side-note">This rate applies after D1's trial-conversion step, regardless of which channel produced the trial signup. A real, category-specific benchmark (Health &amp; Fitness weekly subscriptions, 42.2% trial-to-paid [S13]) falls between these two tiers, corroborating both as plausible for this vertical.</p>
+
+      <figure>
+        <svg viewBox="0 0 720 260" role="img" aria-label="Funnel diagram showing the five conversion stages a channel's audience passes through: reach, awareness, interest, trial, and adoption, narrowing at each stage">
+          <title>The AIDA-style funnel every channel in D1 passes through</title>
+          <text x="10" y="20" class="barlabel" font-weight="700">D1's funnel shape: every channel narrows through the same five stages</text>
+          <!-- trapezoid segments, widest at top (reach) to narrowest at bottom (adoption) -->
+          <polygon points="40,40 680,40 610,80 110,80" fill="#1a3a5c"/>
+          <polygon points="110,80 610,80 545,120 175,120" fill="#25507e"/>
+          <polygon points="175,120 545,120 485,160 235,160" fill="#3a6ea5"/>
+          <polygon points="235,160 485,160 430,200 290,200" fill="#6a97c2"/>
+          <polygon points="290,200 430,200 385,230 335,230" fill="#c9a227"/>
+          <text x="360" y="64" text-anchor="middle" class="barval" fill="#fff">Reach (audience the dollars buy)</text>
+          <text x="360" y="104" text-anchor="middle" class="barval" fill="#fff">&times; Awareness rate</text>
+          <text x="360" y="144" text-anchor="middle" class="barval" fill="#fff">&times; Interest rate (given aware)</text>
+          <text x="360" y="184" text-anchor="middle" class="barval" fill="#111">&times; Trial-conversion rate (given interested)</text>
+          <text x="360" y="219" text-anchor="middle" class="barval" fill="#111">&times; Adoption rate &rarr; paying subscribers</text>
+          <text x="360" y="250" text-anchor="middle" class="barlabel">SEO/paid search enters this funnel already 100% aware and 100% interested (see note above) &mdash; every other channel passes through all five stages.</text>
+        </svg>
+        <figcaption>Every one of D1's channel-by-segment cells is this same five-stage chain, just with different rates and a different audience at the top &mdash; the table gives you the rates, but the shape narrowing top to bottom is why no stage can be skipped.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details id="apxMA">
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced from an external publisher</strong>. They are stated scenario assumptions chosen by the case author because no public report measures Solstice Labs' own launch budget, a specific channel's exact demographic skew for this specific campaign, or a brand-new fictional product's exact awareness/interest lift. A Hero may challenge any of these numbers in discussion — that is a legitimate move.</blockquote>
+      <table id="tblApxMA">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Total fixed launch advertising budget</td><td class="num">$60,000</td><td>The case's numbers scale with this figure.</td></tr>
+        <tr><td>MA2</td><td>TV — Sports/Fitness CPM</td><td class="num">$14.00</td><td>Sensitive — changes both plans' TV-sports reach.</td></tr>
+        <tr><td>MA3</td><td>TV — General broadcast CPM</td><td class="num">$30.00</td><td>Same sensitivity class as MA2.</td></tr>
+        <tr><td>MA4</td><td>Radio — drive-time CPM</td><td class="num">$10.00</td><td>Sensitive.</td></tr>
+        <tr><td>MA5</td><td>Channel-by-segment audience skew</td><td>see Appendix D</td><td>Highly sensitive — the structural reason Plan A and Plan B differ at all.</td></tr>
+        <tr><td>MA6</td><td>Awareness rate, TV channels</td><td class="num">22%</td><td>Sensitive — scales every downstream stage for both TV channels.</td></tr>
+        <tr><td>MA7</td><td>Awareness rate, radio</td><td class="num">12%</td><td>Same sensitivity class as MA6.</td></tr>
+        <tr><td>MA8</td><td>Interest rate (aware &rarr; visits site), TV/radio</td><td class="num">10% (TV), 8% (radio)</td><td>Sensitive; deliberately left unresolved for print so D1 requires your own justified value.</td></tr>
+        <tr><td>MA9</td><td>Assignment of Segment 1/2 to adoption tiers</td><td class="num">35.8% / 52.0%</td><td>Sensitive — swapping the assignment changes both plans' totals differently.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apxF">
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <p class="apxnote">All sourced (non-assumption) figures in this case are cited here. Sources marked "supplemental" inform the basis column of a Modeling Assumption rather than supplying a value used directly in this case's arithmetic.</p>
+      <table id="tblApxF">
+        <tr><th>#</th><th>Claim</th><th>Source</th><th>Date</th><th>Conf.</th></tr>
+        <tr><td>S1</td><td>Health &amp; Fitness Google Ads CPC ($5.00) &amp; CVR (6.8%)</td><td><a href="https://ppcchief.com/google-ads-benchmarks/health-fitness" target="_blank" rel="noopener">PPC Chief — Health &amp; Fitness Google Ads Benchmarks</a></td><td>18 Feb 2026</td><td>MEDIUM</td></tr>
+        <tr><td>S2</td><td>Cable TV CPM range ($10&ndash;$30)</td><td><a href="https://vidico.com/news/how-much-does-a-30-second-commercial-cost/" target="_blank" rel="noopener">Vidico — 30-Second Commercial Cost Breakdown</a></td><td>2026</td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Radio weekly package cost by market; podcast CPM (supplemental)</td><td><a href="https://www.audiogo.com/blog/podcast-advertising-cost-and-rates" target="_blank" rel="noopener">AudioGo — Podcast Advertising Rates 2026</a></td><td>10 Aug 2026</td><td>MEDIUM</td></tr>
+        <tr><td>S4</td><td>Magazine CPM by circulation tier ($63 at 100k)</td><td><a href="https://mediamaxnetwork.com/industry-insights/magazine-advertisement-rates-how-to-get-the-best-deal/" target="_blank" rel="noopener">MediaMax Network — Magazine Advertisement Rates</a></td><td>accessed 2026-09-11</td><td>MEDIUM</td></tr>
+        <tr><td>S5</td><td>Seed-stage marketing budget range (supplemental)</td><td><a href="https://www.gtm8020.com/blog/startup-marketing-budget-statistics" target="_blank" rel="noopener">GTM 8020 — Startup Marketing Budget Statistics</a></td><td>2026</td><td>MEDIUM</td></tr>
+        <tr><td>S6</td><td>Median DTC ecommerce site conversion rate (1.17%)</td><td><a href="https://topgrowthmarketing.com/dtc-ecommerce-benchmarks/dtc-site-conversion-rate-2026/" target="_blank" rel="noopener">Top Growth Marketing — DTC Benchmark 2026</a></td><td>Jul25&ndash;Jun26</td><td>HIGH</td></tr>
+        <tr><td>S7</td><td>D2C subscription trial-to-paid tiers (35.8% / 52.0%)</td><td><a href="https://blog.cleeng.com/subscription-conversion-benchmarks" target="_blank" rel="noopener">Cleeng — Subscription Conversion Benchmarks</a></td><td>2026</td><td>MEDIUM</td></tr>
+        <tr><td>S8</td><td>TV vs digital brand-awareness lift (supplemental)</td><td><a href="https://adwave.com/resources/tv-brand-awareness-effectiveness" target="_blank" rel="noopener">AdWave — TV Brand Awareness (citing Nielsen)</a></td><td>2025</td><td>MEDIUM</td></tr>
+        <tr><td>S9</td><td>CPM/CPP definitions for radio (supplemental)</td><td><a href="https://www.radioadvertisinghome.com/radio-advertising-rates-glossary-cost-benchmarks/" target="_blank" rel="noopener">Radio Advertising Home — Rates Glossary</a></td><td>2026</td><td>MEDIUM</td></tr>
+        <tr><td>S10</td><td>Smart water bottle market size (supplemental)</td><td><a href="https://www.fortunebusinessinsights.com/smart-water-bottle-market-115917" target="_blank" rel="noopener">Fortune Business Insights — Smart Water Bottle Market</a></td><td>2025/2026</td><td>MEDIUM</td></tr>
+        <tr><td>S11</td><td>Smartwatch ownership by age (supplemental)</td><td><a href="https://www.sonarhealth.co/blog/wearable-adoption-2026/" target="_blank" rel="noopener">Sonar Health — Wearable Adoption Snapshot (citing Pew)</a></td><td>2026</td><td>MEDIUM</td></tr>
+        <tr><td>S12</td><td>Wellness spending by generation (supplemental)</td><td><a href="https://www.emarketer.com/content/gen-z--millennials-spend-more-on-wellness-products-than-older-cohorts" target="_blank" rel="noopener">eMarketer — Wellness Spending (citing McKinsey)</a></td><td>18 Jun 2025</td><td>MEDIUM</td></tr>
+        <tr><td>S13</td><td>Health &amp; Fitness app subscription benchmarks (supplemental)</td><td><a href="https://adapty.io/blog/health-fitness-app-subscription-benchmarks/" target="_blank" rel="noopener">Adapty — State of In-App Subscriptions 2026</a></td><td>27 Mar 2026</td><td>MEDIUM</td></tr>
+        <tr><td>S14</td><td>National linear broadcast TV CPM ($25&ndash;$40)</td><td><a href="https://www.vibe.co/blog/how-to/tv-advertising-cost" target="_blank" rel="noopener">Vibe — TV Advertising Cost 2026</a></td><td>10 Jun 2026</td><td>MEDIUM</td></tr>
+        <tr><td>S15</td><td>Broadcast/cable/local TV CPM (supplemental)</td><td><a href="https://www.designrush.com/agency/ad-agencies/trends/tv-advertising-cost" target="_blank" rel="noopener">DesignRush — TV Advertising Costs 2026</a></td><td>Jan25/Dec25</td><td>MEDIUM</td></tr>
+        <tr><td>S16</td><td>Average U.S. radio CPM (supplemental)</td><td><a href="https://www.amraandelma.com/radio-show-marketing-statistics/" target="_blank" rel="noopener">Amra &amp; Elma — Radio Marketing Statistics 2026</a></td><td>Mar 2026</td><td>MEDIUM</td></tr>
+        <tr><td>S17</td><td>Sports &amp; Fitness / Electronics search CPC (supplemental)</td><td><a href="https://www.webtonic.io/blog/e-commerce-google-ads-statistics" target="_blank" rel="noopener">Web Tonic — E-commerce Google Ads Benchmarks</a></td><td>Jul/Sep 2026</td><td>MEDIUM</td></tr>
+      </table>
+      <p class="side-note">S1, S2, S4, S6, S7, S14 are used directly as values in this case's arithmetic. S3, S5, S8, S9, S10&ndash;S13, S15&ndash;S17 are real, dated sources that inform a Modeling Assumption's basis or corroborate a value without replacing it.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-11. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which plan to recommend; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: TV channels' segmented funnel, Plan A</h4>
+    <div class="goal">Using Appendix A/D's rates, chain reach &times; segment share &times; awareness &times; interest &times; trial-conversion &times; adoption for TV&ndash;Sports and TV&ndash;General under Plan A's dollar amounts, for each segment separately.</div>
+    <div class="fieldrow"><label for="s1TvSp1">TV&ndash;Sports, Segment 1 subscribers</label><input type="number" id="s1TvSp1" step="0.01"><span class="fb" id="fb1a"></span></div>
+    <div class="fieldrow"><label for="s1TvSp2">TV&ndash;Sports, Segment 2 subscribers</label><input type="number" id="s1TvSp2" step="0.01"><span class="fb" id="fb1b"></span></div>
+    <div class="fieldrow"><label for="s1TvGen1">TV&ndash;General, Segment 1 subscribers</label><input type="number" id="s1TvGen1" step="0.01"><span class="fb" id="fb1c"></span></div>
+    <div class="fieldrow"><label for="s1TvGen2">TV&ndash;General, Segment 2 subscribers</label><input type="number" id="s1TvGen2" step="0.01"><span class="fb" id="fb1d"></span></div>
+    <button onclick="checkStep1()">Check</button>
+    <p class="side-note">D1 also asks for the full table (all 5 channels, both plans) and your own justified print awareness/interest rate — this calculator only checks the two fully-determined TV channels above.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: Reach-per-dollar and channel-level cost-per-acquisition</h4>
+    <div class="goal">Reach-per-dollar and a channel's own cost-per-acquisition don't depend on which plan you're looking at — only on that channel's own CPM/CPC and funnel rates. Compute both for TV&ndash;Sports and for SEO.</div>
+    <div class="fieldrow"><label for="s2rpdTv">TV&ndash;Sports: reach per dollar (people per $1)</label><input type="number" id="s2rpdTv" step="0.01"><span class="fb" id="fb2a"></span></div>
+    <div class="fieldrow"><label for="s2cpaTv">TV&ndash;Sports: cost per paying subscriber acquired ($)</label><input type="number" id="s2cpaTv" step="0.01"><span class="fb" id="fb2b"></span></div>
+    <div class="fieldrow"><label for="s2rpdSeo">SEO: reach per dollar (clicks per $1)</label><input type="number" id="s2rpdSeo" step="0.0001"><span class="fb" id="fb2c"></span></div>
+    <div class="fieldrow"><label for="s2cpaSeo">SEO: cost per paying subscriber acquired ($)</label><input type="number" id="s2cpaSeo" step="0.01"><span class="fb" id="fb2d"></span></div>
+    <button onclick="checkStep2()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: Plan totals and margin</h4>
+    <div class="goal">Sum D1's channel-by-segment results across all five channels for each plan, then find the percent margin between the two totals. (Uses this calculator's own reference print-channel assumption — see the note below.)</div>
+    <div class="fieldrow"><label for="s3A">Plan A total projected subscribers</label><input type="number" id="s3A" step="0.01"><span class="fb" id="fb3a"></span></div>
+    <div class="fieldrow"><label for="s3B">Plan B total projected subscribers</label><input type="number" id="s3B" step="0.01"><span class="fb" id="fb3b"></span></div>
+    <div class="fieldrow"><label for="s3margin">Percent margin between the two totals</label><input type="number" id="s3margin" step="0.1"><span class="fb" id="fb3c"></span></div>
+    <button onclick="checkStep3()">Check</button>
+    <p class="side-note">This calculator's plan totals use one specific, disclosed reference value for the print channel's awareness/interest rate so there's something concrete to check your arithmetic against: <strong>15% awareness, 12% interest</strong> (this calculator's own reference assumption only — not given anywhere in Appendix D). Challenge 3 (D1) asks you to justify your <em>own</em> value — a different, equally well-justified value will legitimately produce a different total, and that's fine as long as you show your reasoning.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: Broadcast-bucket / precision-bucket system of equations</h4>
+    <div class="goal">Broadcast bucket = TV&ndash;Sports + TV&ndash;General + Radio. Precision bucket = SEO + Print. Using Plan A's own broadcast-bucket mix and Plan B's own precision-bucket mix, find each bucket's per-dollar subscriber yield, then solve x + y = $60,000 and (broadcast yield)&middot;x + (precision yield)&middot;y = Plan B's total for the break-even split.</div>
+    <div class="fieldrow"><label for="s4broadYield">Broadcast-bucket yield (subscribers per dollar)</label><input type="number" id="s4broadYield" step="0.000001"><span class="fb" id="fb4a"></span></div>
+    <div class="fieldrow"><label for="s4precYield">Precision-bucket yield (subscribers per dollar)</label><input type="number" id="s4precYield" step="0.000001"><span class="fb" id="fb4b"></span></div>
+    <div class="fieldrow"><label for="s4x">Break-even broadcast-bucket dollars (x)</label><input type="number" id="s4x" step="1"><span class="fb" id="fb4c"></span></div>
+    <div class="fieldrow"><label for="s4y">Break-even precision-bucket dollars (y)</label><input type="number" id="s4y" step="1"><span class="fb" id="fb4d"></span></div>
+    <button onclick="checkStep4()">Check</button>
+    <p class="side-note">Still just checking your own arithmetic — it will not tell you which plan to recommend. That's your D5 pitch to make. If you've revealed and applied the Twist below, this step re-checks against the +50% TV-CPM scenario instead.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Reveal this only after you've finished working through the case &mdash; the Twist is meant to land after your analysis, not before.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-bottle"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've finished the case &mdash; reveal it</button>
+    <div id="twistNarrative">
+      <p><em>"It's the week of the trade show."</em> Priya's media buyer calls. Both TV packages — sports and general — just quoted new rates. Trade-show week this year lands right on top of the conference championships, and every network is raising ad rates for the live-sports inventory around it, cable and broadcast both. The new quote: both TV CPMs are roughly 50% higher than what the plan was built on.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist: raise both TV CPMs (MA2, MA3) by 50% and recompute Step 4's bucket yields and break-even split.</label>
+      </div>
+      <p style="margin-top:12px">Sixty seconds. Are you changing your plan &mdash; or not?</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 &mdash; PPC Chief, <em>Health &amp; Fitness Google Ads Benchmarks</em> (18 Feb 2026)</li>
+      <li>S2 &mdash; Vidico, <em>30-Second Commercial Cost Breakdown</em> (2026)</li>
+      <li>S3 &mdash; AudioGo, <em>Podcast Advertising Rates 2026</em> (10 Aug 2026)</li>
+      <li>S4 &mdash; MediaMax Network, <em>Magazine Advertisement Rates</em></li>
+      <li>S6 &mdash; Top Growth Marketing, <em>DTC Ecommerce Benchmark 2026</em></li>
+      <li>S7 &mdash; Cleeng, <em>Subscription Conversion Benchmarks</em> (2026)</li>
+      <li>S14 &mdash; Vibe, <em>TV Advertising Cost 2026</em> (10 Jun 2026)</li>
+      <li>Full list of 17 sources (S1&ndash;S17) in Appendix F above.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  FlowState &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   Given data, copied verbatim from cases/flow-state/case.json /
+   sensitivity_model.py (case.md sha256 as of this build:
+   5f265292ff58ad2e56a4f82bc9e0f7f2d93158e05bd2aa1345cc62d70990f216).
+   JS port of sensitivity_model.py's PARAMS/FLEX/evaluate() -- same
+   shape, so the Working Notebook and the Python sensitivity model
+   can never silently drift.
+   ================================================================ */
+const PARAMS = {
+  seo_cpc_usd: 5.00, seo_trial_conv: 0.068, nonseo_trial_conv: 0.0117,
+  print_cpm_usd: 63.00, adoption_seg1: 0.358, adoption_seg2: 0.520,
+  budget_usd: 60000.0, tv_sports_cpm: 14.00, tv_general_cpm: 30.00, radio_cpm: 10.00,
+  tv_awareness: 0.22, radio_awareness: 0.12, tv_interest: 0.10, radio_interest: 0.08,
+  print_awareness: 0.15, print_interest: 0.12
+};
+const FLEX = ["budget_usd", "tv_sports_cpm", "tv_general_cpm", "radio_cpm",
+  "tv_awareness", "radio_awareness", "tv_interest", "radio_interest",
+  "print_awareness", "print_interest"];
+
+const PLAN_SHARES = {
+  A: {tv_sports: 18000/60000, tv_general: 18000/60000, radio: 12000/60000, seo: 8000/60000, print: 4000/60000},
+  B: {tv_sports: 6000/60000, tv_general: 6000/60000, radio: 6000/60000, seo: 26000/60000, print: 16000/60000}
+};
+const SEGMENT_SPLIT = {
+  tv_sports: [0.65, 0.35], tv_general: [0.30, 0.70], radio: [0.25, 0.75],
+  print: [0.20, 0.80], seo: [0.45, 0.55]
+};
+
+function channelSubscribers(dollars, cpmOrCpc, isCpc, awareness, interest, trialConv, segSplit, p){
+  const reach = isCpc ? (dollars / cpmOrCpc) : (dollars / cpmOrCpc * 1000.0);
+  const seg1 = reach * segSplit[0] * awareness * interest * trialConv * p.adoption_seg1;
+  const seg2 = reach * segSplit[1] * awareness * interest * trialConv * p.adoption_seg2;
+  return {seg1, seg2, total: seg1 + seg2, reach};
+}
+
+function planBreakdown(plan, p){
+  const shares = PLAN_SHARES[plan];
+  const budget = p.budget_usd;
+  const tv_sports = channelSubscribers(budget*shares.tv_sports, p.tv_sports_cpm, false, p.tv_awareness, p.tv_interest, p.nonseo_trial_conv, SEGMENT_SPLIT.tv_sports, p);
+  const tv_general = channelSubscribers(budget*shares.tv_general, p.tv_general_cpm, false, p.tv_awareness, p.tv_interest, p.nonseo_trial_conv, SEGMENT_SPLIT.tv_general, p);
+  const radio = channelSubscribers(budget*shares.radio, p.radio_cpm, false, p.radio_awareness, p.radio_interest, p.nonseo_trial_conv, SEGMENT_SPLIT.radio, p);
+  const seo = channelSubscribers(budget*shares.seo, p.seo_cpc_usd, true, 1.0, 1.0, p.seo_trial_conv, SEGMENT_SPLIT.seo, p);
+  const print_ = channelSubscribers(budget*shares.print, p.print_cpm_usd, false, p.print_awareness, p.print_interest, p.nonseo_trial_conv, SEGMENT_SPLIT.print, p);
+  const total = tv_sports.total + tv_general.total + radio.total + seo.total + print_.total;
+  return {tv_sports, tv_general, radio, seo, print: print_, total};
+}
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const a = planBreakdown('A', p);
+  const b = planBreakdown('B', p);
+  return {A: a.total, B: b.total, planA: a, planB: b};
+}
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  p.tv_sports_cpm = p.tv_sports_cpm * 1.5;
+  p.tv_general_cpm = p.tv_general_cpm * 1.5;
+  return evaluate(p);
+}
+
+function reachPerDollar(cpmOrCpc, isCpc){ return isCpc ? (1/cpmOrCpc) : (1000/cpmOrCpc); }
+function channelCPA(cpmOrCpc, isCpc, awareness, interest, trialConv, segSplit, p){
+  const rpd = reachPerDollar(cpmOrCpc, isCpc);
+  const subsPerDollar = rpd * (segSplit[0]*awareness*interest*trialConv*p.adoption_seg1 + segSplit[1]*awareness*interest*trialConv*p.adoption_seg2);
+  return {rpd, cpa: 1/subsPerDollar, subsPerDollar};
+}
+function bucketYields(p){
+  const a = planBreakdown('A', p);
+  const b = planBreakdown('B', p);
+  const broadcastDollars = p.budget_usd*(PLAN_SHARES.A.tv_sports + PLAN_SHARES.A.tv_general + PLAN_SHARES.A.radio);
+  const broadcastSubs = a.tv_sports.total + a.tv_general.total + a.radio.total;
+  const precisionDollars = p.budget_usd*(PLAN_SHARES.B.seo + PLAN_SHARES.B.print);
+  const precisionSubs = b.seo.total + b.print.total;
+  return {broadcastYield: broadcastSubs/broadcastDollars, precisionYield: precisionSubs/precisionDollars, bTotal: b.total};
+}
+function breakEvenSplit(p){
+  const y = bucketYields(p);
+  const budget = p.budget_usd;
+  // x + z = budget; broadcastYield*x + precisionYield*z = bTotal  =>  solve for x, z
+  const x = (y.bTotal - y.precisionYield*budget) / (y.broadcastYield - y.precisionYield);
+  const z = budget - x;
+  return {x, z, broadcastYield: y.broadcastYield, precisionYield: y.precisionYield};
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function currentTwistParams(){
+  const twistEl = document.getElementById('applyTwist');
+  if(twistEl && twistEl.checked){
+    return Object.assign({}, PARAMS, {tv_sports_cpm: PARAMS.tv_sports_cpm*1.5, tv_general_cpm: PARAMS.tv_general_cpm*1.5});
+  }
+  return PARAMS;
+}
+
+function checkStep1(){
+  const p = PARAMS; // Step 1 is fully-determined TV data, not affected by the twist toggle
+  const a = planBreakdown('A', p);
+  fb('fb1a', near(val('s1TvSp1'), a.tv_sports.seg1, 0.5));
+  fb('fb1b', near(val('s1TvSp2'), a.tv_sports.seg2, 0.5));
+  fb('fb1c', near(val('s1TvGen1'), a.tv_general.seg1, 0.5));
+  fb('fb1d', near(val('s1TvGen2'), a.tv_general.seg2, 0.5));
+}
+
+function checkStep2(){
+  const p = PARAMS;
+  const tv = channelCPA(p.tv_sports_cpm, false, p.tv_awareness, p.tv_interest, p.nonseo_trial_conv, SEGMENT_SPLIT.tv_sports, p);
+  const seo = channelCPA(p.seo_cpc_usd, true, 1.0, 1.0, p.seo_trial_conv, SEGMENT_SPLIT.seo, p);
+  fb('fb2a', near(val('s2rpdTv'), tv.rpd, 0.5));
+  fb('fb2b', near(val('s2cpaTv'), tv.cpa, 2));
+  fb('fb2c', near(val('s2rpdSeo'), seo.rpd, 0.01));
+  fb('fb2d', near(val('s2cpaSeo'), seo.cpa, 2));
+}
+
+function checkStep3(){
+  const p = currentTwistParams();
+  const r = evaluate(p);
+  const lo = Math.min(r.A, r.B), hi = Math.max(r.A, r.B);
+  const margin = lo ? 100.0*(hi-lo)/lo : 0;
+  fb('fb3a', near(val('s3A'), r.A, 1));
+  fb('fb3b', near(val('s3B'), r.B, 1));
+  fb('fb3c', near(val('s3margin'), margin, 0.3));
+}
+
+function checkStep4(){
+  const p = currentTwistParams();
+  const be = breakEvenSplit(p);
+  fb('fb4a', near(val('s4broadYield'), be.broadcastYield, 0.0005));
+  fb('fb4b', near(val('s4precYield'), be.precisionYield, 0.0005));
+  fb('fb4c', near(val('s4x'), be.x, 500));
+  fb('fb4d', near(val('s4y'), be.z, 500));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "flow-state";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Segmented funnel table, both plans, all channels/segments",
+    "Why chain the percentages instead of applying one blended rate: each stage (awareness given reach, interest given aware, trial given interested, adoption given trial) is a conditional rate, and multiplying a chain of conditional rates is the correct way to find what fraction of the original audience survives every stage. Skipping straight from reach to subscribers would hide exactly where each plan's channels lose people along the way — which is the entire reason Plan A and Plan B end up looking different."],
+  ["D2", "Reach-per-dollar and cost-per-acquisition table, every channel",
+    "Why a per-dollar ratio, not raw totals: the two plans spend very different dollar amounts on each channel, so comparing raw reach or raw subscriber counts would just reward whichever channel got the bigger budget. A ratio metric (people or subscribers per dollar) puts channels of different scale on equal footing. Reach-per-dollar and cost-per-acquisition are two different ratios — one before the funnel narrows the audience, one after — and a channel can lead on one while trailing on the other."],
+  ["D3", "Weighted-total comparison, Plan A vs Plan B, percent margin",
+    "Why build the plan totals bottom-up from D1's cells, and why a percent margin rather than a raw subscriber gap: each channel reaches a different mix of the two segments with different adoption rates, so a plan's total has to be summed from every channel-segment cell, not estimated from one blended rate. Expressing the gap as a percent of a total makes it scale-independent — useful for judging how large a lead actually is, not just its raw size."],
+  ["D4", "Budget-shift system of equations, break-even dollar split",
+    "Why a system of two linear equations is the right tool: there are two unknowns (dollars in the broadcast-leaning bucket, dollars in the precision-leaning bucket) and two facts that must both hold at once — the two amounts sum to the fixed budget, and their combined per-dollar yield must produce a specific subscriber count. A system of equations is exactly built for finding the single split that satisfies two linear constraints simultaneously, which is why this has to be solved algebraically rather than found by guess-and-check."],
+  ["D5", "One-paragraph written recommendation",
+    "Why this needs D2 and D4 together, not just D3's totals: a recommendation based only on which plan currently has more projected subscribers ignores how fragile that lead is. Pairing D2's reach-per-dollar/cost-per-acquisition case with D4's break-even reallocation amount tells the reader not just which plan looks better today, but how much budget movement it would take to flip that conclusion — a robustness check any real budget recommendation should include."]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,explain])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${explain ? `<div class="side-note" style="border-top:none;margin-top:2px;padding-top:0">${explain}</div>` : ''}
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every
+   url https:// to an allowlisted domain). All 8 URLs below were
+   verified live for this exact vocabulary elsewhere in this corpus
+   (cases/the-weekly-rate, cases/acton-survey, cases/cold-chain) -- a
+   URL fetched and confirmed for one case is a legitimate source for
+   the same term reused verbatim in another case (contract doc,
+   section 3).
+   ================================================================ */
+const GLOSSARY = {
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Proportion": {def: "A statement that two ratios (or fractions) are equal.",
+    url: "https://www.mathsisfun.com/definitions/proportion.html"},
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"},
+  "System Of Equations": {def: "Two or more equations considered together, solved for the values that satisfy all of them at once.",
+    url: "https://www.khanacademy.org/math/algebra-home/alg-system-of-equations"},
+  "Slope": {def: "How steep a line is -- the change in y divided by the change in x between any two points on it.",
+    url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:forms-of-linear-equations/x2f8bb11595b61c86:intro-to-slope-intercept-form/a/introduction-to-slope-intercept-form"},
+  "X-Intercept": {def: "The point where a line crosses the x-axis -- where the line's y-value equals zero.",
+    url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:linear-equations-graphs/x2f8bb11595b61c86:x-intercepts-and-y-intercepts/a/intercepts-of-lines-review-x-intercepts-and-y-intercepts"},
+  "Linear Equation": {def: "An equation whose graph is a straight line, often written y = mx + b.",
+    url: "https://www.mathsisfun.com/equation_of_line.html"}
+};
+const HOWTO = [
+  ["How to find the percent of a number", "Percent"],
+  ["How to convert numbers to percents", "Percent"],
+  ["How to find a missing amount in a proportion", "Proportion"],
+  ["How to find the mean of a set of data", "Mean"],
+  ["How to solve a system of linear equations", "System Of Equations"],
+  ["How to write a linear equation given a set of data", "Linear Equation"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer (T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #story-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — a SECOND glossary layer for this case's real
+   advertising/marketing vocabulary, kept separate from the math
+   GLOSSARY above (which T1-19 checks against). Same hover+hyperlink
+   mechanism, its own data object, its own render target
+   (#glossaryStory), and its own auto-linker. Sources are real, dated
+   2026-09-11 Wikipedia articles, each confirmed live and on-topic by
+   direct fetch during this build.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "CPM": {desc: "Cost per mille -- the price an advertiser pays for one thousand views or impressions of an ad. The pricing unit for every TV, radio, and print channel in this case.",
+    link: "https://en.wikipedia.org/wiki/Cost_per_mille"},
+  "Paid Search": {desc: "Pay-per-click (PPC) advertising: an advertiser pays a publisher each time a user clicks their ad -- the pricing model behind this case's SEO channel.",
+    link: "https://en.wikipedia.org/wiki/Pay-per-click"},
+  "AIDA": {desc: "A marketing model breaking down how an ad should work: drive Awareness, spark Interest, create Desire, and prompt Action -- the funnel shape this case's Appendix D chains together.",
+    link: "https://en.wikipedia.org/wiki/AIDA_(marketing)"},
+  "Conversion Funnel": {desc: "A consumer-focused marketing model illustrating the theoretical customer journey toward a purchase, stage by stage -- exactly what D1's segmented funnel table computes.",
+    link: "https://en.wikipedia.org/wiki/Purchase_funnel"},
+  "Media Plan": {desc: "The document laying out which advertising channels a campaign will use, how often, and at what budget -- Priya's two folders are each a complete media plan.",
+    link: "https://en.wikipedia.org/wiki/Media_planning"},
+  "Drive Time": {desc: "The radio daypart (typically 6-10am and 3-7pm) when the most people are listening to car radios during their commute -- the highest-value radio inventory, and this case's radio channel.",
+    link: "https://en.wikipedia.org/wiki/Drive_time"},
+  "Churn Rate": {desc: "The rate at which subscribers cancel or stop paying over a given period -- the flip side of the adoption rate this case's funnel computes.",
+    link: "https://en.wikipedia.org/wiki/Churn_rate"},
+  "Cable Television": {desc: "TV programming delivered over coaxial or fiber cable rather than over-the-air broadcast -- the delivery system behind this case's TV--Sports/Fitness channel, distinct from the TV--General broadcast channel.",
+    link: "https://en.wikipedia.org/wiki/Cable_television"},
+  "CPC": {desc: "Cost per click -- the price an advertiser pays each time someone clicks their ad, rather than per thousand impressions like CPM. This case's SEO/paid-search channel is priced in CPC, not CPM.",
+    link: "https://en.wikipedia.org/wiki/Pay-per-click"},
+  "CVR": {desc: "Conversion rate -- the percentage of people at one funnel stage who move on to the next (for example, interested visitors who sign up for a trial). Appendix D's trial-conversion and interest rates are both CVRs.",
+    link: "https://en.wikipedia.org/wiki/Conversion_marketing"},
+  "DTC": {desc: "Direct-to-consumer -- a business that sells straight to customers online, skipping traditional retailers and wholesalers. Several of this case's real benchmark figures (Appendix F, S6/S7) come from DTC brands' own published conversion data.",
+    link: "https://en.wikipedia.org/wiki/Direct-to-consumer"},
+  "D2C": {desc: "Direct-to-consumer -- the same term as DTC elsewhere in this case, just a common alternate abbreviation. A business that sells straight to customers online, skipping traditional retailers and wholesalers.",
+    link: "https://en.wikipedia.org/wiki/Direct-to-consumer"},
+  "CAGR": {desc: "Compound annual growth rate -- the steady yearly growth rate that would take a value from its starting size to its ending size over a number of years, if it grew by the same percentage every year. Appendix B uses it to describe the smart water bottle market's growth.",
+    link: "https://en.wikipedia.org/wiki/Compound_annual_growth_rate"},
+  "Circulation": {desc: "The number of copies of a publication distributed to readers per issue -- a magazine's main measure of audience size. A higher circulation tier means more readers per issue, which is why ad prices are quoted per circulation tier rather than as one flat rate.",
+    link: "https://en.wikipedia.org/wiki/Circulation_(publishing)"},
+  "Linear Broadcast": {desc: "Broadcast or cable television watched live on a fixed channel schedule, as opposed to on-demand or streaming video that a viewer can start anytime. Ad rates and inventory for linear broadcast TV are sold around scheduled programming blocks.",
+    link: "https://en.wikipedia.org/wiki/Linear_television"},
+  "Inventory": {desc: "Short for ad inventory -- the available ad slots or airtime a media outlet (a TV network, radio station, website, or app) has to sell to advertisers. Inventory that is scarcer or higher-demand, such as prime viewing times, typically prices higher than lower-demand inventory.",
+    link: "https://en.wikipedia.org/wiki/Advertising_inventory"},
+  "Flight": {desc: "A defined block of time during which an ad campaign runs continuously on a given channel, as opposed to running year-round. Advertisers commit to a flight in advance, which is why last-minute requests for a specific flight can be turned down.",
+    link: "https://en.wikipedia.org/wiki/Media_planning"},
+  "Media Buyer": {desc: "The person or role responsible for purchasing ad placements and inventory across channels on behalf of an advertiser, negotiating rates and confirming bookings with media outlets. Priya's media buyer is the one fielding rate changes from the networks.",
+    link: "https://en.wikipedia.org/wiki/Media_buying"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+  document.querySelectorAll('.sterm-placeholder[data-sterm]').forEach(span => {
+    const term = span.dataset.sterm;
+    span.outerHTML = gtermHTMLStory(term, span.textContent);
+  });
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  // Recompute Step 3/4's feedback immediately if the Hero has already filled it in,
+  // so toggling the Twist checkbox reflects in the calculator without another click.
+  checkStep3();
+  checkStep4();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>
