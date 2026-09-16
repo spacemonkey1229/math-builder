@@ -1,6 +1,6 @@
 ---
 name: case-context
-description: "Source and place the real-world (non-math) explanatory content a case needs to be readable by a student with zero background in its setting — a story glossary of 2-4 real-world terms, at least one real visual (a photo/diagram with traceable provenance, or a hand-drawn SVG when no real image clears the bar), and a one-line why-this-methodology note per deliverable. Use when the user says \"add context to the case\", \"source some background material\", \"this case needs explaining\", \"find an image for the case\", \"the terms aren't explained\", or after case-research reports all numeric placeholders closed. Runs after case-research, before case-readiness. Never touches a load-bearing numeric figure — that stays case-research's job."
+description: "The repository of this project's standard for real-world explanation: sourced glossary terms with hover tooltips AND click-through hyperlinks, images/diagrams with citations, and per-deliverable why-notes — what to include (the 'fit' test) and the exact copy-paste CSS/JS/HTML implementation (the .sterm hover+hyperlink mechanism, STORY_GLOSSARY object, autoLinkStoryTerms wiring, <figure> pattern). Use when the user says \"add context to the case\", \"add hovers and hyperlinks\", \"source some background material\", \"this case needs explaining\", \"find an image for the case\", \"the terms aren't explained\", \"wire up the glossary\", or after case-research reports all numeric placeholders closed. Runs after case-research, before case-readiness. Never touches a load-bearing numeric figure — that stays case-research's job."
 ---
 
 # case-context — real-world explanation, sourced like everything else
@@ -34,6 +34,176 @@ QA probe catching an absence a month after publish.
 - The published HTML's `STORY_GLOSSARY` object, its `.sterm` wiring, and any `<figure>` — hand-
   placed to match `case.json.context_glossary[]`/`sources[]` until a templated generator exists
   (there isn't one yet; see "Known gap" below).
+
+---
+
+## The implementation standard — hovers AND hyperlinks, copy-paste ready
+
+This is the part that was missing: not just *what* to source, but the exact mechanism that turns
+a sourced term into something a student actually sees — a dotted-underline term that shows a
+plain-English tooltip on hover/focus, and is *also* a real `<a href>` a student can click through
+to the source. Every one of this corpus's compliant cases (`apron-order`, then retrofitted onto
+`lebron-vs-michael`, `tide-window`, `six-degrees-of-exposure`, `the-special-order`, `flow-state`,
+`gerrymandering`) uses this identical mechanism. Copy it verbatim; only the glossary content and
+selector list change per case.
+
+**Two separate, parallel layers — never merge them:**
+
+| | Math vocabulary | Story/domain vocabulary |
+|---|---|---|
+| JS object | `GLOSSARY` | `STORY_GLOSSARY` |
+| CSS class | `.gterm` | `.sterm` |
+| Field names | `{def, url}` | `{desc, link}` — deliberately different keys so the two can never collide |
+| Render fn | `termHTML()` / `renderGlossary()` | `stermHTML()` / `renderStoryGlossary()` |
+| Auto-link fn | `autoLinkGlossaryTerms()` | `autoLinkStoryTerms()` |
+| Card container | `#glossaryVocab` (Appendix G, SPEC §1.7, case-agnostic) | `#storyGlossaryCard` / `#storyGlossaryGrid` |
+| Accent color | gold/amber | green (`--ok`) |
+
+They share one hover-tooltip CSS mechanism (`.tip`), just with different accent tokens, so the two
+layers are visually distinguishable at a glance without looking like two different systems.
+
+### 1. CSS — add once per case, alongside the existing `.gterm` rules
+
+```css
+/* ---- story/domain-vocabulary hover + hyperlink terms -- a SEPARATE
+       layer from .gterm (math vocabulary). Same tooltip mechanism,
+       different accent color (ok-green instead of gold) so the two
+       layers are visually distinguishable at a glance. ---- */
+.sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+.sterm:hover, .sterm:focus{background:var(--ok-bg)}
+.sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+  width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+  line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+.sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+.sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+.sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+.glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+  border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+.glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+```
+
+Requires the shared design tokens already in every case's `:root` (`--navy-dk`, `--ok`,
+`--ok-bg`, `--line`, `--card`, `--sans`) — if a case's palette uses different token names, map
+these to the equivalent, don't hardcode colors.
+
+### 2. HTML — the glossary card, placed in Background (or wherever the terms cluster)
+
+```html
+<div class="card" id="storyGlossaryCard">
+  <strong>{{DOMAIN}} Vocabulary</strong>
+  <p class="side-note" style="margin-top:6px">Hover any underlined term below (or in the prose
+    above) for a plain-English definition; click to open a real source on it. This is separate
+    from the math vocabulary in Appendix H &mdash; these are the {{DOMAIN}} words the story
+    itself is told in.</p>
+  <div class="glossary-grid" id="storyGlossaryGrid"></div>
+</div>
+```
+
+`{{DOMAIN}}` is the case's own setting in plain words — "Cutting-Room," "Sports-Media,"
+"Maritime," "Public-Health," "Shop" — not a generic label.
+
+### 3. JS — the data object, render function, and auto-linker (end of the case-specific `<script>` block)
+
+```javascript
+/* ================================================================
+   CASE-SPECIFIC -- story/domain-vocabulary glossary (separate layer
+   from GLOSSARY/gterm above, which stays math-only and untouched).
+   Same render + auto-link mechanism, ported to the .sterm class so
+   the two layers never collide in T1-19's math-glossary count. Every
+   url is a real, live, freely-accessible page, verified {{DATE}}.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "{{Term}}": {desc: "Plain-English definition, 1-2 sentences, tied to how this case actually uses the term -- not a dictionary-style generic definition.",
+    link: "https://real-source-for-this-term"},
+  // ...2-4 entries total, per the "fit" test above
+};
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#storyGlossaryCard')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryCard, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+// MUST include every section id where a story term could appear, including
+// appendices -- the single most common real defect this corpus has shipped
+// (5 of 6 Week 4 cases, 2026-09-15 Tier 2 P7 audit) is scoping this to only
+// #overview/#background/#dilemma/#challenges and missing the appendix
+// tables, where a lot of real-world vocabulary actually first shows up.
+autoLinkStoryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+```
+
+`autoLinkStoryTerms` does first-occurrence-wins auto-linking (longest term first, so a compound
+term like "charter-party" is matched before the shorter "charter" inside it), skips anything
+already inside `.gterm`/`.sterm`/the glossary cards themselves, and matches a trailing plural `s`
+automatically. Running it is what turns a term merely *defined in the card* into a term that's
+*also underlined and hoverable the first time it appears in the actual prose* — both halves
+("hovers and hyperlinks") only exist together if this call runs with the right selector list.
+
+### 4. Images — the same `<figure>` pattern, real or hand-drawn
+
+```html
+<figure>
+  <img src="https://upload.wikimedia.org/wikipedia/commons/..." alt="Descriptive alt text" style="max-width:100%;height:auto;border-radius:6px;display:block;margin:0 auto">
+  <figcaption>What this shows and why it's here. Photo/Diagram: Creator Name, Wikimedia Commons, LICENSE.</figcaption>
+</figure>
+```
+
+For a hand-drawn SVG in place of `<img>`, keep the same `<figure>`/`<figcaption>` wrapper — the
+figcaption still needs to say what's real data vs. an invented illustrative example (see
+`cases/gerrymandering/`'s Appendix B chart caption for the pattern: real axis values, explicitly
+labeled as this case's own real figures, not a stock illustration).
 
 ---
 
