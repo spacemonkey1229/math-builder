@@ -268,3 +268,26 @@ NOT RUN. Not eligible yet — case has not been through `case-publish`'s two hum
 ---
 
 **VERDICT: TIER2_PASS.** `case.json.qa` updated: `state` → `"TIER2_PASS"`, `verdict` → `"TIER2_CLEAN"`, `run_on` → `"2026-08-17"`, per-probe verdicts rewritten to match this run, full reasoning (including the P2 reversal) recorded in `qa.note`. Tier 3 remains gated behind `case-publish`'s human confirms, unaffected by this run.
+
+
+---
+
+## Revalidation — 2026-09-16 (fresh Tier 2 re-adjudication)
+
+Run as part of a project-wide session that re-ran every applicable Tier 2 probe with genuinely
+fresh, zero-context subagents (not self-adjudicated), plus a live outbound-fetch audit of every
+`sources[]` URL.
+
+| Probe | Verdict |
+|---|---|
+| P1 | PASS |
+| P2 | PASS |
+| P3 | PASS |
+| P4 | PASS |
+| P5 | PASS (disclosed) |
+| P6 | PASS |
+
+Fresh P1/P2/P3/P4 re-runs all reconfirmed the prior TIER2_PASS verdicts with independent arithmetic (UKC margins reproduced bit-for-bit from raw NOAA/Census inputs). P4's adversarial check confirmed the inverse-barometer misreading is already pre-empted as a named trap, and the 52 ft/54 ft governing-depth fork that would break the twist's 'still passes' claim is already disclosed as its own separate fault line (MA4), not hidden. P6 re-fetched all 10 sources live: 10/10 reachable, 10/10 values confirmed (including live NOAA API endpoints).
+
+`case.json.qa.revalidation_2026_09_16` records this machine-readably alongside (not replacing)
+the prior run(s) above.

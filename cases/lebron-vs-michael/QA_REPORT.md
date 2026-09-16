@@ -90,3 +90,26 @@ artifacts. 1 GAP (T1-18, CSS/SVG decorative decimals — accepted class). `case_
 
 All six Tier 2 probes now PASS (one qualified) with zero FAIL. `case.json.qa` updated:
 `state: TIER2_PASS`, `verdict: PASS`, `run_on: 2026-08-22`, `tier2.P4: "PASS (qualified)"`.
+
+
+---
+
+## Revalidation — 2026-09-16 (fresh Tier 2 re-adjudication)
+
+Run as part of a project-wide session that re-ran every applicable Tier 2 probe with genuinely
+fresh, zero-context subagents (not self-adjudicated), plus a live outbound-fetch audit of every
+`sources[]` URL.
+
+| Probe | Verdict |
+|---|---|
+| P1 | PASS |
+| P2 | PASS |
+| P3 | PASS |
+| P4 | PASS (qualified) |
+| P5 | PASS |
+| P6 | PASS |
+
+Fresh P1 cold-solve independently reproduced the graded 3PT% figures exactly (34.49% vs 32.68%) via a self-built weighted composite, matching case.json's recorded balance data. P4's adversarial re-check independently recomputed the regular-season-to-playoff Blocks flip from raw totals (RS 0.750 vs 0.833, PO 0.951 vs 0.883), confirmed the games-weighted convention is the only reading the data supports, and confirmed the flip survives the disclosed uncertainty margin on LeBron's reconstructed playoff-blocks estimate with room to spare. P6 re-fetch of all 4 sources: reachable, values confirmed (S4's blocks-specific figure not independently re-verified this pass, flagged not assumed). Separately, added 12 new STORY_GLOSSARY terms (GOAT, All-Star Game, All-NBA/All-Defensive Team, etc.) and extended autoLinkStoryTerms() to cover appendices, closing a real P7 FAIL (10 unexplained concepts, all in Appendix D tables the auto-linker never scanned).
+
+`case.json.qa.revalidation_2026_09_16` records this machine-readably alongside (not replacing)
+the prior run(s) above.

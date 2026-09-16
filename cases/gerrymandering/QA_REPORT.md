@@ -32,3 +32,26 @@ SKILL.md's ladder, `case-publish` may now run — Tier 3 (a filed human `RUN_REP
 required before `VERIFIED`. **Note on subject matter:** per the locked dilemma file, all
 partisan/party-specific framing was kept out of the case throughout this conversion — confirmed
 by P2/P3's independent reads finding no partisan lean anywhere in the materials.
+
+
+---
+
+## Revalidation — 2026-09-16 (fresh Tier 2 re-adjudication)
+
+Run as part of a project-wide session that re-ran every applicable Tier 2 probe with genuinely
+fresh, zero-context subagents (not self-adjudicated), plus a live outbound-fetch audit of every
+`sources[]` URL.
+
+| Probe | Verdict |
+|---|---|
+| P1 | PASS |
+| P2 | PASS |
+| P3 | PASS |
+| P4 | PASS |
+| P5 | PASS (disclosed) |
+| P6 | PASS |
+
+Fresh P1 cold-solve independently reproduced the case's real efficiency-gap tie (~12.6% both plans) via first-principles algebra before choosing B on population deviation. P4 independently re-derived the tie as algebraically forced under MA2, holding under every plausible misreading. P6 full re-fetch of all 19 (now 20) sources found one real dead link (S14, PBS Crash Course tag page reorganized) -- repointed to the real YouTube video (2026-09-16), and one image, previously rejected on an overly strict provenance bar, correctly re-admitted (Wikimedia Commons, CC BY-SA 4.0, real file history) and embedded in Appendix A. Added 3 new context sources (S17-S19: Rucho v. Common Cause, hijacking/kidnapping methods, competitive-seats stat) and 4 new STORY_GLOSSARY terms per the new case-context standard.
+
+`case.json.qa.revalidation_2026_09_16` records this machine-readably alongside (not replacing)
+the prior run(s) above.

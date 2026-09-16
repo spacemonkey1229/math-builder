@@ -330,3 +330,26 @@ NOT RUN.
 **Next step:** Tier 3 (human dry-run) before `case-publish`/`VERIFIED`. The 4 open GAPs (T1-10,
 T1-13, T1-14, T1-18) are all pre-existing, disclosed, non-blocking, and unrelated to this session's
 fix; none require action before Tier 3.
+
+
+---
+
+## Revalidation — 2026-09-16 (fresh Tier 2 re-adjudication)
+
+Run as part of a project-wide session that re-ran every applicable Tier 2 probe with genuinely
+fresh, zero-context subagents (not self-adjudicated), plus a live outbound-fetch audit of every
+`sources[]` URL.
+
+| Probe | Verdict |
+|---|---|
+| P1 | PASS |
+| P2 | PASS |
+| P3 | PASS |
+| P4 | PASS |
+| P5 | PASS (disclosed) |
+| P6 | PASS |
+
+Fresh P1/P2/P3 re-runs reconfirmed prior verdicts with independent arithmetic (27,643 vs ~27,367 edge-weight totals reproduced exactly). P3's blind trap prediction differed from the guide's (per-head vs. per-budget-dollar framing error) but confirmed the guide's trap is the sharper, more dangerous one. P6 re-fetch of all 3 sources found one real $0.01 transcription slip (S2: recorded $79.97, source actually says $79.96) -- fixed. Twist is justified N/A (structural surprise, not a dropped mid-discussion fact), no P4 re-check needed.
+
+`case.json.qa.revalidation_2026_09_16` records this machine-readably alongside (not replacing)
+the prior run(s) above.

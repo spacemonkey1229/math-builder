@@ -166,3 +166,27 @@ sync.
 
 `Run case-publish on the-special-order` (the readmodel-promotion stage) — not run this pass, per
 instruction. Packet build only.
+
+
+---
+
+## Revalidation — 2026-09-16 (fresh Tier 2 re-adjudication)
+
+Run as part of a project-wide session that re-ran every applicable Tier 2 probe with genuinely
+fresh, zero-context subagents (not self-adjudicated), plus a live outbound-fetch audit of every
+`sources[]` URL.
+
+| Probe | Verdict |
+|---|---|
+| P1 | PASS |
+| P2 | PASS |
+| P3 | PASS |
+| P4 | PASS |
+| P5 | PASS (disclosed) |
+| P6 | PASS |
+| P7 | PASS |
+
+Fresh P1 cold-solve independently reproduced the graded cost-per-door figures exactly to 4 decimal places ($12.7358 vs $11.675, 23-door breakeven). P2 confirmed both options genuinely defensible; the identified collapse point (the unsourced 30-bf minimum) matches the case's own disclosed sensitivity exactly. P6 re-fetch of all 5 sources: reachable, values confirmed. Twist is justified N/A (structural, not a dropped mid-discussion fact), no P4 re-check needed. Separately, added a 'Panel Saw' glossary entry and expanded S4S's definition, closing a real P7 FAIL (2 unexplained concepts).
+
+`case.json.qa.revalidation_2026_09_16` records this machine-readably alongside (not replacing)
+the prior run(s) above.
