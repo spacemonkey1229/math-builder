@@ -147,6 +147,21 @@
   .howto-list{list-style:none;margin:0;padding:0}
   .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
   .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+
+  /* ---- story/domain-vocabulary hover + hyperlink terms -- a SEPARATE
+         layer from .gterm (math vocabulary). Same tooltip mechanism,
+         different accent color (ok-green instead of gold) so the two
+         layers are visually distinguishable at a glance. ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
   .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
 
   /* CASE-SPECIFIC — tide curve banner + clearance bar visuals */
@@ -307,6 +322,12 @@
   <p>The vocabulary and the "how to&hellip;" skills this case will ask of you are listed in Appendix G —
   that is where Challenge 1 sends you. (See Appendix F for further reading on harbor pilotage and
   tide prediction.)</p>
+
+  <div class="card" id="storyGlossaryCard">
+    <strong>Harbor &amp; Shipping Vocabulary</strong>
+    <p class="side-note" style="margin-top:6px">Hover any underlined term below (or in the prose above) for a plain-English definition; click to open a real source on it. This is separate from the math vocabulary in Appendix G &mdash; these are the working words of the harbor itself.</p>
+    <div class="glossary-grid" id="storyGlossaryGrid"></div>
+  </div>
 
   <figure>
     <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/Charleston-Harbor-Pilots-boat-sc.jpg" alt="The Fort Sumter, a real harbor pilot boat operated by Charleston Harbor Pilots, Charleston, South Carolina" style="max-width:100%;height:auto;border-radius:6px;display:block;margin:0 auto">
@@ -989,6 +1010,90 @@ function autoLinkGlossaryTerms(containerSelectors){
   });
 }
 autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-SPECIFIC -- story/domain-vocabulary glossary (separate layer
+   from GLOSSARY/gterm above, which stays math-only and untouched).
+   Same render + auto-link mechanism, ported to the .sterm class so
+   the two layers never collide in T1-19's math-glossary count. Every
+   url is a real, live, freely-accessible page (Wikipedia or NOAA),
+   verified 2026-09-15. No clearance/margin numbers appear below --
+   these are vocabulary definitions only.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Harbor Pilot": {desc: "A licensed local navigator who boards an incoming or outgoing ship to guide it through the tricky waters of a specific harbor or channel -- the ship's own captain keeps command, but the pilot directs the conn during the transit.",
+    link: "https://en.wikipedia.org/wiki/Maritime_pilot"},
+  "Under-Keel Clearance": {desc: "The vertical gap of open water between the very bottom of a ship's hull and the sea floor (or channel bottom) beneath it -- the safety margin every transit decision in this case comes down to.",
+    link: "https://oceanservice.noaa.gov/education/tutorial_tides/tides10_shipping.html"},
+  "Draft": {desc: "How deep a ship sits in the water, measured from the waterline down to the very bottom of its hull or keel -- a loaded ship has a deeper draft than an empty one, which is why draft matters for clearance.",
+    link: "https://en.wikipedia.org/wiki/Draft_(hull)"},
+  "Container Berth": {desc: "The specific dock space at a port built and scheduled for loading and unloading container ships -- what the shipping line's delivery window in this case is tied to.",
+    link: "https://en.wikipedia.org/wiki/Container_terminal"},
+  "Tide Station": {desc: "A fixed monitoring site that measures and predicts local water levels over time, publishing the harmonic tide predictions (like the ones in Appendix A) that pilots and mariners rely on.",
+    link: "https://tidesandcurrents.noaa.gov/"},
+  "Charted Channel Depth": {desc: "The water depth at a given point in a shipping channel as printed on an official nautical chart, usually referenced to a standard low-water datum -- the fixed part of the clearance calculation, as opposed to the tide's changing water level.",
+    link: "https://en.wikipedia.org/wiki/Nautical_chart"},
+};
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#storyGlossaryCard')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryCard, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryTerms(['#overview', '#background', '#dilemma', '#challenges']);
 autoAddCSVButtons(CASE_ID);
 
 /* ================================================================

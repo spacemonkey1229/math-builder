@@ -135,6 +135,17 @@
   .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
   .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
 
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
   /* CSV export -- CASE-AGNOSTIC, added for every data table */
   .csv-row{margin:-6px 0 14px;text-align:right}
   .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
@@ -245,7 +256,14 @@
   <p>Betsy Naismith, a descendant of James Naismith, the inventor of basketball, started as a beat writer for the Dallas Mavericks nine years ago and has won several sports journalism awards. Three years ago, she was promoted to lead journalist at Sports Athletic Magazine, where she covers the NBA in depth.</p>
   <p>Betsy grew up in Ohio in the 1990s and fell in love with the sport watching Michael Jordan and the Chicago Bulls win championship after championship. Her entire professional career has taken place during the rise of LeBron James, who has led three different franchises to the NBA Finals.</p>
   <p>Both players' full regular-season and playoff statistics are in <strong>APPENDIX A</strong> and <strong>APPENDIX B</strong>. Both players' real career seasons and accolades are in <strong>APPENDIX C</strong> and <strong>APPENDIX D</strong>. Exactly how career averages are calculated &mdash; and how to compare seasons of different lengths fairly &mdash; is fixed in <strong>APPENDIX E</strong>; use those conventions, or your numbers won't match anyone else's.</p>
+  <p>Every one of Betsy's numbers comes out of a box score, and every argument she can make hinges on the difference between a regular season and the playoffs, or between a field goal percentage and a free throw percentage. Before she can even open a spreadsheet, she has to be fluent in the vocabulary the league itself uses to decide things like a scoring title or a Finals MVP.</p>
   <p>The vocabulary and the "how to&hellip;" skills this case will ask of you are listed in <strong>Appendix G</strong> &mdash; that is where Challenge 1 sends you. Want to read more about the two players and the debate itself, beyond the required math? See <strong>Appendix F</strong>.</p>
+
+  <div class="card" id="storyGlossaryCard">
+    <strong>Sports-Media Vocabulary</strong>
+    <p class="side-note" style="margin-top:6px">Hover any underlined term below (or in the prose above) for a plain-English definition; click to open a real outside source on it. This is separate from the math vocabulary in Appendix G &mdash; these are the basketball/sports-media words the story itself is told in.</p>
+    <div class="glossary-grid" id="storyGlossaryGrid"></div>
+  </div>
 </section>
 
 <section id="dilemma">
@@ -912,6 +930,91 @@ function autoLinkGlossaryTerms(containerSelectors){
   });
 }
 autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-SPECIFIC -- story/domain-vocabulary glossary (separate layer
+   from GLOSSARY/gterm above, which stays math-only and untouched).
+   Same render + auto-link mechanism, ported to the .sterm class so
+   the two layers never collide in T1-19's math-glossary count. Every
+   url is a real, live, freely-accessible outside source (Wikipedia,
+   NBA.com/stats, or Basketball-Reference), not a math-education site.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Box Score": {desc: "The official tally of a completed game -- points, rebounds, assists, shooting attempts and makes, and more, broken out per player. Every career total in this case's appendices is built up from box scores.",
+    link: "https://en.wikipedia.org/wiki/Box_score"},
+  "Regular Season": {desc: "The 82-game schedule (in the modern NBA) that every team plays before the playoffs begin -- separate from playoff games, and usually tracked as its own separate set of statistics.",
+    link: "https://en.wikipedia.org/wiki/Regular_season"},
+  "Playoff": {desc: "The elimination tournament played after the regular season ends, to determine the league champion -- a much smaller, higher-stakes sample of games than the regular season.",
+    link: "https://en.wikipedia.org/wiki/Playoffs"},
+  "Field Goal Percentage": {desc: "Field goals made divided by field goals attempted -- \"field goal\" covers both 2-point and 3-point shots, so this is a broader stat than either one alone.",
+    link: "https://www.nba.com/stats/help/glossary"},
+  "Free Throw Percentage": {desc: "Free throws made divided by free throws attempted -- unguarded shots awarded after certain fouls, taken from a fixed line.",
+    link: "https://en.wikipedia.org/wiki/Free_throw"},
+  "Scoring Title": {desc: "The unofficial recognition given each season to whichever player finished with the highest regular-season scoring average.",
+    link: "https://en.wikipedia.org/wiki/List_of_National_Basketball_Association_scoring_champions"},
+  "Finals MVP": {desc: "The award given to the single best-performing player of the NBA Finals -- the championship series itself -- voted on separately from the regular-season MVP award.",
+    link: "https://en.wikipedia.org/wiki/NBA_Finals_Most_Valuable_Player_Award"},
+};
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#storyGlossaryCard')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryCard, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryTerms(['#overview', '#background', '#dilemma', '#challenges']);
 autoAddCSVButtons(CASE_ID);
 
 /* ================================================================
