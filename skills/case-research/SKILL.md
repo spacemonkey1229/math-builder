@@ -209,7 +209,9 @@ PY
 
 A table: placeholder → value → confidence → source org. Then, separately and prominently:
 **NOT FOUND count**, each with the recommended exit. Then the next step —
-`Run case-qa on <id>.`
+`Run case-context on <id>` to source the real-world explanatory material (glossary terms, a
+visual, per-deliverable why-notes) this skill deliberately does not touch, before the case goes
+to `case-readiness`.
 
 ## Worked example
 
