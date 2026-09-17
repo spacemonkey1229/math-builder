@@ -131,96 +131,101 @@ _LEVEL_COLORS = {
 }
 _DEFAULT_LEVEL_COLOR = ("#5F594E", "#EDEAE1")
 
-# One small stroke-line glyph per level_key, 24x24, matching the restrained
-# icon style already used elsewhere in this app's published shell (see
-# templates/interactive_shell.html's #icon-check/#icon-truck symbols) --
-# fill:none, currentColor stroke, no emoji. Rendered once as an SVG sprite
-# and referenced per row via <use>, so the actual markup per pill stays tiny.
+# One 64x64 illustrative glyph per level_key, inlined per-card exactly like
+# the reference design (no shared <symbol>/<use> sprite) -- currentColor so
+# each one picks up the card's --gold-ink icon tile color automatically.
 _LEVEL_ICONS = {
-    "prealg": '<path d="M3 12h18M3 12l4-4M3 12l4 4M17 8l4 4-4 4"/>',
-    "alg":    '<path d="M4 7h6M4 17h6M7 7v10M12 12h8M16 8l4 4-4 4"/>',
-    "geo":    '<path d="M12 4l8 16H4z"/>',
-    "adv":    '<path d="M2 12c2-5 4-5 6 0s4 5 6 0 4-5 6 0"/>',
-    "adv2":   '<path d="M3 18c4-1 8-4 10-9M13 9l6 1-1 6"/>',
-    "disc":   '<circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/>'
-              '<path d="M6.7 7.3L11 16.3M17.3 7.3L13 16.3M7 6h10"/>',
-    "stat":   '<path d="M4 20V10M11 20V4M18 20v-7"/><path d="M2 20h20"/>',
+    "prealg": '<rect x="8" y="26" width="48" height="4" fill="currentColor"/>'
+              '<text x="16" y="20" font-family="Georgia,serif" font-size="16" fill="currentColor">3</text>'
+              '<text x="16" y="46" font-family="Georgia,serif" font-size="16" fill="currentColor">4</text>',
+    "alg":    '<text x="10" y="40" font-family="Georgia,serif" font-size="26" font-style="italic" '
+              'fill="currentColor">x=y</text>',
+    "geo":    '<polygon points="32,10 54,50 10,50" fill="none" stroke="currentColor" stroke-width="3"/>'
+              '<path d="M32,50 A18,18 0 0 1 42,33" fill="none" stroke="currentColor" stroke-width="2" '
+              'stroke-dasharray="2,2"/>',
+    "adv":    '<path d="M4,32 C14,10 22,10 32,32 C42,54 50,54 60,32" fill="none" stroke="currentColor" '
+              'stroke-width="3"/>',
+    "adv2":   '<path d="M6,50 C20,50 24,14 40,14 C50,14 54,26 58,26" fill="none" stroke="currentColor" '
+              'stroke-width="3"/><line x1="16" y1="46" x2="40" y2="30" stroke="currentColor" stroke-width="1.6" '
+              'stroke-dasharray="3,3"/>',
+    "disc":   '<circle cx="14" cy="16" r="5" fill="currentColor"/><circle cx="50" cy="16" r="5" fill="currentColor"/>'
+              '<circle cx="32" cy="48" r="5" fill="currentColor"/>'
+              '<line x1="14" y1="16" x2="50" y2="16" stroke="currentColor" stroke-width="2"/>'
+              '<line x1="14" y1="16" x2="32" y2="48" stroke="currentColor" stroke-width="2"/>'
+              '<line x1="50" y1="16" x2="32" y2="48" stroke="currentColor" stroke-width="2"/>',
+    "stat":   '<rect x="10" y="34" width="10" height="20" fill="currentColor"/>'
+              '<rect x="27" y="18" width="10" height="36" fill="currentColor"/>'
+              '<rect x="44" y="26" width="10" height="28" fill="currentColor"/>',
 }
-_DEFAULT_LEVEL_ICON = '<circle cx="12" cy="12" r="7"/>'
+_DEFAULT_LEVEL_ICON = '<circle cx="32" cy="32" r="18" fill="none" stroke="currentColor" stroke-width="3"/>'
 
 
 def render_catalog_html(weeks_data):
-    """The public, unauthenticated /catalog page -- a real-time "Weekly Case
-    Catalog" built straight from whatever the guide has configured via
+    """The public, unauthenticated /catalog page -- "Class Cases", a real-time
+    card catalog built straight from whatever the guide has configured via
     /class-review's own week-list editor (admin_core.get_public_catalog(),
     which itself reuses do_get_weekly_cases() + the public-safe
     get_case_brief(), never get_case_facilitator_brief()). weeks_data is
     get_public_catalog()'s return: [{"label": "Week 1"|None, "cases": [
-    {id, title, interactive_path, level, level_key, blurb, skills_focus,
-    career_note}, ...]}, ...].
+    {id, title, interactive_path, class_path, level, level_key, field, role,
+    concepts: [...], ask}, ...]}, ...].
 
     Deliberately shows no margin/percentage figure anywhere -- that data is
     intentionally absent from get_case_brief() and must stay absent here
-    too (MCS-45's public/gated boundary). "Open" always points at
-    interactive_path (the direct Interactive.html), never /class/<id> --
-    this is a browsing/discovery page, not the submission flow.
+    too (MCS-45's public/gated boundary). The card's button points at
+    class_path (/class/<id>, the same public submission flow /class-review
+    itself links students to) -- this page doubles as the student's actual
+    entry point for the week, not just a browsing index.
 
-    All weeks render into the page at once; a <select> toggles which one is
-    visible via a few lines of client-side JS -- no reload, no backend
-    query param."""
+    All weeks render into the page at once as their own <section id="week-N">;
+    a sticky row of anchor links jumps between them -- plain in-page
+    navigation, no JS required, so a direct link like /catalog#week-3 always
+    lands on the right section even with scripts off."""
     has_any = any(w['cases'] for w in weeks_data)
 
-    def _level_pill(level, level_key):
-        fg, bg = _LEVEL_COLORS.get(level_key or '', _DEFAULT_LEVEL_COLOR)
-        icon_id = level_key if level_key in _LEVEL_ICONS else 'default'
-        return (f'<span class="level-pill" style="color:{fg};background:{bg}">'
-                f'<svg class="level-icon" width="14" height="14" viewBox="0 0 24 24" '
-                f'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-                f'stroke-linejoin="round"><use href="#icon-lvl-{icon_id}"/></svg>'
-                f'{_html.escape(level or "Unrated")}</span>')
+    def _icon(level_key):
+        return _LEVEL_ICONS.get(level_key or '', _DEFAULT_LEVEL_ICON)
 
-    def _row(c):
-        open_cell = (
-            f'<a class="openlink" href="{_html.escape(c["interactive_path"])}" target="_blank" rel="noopener">Open &rarr;</a>'
+    def _card(c):
+        concepts = c.get('concepts') or []
+        concepts_html = _html.escape(', '.join(concepts)) if concepts else '&mdash;'
+        btn = (
+            f'<a class="btn" href="{_html.escape(c["class_path"])}" target="_blank" rel="noopener">'
+            'Open the case &amp; submit &rarr;</a>'
             if c.get('interactive_path') else
-            '<span class="det">Not yet available</span>'
+            '<span class="btn" style="opacity:.5;cursor:default">Not yet available</span>'
         )
         return (
-            '<tr>'
-            f'<td>{_level_pill(c.get("level"), c.get("level_key"))}</td>'
-            f'<td><div class="case-name">{_html.escape(c["title"])}</div></td>'
-            f'<td class="desc">{_html.escape(c.get("blurb") or "")}</td>'
-            f'<td class="skills">{_html.escape(c.get("skills_focus") or "")}</td>'
-            f'<td class="career">{_html.escape(c.get("career_note") or "")}</td>'
-            f'<td>{open_cell}</td>'
-            '</tr>'
+            '<div class="card">'
+            '<div class="card-top">'
+            f'<div class="icon"><svg viewBox="0 0 64 64">{_icon(c.get("level_key"))}</svg></div>'
+            '<div class="titles">'
+            f'<span class="tag">{_html.escape(c.get("level") or "Unrated")}</span>'
+            f'<h3>{_html.escape(c["title"])}</h3>'
+            '</div></div>'
+            f'<p class="ask">{_html.escape(c.get("ask") or "")}</p>'
+            '<table class="details">'
+            f'<tr><th>Field</th><td>{_html.escape(c.get("field") or "&mdash;")}</td></tr>'
+            f'<tr><th>Role</th><td>{_html.escape(c.get("role") or "&mdash;")}</td></tr>'
+            f'<tr><th>Concepts</th><td>{concepts_html}</td></tr>'
+            '</table>'
+            f'{btn}'
+            '</div>'
         )
 
     def _week_section(i, w):
         label = w.get('label') or 'This week'
-        rows = "".join(_row(c) for c in w['cases'])
+        cards = "".join(_card(c) for c in w['cases'])
         return (
-            f'<section class="week-panel" id="week-panel-{i}" data-week="{i}"{"" if i == 0 else " hidden"}>'
-            '<div class="tablewrap"><table>'
-            '<colgroup><col class="c-level"><col class="c-case"><col class="c-desc">'
-            '<col class="c-skills"><col class="c-career"><col class="c-link"></colgroup>'
-            '<thead><tr><th>Level</th><th>Case</th><th>The dilemma</th>'
-            '<th>Skills focus</th><th>Career / life skills</th><th>Open</th></tr></thead>'
-            f'<tbody>{rows}</tbody>'
-            '</table></div>'
-            '</section>'
+            f'<h2 class="week-h" id="week-{i}">{_html.escape(label)}</h2>'
+            f'<div class="grid">{cards}</div>'
         )
 
-    options_html = "".join(
-        f'<option value="{i}">{_html.escape(w.get("label") or "This week")} '
-        f'({len(w["cases"])} case{"s" if len(w["cases"]) != 1 else ""})</option>'
+    jump_html = "".join(
+        f'<a href="#week-{i}">{_html.escape(w.get("label") or "This week")}</a>'
         for i, w in enumerate(weeks_data)
-    )
-    selector_html = (
-        f'<div class="week-select"><label for="week-picker">Showing</label>'
-        f'<select id="week-picker">{options_html}</select></div>'
-        if len(weeks_data) > 1 else ''
-    )
+    ) if len(weeks_data) > 1 else ''
+
     sections_html = (
         "".join(_week_section(i, w) for i, w in enumerate(weeks_data))
         if has_any else
@@ -229,83 +234,72 @@ def render_catalog_html(weeks_data):
 
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Weekly Case Catalog — Math Builder</title>
+<title>Class Cases — Math Builder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
 <style>
 :root{{
+  color-scheme: light dark;
   --ink:#1a2e44; --ink-soft:#3d5266; --ground:#faf8f4; --surface:#ffffff;
-  --line:#e4ded2; --muted:#6b6459; --gold:#b4802b; --gold-ink:#7a5620;
-  --shadow:0 1px 2px rgba(26,46,68,.06), 0 6px 20px rgba(26,46,68,.05);
+  --line:#e4ded2; --muted:#5f5a50; --gold:#b4802b; --gold-ink:#7a5620; --gold-bg:#f7edd9;
+  --btn-bg:#1a2e44; --btn-bg-hover:#7a5620;
+  --shadow: 0 1px 2px rgba(26,46,68,.06), 0 6px 20px rgba(26,46,68,.05);
+}}
+@media (prefers-color-scheme: dark){{
+  :root:not([data-theme="light"]){{
+    --ink:#eef1f5; --ink-soft:#c3ccd6; --ground:#12161c; --surface:#1a1f27;
+    --line:#2b323d; --muted:#a7b0bb; --gold:#e0ab52; --gold-ink:#f3cb84; --gold-bg:#2c2413;
+  }}
+}}
+:root[data-theme="dark"]{{
+  --ink:#eef1f5; --ink-soft:#c3ccd6; --ground:#12161c; --surface:#1a1f27;
+  --line:#2b323d; --muted:#a7b0bb; --gold:#e0ab52; --gold-ink:#f3cb84; --gold-bg:#2c2413;
 }}
 *{{box-sizing:border-box}}
 body{{margin:0;background:var(--ground);color:var(--ink);font-family:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}}
-.wrap{{max-width:1180px;margin:0 auto;padding:40px 20px 64px}}
-header.page{{display:flex;flex-direction:column;gap:10px;padding-bottom:24px;margin-bottom:24px;border-bottom:1px solid var(--line)}}
+.wrap{{max-width:1180px;margin:0 auto;padding:40px 22px 80px}}
+header.page{{padding-bottom:22px;margin-bottom:8px;border-bottom:1px solid var(--line)}}
 .eyebrow{{font-size:12.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink)}}
-h1{{font-family:"Fraunces",ui-serif,Georgia,serif;font-weight:600;font-size:clamp(26px,4vw,36px);line-height:1.1;margin:0}}
-p.sub{{color:var(--muted);font-size:15px;max-width:62ch;line-height:1.55;margin:0}}
-.week-select{{display:flex;align-items:center;gap:10px;margin-top:8px}}
-.week-select label{{font-size:12.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}}
-.week-select select{{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}}
-.tablewrap{{overflow-x:auto;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);background:var(--surface)}}
-table{{border-collapse:collapse;width:100%;min-width:880px}}
-thead th{{text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:14px 16px;border-bottom:1px solid var(--line)}}
-tbody td{{padding:16px;vertical-align:top;border-bottom:1px solid var(--line);font-size:14px;line-height:1.5;color:var(--ink-soft)}}
-tbody tr:last-child td{{border-bottom:none}}
-tbody tr:hover td{{background:rgba(180,128,43,.05)}}
-col.c-level{{width:140px}} col.c-case{{width:150px}} col.c-desc{{width:auto}}
-col.c-skills{{width:200px}} col.c-career{{width:220px}} col.c-link{{width:90px}}
-.level-pill{{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;font-family:"Fraunces",ui-serif,serif;font-weight:600;font-size:13px;white-space:nowrap}}
-.level-icon{{flex:none}}
-.case-name{{font-family:"Fraunces",ui-serif,serif;font-weight:600;font-size:15.5px;color:var(--ink);line-height:1.28}}
-.openlink{{display:inline-block;font-weight:600;font-size:13px;color:var(--gold-ink);text-decoration:none;padding:6px 12px;border-radius:8px;border:1px solid var(--gold);white-space:nowrap}}
-.openlink:hover{{background:rgba(180,128,43,.12)}}
+h1{{font-family:"Fraunces",ui-serif,Georgia,serif;font-weight:600;font-size:clamp(26px,4vw,36px);line-height:1.1;margin:6px 0 6px;text-wrap:balance}}
+p.sub{{color:var(--muted);font-size:15px;max-width:66ch;line-height:1.5;margin:0}}
+nav.jump{{position:sticky;top:0;z-index:5;display:flex;gap:8px;flex-wrap:wrap;margin:24px -22px 8px;padding:12px 22px;
+  background:var(--ground);border-bottom:1px solid var(--line)}}
+nav.jump a{{font-size:13px;font-weight:600;color:var(--ink-soft);text-decoration:none;padding:6px 13px;
+  border:1px solid var(--line);border-radius:999px;background:var(--surface)}}
+nav.jump a:hover{{border-color:var(--gold);color:var(--gold-ink)}}
+h2.week-h{{font-family:"Fraunces",ui-serif,serif;font-weight:600;font-size:20px;margin:30px 0 14px;color:var(--ink);
+  scroll-margin-top:56px}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}}
+.card{{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;overflow:hidden}}
+.card-top{{display:flex;align-items:center;gap:14px;padding:18px 20px 14px}}
+.icon{{flex:0 0 auto;width:52px;height:52px;border-radius:10px;background:var(--gold-bg);color:var(--gold-ink);
+  display:flex;align-items:center;justify-content:center;padding:10px}}
+.icon svg{{width:100%;height:100%}}
+.card-top .titles{{min-width:0}}
+.card .tag{{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--gold-ink);
+  display:block;margin-bottom:3px}}
+.card h3{{font-family:"Fraunces",ui-serif,serif;font-weight:600;font-size:19px;margin:0;color:var(--ink)}}
+.card .ask{{font-size:13.5px;line-height:1.5;color:var(--ink-soft);margin:0;padding:0 20px 14px}}
+table.details{{width:calc(100% - 40px);margin:0 20px 14px;border-collapse:collapse;font-size:12.5px}}
+table.details tr{{border-top:1px solid var(--line)}}
+table.details th{{text-align:left;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);
+  padding:7px 10px 7px 0;width:78px;vertical-align:top;white-space:nowrap;font-size:10.5px}}
+table.details td{{padding:7px 0;color:var(--ink-soft);line-height:1.4}}
+.card .btn{{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--btn-bg);color:#fff;
+  text-decoration:none;font-size:14px;font-weight:600;padding:13px 18px;margin-top:auto}}
+.card .btn:hover{{background:var(--btn-bg-hover)}}
 .empty-note{{color:var(--muted);font-size:14.5px}}
-footer.note{{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6;max-width:70ch}}
-@media (max-width:760px){{
-  .tablewrap{{border-radius:0;border-left:none;border-right:none;margin:0 -20px;width:calc(100% + 40px)}}
-}}
 </style></head><body>
-<svg style="display:none" aria-hidden="true">
-  <defs>
-    {''.join(f'<symbol id="icon-lvl-{k}" viewBox="0 0 24 24">{p}</symbol>' for k, p in _LEVEL_ICONS.items())}
-    <symbol id="icon-lvl-default" viewBox="0 0 24 24">{_DEFAULT_LEVEL_ICON}</symbol>
-  </defs>
-</svg>
 <div class="wrap">
   <header class="page">
-    <span class="eyebrow">Math Builder &middot; Weekly Cases</span>
-    <h1>Weekly Case Catalog</h1>
-    <p class="sub">Real, professional dilemmas with the math underneath them &mdash; pick a week to see what's live. No login required to open a case.</p>
-    {selector_html}
+    <span class="eyebrow">Math Builder</span>
+    <h1>Class Cases</h1>
+    <p class="sub">Every case, grouped by week &mdash; the field it's set in, the role you're stepping into, the dilemma, and the concepts it tests. Open whichever one you're working on and submit your finished notebook there.</p>
   </header>
+  {f'<nav class="jump">{jump_html}</nav>' if jump_html else ''}
   {sections_html}
-  <footer class="note">Each case is a binary decision under real constraints, worked through with real numbers. "Open" launches the student-facing interactive page in a new tab.</footer>
 </div>
-<script>
-var picker = document.getElementById('week-picker');
-function showWeek(idx) {{
-  document.querySelectorAll('.week-panel').forEach(function(el) {{
-    el.hidden = (el.dataset.week !== idx);
-  }});
-  if (picker) picker.value = idx;
-}}
-if (picker) {{
-  picker.addEventListener('change', function() {{ showWeek(picker.value); }});
-}}
-// Deep link: /catalog?week=3 matches a week labeled "Week 3" (case-insensitive,
-// also accepts a bare option index like ?week=2) so a link can be shared straight
-// to one week instead of making the viewer pick it from the dropdown.
-(function() {{
-  var q = new URLSearchParams(location.search).get('week');
-  if (!q || !picker) return;
-  var opts = Array.prototype.slice.call(picker.options);
-  var match = opts.find(function(o) {{ return o.textContent.toLowerCase().indexOf('week ' + q.toLowerCase()) === 0; }})
-           || opts.find(function(o) {{ return o.value === q; }});
-  if (match) showWeek(match.value);
-}})();
-</script>
 </body></html>"""
 
 

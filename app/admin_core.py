@@ -1238,7 +1238,7 @@ def get_public_catalog(store):
     groups (do_get_weekly_cases), each case resolved through get_case_brief()
     (public-safe -- id/title/primary_metric/options/interactive_path, never
     the facilitator brief) plus case.json's own catalog{} block (level,
-    blurb, skills_focus, career_note) read directly off disk -- that field
+    field, role, concepts[], ask) read directly off disk -- that field
     carries no gated data (see cases/<id>/case.json's own catalog key), so
     reading it here is safe on this unauthenticated route.
 
@@ -1270,9 +1270,11 @@ def get_public_catalog(store):
             rows.append({
                 "id": brief['id'], "title": brief['title'],
                 "interactive_path": brief['interactive_path'],
+                "class_path": f"/class/{brief['id']}",
                 "level": catalog.get('level'), "level_key": catalog.get('level_key'),
-                "blurb": catalog.get('blurb'), "skills_focus": catalog.get('skills_focus'),
-                "career_note": catalog.get('career_note'),
+                "field": catalog.get('field'), "role": catalog.get('role'),
+                "concepts": catalog.get('concepts') or [],
+                "ask": catalog.get('ask') or catalog.get('blurb'),
             })
         if rows:
             out.append({"label": w.get('label'), "cases": rows})
