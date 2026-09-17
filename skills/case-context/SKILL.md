@@ -281,14 +281,35 @@ A found real image with the *wrong* license (all-rights-reserved stock photograp
 outlet's own uncredited graphic) is not usable regardless of how well it illustrates the point —
 license is a hard gate the confidence tier does not override.
 
-## Known gap — no templated generator yet
+## The generator — `case.json` is the source of truth, the HTML is generated
 
-As of 2026-09-16, `STORY_GLOSSARY`/`.sterm`/`<figure>` placement in `published/*.html` is still
-hand-authored per case (by whoever runs this skill), not generated from `case.json.
-context_glossary[]` by `case-publish`. Until that generator exists, this skill's author is
-responsible for keeping the published HTML in sync with `case.json` by hand, and
-`tier1_structural.py --case <id>` (T1-21 for the glossary mechanism, T1-20 for visual presence)
-is the only thing standing between "recorded in case.json" and "actually reaches the student." A
-future improvement: teach `case-publish` to render `context_glossary[]` into the HTML directly,
-the same way it already renders `sources[]` into the Sources appendix table, closing this gap for
-good.
+As of 2026-09-16 this gap is closed: `skills/case-publish/scripts/render_context.py` renders
+`case.json.context_glossary[]` (an array of `{term, desc, link}`) into the published HTML's
+`STORY_GLOSSARY` object, `.sterm` CSS, `#storyGlossaryCard`, and the `autoLinkStoryTerms([...])`
+call — the same mechanism documented above, now generated instead of hand-typed per case.
+
+```bash
+python3 skills/case-publish/scripts/render_context.py --case <id>            # render case.json -> HTML
+python3 skills/case-publish/scripts/render_context.py --case <id> --check    # dry-run, exit 1 if stale
+python3 skills/case-publish/scripts/render_context.py --case <id> --extract  # one-time backfill: pull an
+                                                                              # existing hand-authored
+                                                                              # STORY_GLOSSARY OUT of the
+                                                                              # HTML into case.json (use
+                                                                              # this once per case authored
+                                                                              # before this script existed)
+```
+
+This skill's actual workflow is now: source the 2-4 terms per the fit test above, write them into
+`case.json.context_glossary[]` (plus an optional `context_domain_label`, e.g. `"Cutting-Room"`,
+and `context_selectors` if a case needs a non-default section list), then run the script — no
+hand-editing HTML. It's idempotent (re-running with an unchanged `context_glossary[]` produces a
+byte-identical file) and handles three cases: a case with markers already present (replaces
+between them), a case with a hand-authored-but-unmarked `STORY_GLOSSARY` (upgrades it in place,
+wrapping it in markers so future runs are safe), and a case with no `STORY_GLOSSARY` at all
+(scaffolds the full CSS/card/JS from scratch). Regression-tested:
+`skills/case-publish/scripts/selftest_render_context.py` — run it after any edit to
+`render_context.py`, the same discipline `tier1_structural.py`/`selftest_tier1.py` already follow.
+
+**What it still does not do:** place `<figure>`/`<img>` visual blocks. Real image sourcing,
+captioning, and placement decisions still need editorial judgment (see "Visual sourcing,
+specifically" above) — this generator only owns the glossary/hover/hyperlink layer.
