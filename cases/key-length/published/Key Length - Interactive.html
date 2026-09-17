@@ -210,6 +210,19 @@
     summary:before{content:"" !important}
     body{background:#fff}
   }
+  /* BEGIN case-context AUTO-GENERATED CSS — edit case.json, not this block; see skills/case-publish/scripts/render_context.py */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  /* END case-context AUTO-GENERATED CSS */
 </style>
 </head>
 <body>
@@ -343,6 +356,14 @@
      .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
      Cold Chain if they fit; they're generic layout, not case data. -->
 <section id="background">
+<div class="card" id="storyGlossaryCard">
+  <strong>Cybersecurity/Cryptography Vocabulary</strong>
+  <p class="side-note" style="margin-top:6px">Hover any underlined term below (or in the prose
+    above) for a plain-English definition; click to open a real source on it. This is separate
+    from the math vocabulary in Appendix H &mdash; these are the cybersecurity/cryptography words the story
+    itself is told in.</p>
+  <div class="glossary-grid" id="storyGlossaryGrid"></div>
+</div>
   <h2>Background</h2>
   <p>Elena Kowalski is a cybersecurity trainer designing a hands-on &ldquo;factor this practice key&rdquo; exercise for a company's security-awareness training session. The exercise is built on a real fact: modern public-key cryptography (like RSA) generates a key by multiplying two large prime numbers together, and the entire security of the system depends on the fact that multiplying is fast but factoring the result back apart is slow &mdash; and gets dramatically slower as the numbers grow larger (see Appendix A).</p>
   <p>For training purposes, Elena needs small, hand-factorable numbers that still demonstrate the real process: a trainee tests candidate prime divisors, one at a time, until a factor is found &mdash; and a real, provable fact from number theory means nobody ever needs to test past the square root of the number being factored, because if no factor exists below that point, none exists at all (see Appendix B).</p>
@@ -1186,6 +1207,79 @@ window.addEventListener('scroll', ()=>{
   for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
   tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
 }, {passive:true});
+
+/* BEGIN case-context AUTO-GENERATED STORY_GLOSSARY — edit case.json.context_glossary[], not this block; see skills/case-publish/scripts/render_context.py */
+const STORY_GLOSSARY = {
+  "RSA": {desc: "RSA is a widely used public-key cryptography system. It works by multiplying two large secret prime numbers together to create a public number (used to lock/encrypt data) while keeping the original primes secret -- because multiplying is fast but factoring the result back apart is extremely slow.",
+    link: "https://en.wikipedia.org/wiki/RSA_(cryptosystem)"},
+  "modulus": {desc: "In RSA, the modulus is the single large number (usually called N) produced by multiplying two large secret prime numbers together. It's the public number that anchors both the public and private keys -- everyone can see it, but only someone who knows its two secret prime factors can break it.",
+    link: "https://en.wikipedia.org/wiki/RSA_(cryptosystem)#Key_generation"},
+  "bit": {desc: "In cryptography, a key's strength is often measured in bits of security: an n-bit-secure key means an attacker would need on the order of 2^n operations to break it, so more bits means dramatically more computing work is required to crack it.",
+    link: "https://en.wikipedia.org/wiki/Security_level"},
+  "NIST": {desc: "NIST (the National Institute of Standards and Technology) is the U.S. federal agency that sets official technical standards, including the cryptographic key-length guidance this case's Appendix A cites.",
+    link: "https://www.nist.gov/about-nist"}
+};
+/* END case-context AUTO-GENERATED STORY_GLOSSARY */
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#storyGlossaryCard')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryCard, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryTerms(["#overview", "#background", "#dilemma", "#challenges", "#appendices", "#notebook", "#twist"]);
 </script>
 </body>
 </html>

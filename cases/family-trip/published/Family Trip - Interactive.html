@@ -204,6 +204,19 @@
     summary:before{content:"" !important}
     body{background:#fff}
   }
+  /* BEGIN case-context AUTO-GENERATED CSS — edit case.json, not this block; see skills/case-publish/scripts/render_context.py */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  /* END case-context AUTO-GENERATED CSS */
 </style>
 </head>
 <body>
@@ -318,6 +331,14 @@
      .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
      Cold Chain if they fit; they're generic layout, not case data. -->
 <section id="background">
+<div class="card" id="storyGlossaryCard">
+  <strong>Travel Vocabulary</strong>
+  <p class="side-note" style="margin-top:6px">Hover any underlined term below (or in the prose
+    above) for a plain-English definition; click to open a real source on it. This is separate
+    from the math vocabulary in Appendix H &mdash; these are the travel words the story
+    itself is told in.</p>
+  <div class="glossary-grid" id="storyGlossaryGrid"></div>
+</div>
   <h2>Background</h2>
   
 <p>Tom and Patricia Jackson live in Boise, Idaho, with their four children: Ronaldo (7), Cedric (5), Ethan (20 months), and baby Suzanna (2 months). Every winter break, the Jacksons travel to Gilbert, Arizona, to spend the holidays with the Youngs &mdash; close friends since college, and the closest thing the kids have to a second set of grandparents. For as long as they've been making the trip, it has followed the same pattern: two long days behind the wheel each way, with an overnight stop in Las Vegas to break it up, in the family's own 2014 Honda Odyssey (see <a href="#apx-A">Appendix A</a> and <a href="#apx-B">Appendix B</a>).</p>
@@ -1130,6 +1151,79 @@ window.addEventListener('scroll', ()=>{
   for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
   tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
 }, {passive:true});
+
+/* BEGIN case-context AUTO-GENERATED STORY_GLOSSARY — edit case.json.context_glossary[], not this block; see skills/case-publish/scripts/render_context.py */
+const STORY_GLOSSARY = {
+  "lap child": {desc: "An airline term for a child under 24 months old who travels sitting on an accompanying adult's lap instead of in their own purchased seat. Airlines that permit this, like Allegiant, cap how many lap children can be seated per row for safety reasons -- there's only one oxygen mask drop unit per row to share in an emergency.",
+    link: "https://www.allegiantair.com/traveling-with-children"},
+  "September 11th Security Fee": {desc: "A federal fee charged on every U.S. commercial flight, on every airline, to help fund national aviation-security operations. It's a government-mandated fee added to the ticket price, not something the airline itself sets or keeps.",
+    link: "https://www.tsa.gov/for-industry/security-fees"},
+  "IRS standard mileage rate": {desc: "A per-mile dollar figure the IRS publishes each year (and occasionally updates mid-year) meant to represent the full cost of operating a personal vehicle -- fuel, maintenance, tires, and depreciation combined, not just what you pay at the pump. It's normally used to calculate a tax deduction, but it's also a common way to estimate what a long road trip actually costs to run.",
+    link: "https://www.irs.gov/tax-professionals/standard-mileage-rates"},
+  "EPA mileage rating": {desc: "The city, highway, and combined miles-per-gallon numbers the U.S. EPA publishes for every new vehicle, shown on its window sticker. Combined MPG is a weighted average of the city and highway figures (55% city, 45% highway) -- highway MPG is usually the highest of the three, which is why a case using mostly interstate miles uses the highway number rather than the combined one.",
+    link: "https://www.fueleconomy.gov/feg/label/learn-more-gasoline-label.shtml"}
+};
+/* END case-context AUTO-GENERATED STORY_GLOSSARY */
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#storyGlossaryCard')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryCard, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryTerms(["#overview", "#background", "#dilemma", "#challenges", "#appendices", "#notebook", "#twist"]);
 </script>
 </body>
 </html>
