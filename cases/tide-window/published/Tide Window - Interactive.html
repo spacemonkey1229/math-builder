@@ -874,10 +874,14 @@ restorePick();
    CASE-SPECIFIC — deliverables list for the checklist.
    ================================================================ */
 const DELIVERABLES = [
-  ["D1", "Worked angle table (degrees, radians, reference angle, sin/cos/tan) for each key clock time"],
-  ["D2", "Stated sine/cosine tide model: amplitude and period, fitted to Appendix A"],
-  ["D3", "Under-keel clearance table, Dawn Transit vs. Slack Tide"],
-  ["D4", "Written sensitivity check using Appendix D's storm-surge range"],
+  ["D1", "Worked angle table (degrees, radians, reference angle, sin/cos/tan) for each key clock time",
+    "Why convert every clock time to an angle before touching the tide model: a sine/cosine tide curve is defined over angles, not clock hours, so degrees/radians/reference-angle have to be nailed down first or every later value in D2 inherits the same error. Compute reference angle and the three ratios in the same pass per time, rather than doing all four columns separately, so a mistake is caught immediately against that one row instead of hunting across the whole table afterward."],
+  ["D2", "Stated sine/cosine tide model: amplitude and period, fitted to Appendix A",
+    "Why fit amplitude and period from Appendix A's real station data before predicting anything: a model built to match the harbor's own real tidal behavior (not a generic textbook tide) is what makes D3's clearance numbers trustworthy. Get the period right first &mdash; it comes directly from the real M2 constituent cited in Appendix A &mdash; since an amplitude fit on top of a wrong period will look reasonable but predict the wrong tide at every hour that isn't already in your data."],
+  ["D3", "Under-keel clearance table, Dawn Transit vs. Slack Tide",
+    "Why compute both options with the exact same formula (charted depth + tide height &minus; draft) before comparing them: using a different shortcut for one option than the other is the easiest way to manufacture a fake advantage. Run Dawn Transit's marginal-low case first, since it's the tighter constraint the case actually hinges on, then Slack Tide as the comparison &mdash; not the other way around, so you know exactly how much margin the harder case has before you look at the easier one."],
+  ["D4", "Written sensitivity check using Appendix D's storm-surge range",
+    "Why a written sensitivity check instead of a single point estimate: the storm's real effect on tonight's water level is a stated range, not a single knowable number, so a clearance calculation that only reports one value hides how much that number could move. Re-run D3's own formula at both ends of Appendix D's range rather than just describing the range in words &mdash; a written sensitivity check without the actual re-computed numbers is not a sensitivity check."],
 ];
 
 /* ================================================================
@@ -885,11 +889,12 @@ const DELIVERABLES = [
    ================================================================ */
 function renderChecklist(){
   const el = document.getElementById('dchecklist');
-  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,explain])=>{
     const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
     const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
     return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
       <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${explain ? `<div class="side-note" style="border-top:none;margin-top:2px;padding-top:0">${explain}</div>` : ''}
       <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
   }).join('');
 }
