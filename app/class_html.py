@@ -257,13 +257,26 @@ footer.note{{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6
 </div>
 <script>
 var picker = document.getElementById('week-picker');
-if (picker) {{
-  picker.addEventListener('change', function() {{
-    document.querySelectorAll('.week-panel').forEach(function(el) {{
-      el.hidden = (el.dataset.week !== picker.value);
-    }});
+function showWeek(idx) {{
+  document.querySelectorAll('.week-panel').forEach(function(el) {{
+    el.hidden = (el.dataset.week !== idx);
   }});
+  if (picker) picker.value = idx;
 }}
+if (picker) {{
+  picker.addEventListener('change', function() {{ showWeek(picker.value); }});
+}}
+// Deep link: /catalog?week=3 matches a week labeled "Week 3" (case-insensitive,
+// also accepts a bare option index like ?week=2) so a link can be shared straight
+// to one week instead of making the viewer pick it from the dropdown.
+(function() {{
+  var q = new URLSearchParams(location.search).get('week');
+  if (!q || !picker) return;
+  var opts = Array.prototype.slice.call(picker.options);
+  var match = opts.find(function(o) {{ return o.textContent.toLowerCase().indexOf('week ' + q.toLowerCase()) === 0; }})
+           || opts.find(function(o) {{ return o.value === q; }});
+  if (match) showWeek(match.value);
+}})();
 </script>
 </body></html>"""
 
