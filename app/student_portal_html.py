@@ -129,9 +129,41 @@ function caseHref(caseId, filename) {
 
 function render() {
   const v = document.getElementById("view");
-  v.innerHTML = renderBadgeProgress() + renderGoals() + renderSuggestions() + renderAssignments();
+  v.innerHTML = renderBadgeProgress() + renderGoals() + renderSuggestions() + renderAssignments() + renderCatalog();
   wireView();
   restoreFieldValues();
+}
+
+// "All cases" -- the same public weekly catalog /catalog shows anyone
+// (STATE.catalog is admin_core.get_public_catalog()'s own output, passed
+// straight through by build_student_state()), styled to match this portal's
+// existing .casecard pattern instead of importing a second visual language.
+// Deliberately separate from "Your cases" above: that section is only ever
+// what a guide has actually assigned; this one is everything currently live,
+// for a student who wants to look ahead or pick something on their own.
+function renderCatalog() {
+  const weeks = STATE.catalog || [];
+  if (!weeks.some((w) => w.cases.length)) return "";
+  return '<h3 style="margin:var(--s5) 0 var(--s3)">All cases</h3>' +
+    weeks.map((w) => {
+      if (!w.cases.length) return "";
+      const label = w.label || "This week";
+      return '<div class="det" style="margin:var(--s4) 0 6px;font-weight:700;text-transform:uppercase;' +
+        'letter-spacing:.06em;font-size:11px">' + esc(label) + "</div>" +
+        w.cases.map((c) => {
+          const concepts = (c.concepts || []).join(", ");
+          let body = '<div class="hd"><div><div class="who">' + esc(c.title) + "</div>" +
+            '<div class="det">' + esc(c.level || "") + (c.field ? " &middot; " + esc(c.field) : "") + "</div>" +
+            "</div>" + (c.role ? '<span class="pill accent">' + esc(c.role) + "</span>" : "") +
+            "</div><div class=\"body\">";
+          if (c.ask) body += '<p class="det" style="margin:0 0 8px">' + esc(c.ask) + "</p>";
+          if (concepts) body += '<p class="det" style="margin:0 0 10px"><strong>Concepts:</strong> ' + esc(concepts) + "</p>";
+          body += c.interactive_path
+            ? '<a class="btn ghost" target="_blank" href="' + esc(c.class_path) + '">Open case &amp; submit</a>'
+            : '<p class="det">Not yet available.</p>';
+          return '<div class="casecard">' + body + "</div></div>";
+        }).join("");
+    }).join("");
 }
 
 function renderBadgeProgress() {

@@ -888,7 +888,14 @@ def build_student_state(store, learner_id):
     """The live student portal's whole-page state -- deliberately just the slice
     of build_state() this one learner is allowed to see: their own record, their
     own assignments (feedback included), their own badge progress. No roster,
-    no other learner's data, ever."""
+    no other learner's data, ever.
+
+    `catalog` is the exception to "just this learner's slice" -- it's the same
+    public, unauthenticated data /catalog already shows anyone (get_public_catalog,
+    itself only ever get_case_brief() + case.json's gate-free catalog{} block,
+    never the facilitator brief), included here too so a signed-in student can
+    browse every week's cases -- not just ones a guide has already assigned --
+    from inside the one portal they actually use."""
     full = build_state(store)
     learner = next((l for l in full['learners'] if l['id'] == learner_id), None)
     if not learner:
@@ -902,7 +909,7 @@ def build_student_state(store, learner_id):
     return {
         "today": full['today'], "learner": learner, "assignments": my_assignments, "badges": my_badges,
         "interest_clusters": full['interest_clusters'], "curriculum_branches": full['curriculum_branches'],
-        "suggestions": suggestions,
+        "suggestions": suggestions, "catalog": get_public_catalog(store),
     }
 
 
