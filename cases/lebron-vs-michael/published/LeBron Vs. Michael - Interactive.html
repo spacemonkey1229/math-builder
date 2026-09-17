@@ -795,11 +795,16 @@ restorePick();
    CASE-SPECIFIC — deliverables list for the checklist.
    ================================================================ */
 const DELIVERABLES = [
-  ["D1","Each player's career regular-season 2pt/3pt/FT%"],
-  ["D2","Each player's career regular-season mean assists and rebounds per game, plus recovering a missing season total from the mean"],
-  ["D3","The same five stats for the playoffs"],
-  ["D4","A box-and-whisker plot of career points-per-game, with median and quartiles"],
-  ["D5","A self-designed weighted algorithm applied to both players, plus a recommendation"]
+  ["D1","Each player's career regular-season 2pt/3pt/FT%",
+    "Why total makes over total attempts, not an average of season percentages: a career built from 18 real seasons of very different length and volume needs every shot to count equally, not every season. Averaging each season's own percentage would let a 15-game rookie year count exactly as much as a full 82-game season, which distorts the real career-wide rate (Appendix E, Assumption 1). Compute all three shot types the same way before moving on, since D3 repeats this exact method on a different dataset."],
+  ["D2","Each player's career regular-season mean assists and rebounds per game, plus recovering a missing season total from the mean",
+    "Why a games-weighted mean, not a simple average of per-season rates: total career assists (or rebounds) divided by total career games gives a real per-game rate that already accounts for how many games each season actually contributed (Appendix E, Assumption 2). That same relationship &mdash; mean &times; number of seasons = total &mdash; is what lets you work backward and recover one missing season's total from the other 17 plus the known career mean, rather than guessing at it."],
+  ["D3","The same five stats for the playoffs",
+    "Why recompute instead of reusing the regular-season numbers: a much smaller sample (a few dozen playoff games versus over a thousand regular-season games) can genuinely shift a rate stat, and the only way to know whether a conclusion holds up under playoff pressure is to run the identical D1/D2 method on the playoff totals in Appendix B. Keep the same career-wide, games-weighted approach here &mdash; switching methods between D1 and D3 would make any difference you find impossible to trust."],
+  ["D4","A box-and-whisker plot of career points-per-game, with median and quartiles",
+    "Why median and quartiles instead of just a mean: a five-number summary shows the shape of an entire 15-to-18-year career &mdash; a rookie season and a late-career decline both show up as outliers rather than quietly pulling a single average up or down. Sort every season's PPG first, then find the median before splitting the remaining values into upper and lower halves for Q1/Q3 &mdash; doing it out of order is the easiest way to mis-assign a value to the wrong quartile."],
+  ["D5","A self-designed weighted algorithm applied to both players, plus a recommendation",
+    "Why you design the weights yourself: D1&ndash;D4 hand you real, computed numbers, but there is no formula anyone has published for how much shooting efficiency should count against playmaking or peak accolades &mdash; that judgment call is the actual assignment. Pick at least three of your own computed stats, state the weight you're giving each one and why, and be ready to defend the weighting itself, not just the final number it produces."]
 ];
 
 /* ================================================================
@@ -807,11 +812,12 @@ const DELIVERABLES = [
    ================================================================ */
 function renderChecklist(){
   const el = document.getElementById('dchecklist');
-  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,explain])=>{
     const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
     const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
     return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
       <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${explain ? `<div class="side-note" style="border-top:none;margin-top:2px;padding-top:0">${explain}</div>` : ''}
       <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
   }).join('');
 }
