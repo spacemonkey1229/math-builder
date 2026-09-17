@@ -131,6 +131,23 @@ _LEVEL_COLORS = {
 }
 _DEFAULT_LEVEL_COLOR = ("#5F594E", "#EDEAE1")
 
+# One small stroke-line glyph per level_key, 24x24, matching the restrained
+# icon style already used elsewhere in this app's published shell (see
+# templates/interactive_shell.html's #icon-check/#icon-truck symbols) --
+# fill:none, currentColor stroke, no emoji. Rendered once as an SVG sprite
+# and referenced per row via <use>, so the actual markup per pill stays tiny.
+_LEVEL_ICONS = {
+    "prealg": '<path d="M3 12h18M3 12l4-4M3 12l4 4M17 8l4 4-4 4"/>',
+    "alg":    '<path d="M4 7h6M4 17h6M7 7v10M12 12h8M16 8l4 4-4 4"/>',
+    "geo":    '<path d="M12 4l8 16H4z"/>',
+    "adv":    '<path d="M2 12c2-5 4-5 6 0s4 5 6 0 4-5 6 0"/>',
+    "adv2":   '<path d="M3 18c4-1 8-4 10-9M13 9l6 1-1 6"/>',
+    "disc":   '<circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/>'
+              '<path d="M6.7 7.3L11 16.3M17.3 7.3L13 16.3M7 6h10"/>',
+    "stat":   '<path d="M4 20V10M11 20V4M18 20v-7"/><path d="M2 20h20"/>',
+}
+_DEFAULT_LEVEL_ICON = '<circle cx="12" cy="12" r="7"/>'
+
 
 def render_catalog_html(weeks_data):
     """The public, unauthenticated /catalog page -- a real-time "Weekly Case
@@ -155,7 +172,11 @@ def render_catalog_html(weeks_data):
 
     def _level_pill(level, level_key):
         fg, bg = _LEVEL_COLORS.get(level_key or '', _DEFAULT_LEVEL_COLOR)
+        icon_id = level_key if level_key in _LEVEL_ICONS else 'default'
         return (f'<span class="level-pill" style="color:{fg};background:{bg}">'
+                f'<svg class="level-icon" width="14" height="14" viewBox="0 0 24 24" '
+                f'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+                f'stroke-linejoin="round"><use href="#icon-lvl-{icon_id}"/></svg>'
                 f'{_html.escape(level or "Unrated")}</span>')
 
     def _row(c):
@@ -235,7 +256,8 @@ tbody tr:last-child td{{border-bottom:none}}
 tbody tr:hover td{{background:rgba(180,128,43,.05)}}
 col.c-level{{width:140px}} col.c-case{{width:150px}} col.c-desc{{width:auto}}
 col.c-skills{{width:200px}} col.c-career{{width:220px}} col.c-link{{width:90px}}
-.level-pill{{display:inline-block;padding:5px 11px;border-radius:999px;font-family:"Fraunces",ui-serif,serif;font-weight:600;font-size:13px;white-space:nowrap}}
+.level-pill{{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;font-family:"Fraunces",ui-serif,serif;font-weight:600;font-size:13px;white-space:nowrap}}
+.level-icon{{flex:none}}
 .case-name{{font-family:"Fraunces",ui-serif,serif;font-weight:600;font-size:15.5px;color:var(--ink);line-height:1.28}}
 .openlink{{display:inline-block;font-weight:600;font-size:13px;color:var(--gold-ink);text-decoration:none;padding:6px 12px;border-radius:8px;border:1px solid var(--gold);white-space:nowrap}}
 .openlink:hover{{background:rgba(180,128,43,.12)}}
@@ -245,6 +267,12 @@ footer.note{{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6
   .tablewrap{{border-radius:0;border-left:none;border-right:none;margin:0 -20px;width:calc(100% + 40px)}}
 }}
 </style></head><body>
+<svg style="display:none" aria-hidden="true">
+  <defs>
+    {''.join(f'<symbol id="icon-lvl-{k}" viewBox="0 0 24 24">{p}</symbol>' for k, p in _LEVEL_ICONS.items())}
+    <symbol id="icon-lvl-default" viewBox="0 0 24 24">{_DEFAULT_LEVEL_ICON}</symbol>
+  </defs>
+</svg>
 <div class="wrap">
   <header class="page">
     <span class="eyebrow">Math Builder &middot; Weekly Cases</span>
