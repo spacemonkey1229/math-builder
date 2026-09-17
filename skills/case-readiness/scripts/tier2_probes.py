@@ -27,7 +27,12 @@ WHAT THIS SCRIPT DOES AND DOES NOT DO
                           is delegated (the QA sandbox has no outbound network).
   P7 accessibility     -> machine pre-screen (sketch/graph deliverables vs real
                           visuals) + PRINTS THE PROMPT for a fresh, zero-context
-                          subagent cold-read of real-world (non-math) vocabulary.
+                          subagent cold-read of real-world (non-math) vocabulary,
+                          AND (MCS-51) a second, independent question asking
+                          whether the case's own central invented artifact/
+                          mechanism/scenario is itself picturable -- a novel
+                          combination of ordinary words can pass the vocabulary
+                          question while still being impossible to visualize.
 
 Exit 0 = every probe that CAN run mechanically passed.  Exit 1 = a mechanical probe
 failed.  Exit 2 = probes are pending model/subagent adjudication.  Tier 2 is not
@@ -757,13 +762,25 @@ def probe_accessibility(project, cid, c, md, out):
             f"({pkt}) and this exact instruction:\n\n"
             f"  'You have no background in {setting}"
             f"{(' -- the real-world setting is centered on ' + metric) if metric else ''}. "
-            f"Read this case as a student would. List every real-world term or concept you could "
-            f"NOT picture or understand well enough to proceed, without looking anything up outside "
-            f"this document.'\n\n"
+            f"Read this case as a student would. Answer two separate questions:\n"
+            f"  1. List every real-world term or concept you could NOT picture or understand well "
+            f"enough to proceed, without looking anything up outside this document.\n"
+            f"  2. Separately (MCS-51): is there any specific invented object, product, mechanism, "
+            f"or scenario CENTRAL to this case that you still cannot clearly picture or visualize, "
+            f"even though every individual word used to describe it is familiar? Name it if so, "
+            f"and quote the sentence that describes it. This is a different failure mode from #1 -- "
+            f"a novel combination of ordinary words (e.g. a described invented device or process) "
+            f"can be fully vocabulary-comprehensible while still being impossible to actually "
+            f"picture without a diagram.'\n\n"
             f"PASS CRITERIA (do not show these to the subagent): a finding that names 2 or more "
-            f"genuinely unexplained real-world (non-math) concepts is a FAIL -- the glossary/"
-            f"explanation coverage is insufficient regardless of whether Tier 1's T1-21 mechanically "
-            f"passed. 0-1 named concepts is a PASS; some irreducible unfamiliarity is fine."),
+            f"genuinely unexplained real-world (non-math) concepts under question 1 is a FAIL -- the "
+            f"glossary/explanation coverage is insufficient regardless of whether Tier 1's T1-21 "
+            f"mechanically passed. 0-1 named concepts under question 1 is a PASS; some irreducible "
+            f"unfamiliarity is fine. ANY concrete answer to question 2 is ALSO a FAIL on its own, "
+            f"independent of question 1's count -- a central invented artifact/mechanism the reader "
+            f"cannot picture needs its own diagram, not a glossary entry, and T1-20's mechanical "
+            f"image-presence check cannot catch this because it only asks whether ANY image exists "
+            f"anywhere, never whether the case's own central subject is the thing depicted."),
     })
 
 

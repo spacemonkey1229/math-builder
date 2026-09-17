@@ -262,7 +262,22 @@ padding.
 
 ## Visual sourcing, specifically
 
-Prefer, in order:
+**Ask this first, before sourcing anything (MCS-51):** does this case describe one specific
+invented object, product, mechanism, or scenario that is CENTRAL to the dilemma — something a
+reader cannot picture just by knowing what each individual word means, because the *combination*
+is novel? A case can already have a real, well-sourced image (illustrating the setting, the
+channel, the decision context) and still fail this test, because that image depicts something
+adjacent to the central subject, not the subject itself. Caught for real (2026-09-17): FlowState
+already had a real, correctly-sourced photo of a TV control room — genuinely illustrative of the
+advertising channel being debated — but the case's actual product ("a reusable smart bottle whose
+snap-in cartridge automatically doses electrolytes and flavor based on the wearer's paired
+fitness-tracker activity and sweat-rate data") was never diagrammed anywhere, and every word in
+that description is common vocabulary, so it never tripped a glossary check either. If the answer
+is yes, that central artifact gets its own diagram — almost always a hand-drawn SVG (see option 2
+below), since an invented product has no real photo to source — placed at or near its first
+description, independent of whatever other visual sourcing the case already has.
+
+Then, for that diagram and any other visual, prefer in order:
 
 1. A real photo or diagram with traceable provenance (a named photographer/creator, a real
    institution, or Wikimedia Commons with real file history and an explicit license) —
