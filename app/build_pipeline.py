@@ -106,6 +106,20 @@ def run_tier1(case_id):
     }
 
 
+def published_date(case_id):
+    """case-publish stamps published/MANIFEST.json.built_on every time it rebuilds
+    the packet -- the real, already-tracked publication/last-build date. Read it
+    instead of guessing from git history, which would only tell us when the file
+    last changed, not when it was actually (re)published."""
+    manifest_path = os.path.join(ROOT, "cases", case_id, "published", "MANIFEST.json")
+    if not os.path.exists(manifest_path):
+        return None
+    try:
+        return json.load(open(manifest_path, encoding="utf-8")).get("built_on")
+    except Exception:
+        return None
+
+
 def has_run_report(case_id):
     runs_dir = os.path.join(ROOT, "cases", case_id, "runs")
     if not os.path.isdir(runs_dir):
@@ -231,6 +245,7 @@ def main():
             "concept_sheet": cj.get("concept_sheet"),
             "new_coverage_count": len(cj.get("new_coverage") or []),
             "next_action": next_action_for(stage, cj, tier1, rr),
+            "published_date": published_date(cid) if stage in ("promotion", "verified") else None,
         })
 
     # a concept sheet's title and the finished case.json's title sometimes drift
@@ -357,7 +372,7 @@ def main():
                 "drafting": "case.json.status == 'draft' (case-write output), OR a legacy case with real usable narrative content not yet converted into case.md/case.json format. See legacy_signal{}/effort_tier for how much work that conversion actually needs — 'NEAR READY' still means real per-case authoring (boilerplate, deliverables, facilitator reformatting, interactive HTML/glossary), not a few clicks.",
                 "research": "case.json.status == 'researched' — case-research has filled placeholders with cited data or stated Modeling Assumptions.",
                 "readiness": "case.json.status == 'qa' — case-readiness's Tier 1/2/3 gate is the active blocker. tier1{} below is a live re-run, not a cached field.",
-                "promotion": "case.json.status == 'published' — case-publish has built the packet and promoted the case into cases_index.json/standards_spine.json.",
+                "promotion": "case.json.status == 'published' — case-publish has built the packet and promoted the case into cases_index.json/standards_spine.json. published_date is read from published/MANIFEST.json.built_on (the last case-publish rebuild), so a freshness check can be run against it.",
                 "verified": "A filed, filled cases/<id>/runs/RUN_*.md exists (Tier 3, MCS-29) — the only state that may carry a checkmark in DOCTRINE_LEDGER.",
             },
         },

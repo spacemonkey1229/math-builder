@@ -1417,6 +1417,7 @@ input[type=search]:focus{outline:2px solid var(--accent);outline-offset:-1px;bor
 .pipecard[data-go]:hover .pt{color:var(--accent)}
 .pipecard .pt{font-family:var(--serif);font-size:14px;font-weight:600;line-height:1.25}
 .pipecard .pid{font-family:var(--mono);font-size:10px;color:var(--faint);margin-top:1px}
+.pipecard .pdate{font-size:10.5px;color:var(--muted);margin-top:4px}
 .pipecard .ptags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
 .pipecard .pnext{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.35;border-top:1px dashed var(--rule-2);padding-top:5px}
 .pipecard .popen{font-size:10px;font-weight:700;color:var(--accent);margin-top:6px;letter-spacing:.02em}
@@ -2949,6 +2950,16 @@ const DATA = __DATA_JSON__;
     return '<div class="stat' + (alert ? " alert" : "") + '"><div class="v">' + esc(v) +
       ' <small>' + esc(sub) + '</small></div><div class="k">' + esc(k) + "</div></div>";
   }
+  const FRESHNESS_STALE_DAYS = 30;
+  function freshnessLabel(dateStr) {
+    const built = new Date(dateStr + "T00:00:00Z");
+    const now = new Date((DATA.meta.generated_on || dateStr) + "T00:00:00Z");
+    const days = Math.round((now - built) / 86400000);
+    if (days < 0) return "dated in the future";
+    if (days === 0) return "built today";
+    if (days <= FRESHNESS_STALE_DAYS) return days + "d old";
+    return days + "d old — overdue for a freshness re-check";
+  }
   function pipeConceptCard(c) {
     return '<div class="pipecard"><div class="pt">' + esc(c.title) + '</div>' +
       '<div class="pid">' + esc(c.concept_id) + " &#183; score " + esc(c.score) + " &#183; tier " + esc(c.tier) + "</div>" +
@@ -2992,9 +3003,14 @@ const DATA = __DATA_JSON__;
       ? '<span class="exc-kind k-STALE">TIER 1 N/A</span>'
       : '<span class="exc-kind k-' + t1kind + '">' + esc(t1.verdict) +
         (t1.blockers ? " &#183; " + t1.blockers + "b" : "") + (t1.gaps ? " &#183; " + t1.gaps + "g" : "") + "</span>";
+    const pubDate = c.published_date
+      ? '<div class="pdate">Published ' + esc(c.published_date) +
+        ' <span class="mini">&#183; ' + freshnessLabel(c.published_date) + '</span></div>'
+      : "";
     return "<" + tag + ' class="pipecard ' + cls + '"' + goAttrs + '><div class="pt">' + esc(c.title) + '</div>' +
       '<div class="pid">' + esc(c.id) + (c.tier ? " &#183; " + esc(c.tier) : "") +
       (c.band && c.band.length ? " &#183; " + esc(c.band.join("/")) : "") + "</div>" +
+      pubDate +
       '<div class="ptags">' + t1tag +
       (c.run_report_filed ? ' <span class="exc-kind k-READY">RUN_REPORT FILED</span>' : "") +
       '</div><div class="pnext">' + esc(c.next_action) + "</div>" + openHint + "</" + tag + ">";
