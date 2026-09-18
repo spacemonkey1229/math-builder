@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Search Box — Interactive</title>
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:250px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:130px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted #7a8ba0;cursor:help;font-style:italic}
+  .sterm:hover, .sterm:focus{background:#eef3f8}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:240px;background:#2f3b4a;color:#fff;font-family:var(--sans);font-weight:400;font-style:normal;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#2f3b4a}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M20 40 L44 40 L36 24 L28 24 Z" fill="none" stroke="#c9a227" stroke-width="2.2" stroke-linejoin="round"/>
+    <circle cx="32" cy="46" r="3" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-6 2 2-6z"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Adventure</div>
+        <h1>Case Study: The Search Box</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Pre-Calculus &middot; Polar &amp; Parametric</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Dana Okafor doesn't look up from the plotting table when the phone rings a second time. The sector command center hums with fluorescent light and the low static of a <a class="sterm" href="https://en.wikipedia.org/wiki/Marine_VHF_radio" target="_blank" rel="noopener">marine-band scanner<span class="tip">A radio receiver tuned to the VHF channels ships, the Coast Guard, and other mariners use to talk to each other and call for help &mdash; it's always on in a command center, playing in the background.</span></a>, and taped to the corner of Dana's monitor is a photo of a niece who FaceTimes every Sunday &mdash; Dana already texted home to say tonight's shift is running long. On the whiteboard behind Dana, someone chalked the case number, and under it, in block capitals nobody has erased since <a class="sterm" href="https://en.wikipedia.org/wiki/Watch_system" target="_blank" rel="noopener">the watch changed over<span class="tip">A "watch" is a work shift on a ship or at a command center; crews work in rotating shifts around the clock, and "the watch changed over" just means the previous shift handed off to the next one.</span></a>: PERSON IN WATER.</p>
+  <p>The helicopter crew chief's voice comes through the headset clipped and flat: fuel state, daylight remaining, one search box, not two. Somewhere past the harbor entrance a family is standing on a dock refreshing a phone with no new messages. Dana pulls two transparencies off the light table &mdash; one gridded box traced in blue grease pencil, one in red &mdash; and lays them side by side over the chart. Both came off the same radar fix. Both used a real, published drift model. They do not agree.</p>
+  <p>Dana's finger hovers between them. Behind Dana, the watch officer leans in, waiting on the word that sends a helicopter one way and not the other, and there will not be time, after this decision, to be told it was the wrong one.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Dana Okafor is the on-duty <a class="sterm" href="https://en.wikipedia.org/wiki/Search_and_rescue" target="_blank" rel="noopener">Search and Rescue Mission Coordinator (SMC)<span class="tip">The person at a Coast Guard command center responsible for planning a search pattern and committing rescue assets to it &mdash; the role that decides where a helicopter or boat actually goes.</span></a> at a U.S. Coast Guard sector command center, responsible for planning search patterns and accountable to the sector commander for making the best use of every asset committed to a case, including the fuel and flight hours of any aircraft launched (Appendix A). Some time ago, a fishing vessel radioed that a crew member had gone overboard; at the moment of that report, the vessel's own radar recorded the person's position as a <a class="sterm" href="https://en.wikipedia.org/wiki/Bearing_(navigation)" target="_blank" rel="noopener">bearing<span class="tip">The compass direction from one point to another, measured in degrees clockwise from true north (so 065&deg; true means a little east of northeast) &mdash; the angle half of a bearing-and-range fix.</span></a> and range measured from the vessel (Appendix B) &mdash; the only fix anyone has.</p>
+  <p>Since that last fix, a helicopter crew has been standing by, and it now has enough fuel and remaining daylight to fully search exactly one candidate search box before it must return to base (Appendix A). Coast Guard search planning projects how far, and in what direction, the person (and the <a class="sterm" href="https://en.wikipedia.org/wiki/Personal_flotation_device" target="_blank" rel="noopener">personal flotation device (PFD)<span class="tip">A life jacket or vest that keeps a person floating and upright in the water &mdash; it changes how, and how fast, a person drifts.</span></a> they were wearing) has likely drifted since the last fix, using published <a class="sterm" href="https://en.wikipedia.org/wiki/Leeway" target="_blank" rel="noopener">leeway<span class="tip">How fast, and at what angle off the wind, a floating object is pushed by wind alone &mdash; a real, measured Coast Guard drift-modeling quantity, different from current-driven drift.</span></a> drift-rate data for that specific category of object in the water (Appendices C and D). Two such projections are on the table tonight, built from the same starting fix, and they do not agree:</p>
+  <p><strong>The Windward Datum</strong> &mdash; the search box generated by the wind-driven leeway drift model, which projects drift using the object's published leeway coefficients: how fast, and at what angle off the wind, this category of object is carried by wind alone (Appendix C).</p>
+  <p><strong>The Set-and-Drift Datum</strong> &mdash; the search box generated by the current-driven drift model, which instead projects drift using the surface current's own speed and direction at the scene &mdash; what mariners call the current's <a class="sterm" href="https://en.wikipedia.org/wiki/Dead_reckoning" target="_blank" rel="noopener">"set and drift"<span class="tip">Nautical shorthand for a current's direction (the "set") and speed (the "drift") &mdash; the current-driven counterpart to wind-driven leeway.</span></a> (Appendix D).</p>
+  <p>Both models start from the same converted radar fix (Appendix B) and the same elapsed search time (Appendix A); both are real, Coast Guard-published methods; and both are defensible for this category of object. They are not, however, the same box, and the helicopter's remaining fuel and daylight rule out searching both fully (Appendix A). Dana's recommendation will be judged on one number: the estimated probability of detection each candidate box offers for every flight-hour the helicopter has left (Appendix E). Every sourced and assumed figure in this case is listed in Appendices F and G, and the vocabulary and "how to&hellip;" skills this case will ask of you are listed in Appendix H &mdash; that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Dana Okafor. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Windward Datum</h4>
+      <p style="margin:0">Send the helicopter to the search box generated by the wind-driven leeway drift model.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Set-and-Drift Datum</h4>
+      <p style="margin:0">Send it to the search box generated by the current-driven drift model.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must include use of the "how to&hellip;" resource you researched in Challenge 1, and at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include D1&ndash;D5 (a rectangular-datum conversion, two parametric drift models, two eliminated-parameter search boxes, a graphed polar boundary for each option, and a probability-of-detection decision table). See the Deliverables checklist below for the full text of each.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. If you are absent the day of a discussion post 500 "excellent" words on the questions above.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Mission Timeline &amp; Search Platform Constraints</summary>
+    <div class="inner">
+      <table>
+        <tr><th>&nbsp;</th><th>Value</th></tr>
+        <tr><td>Elapsed time between the person-overboard report and the last radar fix</td><td class="num">4 minutes</td></tr>
+        <tr><td>Elapsed time between the last radar fix and this search-planning decision point</td><td class="num">2 hours 30 minutes</td></tr>
+        <tr><td>Helicopter's remaining on-scene search endurance, given current fuel state and daylight remaining</td><td class="num">3.8 hours</td></tr>
+        <tr><td>Helicopter search speed for a person-in-water search pattern</td><td class="num">90 knots</td></tr>
+        <tr><td><a class="sterm" href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">Sensor/visual sweep width<span class="tip">How far out to each side of its flight path a searcher can reliably spot the target &mdash; a real, published Coast Guard search-planning quantity, wider in calm seas and narrower in rough ones.</span></a> for a person-in-water search, given stated <a class="sterm" href="https://en.wikipedia.org/wiki/Sea_state" target="_blank" rel="noopener">sea state<span class="tip">A standard scale describing how rough the ocean surface is (wave height and chop) &mdash; rougher seas make a person in the water much harder to spot.</span></a> and visibility</td><td class="num">0.4 NM</td></tr>
+        <tr><td><a class="sterm" href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">Track spacing<span class="tip">The distance left between each pass of the search pattern's parallel lines &mdash; usually set equal to the sweep width so the passes just cover the whole box with no gaps and little overlap.</span></a> used for the assigned search pattern</td><td class="num">0.4 NM</td></tr>
+      </table>
+      <p class="side-note">Dana's helicopter can fly the pattern needed to fully search exactly one of the two candidate boxes below before fuel state and remaining daylight force a return to base; it cannot search both. In practice, "searching a box" means flying a <a class="sterm" href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">parallel-track search pattern<span class="tip">A real Coast Guard search pattern: the aircraft flies straight, evenly-spaced lines back and forth across the box (spaced by the track spacing above), the way a lawnmower covers a lawn, until the whole box has been flown over.</span></a>: straight, evenly-spaced lines back and forth across the box, spaced by the track-spacing figure above, until every part of the box has been flown over once. The search endurance above already nets out a standard efficiency reserve set aside for identifying sighted objects and end-of-leg turns, per real Coast Guard search-planning doctrine (Appendix G, S6).</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix B &mdash; Last Known Position (Radar Fix)</summary>
+    <div class="inner">
+      <table>
+        <tr><th>&nbsp;</th><th>Value</th></tr>
+        <tr><td>Vessel's own position at the time of the report, as rectangular grid coordinates (nautical miles east/north of this case's fixed reference point)</td><td class="num">(10.0 NM east, 6.0 NM north)</td></tr>
+        <tr><td>Radar bearing from the vessel to the person in the water at the last fix</td><td class="num">065&deg; true</td></tr>
+        <tr><td>Radar range from the vessel to the person in the water at the last fix</td><td class="num">0.60 NM</td></tr>
+      </table>
+      <p class="side-note">The bearing-range pair above is a <a class="gterm" data-term="Polar Coordinate">polar coordinate</a> measured from the vessel's own position, not from this case's fixed reference point. D1 converts it into a single rectangular <a class="sterm" href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">datum<span class="tip">The Coast Guard search-planning term for the single best-estimate position a search is centered on &mdash; here, the converted radar fix both drift models start drifting from.</span></a> both drift models in Appendices C and D start from.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix C &mdash; Wind-Driven Leeway Drift Model Data (Option A: The Windward Datum)</summary>
+    <div class="inner">
+      <table>
+        <tr><th>&nbsp;</th><th>Value</th></tr>
+        <tr><td>Search-object category, per the U.S. Coast Guard's published leeway object-category table</td><td>PIW (Person-in-Water), "Vertical" sub-category</td></tr>
+        <tr><td>Leeway speed for that category, as a function of on-scene wind speed</td><td>Leeway (kts) = 0.011 &times; Wind Speed (kts) + 0.07 kts</td></tr>
+        <tr><td>Leeway divergence angle for that category (degrees left or right of the downwind direction)</td><td class="num">&plusmn;30&deg;</td></tr>
+        <tr><td>On-scene wind speed at the time of the last fix</td><td class="num">20 knots</td></tr>
+        <tr><td>On-scene wind direction (the bearing the wind is blowing toward)</td><td class="num">210&deg; true</td></tr>
+        <tr><td>Search-radius growth rate used by this model over elapsed search time</td><td>E(t) = 0.35 kt &times; t, giving the 50%-containment radius; search radius R(t) = 1.1 &times; E(t)</td></tr>
+      </table>
+      <p class="side-note">The leeway coefficients above are real, published U.S. Coast Guard data (Appendix G), the same data behind the Coast Guard's Computer-Assisted Search Planning system; this case's specific wind speed, direction, and elapsed-time figures are stated for this scenario (Appendix F).</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix D &mdash; Current-Driven Drift Model Data (Option B: The Set-and-Drift Datum)</summary>
+    <div class="inner">
+      <table>
+        <tr><th>&nbsp;</th><th>Value</th></tr>
+        <tr><td>On-scene surface current speed at the scene (the "drift")</td><td class="num">1.3 knots</td></tr>
+        <tr><td>On-scene surface current direction (the "set")</td><td class="num">120&deg; true</td></tr>
+        <tr><td>Search-radius growth rate used by this model over elapsed search time</td><td>E(t) = 0.45 kt &times; t, giving the 50%-containment radius; search radius R(t) = 1.1 &times; E(t)</td></tr>
+      </table>
+      <p class="side-note">The set-and-drift methodology above follows the datum-motion approach described in published U.S. Coast Guard/NOAA search-and-rescue technical reports (Appendix G); this case's specific current speed, direction, and elapsed-time figures are stated for this scenario (Appendix F).</p>
+
+      <h3 style="margin-top:22px">Figure &mdash; Radar Fix and Two Drift Vectors</h3>
+      <figure>
+        <svg viewBox="0 0 460 320" width="460" height="320" role="img" aria-label="Diagram showing the vessel position, the converted radar-fix datum, and the two candidate drift vectors and search boxes for the Windward Datum and the Set-and-Drift Datum">
+          <rect x="0" y="0" width="460" height="320" fill="#dce8f2"/>
+          <line x1="40" y1="20" x2="40" y2="300" stroke="#b7c6d6" stroke-width="1"/>
+          <line x1="40" y1="300" x2="440" y2="300" stroke="#b7c6d6" stroke-width="1"/>
+          <text x="10" y="16" font-family="sans-serif" font-size="11" fill="#5b6472">N</text>
+          <text x="444" y="304" font-family="sans-serif" font-size="11" fill="#5b6472">E</text>
+
+          <rect x="270.97" y="195.30" width="47.63" height="48.13" fill="#1a3a5c22" stroke="#1a3a5c" stroke-width="2"/>
+          <rect x="343.02" y="213.35" width="61.87" height="61.87" fill="#c9a22733" stroke="#c9a227" stroke-width="2"/>
+
+          <path fill="none" stroke="#1f2530" stroke-width="1.6" d="M 290 210 L 303.59 203.66"/>
+          <path fill="none" stroke="#1a3a5c" stroke-width="1.8" d="M 303.59 203.66 L 294.53 219.36"/>
+          <path fill="none" stroke="#8a6d10" stroke-width="1.8" d="M 303.59 203.66 L 373.96 243.29"/>
+
+          <circle cx="290" cy="210" r="6" fill="#1f2530"/>
+          <circle cx="303.59" cy="203.66" r="6" fill="#a3312a"/>
+          <circle cx="294.53" cy="219.36" r="3.4" fill="#1a3a5c"/>
+          <circle cx="373.96" cy="243.29" r="3.4" fill="#8a6d10"/>
+
+          <text x="252" y="205" font-family="sans-serif" font-size="12" font-weight="700" fill="#1f2530">Vessel (10.0, 6.0)</text>
+          <text x="306" y="190" font-family="sans-serif" font-size="12" font-weight="700" fill="#a3312a">Radar fix (D1 datum)</text>
+          <text x="222" y="270" font-family="sans-serif" font-size="12" font-weight="700" fill="#1a3a5c">Windward Datum + box</text>
+          <text x="270" y="300" font-family="sans-serif" font-size="12" font-weight="700" fill="#8a6d10">Set-and-Drift Datum + box</text>
+        </svg>
+        <figcaption>Illustrative, to-scale diagram of tonight's actual figures: the vessel's position, the radar-fix vector converted in D1, and both drift vectors carrying that fix to each model's own drifted datum and search box (D2&ndash;D3). The two boxes visibly disagree &mdash; that disagreement is the whole dilemma. This figure shows where each model says to look; it does not show which one wins on detection odds &mdash; that is D5's job, not this picture's.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix E &mdash; Search Effectiveness &amp; Detection Data</summary>
+    <div class="inner">
+      <table>
+        <tr><th>&nbsp;</th><th>Windward Datum (Option A)</th><th>Set-and-Drift Datum (Option B)</th></tr>
+        <tr><td>Probability of containment (POC) &mdash; the probability the person is actually inside a correctly-sized search box built from this model</td><td class="num">55%</td><td class="num">64.75%</td></tr>
+        <tr><td>Coverage-factor relationship between search effort and probability of detection (POD)</td><td colspan="2">C = (Sweep Width &times; Search Speed &times; Search Endurance) / Area; POD = 1 &minus; e<sup>&minus;C</sup></td></tr>
+      </table>
+      <p class="side-note">D5 combines each option's area (from D3/D4), the helicopter's available flight-hours (Appendix A), and this appendix's POC and coverage-factor data into a probability of detection per flight-hour for each candidate box. The Working Notebook below will check your own arithmetic &mdash; it will not tell you in advance which option that arithmetic favors.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are not sourced. They are stated scenario assumptions chosen by the case author. This case's specific incident &mdash; the vessel, the last-known radar fix, the elapsed times, and the on-scene wind and current conditions &mdash; is invented for this case study; real person-overboard incidents are sensitive and potentially identifying, so no real incident's figures are used. The leeway drift coefficients, the coverage-factor/POD relationship, and the set-and-drift modeling method themselves (Appendices C, D, and E) are real, published U.S. Coast Guard data and methodology, not invented. A Hero may challenge any of these assumptions in discussion &mdash; that is a legitimate move.</blockquote>
+      <table>
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Sensitivity</th></tr>
+        <tr><td>MA2</td><td>Elapsed time, last radar fix &rarr; decision point (the "t" in D2's parametric equations)</td><td>2 hours 30 minutes</td><td>Scales both boxes' drift distance and search-radius growth by the same factor &mdash; does not by itself favor one option.</td></tr>
+        <tr><td>MA8/MA9</td><td>On-scene wind speed and direction</td><td>20 kt, 210&deg; true</td><td>Feeds the real leeway-speed equation; changes the Windward Datum's box location, not its size or POD.</td></tr>
+        <tr><td>MA10/MA11</td><td>On-scene surface current speed and direction</td><td>1.3 kt, 120&deg; true</td><td>Feeds the Set-and-Drift Datum's box location only.</td></tr>
+        <tr><td>MA12</td><td>Set-and-drift model's search-radius growth-rate constant</td><td>0.45 kt (E(t) = 0.45 &times; t)</td><td><strong>Not a published figure</strong> &mdash; set to the same order of magnitude as the real wind-model figure for comparability. Whether and how much this could move the recommendation is exactly what a Hero should check against their own D5 numbers &mdash; not stated here as a spoiler.</td></tr>
+        <tr><td>MA13</td><td>Windward Datum's probability of containment (POC)</td><td>55%</td><td>Below the real, sourced 64.75% figure used for Option B, consistent with the real divergent-datum graph's shape (Appendix G, S9) &mdash; the source gives no exact digit, only the qualitative direction. Whether and how much this could move the recommendation is exactly what a Hero should check against their own D5 numbers &mdash; not stated here as a spoiler.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix G &mdash; Sources</summary>
+    <div class="inner">
+      <p>All U.S. Coast Guard leeway-coefficient and search-planning-methodology figures in this case are drawn from <em>The U.S. Coast Guard Addendum to the United States National Search and Rescue Supplement (NSS) to the International Aeronautical and Maritime Search and Rescue Manual (IAMSAR)</em>, COMDTINST M16130.2F (Jan. 2013) &mdash; the same leeway-coefficient and set-and-drift/optimal-search-factor methodology that underlies the Coast Guard's Computer-Assisted Search Planning system and its successor, <a class="sterm" href="https://en.wikipedia.org/wiki/Search_and_Rescue_Optimal_Planning_System" target="_blank" rel="noopener">SAROPS<span class="tip">Search and Rescue Optimal Planning System &mdash; the Coast Guard's modern computer system for projecting drift and planning search patterns, built on the same leeway/set-and-drift methodology this case uses by hand.</span></a>.</p>
+      <table id="apx-sources-table">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Reference helicopter search speed for a Person-in-Water pattern</td><td>90 knots</td><td><a href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">CGADD, Table H-9</a></td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Uncorrected visual sweep width, PFD-wearing PIW, helicopter, 300 ft, 5 NM visibility</td><td>0.4 NM</td><td><a href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">CGADD, Table H-15</a></td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>PIW ("Vertical") leeway-speed equation, divergence angle, and leeway-speed standard error</td><td>Leeway = 0.011&times;Wind + 0.07 kt; &plusmn;30&deg;; 0.35 kt</td><td><a href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">CGADD, Table H-7</a></td><td>HIGH</td></tr>
+        <tr><td>S4/S5</td><td>Coverage-factor and probability-of-detection formulas</td><td>C = (W&times;V&times;T)/Area; POD = 1&minus;e<sup>&minus;C</sup></td><td><a href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">CGADD, &sect;H.5.5&ndash;H.5.6</a></td><td>HIGH</td></tr>
+        <tr><td>S6</td><td>Search endurance as a fraction of on-scene endurance (remainder reserved for identifying sighted objects and end-of-leg turns)</td><td>85 percent</td><td><a href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">CGADD, &sect;H.5.2.2</a></td><td>HIGH</td></tr>
+        <tr><td>S7</td><td>H-60 (MH-60T) maximum aircraft endurance</td><td>6.0 hours</td><td><a href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">CGADD, Table 5-3</a></td><td>HIGH</td></tr>
+        <tr><td>S8</td><td>Probability of containment at an <a class="sterm" href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">optimal search factor<span class="tip">A real Coast Guard multiplier applied to the total-probable-error radius to size a search box for the best trade-off between area covered and probability of actually containing the target &mdash; 1.1 is the value this case uses for both options.</span></a> of 1.1, single-point datum</td><td>64.75%</td><td><a href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">CGADD, &sect;H.5.6.3, Figure H-24</a></td><td>HIGH</td></tr>
+        <tr><td>S9</td><td>Divergent-datum POC curves sit below the single-point-datum curve (graph only, no companion table)</td><td>qualitative</td><td><a href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">CGADD, Figure H-22</a></td><td>MEDIUM</td></tr>
+        <tr><td>S10</td><td><a class="sterm" href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">Total probable error of position<span class="tip">The Coast Guard's own name for the radius within which the target has a 50% chance of actually being &mdash; it grows the longer the person has likely been drifting, which is exactly what Appendices C and D's growth-rate figures model.</span></a> as the 50%-containment radius; search radius = optimal search factor &times; E</td><td>concept/formula</td><td><a href="https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf" target="_blank" rel="noopener">CGADD, &sect;H.2.1.1, &sect;H.5.6.3</a></td><td>HIGH</td></tr>
+      </table>
+      <p class="side-note">Supplemental, for context: this case's methodology (leeway drift modeling combined with an optimal-search-factor search plan) is the same real methodology the Coast Guard used in the well-documented, publicly reported 2013 rescue of Long Island lobsterman John Aldridge &mdash; <a href="https://www.cbsnews.com/news/lost-at-sea-a-harrowing-story-of-survival/" target="_blank" rel="noopener">CBS News, "Lost at sea: A harrowing story of survival"</a> &mdash; offered as evidence that both candidate models in this case rest on methodology that has found people.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which datum to recommend; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>D1 &mdash; Rectangular-datum conversion</h4>
+    <div class="goal">Convert the vessel's bearing/range fix (Appendix B: 065&deg; true, 0.60 NM from the vessel) into an (east, north) offset from the vessel, then add it to the vessel's own position (10.0, 6.0) to get the radar-fix datum.</div>
+    <div class="fieldrow"><label for="d1dx">East offset (dx), NM</label><input type="number" step="0.001" id="d1dx" placeholder="nautical miles, several decimal places"><button onclick="checkD1()">Check</button><span class="fb" id="fbD1dx"></span></div>
+    <div class="fieldrow"><label for="d1dy">North offset (dy), NM</label><input type="number" step="0.001" id="d1dy" placeholder="nautical miles, several decimal places"><span class="fb" id="fbD1dy"></span></div>
+    <div class="fieldrow"><label for="d1x">Radar-fix datum, east (NM)</label><input type="number" step="0.001" id="d1x" placeholder="nautical miles, several decimal places"><span class="fb" id="fbD1x"></span></div>
+    <div class="fieldrow"><label for="d1y">Radar-fix datum, north (NM)</label><input type="number" step="0.001" id="d1y" placeholder="nautical miles, several decimal places"><span class="fb" id="fbD1y"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>D2 &mdash; Parametric drift models</h4>
+    <div class="goal">For each option, write the drift velocity's east/north components (the coefficients of t in x(t) and y(t)), using that model's own stated drift speed and direction.</div>
+    <div class="fieldrow"><label for="d2vxa">Windward Datum, dx/dt (kt)</label><input type="number" step="0.0001" id="d2vxa" placeholder="knots, several decimal places"><button onclick="checkD2()">Check</button><span class="fb" id="fbD2vxa"></span></div>
+    <div class="fieldrow"><label for="d2vya">Windward Datum, dy/dt (kt)</label><input type="number" step="0.0001" id="d2vya" placeholder="knots, several decimal places"><span class="fb" id="fbD2vya"></span></div>
+    <div class="fieldrow"><label for="d2vxb">Set-and-Drift Datum, dx/dt (kt)</label><input type="number" step="0.0001" id="d2vxb" placeholder="knots, several decimal places"><span class="fb" id="fbD2vxb"></span></div>
+    <div class="fieldrow"><label for="d2vyb">Set-and-Drift Datum, dy/dt (kt)</label><input type="number" step="0.0001" id="d2vyb" placeholder="knots, several decimal places"><span class="fb" id="fbD2vyb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>D3 &mdash; Eliminated-parameter search boxes</h4>
+    <div class="goal">Eliminate t (using Appendix A's elapsed time, t = 2.5 hr) to find each option's drifted datum, its search radius R = 1.1 &times; E(t), and the resulting box's area (a square of side 2R centered on the datum).</div>
+    <div class="fieldrow"><label for="d3ra">Windward Datum search radius R, NM</label><input type="number" step="0.0001" id="d3ra" placeholder="nautical miles, several decimal places"><button onclick="checkD3()">Check</button><span class="fb" id="fbD3ra"></span></div>
+    <div class="fieldrow"><label for="d3rb">Set-and-Drift Datum search radius R, NM</label><input type="number" step="0.0001" id="d3rb" placeholder="nautical miles, several decimal places"><span class="fb" id="fbD3rb"></span></div>
+    <div class="fieldrow"><label for="d3aa">Windward Datum box area, sq NM</label><input type="number" step="0.001" id="d3aa" placeholder="square nautical miles"><span class="fb" id="fbD3aa"></span></div>
+    <div class="fieldrow"><label for="d3ab">Set-and-Drift Datum box area, sq NM</label><input type="number" step="0.001" id="d3ab" placeholder="square nautical miles"><span class="fb" id="fbD3ab"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>D4 &mdash; Graphed polar boundary</h4>
+    <div class="goal">Confirm the polar radius r(&theta;) you'd graph for each option's outer search boundary matches the R you found in D3 (a circle of that radius around the drifted datum). In your write-up, say in words why the real total-probable-error boundary is not necessarily uniform by bearing, even though this case models it as a circle.</div>
+    <div class="fieldrow"><label for="d4ra">Windward Datum r(&theta;), NM</label><input type="number" step="0.0001" id="d4ra" placeholder="nautical miles, several decimal places"><button onclick="checkD4()">Check</button><span class="fb" id="fbD4ra"></span></div>
+    <div class="fieldrow"><label for="d4rb">Set-and-Drift Datum r(&theta;), NM</label><input type="number" step="0.0001" id="d4rb" placeholder="nautical miles, several decimal places"><span class="fb" id="fbD4rb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>D5 &mdash; Probability-of-detection decision table</h4>
+    <div class="goal">Using Appendix A's flight-hours, your D3 areas, and Appendix E's coverage-factor/POC data, find each option's coverage factor, POD, and POD per flight-hour.</div>
+    <div class="fieldrow"><label for="d5ca">Windward Datum coverage factor C</label><input type="number" step="0.01" id="d5ca" placeholder="a coverage factor, decimal allowed"><button onclick="checkD5()">Check</button><span class="fb" id="fbD5ca"></span></div>
+    <div class="fieldrow"><label for="d5cb">Set-and-Drift Datum coverage factor C</label><input type="number" step="0.01" id="d5cb" placeholder="a coverage factor, decimal allowed"><span class="fb" id="fbD5cb"></span></div>
+    <div class="fieldrow"><label for="d5fa">Windward Datum POD per flight-hour</label><input type="number" step="0.0001" id="d5fa" placeholder="a rate, several decimal places"><span class="fb" id="fbD5fa"></span></div>
+    <div class="fieldrow"><label for="d5fb">Set-and-Drift Datum POD per flight-hour</label><input type="number" step="0.0001" id="d5fb" placeholder="a rate, several decimal places"><span class="fb" id="fbD5fb"></span></div>
+    <div class="fieldrow"><label for="d5rec">Your recommendation</label>
+      <select id="d5rec"><option value="">choose one&hellip;</option><option value="A">A &mdash; The Windward Datum</option><option value="B">B &mdash; The Set-and-Drift Datum</option></select>
+      <span class="fb" id="fbD5rec"></span>
+    </div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-compass"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>"A meteorologist on watch overhears the Set-and-Drift Datum's growth-rate number and pushes back: 'That figure was never measured &mdash; it was set by analogy to the wind model's own published uncertainty, because no equivalent Coast Guard table exists yet for surface-current drift estimates. For tonight's sea state, the real uncertainty could plausibly run twice that high.'"</p>
+      <p>"If the Set-and-Drift Datum's growth-rate assumption were really twice what Appendix D states, does the recommendation change?"</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Recompute D3&ndash;D5 with the twist applied (growth-rate constant doubled)</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1&ndash;S10 &mdash; U.S. Coast Guard, CGADD to the U.S. National SAR Supplement, COMDTINST M16130.2F</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Search Box &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE DATA — ported verbatim from cases/the-search-box/sensitivity_model.py.
+   case.md sha256 (at time of this build): be42e562c1c0eba8bb8b7b99dfed6dc5074cac9f6b14e54bee08cde55091a1bc
+   ================================================================ */
+const ELAPSED_TIME_HR = 2.5;
+const SEARCH_ENDURANCE_HR = 3.8;
+const SWEEP_WIDTH_NM = 0.4;
+const SEARCH_SPEED_KT = 90.0;
+const SEARCH_FACTOR = 1.1;
+const VESSEL_E = 10.0, VESSEL_N = 6.0;
+const BEARING_DEG = 65.0, RANGE_NM = 0.60;
+const WIND_SPEED_KT = 20.0, WIND_DIR_DEG = 210.0;
+const CURRENT_SPEED_KT = 1.3, CURRENT_DIR_DEG = 120.0;
+
+const PARAMS = {
+  growth_rate_A_kt: 0.35,   // S3 — sourced leeway-speed standard error
+  poc_A_pct: 0.55,          // MA13 — NOT sourced
+  growth_rate_B_kt: 0.45,   // MA12 — NOT sourced
+  poc_B_pct: 0.6475         // S8 — sourced single-point-datum POC
+};
+const FLEX = ["poc_A_pct", "growth_rate_B_kt"];
+
+function deg2rad(d){ return d * Math.PI / 180; }
+
+function d1_fix(){
+  const dx = RANGE_NM * Math.sin(deg2rad(BEARING_DEG));
+  const dy = RANGE_NM * Math.cos(deg2rad(BEARING_DEG));
+  return { dx: dx, dy: dy, x: VESSEL_E + dx, y: VESSEL_N + dy };
+}
+function d2_velocity(dirDeg, speedKt){
+  return { vx: speedKt * Math.sin(deg2rad(dirDeg)), vy: speedKt * Math.cos(deg2rad(dirDeg)) };
+}
+function metricsFor(growthRateKt, pocPct){
+  const fix = d1_fix();
+  const leewaySpeed = 0.011 * WIND_SPEED_KT + 0.07;
+  const velA = d2_velocity(WIND_DIR_DEG, leewaySpeed);
+  const velB = d2_velocity(CURRENT_DIR_DEG, CURRENT_SPEED_KT);
+  return { fix: fix, leewaySpeed: leewaySpeed, velA: velA, velB: velB };
+}
+function optionMetrics(vx, vy, growthRateKt, pocPct, fix){
+  const datumX = fix.x + vx * ELAPSED_TIME_HR;
+  const datumY = fix.y + vy * ELAPSED_TIME_HR;
+  const E_t = growthRateKt * ELAPSED_TIME_HR;
+  const R = SEARCH_FACTOR * E_t;
+  const area = Math.pow(2 * R, 2);
+  const C = (SWEEP_WIDTH_NM * SEARCH_SPEED_KT * SEARCH_ENDURANCE_HR) / area;
+  const POD = 1 - Math.exp(-C);
+  const POS = POD * pocPct;
+  const podfh = POS / SEARCH_ENDURANCE_HR;
+  return { datumX: datumX, datumY: datumY, R: R, area: area, C: C, POD: POD, podfh: podfh };
+}
+function evaluate(p){
+  p = Object.assign({}, PARAMS, p || {});
+  const base = metricsFor(p.growth_rate_A_kt, p.poc_A_pct);
+  const A = optionMetrics(base.velA.vx, base.velA.vy, p.growth_rate_A_kt, p.poc_A_pct, base.fix);
+  const B = optionMetrics(base.velB.vx, base.velB.vy, p.growth_rate_B_kt, p.poc_B_pct, base.fix);
+  return { fix: base.fix, velA: base.velA, velB: base.velB, A: A, B: B };
+}
+function evaluate_twist(p){
+  p = Object.assign({}, PARAMS, p || {});
+  p.growth_rate_B_kt = p.growth_rate_B_kt * 2;
+  return evaluate(p);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC helpers
+   ================================================================ */
+// localStorage can throw (private browsing, sandboxed/opaque-origin preview
+// frames, some file:// contexts) -- a real, live failure mode, not a
+// hypothetical one (found during this case's own browser QA pass: an
+// uncaught localStorage exception here silently aborted the ENTIRE inline
+// <script>, killing the deliverables checklist, the glossary render, and
+// every notebook Check button at once, with no visible console error).
+// Every read/write is wrapped so the page degrades gracefully (no saved
+// state persists that run) instead of crashing everything after it.
+function lsGet(key){ try{ return localStorage.getItem(key); } catch(e){ return null; } }
+function lsSet(key, v){ try{ localStorage.setItem(key, v); } catch(e){ /* ignore */ } }
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title, 'Heroes Academy Math Builder case study', '', 'Sources:', ...srcLis, '', location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = lsGet(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = lsGet(CASE_ID+'_chk_'+id) === '1';
+    const note = lsGet(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions
+   ================================================================ */
+let twistApplied = false;
+function currentEval(){ return twistApplied ? evaluate_twist({}) : evaluate({}); }
+
+function checkD1(){
+  const e = currentEval();
+  fb('fbD1dx', near(val('d1dx'), e.fix.dx, 0.003));
+  fb('fbD1dy', near(val('d1dy'), e.fix.dy, 0.003));
+  fb('fbD1x', near(val('d1x'), e.fix.x, 0.003));
+  fb('fbD1y', near(val('d1y'), e.fix.y, 0.003));
+}
+function checkD2(){
+  const e = currentEval();
+  fb('fbD2vxa', near(val('d2vxa'), e.velA.vx, 0.002));
+  fb('fbD2vya', near(val('d2vya'), e.velA.vy, 0.002));
+  fb('fbD2vxb', near(val('d2vxb'), e.velB.vx, 0.002));
+  fb('fbD2vyb', near(val('d2vyb'), e.velB.vy, 0.002));
+}
+function checkD3(){
+  const e = currentEval();
+  fb('fbD3ra', near(val('d3ra'), e.A.R, 0.002));
+  fb('fbD3rb', near(val('d3rb'), e.B.R, 0.002));
+  fb('fbD3aa', near(val('d3aa'), round(e.A.area,3), 0.01));
+  fb('fbD3ab', near(val('d3ab'), round(e.B.area,3), 0.01));
+}
+function checkD4(){
+  const e = currentEval();
+  fb('fbD4ra', near(val('d4ra'), e.A.R, 0.002));
+  fb('fbD4rb', near(val('d4rb'), e.B.R, 0.002));
+}
+function checkD5(){
+  const e = currentEval();
+  fb('fbD5ca', near(val('d5ca'), round(e.A.C,2), 0.1));
+  fb('fbD5cb', near(val('d5cb'), round(e.B.C,2), 0.1));
+  fb('fbD5fa', near(val('d5fa'), round(e.A.podfh,4), 0.002));
+  fb('fbD5fb', near(val('d5fb'), round(e.B.podfh,4), 0.002));
+  const rec = document.getElementById('d5rec').value;
+  const winner = e.A.podfh > e.B.podfh ? 'A' : (e.B.podfh > e.A.podfh ? 'B' : '');
+  fb('fbD5rec', rec !== '' && rec === winner);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget
+   ================================================================ */
+const CASE_ID = "the-search-box";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) lsSet(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = lsGet(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+const DELIVERABLES = [
+  ["D1", "A rectangular-datum conversion: convert the vessel's last-known radar fix into rectangular coordinates on this case's search grid, with the conversion arithmetic shown."],
+  ["D2", "Two parametric drift models: x(t) and y(t) for the wind-driven leeway model and the current-driven model, using each model's own stated drift speed and direction."],
+  ["D3", "Two eliminated-parameter search boxes: eliminate t from D2's equations, then use the result and the search-radius growth rate to state each option's four corner coordinates."],
+  ["D4", "A graphed polar boundary for each option: graph r(θ) for each candidate box's outer search boundary, and say why the radius is not necessarily the same in every direction."],
+  ["D5", "A probability-of-detection decision table: area, flight-hours, and an estimated POD per flight-hour for each option, with your recommendation stated and defended using that last column."]
+];
+
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = lsGet(CASE_ID+'_chk_'+id)==='1';
+    const note = lsGet(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>lsGet(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = lsGet(CASE_ID+'_chk_'+id)==='1';
+  lsSet(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ lsSet(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (9 terms, mathsisfun.com /
+   khanacademy.org, verified live 2026-09-18)
+   ================================================================ */
+const GLOSSARY = {
+  "Polar Coordinate": {def: "A way of locating a point using a distance from a fixed origin and an angle from a fixed direction, instead of (x, y).",
+    url: "https://www.mathsisfun.com/polar-cartesian-coordinates.html"},
+  "Rectangular Coordinate": {def: "The familiar (x, y) way of locating a point on a grid, also called Cartesian coordinates.",
+    url: "https://www.mathsisfun.com/polar-cartesian-coordinates.html"},
+  "Parametric Equation": {def: "A pair of equations, x(t) and y(t), that each give one coordinate of a moving point in terms of a shared third variable, the parameter.",
+    url: "https://www.khanacademy.org/math/algebra2/x2ec2f6f830c9fb89:conics/x2ec2f6f830c9fb89:parametric/a/parametric-equations-intro"},
+  "Parameter": {def: "An independent variable (often time, t) that both x and y in a parametric equation are written in terms of.",
+    url: "https://www.mathsisfun.com/definitions/parameter.html"},
+  "Eliminate the Parameter": {def: "Solving one parametric equation for t and substituting it into the other, to get a single equation relating x and y directly.",
+    url: "https://www.khanacademy.org/math/algebra2/x2ec2f6f830c9fb89:conics/x2ec2f6f830c9fb89:parametric/a/eliminating-the-parameter"},
+  "Polar Equation": {def: "An equation written in r and θ instead of x and y, often used to describe a boundary whose distance from the origin can vary by direction.",
+    url: "https://www.khanacademy.org/math/precalculus/x9e81a4f98389efdf:conics/x9e81a4f98389efdf:graphs-of-polar-equations/a/polar-graphs-review"},
+  "Vector": {def: "A quantity with both size (magnitude) and direction, like a speed and a heading.",
+    url: "https://www.mathsisfun.com/algebra/vectors.html"},
+  "Degree (angle)": {def: "A unit of angle measure; a full circle is 360 degrees, and compass bearings are measured in degrees clockwise from north.",
+    url: "https://www.mathsisfun.com/geometry/degrees.html"},
+  "Unit Circle": {def: "A circle of radius 1 centered at the origin, used to define sine and cosine for any angle.",
+    url: "https://www.mathsisfun.com/geometry/unit-circle.html"}
+};
+const HOWTO = [
+  ["How to convert a point between rectangular and polar coordinates", "Polar Coordinate"],
+  ["How to graph a polar equation", "Polar Equation"],
+  ["How to eliminate the parameter to find a rectangular equation", "Eliminate the Parameter"]
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-SPECIFIC — story (real-world/domain) glossary content
+   (8 terms, wikipedia.org / rdept.cgaux.org, verified live 2026-09-18)
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Search and Rescue Mission Coordinator": {desc: "The Coast Guard person at a sector command center who plans a search pattern and commits real assets (helicopters, boats, fuel) to it.",
+    link: "https://en.wikipedia.org/wiki/Search_and_rescue"},
+  "Leeway": {desc: "How fast, and at what angle off the wind, a floating object is pushed by wind alone — a real, measured Coast Guard drift quantity.",
+    link: "https://en.wikipedia.org/wiki/Leeway"},
+  "Set and Drift": {desc: "Nautical shorthand for a current's direction (the set) and speed (the drift) — the current-driven counterpart to wind-driven leeway.",
+    link: "https://en.wikipedia.org/wiki/Dead_reckoning"},
+  "Personal Flotation Device": {desc: "A life jacket or vest that keeps a person floating and upright in the water, changing how they drift.",
+    link: "https://en.wikipedia.org/wiki/Personal_flotation_device"},
+  "Nautical Mile": {desc: "A unit of distance used in marine and air navigation, about 1.15 statute miles — this case's grid is measured in nautical miles (NM).",
+    link: "https://en.wikipedia.org/wiki/Nautical_mile"},
+  "Knot": {desc: "A unit of speed equal to one nautical mile per hour — wind, current, and search speeds in this case are all given in knots.",
+    link: "https://en.wikipedia.org/wiki/Knot_(unit)"},
+  "SAROPS": {desc: "Search and Rescue Optimal Planning System — the Coast Guard's modern computer system for projecting drift, built on the same leeway/set-and-drift methodology this case works by hand.",
+    link: "https://en.wikipedia.org/wiki/Search_and_Rescue_Optimal_Planning_System"},
+  "CGADD": {desc: "The Coast Guard Addendum to the U.S. National SAR Supplement — the real, published manual every leeway coefficient and search-planning formula in this case is drawn from.",
+    link: "https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf"},
+  "Marine-Band Scanner": {desc: "A radio receiver tuned to the VHF channels ships and the Coast Guard use to talk and call for help — always on in the background at a command center.",
+    link: "https://en.wikipedia.org/wiki/Marine_VHF_radio"},
+  "Watch (change of watch)": {desc: "A work shift on a ship or at a command center; crews rotate around the clock, and \"the watch changed over\" just means one shift handed off to the next.",
+    link: "https://en.wikipedia.org/wiki/Watch_system"},
+  "Bearing": {desc: "The compass direction from one point to another, measured in degrees clockwise from true north — the angle half of a bearing-and-range fix.",
+    link: "https://en.wikipedia.org/wiki/Bearing_(navigation)"},
+  "Datum (search planning)": {desc: "The Coast Guard search-planning term for the single best-estimate position a search is centered on.",
+    link: "https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf"},
+  "Sweep Width": {desc: "How far out to each side of its flight path a searcher can reliably spot the target — narrower in rough seas, wider in calm ones.",
+    link: "https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf"},
+  "Sea State": {desc: "A standard scale describing how rough the ocean surface is — rougher seas make a person in the water much harder to spot.",
+    link: "https://en.wikipedia.org/wiki/Sea_state"},
+  "Track Spacing": {desc: "The distance left between each pass of a search pattern's parallel lines — usually set equal to the sweep width so passes cover the box with no gaps.",
+    link: "https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf"},
+  "Parallel-Track Search Pattern": {desc: "The actual flight pattern: straight, evenly-spaced lines flown back and forth across the search box, the way a lawnmower covers a lawn, until the whole box has been covered.",
+    link: "https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf"},
+  "Optimal Search Factor": {desc: "A Coast Guard multiplier applied to the total-probable-error radius to size a search box for the best trade-off between area covered and probability of containing the target.",
+    link: "https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf"},
+  "Total Probable Error of Position": {desc: "The Coast Guard's name for the radius within which the target has a 50% chance of actually being — it grows the longer the person has likely been drifting.",
+    link: "https://rdept.cgaux.org/documents/ManualsTemp/USCG_SAR_Addendum.pdf"}
+};
+
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-term="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}</span></a>`;
+}
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  twistApplied = document.getElementById('applyTwist').checked;
+  ['fbD1dx','fbD1dy','fbD1x','fbD1y','fbD2vxa','fbD2vya','fbD2vxb','fbD2vyb',
+   'fbD3ra','fbD3rb','fbD3aa','fbD3ab','fbD4ra','fbD4rb',
+   'fbD5ca','fbD5cb','fbD5fa','fbD5fb','fbD5rec'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.className='fb'; el.textContent=''; } });
+}
+
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

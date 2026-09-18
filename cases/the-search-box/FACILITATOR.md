@@ -240,6 +240,23 @@ verified model shows the opposite is true here.
 4. Your D5 table combines each box's area with its probability-of-containment figure — could a box with a *smaller* area ever have a *higher* probability of detection per flight-hour than a larger one, and under what condition?
 5. Appendix F flags both MA12 (the Set-and-Drift Datum's growth-rate constant) and MA13 (the Windward Datum's probability of containment) as assumptions that could flip your recommendation if they were wrong — if you could only re-check one of the two before committing the helicopter, which would you pick, and what about your own D5 math tells you that one matters more?
 
+## What a strong defense sounds like
+
+There is no single right answer here, so don't grade toward "picked Option B" or "picked Option
+A." A strong defense gets D1–D5 arithmetically right, states a clear recommendation, and then does
+the one thing a weak defense skips: it explains *why* the smaller box (the Windward Datum) still
+loses — by naming the probability-of-containment gap (55% vs. the real, sourced 64.75%), not by
+restating box area or POD as if either settled it. A Hero who says "I'd send the helicopter to the
+Set-and-Drift Datum — both boxes are already searched to near-certain detection given the stated
+endurance and sweep width, so the real driver is containment probability, and Option B's is real
+and sourced while Option A's 55% is a documented estimate below it" is defending far better than
+one who cites box size, or who reports D5's numbers without naming which figure actually moves the
+recommendation. A Hero who argues for Option A can still defend well, if they own that they are
+betting on an unsourced containment estimate being conservative, and can say what evidence (a real
+divergent-datum POC table, not just the graph's qualitative shape) would need to exist to make that
+bet safer. Either recommendation can be a strong one if it shows this reasoning; neither is strong
+without it.
+
 ## Close
 
 **VOTE AGAIN.** "Did we ask the right question at the start?" "What math was new to you tonight,

@@ -1,5 +1,130 @@
 # QA Report — the-search-box
 
+## case-readiness run — 2026-09-18 (Tier 1 re-verify + genuine Tier 2 completion, incl. new P7)
+
+**State:** TIER1_PASS (2026-08-31, unrelabeled) → **TIER2_PASS**. This run brings the case's `qa.state` in line with
+its actual, current standard: re-ran Tier 1 against today's grown check set (T1-22–T1-24, added by MCS-50/52 after
+2026-08-31), built the case's first `published/` interactive HTML (none existed before), ran P7 (added 2026-09-03,
+never checked against this case before today) for real, and re-verified P1–P6 rather than carrying the 2026-08-31
+record forward unearned. `case.md` and `case.json`'s sourced/assumed figures, `balance` object, and
+`sensitivity_disclosure[]` are **unchanged** from 2026-08-31 — this run is a genuine current QA pass, not a rewrite
+of the case's content, and the framing-discipline register (SPEC §6, person-overboard scenario) was preserved
+throughout (verified again at the end of this section).
+
+### Tier 1 — structural (24 checks, up from 20 at the 2026-08-31 run)
+
+Ran `skills/case-readiness/scripts/tier1_structural.py --case the-search-box` against the unmodified `case.md` plus
+the newly-built `published/The Search Box - Interactive.html`. sha256(case.md) = `be42e562c1c0eba8...` — unchanged,
+matches `case.json.qa.case_md_sha256`, so nothing described below is stale.
+
+**PASS 23 · GAP 1 · FAIL 0 — VERDICT: TIER1_PASS**
+
+| id | result | note |
+|---|---|---|
+| T1-01 – T1-09 | PASS | unchanged from 2026-08-31 |
+| T1-10 | GAP | unchanged carve-out (`reinforcement_note`), doctrine-approved, not a per-case waiver |
+| T1-11 – T1-17 | PASS | unchanged |
+| T1-18 | PASS | new `published/` HTML: no `balance.margin_pct` leak, no Working Notebook numeric-example placeholder leak (2 real bugs found and fixed during authoring — see "What was built and fixed" below), 0 orphan numbers outside `<script>` |
+| T1-19 | PASS | 9 real math-vocabulary terms (`GLOSSARY`), all `https://mathsisfun.com`/`khanacademy.org`, verified live 2026-09-18 |
+| T1-20 | PASS | 1 real diagram (drift-vector/search-box figure, inline SVG, real shape content) |
+| T1-21 | PASS | 17 real story-vocabulary terms (`STORY_GLOSSARY`), real non-math domains (`wikipedia.org`, `rdept.cgaux.org`), verified live |
+| T1-22 | PASS | published HTML's own `<h2>` headings match every section T1-01 finds in `case.md` (Overview/Background/Dilemma/Challenges/Appendices) |
+| T1-23 | PASS | inline `<script>` parses clean (`node --check`) |
+| T1-24 | PASS | the hand-drawn SVG diagram's 3 connector `<path>` endpoints all land exactly on their anchor shapes' centers (vessel/radar-fix circles, each datum's box) — verified both mechanically and by eye in a live browser |
+
+**0 BLOCKERs, 1 GAP (pre-existing carve-out), 1 POLISH** (T1-07, unchanged pre-existing note about the separator-run
+parser; harmless, not a defect in this case).
+
+### What was built and fixed
+
+1. **Built `published/The Search Box - Interactive.html`** (none existed before this run) from
+   `templates/interactive_shell.html`'s pattern, following `cases/the-manifest-split/published/The Manifest Split -
+   Interactive.html` as the reference. Includes: all 7 `case.md` sections plus a Working Notebook (D1–D5, each
+   self-checking against a live JS port of `sensitivity_model.py`'s own arithmetic — never printing the
+   `balance`/recommendation as a static literal), a Twist section (the same MA12-doubling twist as
+   `FACILITATOR.md`, gated behind an explicit "ask your facilitator" reveal), a math `GLOSSARY` (9 terms) and a
+   `STORY_GLOSSARY` (17 terms), and an inline-SVG diagram plotting tonight's actual D1–D3 figures (vessel position,
+   converted radar fix, both drift vectors, both search boxes) to scale.
+2. **Two real authoring bugs found and fixed before this ever reached Tier 1** (found by opening the actual page in
+   a live browser and reading the console/DOM, not by trusting the text-based checks alone, per this project's own
+   standing instruction that case-readiness's checks miss real rendering bugs):
+   - **T1-18 BLOCKER (self-inflicted, fixed same session):** every Working Notebook `<input type="number">`
+     placeholder originally read like `"nautical miles, 3 decimals"` / `"knots, 4 decimals"` — a bare digit in a
+     placeholder is the exact MCS-37 defect class (a placeholder that states or implies the graded value). Reworded
+     every one to a digit-free format hint (`"nautical miles, several decimal places"`, etc.). Re-ran T1-18 clean.
+   - **Live-browser-only defect, not caught by any Tier 1 text check:** on first build, every `localStorage` call
+     was unguarded. Opening the actual published HTML in a real browser (this project's preview sandbox loads a
+     local file as an opaque-origin snapshot) showed the Deliverables checklist, the glossary, and the how-to list
+     all rendering **completely empty**, with **no visible console error** — `localStorage.getItem()` throwing
+     inside `restorePick()` silently aborted the entire inline `<script>` block partway through, before the
+     glossary/checklist-rendering code further down ever ran. This is the same failure class MCS-50 (Pier Wheel)
+     names: a script-wide abort that every purely-textual check (T1-19, T1-21, T1-23's `node --check`) stays green
+     against, because none of them execute the script or check DOM output, only its source text. Fixed by wrapping
+     every `localStorage` read/write in `lsGet()`/`lsSet()` try/catch helpers so the page degrades gracefully (a
+     real robustness requirement anyway — private browsing and other sandboxed contexts can throw the same way for
+     a real student). Re-verified live in the browser after the fix: checklist, glossary, and how-to list all
+     render, and all D1–D5 Check buttons grade correctly (spot-checked D1 and D5, including a deliberately-wrong D5
+     recommendation graded "try again" and the correct one graded "✓", confirming the calculator checks arithmetic
+     live and never leaks the verdict).
+   - Also fixed one figure-caption label so an SVG text element didn't clip past its own diagram's viewBox
+     (`"Set-and-Drift Datum + box"`, cosmetic only, no check flags text overflow).
+3. **P7 gap found and closed for real, not force-passed.** The first P7 cold-read (fresh subagent, zero context)
+   against the newly-built HTML named 9 genuinely unexplained real-world terms — `datum`, `bearing`/`true`, `sweep
+   width`, `track spacing`, `sea state`, `optimal search factor`, `total probable error of position`, `the watch
+   changed over`, `marine-band scanner` — and one structural gap: nothing in the case described the actual physical
+   search operation (what "fully searching a box" means as a flown pattern), only the box's geometry. Fixed by (a)
+   adding 9 new `STORY_GLOSSARY` entries with real, verified-live citations (`en.wikipedia.org` for bearing/watch
+   system/sea state/marine VHF radio; the case's own already-cited CGADD source document, `rdept.cgaux.org`, for
+   the Coast-Guard-specific planning terms datum/sweep width/track spacing/optimal search factor/total probable
+   error, since that primary source literally defines its own terms — at least as legitimate a citation as a
+   secondary source) and inline `sterm` hover annotations at each term's first mention in the prose, and (b) adding
+   one new `STORY_GLOSSARY` entry plus a plain-language sentence in Appendix A describing the real parallel-track
+   search pattern (straight, evenly-spaced passes at the stated track spacing, "the way a lawnmower covers a
+   lawn") — described honestly, with no invented precision beyond what the case already states. A second, fresh
+   zero-context subagent cold-read of the rebuilt packet came back clean: **0 unexplained real-world concepts, and
+   the one candidate "central invented mechanism" (the two disagreeing search boxes) judged clearly picturable from
+   the packet's own diagram description.** See the P7 section below for the full verdict.
+
+### Tier 2 — simulated play (7 probes)
+
+| probe | verdict | finding |
+|---|---|---|
+| P1 cold solve | **PASS** (adjudicated) | fresh subagent, given only the packet, independently worked D1–D5 correctly and reached B (Set-and-Drift Datum) via the right route — named the metric (POD per flight-hour), showed correct arithmetic (areas 3.706/6.126 sq NM, coverage factors ≈36.9/22.3, POC 55%/64.75% → 0.1447/0.1704), and correctly identified MA13 (poc_A_pct) as the load-bearing assumption. It flagged Appendix F's MA13 sentence ("55% is chosen as a value below... 64.75%") as a possible partial leak — adjudicated **not a real leak**: that same comparison (55% vs 64.75%) is already stated directly, side by side, in Appendix E's own POC table, so the MA13 sentence adds no route-shortcut beyond what the raw appendix data already shows; the solver still had to do the full D1–D5 chain (including recognizing both boxes are POD-saturated) to reach the recommendation, and did so. Matches the 2026-08-31 record's own P1 adjudication style (a textual coincidence/pre-existing appendix content, not a hand-out of the verdict). |
+| P2 both-sides | **PASS** (adjudicated) | fresh subagent built a real quantitative case for each option; A's best argument (smaller box, better-sourced growth constant, a hedge against the endurance assumption) survives a first read but collapses at "given coverage factors of 37 and 22, doesn't POD round to ~1.0 for both — so what's actually different besides POC, and why weight an unsourced 55% over a sourced 64.75%?" B's case holds. Matches the 2026-08-31 finding. |
+| P3 trap | **PASS** (adjudicated) | fresh subagent, reading the packet cold, independently named the same trap `FACILITATOR.md`'s "## The trap" section names almost word for word: picking the smaller box (Windward) without checking that it still loses on POC-weighted detection odds. |
+| P4 twist | **PASS** (adjudicated) | fresh subagent confirmed the twist (doubling MA12) invalidates the intuitive-but-wrong belief that the least-sourced assumption must be the most load-bearing one, using only the packet's own stated D5 formula and figures — no hidden convention required. Re-verified live in the rebuilt interactive calculator: toggling "Recompute with the twist applied" (`growth_rate_B_kt` 0.45→0.9) still leaves B ahead (podfh A=0.1447 vs B=0.1698), matching `sensitivity_model.py`'s and `FACILITATOR.md`'s prior finding that the real flip threshold is ~1.55 kt, not 0.9 kt. |
+| P5 sensitivity | **PASS (disclosed)** | mechanical re-run of the unmodified `sensitivity_model.py`: reproduces `case.json.balance.computed_2026-08-30` exactly (A=0.1447, B=0.1704); MA13 (`poc_A_pct`) flips at +50% (real threshold ≈64.75%, disclosed in `case.json.sensitivity_disclosure[]`, category X); MA12 (`growth_rate_B_kt`) does not flip within ±50% in either direction (real threshold ≈1.55 kt, ~3.4×). Identical to the 2026-08-31 finding — nothing about the case's math changed this run. |
+| P6 data decay | **PASS** (verified by direct fetch, 2026-09-18) | delegated to a fresh subagent with live network access: fetched the single cited PDF (`rdept.cgaux.org/.../USCG_SAR_Addendum.pdf`, HTTP 200, ~8.5 MB, unchanged), extracted text, and re-confirmed all 10 cited figures (S1–S10) present verbatim or in exact numeric agreement — 90 kt (S1), 0.1→0.4 NM PFD-corrected sweep width (S2), the leeway equation/divergence/standard-error (S3), the coverage-factor/POD formulas (S4/S5), the 85%-endurance rule (S6), 6.0 hr H-60 MAX endurance (S7), 64.75% POC at fs=1.1 (S8), the qualitative Figure H-22 divergent-vs-single-point framing (S9), and the total-probable-error/optimal-search-factor definitions (S10). No source moved, 404'd, or dropped its figure. |
+| P7 accessibility | **PASS** | see "What was built and fixed" above for the remediation. Final fresh cold-read (2026-09-18, zero-context subagent, reading the rebuilt `published/` HTML's own text): **0 unexplained real-world concepts named** (every term — marine-band scanner, watch/change-of-watch, SMC, bearing, PFD, leeway, set-and-drift, sweep width, sea state, track spacing, parallel-track search pattern, datum, total probable error, optimal search factor, SAROPS, CGADD — had an inline definition the subagent judged sufficient), and **no unpicturable central mechanism** (the two-disagreeing-search-boxes setup was judged clearly picturable from the packet's own figure description). Clears the 0–1-unexplained-concept threshold cleanly — no `P7_waiver` needed. |
+
+**All 7 probes PASS, 0 FAIL, 0 NOT RUN.**
+
+### Framing-discipline re-check (SPEC §6 human-reviewed sensitivity flag — person-overboard scenario)
+
+Re-verified against the same standard the 2026-08-30 human review approved: the new `published/` HTML's Overview and
+Background paragraphs are copied verbatim/near-verbatim from the already-approved `case.md` prose (present-tense
+procedural urgency, no injury/peril detail, decision point only); the Twist section reveals only the same
+verified-methodology finding already in `FACILITATOR.md` (which unsourced assumption is actually load-bearing), not
+any narrative escalation; and the new `STORY_GLOSSARY`/diagram additions describe real Coast Guard search-planning
+mechanics (a parallel-track flight pattern, sweep width, sea state) — methodology only, never depicted injury,
+peril, or outcome. Appendix G's real 2013 Aldridge-rescue citation is unchanged. **Consistent — no re-review
+needed.**
+
+### Report back
+
+**State reached: TIER2_PASS.** Tier 1: 0 BLOCKERs, 1 GAP (T1-10, pre-existing doctrine-approved carve-out), 1
+POLISH. Tier 2: 7/7 probes PASS (P1–P6 re-verified against the unmodified case content and the new published
+artifact; P7 is newly run for the first time against this case and now genuinely passes after real remediation, not
+a waiver). `margin_pct` = 15 (≈15.1% precise), unchanged from the 2026-08-30/31 record — **no shared read-model file
+was touched** (`readmodel/standards_spine.json`, `readmodel/gap_queue.json`, `readmodel/cases_index.json` untouched),
+and **`case-publish` was not run**. Framing-discipline register (SPEC §6) preserved throughout.
+
+**Report path:** `cases/the-search-box/QA_REPORT.md`
+**Model:** `cases/the-search-box/sensitivity_model.py` (unmodified)
+**New artifact:** `cases/the-search-box/published/The Search Box - Interactive.html`
+
+---
+
 ## case-readiness run — 2026-08-31 (remediation)
 
 **State:** DRAFT → **TIER1_PASS**. Tier 2 run; 5/6 probes resolved, 1 adjudicated false positive.

@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Survey Slot — Interactive</title>
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:150px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .sterm{position:relative;color:#3a5a34;text-decoration:none;border-bottom:1.5px dotted #7a9a5a;cursor:help;font-weight:600}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:250px;background:#2c3a26;color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#2c3a26}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-scope" viewBox="0 0 24 24"><path d="M4 20l7-7"/><circle cx="15" cy="9" r="6"/><path d="M15 3v2M15 13v2M9 9h2M19 9h2"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow" style="display:flex;align-items:center;gap:14px">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy Adventure</div>
+        <h1>Case Study: The Survey Slot</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Statistics And Probability &middot; Probability</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Renee Okafor has the observatory's control-room monitor split into two windows, and she still hasn't clicked either one. On the left: a live countdown to <a class="sterm" href="https://en.wikipedia.org/wiki/Moonrise_and_moonset" target="_blank" rel="noopener">moonrise<span class="tip">The moment the Moon rises above the horizon. Scattered moonlight brightens the sky enough to wash out the tiny brightness dips this program measures, ending the usable observing window.</span></a>, the moment tonight's faint-target brightness measurements stop being usable at all. On the right: the queue console, blinking, waiting for her to submit one target assignment before the allocation committee's nightly sign-off (their final go-ahead, needed before the telescope will run either option) closes.</p>
+  <p>"Four hours," the on-call operator says from the doorway, not really a question. "Which target?"</p>
+  <p>Renee doesn't decide how many <a class="sterm" href="https://en.wikipedia.org/wiki/Exoplanet#Detection_methods" target="_blank" rel="noopener">transit candidates<span class="tip">A star whose brightness dipped in a pattern consistent with a planet passing in front of it — flagged for follow-up, but not yet confirmed as a real planet.</span></a> the survey program has flagged this month, or how bright the moon comes up. She decides what tonight's one open telescope slot actually points at. Right now there's a folder on her desk — printed, because she reads these on paper — for a single transit candidate the pipeline flagged weeks ago, with a predicted transit window that lines up almost perfectly with tonight. Point the telescope there for the full four hours, watch it happen, and either confirm it or don't.</p>
+  <p>Next to that folder is a second tab open on her laptop: a target list of twelve unexplored fields, each one a quick look for a brand-new signal nobody has ever flagged. Twelve short looks instead of one long stare. Faster science, if any of them hit. Nothing at all, if none of them do.</p>
+  <p>The operator is still standing there. The countdown clock ticks down another minute.</p>
+  <p>Renee pulls both windows to the front of her screen and does not press submit on either one.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Renee Okafor is the telescope-time allocation scheduler for a university <a class="sterm" href="https://en.wikipedia.org/wiki/Robotic_telescope" target="_blank" rel="noopener">robotic observatory<span class="tip">A telescope that runs its nightly observing schedule under automated software control, rather than a human physically aiming it — the on-call operator still monitors and can intervene, but does not manually point the telescope.</span></a>'s <a class="sterm" href="https://en.wikipedia.org/wiki/Exoplanet" target="_blank" rel="noopener">exoplanet<span class="tip">A planet that orbits a star other than our Sun.</span></a> program. Every clear night, she is personally responsible for deciding what the observatory's single telescope points at during its open science slots, and for defending that recommendation to the program's allocation committee before the night's assignment locks in. Tonight's slot is short — the Moon rises bright enough, partway through the night, to wash out the faint brightness dips this program is built to measure, which caps tonight's usable window at a fixed length regardless of which target Renee picks (see Appendix B).</p>
+  <p>Two options are on the table. <strong>The Candidate Watch</strong> commits the full slot to re-observing one already-flagged transit candidate — a star whose brightness-over-time record (a <a class="sterm" href="https://en.wikipedia.org/wiki/Light_curve" target="_blank" rel="noopener">light curve<span class="tip">A plot of how bright a star measures at each moment in time — the tool astronomers read a transit's dip off of.</span></a>) has already shown one promising dip; because a transiting planet orbits on a fixed, repeating cycle, the timing of its next dip (its next predicted transit window) can be calculated in advance, and tonight's slot is timed to catch it. A transit candidate like this is vetted against a real, published pattern: large all-sky surveys flag many such candidates, and a well-documented fraction of them turn out to be <a class="sterm" href="https://en.wikipedia.org/wiki/False_positives_and_false_negatives" target="_blank" rel="noopener">false positives<span class="tip">A signal that looked like a real transiting planet at first, but turned out to have a non-planetary cause (a background eclipsing binary star — two stars orbiting each other, periodically blocking each other's light in a way that can look from far away like a planet crossing its own star — an instrument artifact (a glitch in the camera or electronics that mimics a real brightness dip), or a data-processing error) once more data came in.</span></a> — rather than a genuine transiting planet (see Appendix A, Appendix C). <strong>The Twelve-Field Sweep</strong> instead splits the same slot across twelve short looks at fields the survey has never examined, each one an independent search for a new, as-yet-undetected transit signal (see Appendix C).</p>
+  <p>Either option clears the whole slot; neither can be extended once the Moon comes up — no telescope pointing time exists for anything past that boundary, for either option. Appendix C's per-field Sweep rate already represents a genuinely confirmed new detection — the same "survives the false-positive check" standard applied to The Candidate Watch — not merely a raw, unvetted flag; both options' probabilities answer the same question (did tonight's slot produce a real, confirmed signal), which is exactly how "a confirmed detection" is counted for D1/D3 (see Appendix F, MA6). What Appendix D governs works from a different, earlier stage of the SAME twelve fields' data, not a separate set of fields: (1) each 20-minute look finishes and an onboard automated test (software running on the telescope's own computer, checking in real time whether a star's brightness dipped more than random noise would explain) either flags the field or doesn't, a broader and more generous first pass than Appendix C's stricter confirmation standard; (2) after the 4-hour slot ends, whichever flags came in tonight go through the same false-positive check Appendix C describes; (3) separately, once the morning report deadline approaches, the program's small on-call analysis team can only fully write up and cross-check a limited number of tonight's flags before the deadline — this write-up step happens after the telescope slot is already over and uses no telescope time at all. Because the automated flag is deliberately generous, like Appendix A's real TESS pipeline, a typical night produces more flags than confirmed detections (see Appendix D). The real NASA Exoplanet Archive publishes transit-depth measurements for confirmed planets in a compact scientific-notation form that the program's own report template requires converting to plain decimal notation before it goes in front of the committee (see Appendix E).</p>
+  <p>Every figure in this case is either cited to a real published source or disclosed as a stated Modeling Assumption (see Appendix F, Appendix G). The vocabulary and "how to…" skills this case will ask you to research are listed in Appendix H — that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Renee Okafor. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Candidate Watch</h4>
+      <p style="margin:0">Commit the full slot to re-observing the one already-flagged transit candidate.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Twelve-Field Sweep</h4>
+      <p style="margin:0">Split the slot across twelve independent fields searching for new, undetected transit signals.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which option you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include a compound-probability calculation for The Twelve-Field Sweep (D1), a single-event probability statement for The Candidate Watch (D2), an expected-detections-per-hour comparison table and margin (D3), a write-up combinations-and-permutations plan (D4), and a standard-notation data table (D5). See the Deliverables checklist below for the full text of each.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Transit Candidates and Vetting: The Real Numbers</summary>
+    <div class="inner">
+      <p>A transit candidate is a star whose brightness dipped in a pattern consistent with a planet passing in front of it. Large sky surveys flag thousands of these, but not every flagged candidate is a real planet. NASA's TESS (<a class="sterm" href="https://tess.mit.edu/" target="_blank" rel="noopener">Transiting Exoplanet Survey Satellite<span class="tip">A real NASA space telescope that monitors hundreds of thousands of stars, region by region, looking for the periodic brightness dips caused by a transiting planet.</span></a>) mission publishes its full list of flagged candidates — called <a class="sterm" href="https://exoplanetarchive.ipac.caltech.edu/docs/TESSMission.html" target="_blank" rel="noopener">TESS Objects of Interest (TOIs)<span class="tip">A candidate signal TESS's pipeline flags as possibly being a transiting planet, before follow-up observation confirms or rules it out.</span></a> — and tracks which ones follow-up observation later re-classifies as false positives: a background eclipsing binary star, an instrument artifact (a glitch in the camera or electronics mimicking a real dip), or a data-processing error that only looked like a planet's dip [S1].</p>
+      <table id="apx-a-table">
+        <tr><th>Outcome, TESS Prime Mission TOI catalog</th><th>Count</th><th>Share</th></tr>
+        <tr><td>Total TOIs in the catalog</td><td class="num">2,241</td><td class="num">100%</td></tr>
+        <tr><td>Re-classified as false positives after follow-up</td><td class="num">565</td><td class="num">&asymp;25.2%</td></tr>
+        <tr><td>Remaining candidates (planet candidates or confirmed planets)</td><td class="num">1,676</td><td class="num">&asymp;74.8%</td></tr>
+      </table>
+      <p class="side-note">This case does not need the specific reasons a candidate becomes a false positive — they are included here because the vetting system is real, and because "not every flagged dip is a real planet" is exactly why a second, confirming look matters.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix B &mdash; Tonight's Slot</summary>
+    <div class="inner">
+      <table id="apx-b-table">
+        <tr><th>Quantity</th><th>Value</th><th>How it's set</th></tr>
+        <tr><td>Length of tonight's open telescope slot</td><td class="num">4 hours</td><td>Fixed by tonight's moonrise time. Identical regardless of which option is chosen.</td></tr>
+        <tr><td>Number of fields in The Twelve-Field Sweep</td><td class="num">12</td><td>The survey's standard field count for one open slot's "shallow sweep" — a quick, short look at each field, as opposed to a single long stare at one target.</td></tr>
+        <tr><td>Time per field, Twelve-Field Sweep</td><td class="num">20 minutes</td><td>4 hours &divide; 12 fields, split evenly.</td></tr>
+      </table>
+      <p class="side-note">These slot parameters are specific to tonight's schedule and are disclosed Modeling Assumptions — see Appendix F, MA1. Every per-hour rate in this case is computed against this fixed 4-hour nominal slot length throughout, even if new information arrives partway through the slot.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix C &mdash; Detection Probability Inputs</summary>
+    <div class="inner">
+      <p class="side-note">This appendix also carries columns that are real, published, and <strong>not needed</strong> to answer tonight's question — deciding what to ignore is part of the work.</p>
+      <table id="apx-c-table">
+        <tr><th>Option</th><th>Quantity</th><th>Value</th><th>Basis</th></tr>
+        <tr><td>The Candidate Watch</td><td>Probability tonight's re-observation confirms a real detection (not a false positive)</td><td class="num">&asymp;74.8%</td><td>Applied from Appendix A's real, published TESS Prime Mission catalog rate [S1] to tonight's candidate — see Appendix F, MA2.</td></tr>
+        <tr><td>The Twelve-Field Sweep</td><td>Probability any one field yields a confirmed new detection (not a false positive) in its 20-minute look</td><td class="num">10%</td><td>Disclosed Modeling Assumption, informed by (not equal to) a real completed survey's realized planet-candidate yield per target star [S2] — see Appendix F, MA3.</td></tr>
+        <tr><td>The Twelve-Field Sweep</td><td>Average number of catalogued stars per shallow-sweep field</td><td class="num">&asymp;2,400</td><td>Real-format figure, not needed at this case's level — already folded into the per-field rate above.</td></tr>
+        <tr><td>The Candidate Watch</td><td>Predicted transit duration</td><td class="num">2.1 hours</td><td>Real-format figure, texture only — the slot is long enough to cover it either way.</td></tr>
+      </table>
+
+      <h3 style="margin-top:22px">Worked example — reading a compound-probability tree (illustrative numbers, not tonight's real ones)</h3>
+      <figure>
+        <svg viewBox="0 0 640 360" width="640" height="360" class="diagram" role="img" aria-label="Worked example probability-tree diagram for three independent backup sensors, each with an 80 percent chance of working, showing how to find the probability at least one works using the complement rule">
+          <text x="20" y="24" font-family="sans-serif" font-size="14" font-weight="700" fill="#1a3a5c">Example: 3 independent backup sensors, each 80% likely to work. P(at least one works)?</text>
+
+          <!-- root -->
+          <circle cx="40" cy="180" r="6" fill="#1a3a5c"/>
+          <text x="8" y="200" font-family="sans-serif" font-size="12" fill="#1a3a5c">Start</text>
+
+          <!-- Sensor 1 branches -->
+          <line x1="40" y1="180" x2="180" y2="90" stroke="#1a3a5c" stroke-width="2"/>
+          <line x1="40" y1="180" x2="180" y2="270" stroke="#a3312a" stroke-width="2"/>
+          <circle cx="180" cy="90" r="5" fill="#1a3a5c"/>
+          <circle cx="180" cy="270" r="5" fill="#a3312a"/>
+          <text x="90" y="120" font-family="sans-serif" font-size="12" fill="#1a3a5c">Sensor 1 works: 0.8</text>
+          <text x="90" y="255" font-family="sans-serif" font-size="12" fill="#a3312a">Sensor 1 fails: 0.2</text>
+
+          <!-- The complement path (all fail) continues, drawn simplified: only the all-fail chain is expanded -->
+          <line x1="180" y1="270" x2="340" y2="270" stroke="#a3312a" stroke-width="2"/>
+          <circle cx="340" cy="270" r="5" fill="#a3312a"/>
+          <text x="200" y="290" font-family="sans-serif" font-size="12" fill="#a3312a">Sensor 2 fails: 0.2</text>
+
+          <line x1="340" y1="270" x2="500" y2="270" stroke="#a3312a" stroke-width="2"/>
+          <circle cx="500" cy="270" r="5" fill="#a3312a"/>
+          <text x="360" y="290" font-family="sans-serif" font-size="12" fill="#a3312a">Sensor 3 fails: 0.2</text>
+
+          <text x="520" y="275" font-family="sans-serif" font-size="12" font-weight="700" fill="#a3312a">P(all 3 fail)</text>
+          <text x="520" y="292" font-family="sans-serif" font-size="12" fill="#a3312a">= 0.2 &times; 0.2 &times; 0.2 = 0.008</text>
+
+          <!-- branch line from sensor1-works node onward, abbreviated since if sensor1 works we already have "at least one" -->
+          <line x1="180" y1="90" x2="340" y2="90" stroke="#1a3a5c" stroke-width="2" stroke-dasharray="4,3"/>
+          <circle cx="340" cy="90" r="4" fill="#1a3a5c"/>
+          <text x="200" y="80" font-family="sans-serif" font-size="12" fill="#1a3a5c">(already "at least one" &mdash; branch stops here)</text>
+
+          <rect x="20" y="320" width="600" height="34" rx="6" fill="#f7edcf" stroke="#c9a227"/>
+          <text x="32" y="342" font-family="sans-serif" font-size="13" font-weight="700" fill="#3a2f0c">P(at least one works) = 1 &minus; P(all fail) = 1 &minus; 0.008 = 0.992 (99.2%) &mdash; NOT 0.8 &times; 3 = 2.4 (impossible, over 100%)</text>
+        </svg>
+        <figcaption>This example uses a small set of made-up, equally-reliable backup sensors, not tonight's real candidate or field data, to show the technique: the complement rule, <code>P(at least one) = 1 &minus; P(none)</code>, is how independent-event compound probabilities combine — naive multiplication of the per-event probability by the number of events can produce an impossible result over 100%, which is always a sign the complement rule was skipped. Apply the same method to Appendix C's real per-field rate and the fields in Appendix B for Challenge D1 — do not reuse these numbers.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix D &mdash; Same-Night Write-Up Capacity</summary>
+    <div class="inner">
+      <table id="apx-d-table">
+        <tr><th>Quantity</th><th>Value</th><th>Basis</th></tr>
+        <tr><td>Number of preliminary flags a night's shallow pass typically produces across the twelve fields (before the false-positive check)</td><td class="num">5, out of the 12</td><td>Disclosed Modeling Assumption — see Appendix F, MA4.</td></tr>
+        <tr><td>Number of those preliminary flags the on-call analysis team can fully write up before the morning deadline</td><td class="num">2</td><td>Disclosed Modeling Assumption, grounded in the real operational fact that a small team has finite working hours before a fixed deadline — see Appendix F, MA5.</td></tr>
+      </table>
+
+      <h3 style="margin-top:22px">Worked example — combination vs. permutation (illustrative numbers, not tonight's real ones)</h3>
+      <figure>
+        <svg viewBox="0 0 640 220" width="640" height="220" class="diagram" role="img" aria-label="Worked example diagram comparing choosing 2 items from a set of 4 as a combination versus arranging 2 chosen items in order as a permutation">
+          <text x="20" y="24" font-family="sans-serif" font-size="14" font-weight="700" fill="#1a3a5c">Example: choose 2 of 4 lettered items (A, B, C, D)</text>
+
+          <rect x="20" y="44" width="290" height="150" rx="8" fill="#eef3f8" stroke="#1a3a5c" stroke-width="1.5"/>
+          <text x="34" y="68" font-family="sans-serif" font-size="13" font-weight="700" fill="#1a3a5c">Combination (order doesn't matter)</text>
+          <text x="34" y="90" font-family="sans-serif" font-size="12" fill="#1a3a5c">Which 2 get picked at all?</text>
+          <text x="34" y="112" font-family="sans-serif" font-size="12" fill="#1a3a5c">{A,B} {A,C} {A,D}</text>
+          <text x="34" y="132" font-family="sans-serif" font-size="12" fill="#1a3a5c">{B,C} {B,D} {C,D}</text>
+          <text x="34" y="160" font-family="sans-serif" font-size="13" font-weight="700" fill="#1a3a5c">C(4,2) = 6 possible pairs</text>
+          <text x="34" y="178" font-family="sans-serif" font-size="11" fill="#5b6472">{A,B} and {B,A} count once</text>
+
+          <rect x="330" y="44" width="290" height="150" rx="8" fill="#f7edcf" stroke="#c9a227" stroke-width="1.5"/>
+          <text x="344" y="68" font-family="sans-serif" font-size="13" font-weight="700" fill="#8a6d10">Permutation (order matters)</text>
+          <text x="344" y="90" font-family="sans-serif" font-size="12" fill="#8a6d10">In what order are the 2 picks scheduled?</text>
+          <text x="344" y="112" font-family="sans-serif" font-size="12" fill="#8a6d10">AB BA AC CA AD DA</text>
+          <text x="344" y="132" font-family="sans-serif" font-size="12" fill="#8a6d10">BC CB BD DB CD DC</text>
+          <text x="344" y="160" font-family="sans-serif" font-size="13" font-weight="700" fill="#8a6d10">P(4,2) = 12 possible orders</text>
+          <text x="344" y="178" font-family="sans-serif" font-size="11" fill="#5b6472">AB and BA are different schedules</text>
+
+          <line x1="310" y1="119" x2="330" y2="119" stroke="#5b6472" stroke-width="1.5" stroke-dasharray="3,3"/>
+        </svg>
+        <figcaption>Four illustrative items, not tonight's real flagged fields, show the technique: a combination counts unordered groups (6 pairs); a permutation counts ordered arrangements of the same picks (12 schedules) — exactly twice as many here, since each pair can be scheduled 2 ways. Apply the same method to Appendix D's real preliminary-flag count and write-up capacity for Challenge D4 — do not reuse these numbers.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Real Transit-Depth Data (NASA Exoplanet Archive)</summary>
+    <div class="inner">
+      <p>The NASA Exoplanet Archive publishes transit depth — how much a star's brightness drops during a transit, as a fraction of its total light — for confirmed planets. Real papers on these planets often report this fraction in scientific notation.</p>
+      <table id="apx-e-table">
+        <tr><th>Planet</th><th>Transit depth (scientific notation, fraction of stellar brightness)</th><th>Source</th></tr>
+        <tr><td>TOI-700 d</td><td class="num">6.13 &times; 10<sup>&minus;4</sup></td><td>Spitzer Space Telescope (a retired NASA infrared space telescope) confirmation paper [S3]</td></tr>
+        <tr><td>Kepler-186f</td><td class="num">4.41 &times; 10<sup>&minus;4</sup></td><td>Derived from published planet-to-star radius ratio (how much smaller the planet is than its star; squaring that ratio gives the fraction of starlight it blocks) [S4]</td></tr>
+      </table>
+      <p class="side-note">[S5] confirms the NASA Exoplanet Archive's own Transiting Planets Table reports depth as a percentage. This case's report template requires standard (decimal) notation instead, because the committee's spreadsheet tool does not accept scientific notation as input.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are not directly published for tonight's specific slot. No public source reports a specific observatory's specific nightly target list, its specific candidate's real-time confirmation odds, or its specific analysis-team staffing for a given night. They are stated scenario assumptions chosen by the case author, several of them informed by real published statistics without being identical to them. A Hero may challenge any of these numbers in discussion.</blockquote>
+      <table id="apx-f-table">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+        <tr><td>MA1</td><td>Tonight's slot length and field count</td><td>4 hours; 12 fields at 20 min each</td><td>No public source publishes one specific observatory's specific nightly schedule. Set at a scale consistent with a real robotic survey program's typical single-slot allocation.</td></tr>
+        <tr><td>MA2</td><td>Probability tonight's specific candidate confirms as a real detection</td><td>74.8%</td><td>Applies Appendix A's real, published TESS Prime Mission non-false-positive rate (computed across its whole real catalog of candidates, not for one specific star) [S1] to this one candidate, as a modeling convention.</td></tr>
+        <tr><td>MA3</td><td>Per-field probability of a new detection in a 20-minute shallow look</td><td>10%</td><td>Informed by, but not equal to, Kepler's DR25 catalog (the mission's 25th official data release) real per-star yield of &asymp;2.1% [S2] — scaled up for thousands of stars per field, scaled down for a 20-minute look vs. 4 continuous years.</td></tr>
+        <tr><td>MA4</td><td>Number of preliminary flags (pre-confirmation) in a given night's shallow pass</td><td>5 of 12</td><td>Deliberately higher than Appendix C's ~1-2 expected *confirmed* detections per night — consistent with a real automated significance test flagging more candidates than end up surviving the false-positive check, the same relationship Appendix A shows for TESS's own real catalog.</td></tr>
+        <tr><td>MA5</td><td>Same-night write-up capacity</td><td>2 of the 5 preliminary flags</td><td>Grounded in the real, general operational fact that a small on-call team has finite working hours before a fixed morning-report deadline.</td></tr>
+        <tr><td>MA6</td><td>How a confirmed detection is counted for D1/D3</td><td>At least one independent success = one confirmed detection for the night; extras not double-counted</td><td>A stated counting convention (not a sourced figure): the committee report is a yes/no, and this is the only convention comparing a single-shot option and a multi-trial option fairly.</td></tr>
+      </table>
+      <p class="side-note">Every one of these figures is sensitive — see the case's own reasoning in discussion, not printed here as a spoiler.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix G &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apx-g-table">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>TESS Prime Mission TOI catalog false-positive rate</td><td>565/2,241 (&asymp;25.2%)</td><td><a href="https://arxiv.org/pdf/2103.12538" target="_blank" rel="noopener">Guerrero et al. 2021, The Astronomical Journal</a></td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Kepler DR25 planet-candidate yield</td><td>4,034 candidates from &asymp;200,000 target stars (a little over 2%)</td><td><a href="https://arxiv.org/abs/1710.06758" target="_blank" rel="noopener">Thompson et al. 2018, ApJS 235, 38</a></td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>TOI-700 d transit depth</td><td>0.000613 (6.13&times;10<sup>&minus;4</sup>)</td><td><a href="https://arxiv.org/pdf/2001.00954" target="_blank" rel="noopener">Rodriguez et al. 2020</a></td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Kepler-186f radius ratio (depth derived: (Rp/Rs)&sup2;)</td><td>0.021 &rarr; depth &asymp;4.41&times;10<sup>&minus;4</sup> (derived)</td><td><a href="https://en.wikipedia.org/wiki/Kepler-186f" target="_blank" rel="noopener">Wikipedia, citing Quintana et al. 2014</a></td><td>MEDIUM</td></tr>
+        <tr><td>S5</td><td>NASA Exoplanet Archive's transit-depth column is reported as a percentage</td><td>&mdash;</td><td><a href="https://exoplanetarchive.ipac.caltech.edu/docs/API_transit_detection.html" target="_blank" rel="noopener">NASA Exoplanet Archive column definitions</a></td><td>HIGH (context)</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 (D1) &mdash; Compound probability for The Twelve-Field Sweep</h4>
+    <div class="goal">Using Appendix C's per-field rate and 12 independent fields, find the probability that at least one field yields a confirmed new detection tonight. Use the complement rule &mdash; do not just multiply.</div>
+    <div class="fieldrow"><label for="s1">P(at least one), as a decimal</label><input type="number" step="0.0001" id="s1" placeholder="a probability, as a decimal"><button onclick="checkStep1()">Check</button><span class="fb" id="fb1"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 (D2) &mdash; Single-event probability for The Candidate Watch</h4>
+    <div class="goal">State the probability, from Appendix A/C, that tonight's re-observation confirms a real detection.</div>
+    <div class="fieldrow"><label for="s2">P(confirms), as a decimal</label><input type="number" step="0.0001" id="s2" placeholder="a probability, as a decimal"><button onclick="checkStep2()">Check</button><span class="fb" id="fb2"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 (D3) &mdash; Expected detections per hour, and the margin</h4>
+    <div class="goal">Using Step 1, Step 2, and the 4-hour slot, find each option's rate (detections per hour) and the percent margin between them.</div>
+    <div class="fieldrow"><label for="s3a">Rate A (Candidate Watch)</label><input type="number" step="0.0001" id="s3a" placeholder="detections per hour"><button onclick="checkStep3()">Check</button><span class="fb" id="fb3a"></span></div>
+    <div class="fieldrow"><label for="s3b">Rate B (Twelve-Field Sweep)</label><input type="number" step="0.0001" id="s3b" placeholder="detections per hour"><span class="fb" id="fb3b"></span></div>
+    <div class="fieldrow"><label for="s3m">Percent margin</label><input type="number" step="0.01" id="s3m" placeholder="a percent, two decimals"><span class="fb" id="fb3m"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 (D4) &mdash; Write-up combinations and permutations</h4>
+    <div class="goal">Using Appendix D's preliminary-flag count and same-night write-up capacity, find how many possible subsets could be chosen to write up (a combination), and how many possible orders a chosen subset of that size could be written up in (a permutation).</div>
+    <div class="fieldrow"><label for="s4c">Number of possible subsets (combination)</label><input type="number" step="1" id="s4c" placeholder="a whole number"><button onclick="checkStep4()">Check</button><span class="fb" id="fb4c"></span></div>
+    <div class="fieldrow"><label for="s4p">Number of possible ordered schedules (permutation)</label><input type="number" step="1" id="s4p" placeholder="a whole number"><span class="fb" id="fb4p"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 (D5) &mdash; Standard notation</h4>
+    <div class="goal">Convert Appendix E's two real transit-depth figures from scientific notation to standard (decimal) notation.</div>
+    <div class="fieldrow"><label for="s5a">TOI-700 d, standard notation</label><input type="number" step="0.000001" id="s5a" placeholder="a decimal, six places"><button onclick="checkStep5()">Check</button><span class="fb" id="fb5a"></span></div>
+    <div class="fieldrow"><label for="s5b">Kepler-186f, standard notation</label><input type="number" step="0.000001" id="s5b" placeholder="a decimal, six places"><span class="fb" id="fb5b"></span></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-scope"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>"We're partway into the slot. The pipeline sends an alert: an archival cross-match (comparing tonight's image against older sky-survey images of the same patch of sky) just flagged a faint background star sitting almost on top of the candidate's target star — so close in the sky that their light blends together in the telescope's image, precisely the kind of blended background object that has turned real-looking dips into false positives before (see Appendix A). The confirmation odds just dropped."</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Recompute Steps 1&ndash;3 with the twist applied</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 &mdash; Guerrero et al. 2021, The TESS Objects of Interest Catalog from the TESS Prime Mission</li>
+      <li>S2 &mdash; Thompson et al. 2018, Planetary Candidates Observed by Kepler VIII (DR25)</li>
+      <li>S3 &mdash; Rodriguez et al. 2020, Spitzer Confirms TOI-700 d</li>
+      <li>S4 &mdash; Kepler-186f (Wikipedia, citing Quintana et al. 2014)</li>
+      <li>S5 &mdash; NASA Exoplanet Archive, Transiting Planets Table column definitions</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Survey Slot &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE DATA — ported verbatim from cases/the-survey-slot/sensitivity_model.py.
+   case.md sha256 (at time of this build): d15d352d7d11ef826149d35d0d031609c2636645ac5743a2e8a537421963bbf4
+   ================================================================ */
+const PARAMS = {
+  slot_hours: 4.0,
+  n_fields: 12,
+  p_success_candidate: 0.7479,
+  p_field_detection: 0.10,
+  n_flagged: 5,
+  n_followup: 2,
+  twist_p_success_candidate: 0.55
+};
+const FLEX = ["p_success_candidate", "p_field_detection"];
+
+function metrics(slot_hours, n_fields, pA, pB){
+  pA = Math.min(Math.max(pA, 0), 1);
+  pB = Math.min(Math.max(pB, 0), 1);
+  const p_atleast1_B = 1 - Math.pow(1 - pB, n_fields);
+  return {
+    A: pA / slot_hours,
+    B: p_atleast1_B / slot_hours,
+    p_success_A: pA,
+    p_atleast1_B: p_atleast1_B
+  };
+}
+function evaluate(p){
+  p = Object.assign({}, PARAMS, p||{});
+  return metrics(p.slot_hours, p.n_fields, p.p_success_candidate, p.p_field_detection);
+}
+function evaluate_twist(p){
+  p = Object.assign({}, PARAMS, p||{});
+  return metrics(p.slot_hours, p.n_fields, p.twist_p_success_candidate, p.p_field_detection);
+}
+function factorial(n){ let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
+function nCr(n,r){ return Math.round(factorial(n) / (factorial(r)*factorial(n-r))); }
+function nPr(n,r){ return Math.round(factorial(n) / factorial(n-r)); }
+
+/* ================================================================
+   CASE-AGNOSTIC helpers
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title, 'Heroes Academy Math Builder case study', '', 'Sources:', ...srcLis, '', location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions
+   ================================================================ */
+let twistApplied = false;
+function currentEval(){ return twistApplied ? evaluate_twist({}) : evaluate({}); }
+
+function checkStep1(){
+  const e = currentEval();
+  fb('fb1', near(val('s1'), round(e.p_atleast1_B,4), 0.001));
+}
+function checkStep2(){
+  const e = currentEval();
+  fb('fb2', near(val('s2'), round(e.p_success_A,4), 0.001));
+}
+function checkStep3(){
+  const e = currentEval();
+  const margin = 100*Math.abs(e.A-e.B)/Math.min(e.A,e.B);
+  fb('fb3a', near(val('s3a'), round(e.A,4), 0.001));
+  fb('fb3b', near(val('s3b'), round(e.B,4), 0.001));
+  fb('fb3m', near(val('s3m'), round(margin,2), 0.5));
+}
+function checkStep4(){
+  const c = nCr(PARAMS.n_flagged, PARAMS.n_followup);
+  const p = nPr(PARAMS.n_flagged, PARAMS.n_followup);
+  fb('fb4c', near(val('s4c'), c, 0.001));
+  fb('fb4p', near(val('s4p'), p, 0.001));
+}
+function checkStep5(){
+  fb('fb5a', near(val('s5a'), 0.000613, 0.0000005));
+  fb('fb5b', near(val('s5b'), 0.000510, 0.0000005));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget
+   ================================================================ */
+const CASE_ID = "the-survey-slot";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+const DELIVERABLES = [
+  ["D1", "A compound-probability calculation for The Twelve-Field Sweep, via a probability tree or the complement rule."],
+  ["D2", "A single-event probability statement for The Candidate Watch."],
+  ["D3", "An expected-detections-per-hour comparison table and the percent margin between the two options."],
+  ["D4", "A write-up combinations-and-permutations plan for the preliminary flags."],
+  ["D5", "A standard-notation data table converting Appendix E's real transit-depth figures."]
+];
+
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (8 terms; mathsisfun.com,
+   verified live 2026-09-18)
+   ================================================================ */
+const GLOSSARY = {
+  "Independent Event": {def: "Two events are independent if the outcome of one has no effect on the probability of the other.",
+    url: "https://www.mathsisfun.com/data/probability-events-independent.html"},
+  "Permutation": {def: "An arrangement of items where the order matters.",
+    url: "https://www.mathsisfun.com/combinatorics/combinations-permutations.html"},
+  "Combination": {def: "A selection of items where the order does not matter.",
+    url: "https://www.mathsisfun.com/combinatorics/combinations-permutations.html"},
+  "Standard Notation": {def: "A number written out in its ordinary decimal form, e.g. 0.000613, rather than in scientific notation.",
+    url: "https://www.mathsisfun.com/numbers/scientific-notation.html"},
+  "Scientific Notation": {def: "A way of writing very large or very small numbers as a value between 1 and 10 multiplied by a power of 10, e.g. 6.13 x 10^-4.",
+    url: "https://www.mathsisfun.com/numbers/scientific-notation.html"},
+  "Theoretical Probability": {def: "The probability of an event calculated from a stated rate or model, not from running an experiment.",
+    url: "https://www.mathsisfun.com/data/probability-theoretical-experimental.html"},
+  "Experimental Probability": {def: "The probability of an event estimated from the actual results of real trials or observations.",
+    url: "https://www.mathsisfun.com/data/probability-theoretical-experimental.html"},
+  "Probability": {def: "A number from 0 to 1 (or 0% to 100%) describing how likely an event is to happen.",
+    url: "https://www.mathsisfun.com/data/probability.html"}
+};
+const HOWTO = [
+  ["How to determine the number of outcomes of a combination", "Combination"],
+  ["How to determine the number of outcomes of a permutation", "Permutation"],
+  ["How to write a number in standard notation given its scientific notation", "Standard Notation"],
+  ["How to determine the probability of a compound event", "Probability"]
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  twistApplied = document.getElementById('applyTwist').checked;
+  ['fb1','fb2','fb3a','fb3b','fb3m','fb4c','fb4p','fb5a','fb5b'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.className='fb'; el.textContent=''; } });
+}
+
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

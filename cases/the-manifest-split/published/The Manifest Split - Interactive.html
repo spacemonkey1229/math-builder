@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Manifest Split — Interactive</title>
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted #7a8ba0;cursor:help;font-style:italic}
+  .sterm:hover, .sterm:focus{background:#eef3f8}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:240px;background:#2f3b4a;color:#fff;font-family:var(--sans);font-weight:400;font-style:normal;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#2f3b4a}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Manifest Split</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Discrete Mathematics &middot; Set Theory</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Marcus Feld is standing at the gate-scan terminal at 9:40 at night, watching the flagged-container count keep climbing on the screen, when the yard supervisor leans over his shoulder and says the sentence he was hoping to avoid: "Cutoff's in four hours, and the lane's already backing up."</p>
+  <p>Every container on tonight's sailing that got flagged during the gate scan — because a hazmat <a class="sterm" href="https://en.wikipedia.org/wiki/Hazmat" target="_blank" rel="noopener">placard<span class="tip">A diamond-shaped warning sign required on a container carrying hazardous cargo, showing which IMDG hazard class it holds.</span></a> triggered the sensor, or because a reefer plug request hit the system — has to clear inspection before it can be loaded. Marcus doesn't decide how many containers got flagged. He decides how they get <em>processed</em>. Right now, every flagged container funnels into one lane, one crew, checking for both hazmat compliance and reefer temperature control on whatever rolls up next. It's simple. It's also slow, and getting slower by the minute.</p>
+  <p>There's a second option sitting in his terminal-ops binder, dog-eared from the last planning meeting: split the lane in two. One crew does nothing but hazmat placard and documentation checks. Another does nothing but reefer plug and setpoint checks. Faster, specialist crews — except for the containers that are <em>both</em> hazmat and reefer, which would have to get pulled off one lane, hauled across the yard, and re-queued on the other.</p>
+  <p>The yard supervisor is still standing there. The gate-scan screen is still climbing.</p>
+  <p>Marcus opens the <a class="sterm" href="https://en.wikipedia.org/wiki/Manifest_(transportation)" target="_blank" rel="noopener">manifest<span class="tip">The official list of every container (and its contents) carried on a specific sailing, used by customs and terminal staff alike.</span></a> count on his tablet and does not press submit on either lane assignment yet.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Marcus Feld is the customs and logistics coordinator on the night shift at a mid-sized <a class="sterm" href="https://en.wikipedia.org/wiki/Container_port" target="_blank" rel="noopener">container terminal<span class="tip">The dockside facility where shipping containers are loaded onto and off of vessels, and where cargo gets inspected before it ships.</span></a>. He is personally accountable for making sure every container flagged for hazardous-materials or refrigerated-cargo inspection clears before the ship's loading <a class="sterm" href="https://dcsa.org/newsroom/cut-off-times-in-shipping" target="_blank" rel="noopener">cutoff<span class="tip">The fixed deadline before a sailing when all cargo must be loaded and documented — miss it, and the container waits for the next ship.</span></a> — a container that misses cutoff gets bumped to the next sailing, which costs the terminal a contractual penalty and costs the shipper a customer relationship. Containerized cargo moves the overwhelming majority of world trade by volume — maritime transport alone carries more than 80% of goods traded worldwide [S4] — and a terminal's inspection lane is one of the few places in that whole chain where a single bottleneck can hold up an entire vessel.</p>
+  <p>Two categories of flagged cargo drive tonight's bottleneck. <strong>Hazmat-flagged containers</strong> carry cargo regulated under one of the International Maritime Organization's nine <a class="sterm" href="https://en.wikipedia.org/wiki/International_Maritime_Dangerous_Goods_Code" target="_blank" rel="noopener">hazard classes<span class="tip">The IMDG Code's nine official categories of dangerous goods — see Appendix A — from explosives to corrosive substances.</span></a> — from flammable liquids to the lithium-ion batteries now common in consumer electronics and e-bike shipments — and require a placard and documentation check before loading. <strong>Reefer-flagged containers</strong> carry temperature-controlled cargo and require a plug and setpoint verification before loading. (A <a class="sterm" href="https://en.wikipedia.org/wiki/Refrigerated_container" target="_blank" rel="noopener">reefer<span class="tip">Shipping-industry short for a refrigerated shipping container — one with its own built-in cooling unit, plugged into the terminal's power grid while it waits to load.</span></a> is a refrigerated shipping container.) Some containers are flagged for <em>both</em> reasons at once: a temperature-sensitive hazardous cargo, or — increasingly, per a supplemental compliance bulletin the terminal follows — a refrigerated shipment of lithium-ion cells that also needs hazmat placarding.</p>
+  <p>Marcus has exactly two lane configurations available for tonight's flagged pool, and the terminal's operations manual requires he commit to one before the crew shift locks in. <strong>The Combined Lane</strong> runs every flagged container through one generalist crew certified to check both hazmat and reefer requirements — no re-handling, but every check the crew performs runs slower because the crew has to stay ready to switch procedures container to container. <strong>The Split Lanes</strong> run two specialist crews, each faster at its own single job — but any container flagged for <em>both</em> categories has to be physically pulled from one lane, re-handled across the yard, and re-queued on the other, which costs real time neither specialist check requires on its own.</p>
+  <p>Every figure in this case is either cited to a real source or disclosed as a stated Modeling Assumption (Appendix D). The vocabulary and "how to…" skills this case will ask you to research are listed in Appendix F — that is where Challenge 1 sends you.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Marcus Feld. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Combined Lane</h4>
+      <p style="margin:0">One generalist crew, certified for both hazmat and reefer checks. No re-handling required.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Split Lanes</h4>
+      <p style="margin:0">Two specialist crews, each faster at its own single check. Any dual-flagged container must be re-handled between lanes.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which lane configuration you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include a labeled Venn diagram of tonight's flagged manifest (D1), a total-inspection-time table for each configuration (D2), a containers-cleared-per-inspector-hour comparison (D3), and a one-paragraph written recommendation addressing the empty-set edge case (D4). See the Deliverables checklist below for the full text of each.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Hazmat Classification: The IMDG Code</summary>
+    <div class="inner">
+      <p>The International Maritime Organization's International Maritime Dangerous Goods (<a class="sterm" href="https://en.wikipedia.org/wiki/International_Maritime_Dangerous_Goods_Code" target="_blank" rel="noopener">IMDG Code<span class="tip">International Maritime Dangerous Goods Code — the IMO's official rulebook classifying which cargo counts as hazardous and how it must be packed, labeled, and stowed on a ship.</span></a>) defines nine hazard classes that govern which containers get hazmat-flagged at the gate scan [S1]:</p>
+      <table>
+        <tr><th>Class</th><th>Category</th></tr>
+        <tr><td>1</td><td>Explosives</td></tr>
+        <tr><td>2</td><td>Gases (compressed, liquefied, or dissolved under pressure)</td></tr>
+        <tr><td>3</td><td>Flammable liquids</td></tr>
+        <tr><td>4</td><td>Flammable solids</td></tr>
+        <tr><td>5</td><td>Oxidizing substances and organic peroxides</td></tr>
+        <tr><td>6</td><td>Toxic and infectious substances</td></tr>
+        <tr><td>7</td><td>Radioactive materials</td></tr>
+        <tr><td>8</td><td>Corrosive substances</td></tr>
+        <tr><td>9</td><td>Miscellaneous dangerous goods (includes lithium-ion batteries and dry ice)</td></tr>
+      </table>
+      <p class="side-note">Class 9 is the category driving tonight's overlap: lithium-ion battery shipments — increasingly shipped inside refrigerated containers to protect battery performance and safety in transit — are frequently <em>both</em> Class 9 hazmat-flagged and reefer-flagged at once.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix B &mdash; Tonight's Flagged Manifest</summary>
+    <div class="inner">
+      <table>
+        <tr><th>Set</th><th>Count</th><th>How it's known</th></tr>
+        <tr><td>Hazmat-flagged containers (H)</td><td class="num">90</td><td>Gate-scan hazmat placard/documentation trigger count, this sailing</td></tr>
+        <tr><td>Reefer-flagged containers (R)</td><td class="num">130</td><td>Gate-scan reefer plug-request count, this sailing</td></tr>
+        <tr><td>Total distinct flagged containers (H &cup; R)</td><td class="num">195</td><td>Total unique container IDs that triggered either flag, read directly off the gate-scan log</td></tr>
+        <tr><td>Flagged for both (H &cap; R)</td><td class="num">?</td><td><em>Challenge D1 — calculate this yourself</em></td></tr>
+      </table>
+      <p class="side-note">These three given counts (H, R, and the union) are specific to tonight's sailing and are disclosed Modeling Assumptions, not published statistics — see Appendix D, MA1.</p>
+
+      <h3 style="margin-top:22px">Worked example — how to read a Venn diagram (not tonight's real numbers)</h3>
+      <figure>
+        <svg viewBox="0 0 420 240" width="420" height="240" role="img" aria-label="Example Venn diagram showing two overlapping sets, Soccer and Basketball, out of 30 students surveyed">
+          <circle cx="165" cy="120" r="85" fill="#1a3a5c" fill-opacity="0.18" stroke="#1a3a5c" stroke-width="2"/>
+          <circle cx="255" cy="120" r="85" fill="#c9a227" fill-opacity="0.25" stroke="#c9a227" stroke-width="2"/>
+          <text x="90" y="45" font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c">Soccer (18)</text>
+          <text x="270" y="45" font-family="sans-serif" font-size="15" font-weight="700" fill="#8a6d10">Basketball (15)</text>
+          <text x="130" y="126" font-family="sans-serif" font-size="20" font-weight="700" fill="#1a3a5c">10</text>
+          <text x="255" y="126" font-family="sans-serif" font-size="20" font-weight="700" fill="#8a6d10">7</text>
+          <text x="207" y="126" font-family="sans-serif" font-size="20" font-weight="700" fill="#3a2f0c">8</text>
+          <text x="210" y="225" font-family="sans-serif" font-size="12" fill="#5b6472">Universe: 30 students surveyed. Soccer only = 10, Basketball only = 7, both = 8. Union = 10+7+8 = 25.</text>
+        </svg>
+        <figcaption>This example uses made-up numbers (a survey of 30 students, not tonight's manifest) to show what a correctly labeled Venn diagram looks like: each region's count is written inside its region, and the two circles overlap by exactly the intersection amount. Draw your own diagram for D1 using tonight's real H, R, and union counts from the table above — do not reuse these numbers.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix C &mdash; Inspection and Re-Handling Times</summary>
+    <div class="inner">
+      <table>
+        <tr><th>Configuration</th><th>Check</th><th>Time per container</th></tr>
+        <tr><td>The Combined Lane</td><td>Hazmat check (generalist crew)</td><td class="num">8 minutes</td></tr>
+        <tr><td>The Combined Lane</td><td>Reefer check (generalist crew)</td><td class="num">7 minutes</td></tr>
+        <tr><td>The Split Lanes</td><td>Hazmat check (specialist crew)</td><td class="num">6 minutes</td></tr>
+        <tr><td>The Split Lanes</td><td>Reefer check (specialist crew)</td><td class="num">5 minutes</td></tr>
+        <tr><td>The Split Lanes</td><td>Re-handle (crane pull, yard move, re-queue) — dual-flagged containers only</td><td class="num">11 minutes</td></tr>
+      </table>
+      <p class="side-note">In The Combined Lane, a container flagged for only one category gets only that one check; a container flagged for both gets both checks back-to-back, in the same lane, with no re-handling. In The Split Lanes, a container flagged for only one category goes to that one specialist lane; a container flagged for both must complete a check in one lane, then be re-handled to the other lane — paying the specialist lane's faster check times, plus the 11-minute re-handle cost. All five times are disclosed Modeling Assumptions — see Appendix D, MA2&ndash;MA6.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are not sourced from an external publisher. No public dataset reports a specific terminal's per-sailing hazmat/reefer flag counts or its internal crew inspection times. They are stated scenario assumptions chosen by the case author. A Hero may challenge any of these numbers in discussion.</blockquote>
+      <table>
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+        <tr><td>MA1</td><td>Tonight's flagged-manifest counts</td><td>H=90, R=130, H&cup;R=195</td><td>Internal gate-scan data; no public per-sailing breakdown exists for any real terminal. Set at a scale consistent with a mid-sized terminal processing a multi-thousand-TEU vessel call.</td></tr>
+        <tr><td>MA2</td><td>Combined Lane hazmat check time</td><td>8 min/container</td><td>Generalist crew, no terminal-specific figure exists; set above the specialist figure to reflect procedure-switching cost.</td></tr>
+        <tr><td>MA3</td><td>Combined Lane reefer check time</td><td>7 min/container</td><td>Same basis as MA2.</td></tr>
+        <tr><td>MA4</td><td>Split Lanes hazmat check time</td><td>6 min/container</td><td>Specialist crew running one procedure repeatedly.</td></tr>
+        <tr><td>MA5</td><td>Split Lanes reefer check time</td><td>5 min/container</td><td>Specialist crew; informed by a real pre-trip reefer check guide describing this class of check as a few minutes [S2].</td></tr>
+        <tr><td>MA6</td><td>Re-handle time, dual-flagged container</td><td>11 min/container</td><td>Informed by a real yard-crane-cycle floor of ~2 min/move [S3]; set above that floor to reflect a fuller re-handle process (un-stack + yard move + re-queue).</td></tr>
+      </table>
+      <p class="side-note">Every one of these figures is sensitive — see the case's own reasoning in discussion, not printed here as a spoiler.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apx-sources-table">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>IMDG Code defines nine maritime hazard classes</td><td>9 classes</td><td><a href="https://www.imo.org/en/OurWork/Safety/Pages/DangerousGoods-default.aspx" target="_blank" rel="noopener">International Maritime Organization — IMDG Code</a></td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Pre-trip reefer inspections are short (a few minutes)</td><td>~5 minutes</td><td><a href="https://royalcoldstorage.com/how-to-test-reefer-unit-temperature-before-port-pickup/" target="_blank" rel="noopener">Royal Cold Storage</a></td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Yard-crane productivity benchmark</td><td>&gt;30 moves/hour (~2 min/move floor)</td><td><a href="https://www.envisionesl.com/blog/top-10-container-terminal-performance-metrics" target="_blank" rel="noopener">Envision Technology</a></td><td>MEDIUM</td></tr>
+        <tr><td>S4</td><td>Maritime transport's share of world trade by volume</td><td>&gt;80%</td><td><a href="https://unctad.org/system/files/official-document/rmt2025_en.pdf" target="_blank" rel="noopener">UNCTAD — Review of Maritime Transport 2025</a></td><td>HIGH</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which lane to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Find the intersection</h4>
+    <div class="goal">Using H = 90, R = 130, and H &cup; R = 195 (Appendix B), find |H &cap; R|.</div>
+    <div class="fieldrow"><label for="s1x">Your |H &cap; R|</label><input type="number" id="s1x" placeholder="a whole number of containers"><button onclick="checkStep1()">Check</button><span class="fb" id="fb1"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Total inspector-hours per configuration</h4>
+    <div class="goal">Using Appendix C's times and your Step 1 intersection, find each configuration's total inspector-hours.</div>
+    <div class="fieldrow"><label for="s2a">Combined Lane, inspector-hours</label><input type="number" step="0.01" id="s2a" placeholder="hours, two decimals"><button onclick="checkStep2()">Check</button><span class="fb" id="fb2a"></span></div>
+    <div class="fieldrow"><label for="s2b">Split Lanes, inspector-hours</label><input type="number" step="0.01" id="s2b" placeholder="hours, two decimals"><span class="fb" id="fb2b"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Containers cleared per inspector-hour</h4>
+    <div class="goal">Using the union count (195) and your Step 2 hours, find each configuration's rate, then the percent margin between them.</div>
+    <div class="fieldrow"><label for="s3a">Combined Lane rate</label><input type="number" step="0.01" id="s3a" placeholder="containers per inspector-hour"><button onclick="checkStep3()">Check</button><span class="fb" id="fb3a"></span></div>
+    <div class="fieldrow"><label for="s3b">Split Lanes rate</label><input type="number" step="0.01" id="s3b" placeholder="containers per inspector-hour"><span class="fb" id="fb3b"></span></div>
+    <div class="fieldrow"><label for="s3m">Percent margin</label><input type="number" step="0.01" id="s3m" placeholder="a percent, two decimals"><span class="fb" id="fb3m"></span></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>"It's 11:15pm. Compliance calls. New bulletin, effective tonight: refrigerated shipments of lithium-ion cells now require hazmat placarding too — not just a reefer flag. Your crew re-checks the reefer set. Thirty of those containers are lithium-ion cell shipments. They're hazmat-flagged now."</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Recompute Step 1&ndash;3 with the twist applied</label>
+      </div>
+      <div class="fieldrow" style="color:#e8e3d5" id="twistResultRow" style="display:none"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 &mdash; International Maritime Organization, IMDG Code</li>
+      <li>S2 &mdash; Royal Cold Storage, reefer pre-trip inspection guide</li>
+      <li>S3 &mdash; Envision Technology, container terminal performance metrics</li>
+      <li>S4 &mdash; UNCTAD, Review of Maritime Transport 2025</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Manifest Split &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE DATA — ported verbatim from cases/the-manifest-split/sensitivity_model.py.
+   case.md sha256 (at time of this build): c45c4c179a6d710b3b357d5c17d8d4d21c21a717d6c68e04302ebea2dd244c96
+   ================================================================ */
+const PARAMS = {
+  H: 90, R: 130, U: 195,
+  t_hazmat_combined: 8.0, t_reefer_combined: 7.0,
+  t_hazmat_split: 6.0, t_reefer_split: 5.0,
+  t_rehandle: 11.0,
+  twist_new_hazmat: 30
+};
+const FLEX = ["t_hazmat_combined","t_reefer_combined","t_hazmat_split","t_reefer_split","t_rehandle"];
+
+function metrics(H,R,U,tHA,tRA,tHB,tRB,tmove){
+  const x = H + R - U;
+  const totalA = tHA*H + tRA*R;
+  const totalB = tHB*H + tRB*R + tmove*x;
+  return {A: 60*U/totalA, B: 60*U/totalB, x: x, total_A_hours: totalA/60, total_B_hours: totalB/60};
+}
+function evaluate(p){
+  p = Object.assign({}, PARAMS, p||{});
+  return metrics(p.H,p.R,p.U,p.t_hazmat_combined,p.t_reefer_combined,p.t_hazmat_split,p.t_reefer_split,p.t_rehandle);
+}
+function evaluate_twist(p){
+  p = Object.assign({}, PARAMS, p||{});
+  p.H = p.H + p.twist_new_hazmat;
+  return metrics(p.H,p.R,p.U,p.t_hazmat_combined,p.t_reefer_combined,p.t_hazmat_split,p.t_reefer_split,p.t_rehandle);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC helpers
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title, 'Heroes Academy Math Builder case study', '', 'Sources:', ...srcLis, '', location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions
+   ================================================================ */
+let twistApplied = false;
+function currentEval(){ return twistApplied ? evaluate_twist({}) : evaluate({}); }
+
+function checkStep1(){
+  const e = currentEval();
+  fb('fb1', near(val('s1x'), e.x, 0.001));
+}
+function checkStep2(){
+  const e = currentEval();
+  fb('fb2a', near(val('s2a'), round(e.total_A_hours,2), 0.02));
+  fb('fb2b', near(val('s2b'), round(e.total_B_hours,2), 0.02));
+}
+function checkStep3(){
+  const e = currentEval();
+  const margin = 100*Math.abs(e.A-e.B)/Math.min(e.A,e.B);
+  fb('fb3a', near(val('s3a'), round(e.A,2), 0.05));
+  fb('fb3b', near(val('s3b'), round(e.B,2), 0.05));
+  fb('fb3m', near(val('s3m'), round(margin,2), 0.5));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget
+   ================================================================ */
+const CASE_ID = "the-manifest-split";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+const DELIVERABLES = [
+  ["D1", "A labeled Venn diagram of tonight's flagged manifest, with the intersection calculated from H, R, and the union."],
+  ["D2", "A total-inspection-time table for each lane configuration, converted to inspector-hours."],
+  ["D3", "A containers-cleared-per-inspector-hour comparison and the percent margin between the two configurations."],
+  ["D4", "A one-paragraph written recommendation, including the empty-set edge case."]
+];
+
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (8 terms, mathsisfun.com,
+   verified live 2026-09-18)
+   ================================================================ */
+const GLOSSARY = {
+  "Set": {def: "A well-defined collection of distinct objects, considered as an object in its own right.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Subset": {def: "A set A is a subset of set B if every element of A is also in B.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Union": {def: "The union of two sets combines every element that is in either set (or both), written A ∪ B.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Intersection": {def: "The intersection of two sets is only the elements that are in both sets at once, written A ∩ B.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Empty Set": {def: "The set with no elements at all, written {} or ∅.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Venn Diagram": {def: "A diagram using overlapping circles to show how sets relate to each other and to a shared universe.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.mathsisfun.com/percentage.html"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.mathsisfun.com/numbers/ratio.html"}
+};
+const HOWTO = [
+  ["How to find the union and intersection of two sets", "Union"],
+  ["How to represent a set relationship using a Venn diagram", "Venn Diagram"]
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  twistApplied = document.getElementById('applyTwist').checked;
+  ['fb1','fb2a','fb2b','fb3a','fb3b','fb3m'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.className='fb'; el.textContent=''; } });
+}
+
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

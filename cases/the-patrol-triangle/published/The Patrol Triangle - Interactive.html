@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Patrol Triangle — Interactive</title>
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted #7a8ba0;cursor:help;font-style:italic}
+  .sterm:hover, .sterm:focus{background:#eef3f8}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:240px;background:#2f3b4a;color:#fff;font-family:var(--sans);font-weight:400;font-style:normal;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#2f3b4a}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Patrol Triangle</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Geometry &middot; Triangles</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Derek Osei stands at the tailgate of the patrol truck, the radio in his hand still warm from the last call. Dust hangs over the acacia scrub behind him, kicked up minutes ago by a herd of impala that bolted for no reason anyone can explain yet. He's been sector lead here for three dry seasons, long enough to know that "no reason anyone can explain yet" is usually the first sign something is wrong.</p>
+  <p>Spread across the truck's hood are two laminated maps. One is crosshatched with long triangular wedges tracing the fence line. The other is a tighter mesh of smaller triangles fanning out from three ranger outposts. Both are patrol plans. Only one of them is going into next month's operations order.</p>
+  <p>The reserve director wants a recommendation before the evening briefing, and the dry season — the season poachers wait for, when waterholes shrink and animals cluster where a rifle can find them easily — starts in four days. Derek spent the morning walking both plans with a stopwatch and a tape measure, timing how long it actually takes a truck to reach the far corner of each triangle, and he already knows the honest answer isn't clean. One plan covers more ground. The other gets there faster.</p>
+  <p>He folds both maps under one arm, keys the radio, and starts walking back toward the ops tent.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Derek Osei is the patrol-sector lead ranger at Kerio Plains Reserve, a fenced wildlife reserve modeled on the real scale and staffing density of an active rhino conservancy (see Appendix A). He reports to the reserve's director of security operations and is responsible for recommending exactly one reserve-wide patrol geometry before the dry season's known poaching spike begins.</p>
+  <p>Two patrol plans are under final review. <strong>The Perimeter Loop</strong> rings the reserve's fence line with long, narrow triangular sectors that hug the boundary — a small number of sectors, each covering a wide stretch of ground, but each with a vertex far from the next (see Appendix B). <strong>The Interior Web</strong> replaces that ring with a denser mesh of smaller, more equal-sided triangular sectors radiating out from three fixed ranger outposts positioned inside the reserve (see Appendix C). Both plans use the same truck fleet, the same radio network, and the same maximum patrol speed (see Appendix A) — the decision turns entirely on the geometry of the sectors themselves, not on equipment or headcount.</p>
+  <p>Every sector, under either plan, must be staffed to the reserve's own real patrol-team density standard (see Appendix A) — one <a class="sterm" href="https://en.wikipedia.org/wiki/Ol_Pejeta_Conservancy" target="_blank" rel="noopener">patrol team<span class="tip">A truck and its small crew of rangers — the reserve's basic staffing unit, sized to how much ground one crew can realistically cover in a shift.</span></a> per that many square kilometers of sector, and a sector short even one team is a sector the director will not approve. The reserve's total area is fixed (see Appendix A); neither plan may claim more ground than the reserve actually has.</p>
+  <p>Picture the reserve as a single 360 km&sup2; block of land with a fence tracing its outer boundary. The Perimeter Loop lays six sectors end to end in a chain running just inside that fence — like six long, thin slices cut from the outer rind of the block — so together they trace a ring around the whole boundary, leaving the block's interior untouched by this plan. The Interior Web instead plants three fixed outposts somewhere inside that same block, away from the fence, and at each outpost its own sectors radiate outward as a wedge-shaped fan, all sharing that one outpost as a common vertex — the same way spokes share a wheel's hub. Because every Interior Web sector is equilateral, the angle at that shared vertex is a fixed 60&deg; for each wedge, so it would take exactly six of them, edge to edge, to sweep all the way around one outpost and close into a full circle. The eight sectors are not divided evenly: three fan out from Outpost 1, three from Outpost 2, and two from Outpost 3 — so no outpost's fan ever closes into a full circle; each is an open wedge of un-swept ground, not a complete ring. These three partial fans sit inside the block, nowhere near its outer rind, and nowhere touching each other either: because there are only three small fans and the block is large, there is plenty of interior ground between them, and none of the fence line itself, that no Interior Web sector reaches at all — that is the "real gap" this plan leaves. See the worked-example diagram in Appendix C — the real 8-sector, 3/3/2 layout follows the exact same rule.</p>
+  <p>Before either plan goes into next month's operations order, the reserve's three fixed outposts also need their own reported distances checked against each other. Locating a reported sighting from multiple outposts works like this: each outpost radios in how far away (and in what compass direction — a <a class="sterm" href="https://en.wikipedia.org/wiki/Bearing_(navigation)" target="_blank" rel="noopener">bearing<span class="tip">A direction given as an angle measured clockwise from north, written as three digits, from due north (000&deg;) all the way around to a full 360&deg; turn.</span></a>) it estimates the sighting to be; if you already know exactly how far apart the three outposts are <em>from each other</em>, those three separate estimates can be cross-checked against each other and combined into one trustworthy location — mathematically, by treating each outpost's own reported distance as the radius of a circle centered on that outpost, so the sighting's real location is wherever those three circles' edges actually agree (see the worked example in Appendix D) — the way three people at three known street corners can pin down a fourth address between them just from their own distances to it. <a class="sterm" href="https://en.wikipedia.org/wiki/Trilateration" target="_blank" rel="noopener">Triangulating<span class="tip">Using distance (or angle) measurements from multiple known points to pin down one unknown location — here, combining three outposts' own distance estimates the way three overlapping circles pin down one point.</span></a> a sighting is this cross-check-and-combine process, and it only works if the outposts' own distances from each other are geometrically consistent in the first place — a mapping error between any two outposts would undermine the whole method (see Appendix D). Two of the outposts also have a proposed <a class="sterm" href="https://en.wikipedia.org/wiki/Repeater" target="_blank" rel="noopener">radio-relay<span class="tip">A relay tower that simply repeats a radio signal, letting two stations that could not otherwise hear each other communicate. Real siting work means surveying candidate hill or ridge points for a clear line-of-sight to both ends of the route before building.</span></a> route between them: handheld radios only reach so far, or can be blocked by hills and thick bush, so a relay tower positioned between two outposts simply repeats the signal, letting them communicate even when they could not hear each other directly — surveyed along the reserve's internal <a class="sterm" href="https://en.wikipedia.org/wiki/Grid_reference" target="_blank" rel="noopener">grid<span class="tip">A local reference system of numbered rows and columns (here, numbered patrol-access tracks) used to describe a location inside one specific area, distinct from a public street grid or GPS coordinates.</span></a> of patrol roads (its own local map of numbered access tracks, not the public road network).</p>
+  <p>The vocabulary and the "how to…" skills this case will ask you to research are listed in <strong>Appendix F</strong> — that is where Challenge 1 sends you. Every sourced figure and stated assumption in this case is documented in <strong>Appendix E</strong> and <strong>Appendix G</strong>.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Derek Osei. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Perimeter Loop</h4>
+      <p style="margin:0">Long, narrow triangular sectors hugging the reserve's boundary fence.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Interior Web</h4>
+      <p style="margin:0">A denser mesh of more equal-sided triangular sectors radiating from three fixed outposts.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which patrol plan you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include a labeled sector classification table (D1), an area-and-staffing table (D2), a response-time table (D3), a primary-metric comparison with your recommendation (D4), and an outpost-network geometry check (D5). See the Deliverables checklist below for the full text of each.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Kerio Plains Reserve: Shared Operating Parameters</summary>
+    <div class="inner">
+      <p>Kerio Plains Reserve is fictional. It is explicitly modeled on the real published scale and anti-poaching staffing density of an active East African rhino conservancy [S1, S2, S4].</p>
+      <table>
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Total reserve <a class="gterm" data-term="Area">area</a> (km&sup2;)</td><td class="num">360 [S1]</td></tr>
+        <tr><td>Real patrol-team density standard (one patrol team per this many km&sup2; of sector)</td><td class="num">14 [S2]</td></tr>
+        <tr><td>Maximum patrol vehicle speed, shared by both plans (km/h)</td><td class="num">50 [S3]</td></tr>
+        <tr><td>Total ranger workforce at the real conservancy this reserve is modeled on (context only)</td><td class="num">150+ [S4]</td></tr>
+      </table>
+      <p class="side-note">A patrol team is one truck and its small crew of rangers — the reserve's basic staffing unit. The patrol-team density standard and the maximum patrol speed apply identically to both plans — neither plan gets a speed or staffing advantage. The decision is entirely about sector shape and how the sectors are arranged.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix B &mdash; The Perimeter Loop: Standard Sector</summary>
+    <div class="inner">
+      <table id="apx-b-sides">
+        <tr><th>Side</th><th>Length (km)</th></tr>
+        <tr><td>Side 1 (the outer edge, running along the boundary fence)</td><td class="num">18 [MA1]</td></tr>
+        <tr><td>Side 2</td><td class="num">11 [MA1]</td></tr>
+        <tr><td>Side 3</td><td class="num">9 [MA1]</td></tr>
+      </table>
+      <p class="side-note">The fixed ranger outpost for this sector sits at the vertex where Side 1 (the 18 km boundary-hugging edge) and Side 3 meet. The sector's farthest point from that outpost is therefore the remaining vertex &mdash; the one where Side 1 and Side 2 meet &mdash; reached by traveling the full 18 km length of Side 1.</p>
+      <p>Number of Perimeter Loop sectors needed to ring the entire reserve boundary: <strong>6</strong> [MA2].</p>
+
+      <h3 style="margin-top:22px">Worked example &mdash; classifying a sector and finding its farthest point (not this case's real sector)</h3>
+      <figure>
+        <svg viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Example triangle with sides 13, 9, and 6 km, outpost at one end of the long side, farthest point at the other end">
+          <polygon points="60,240 320,240 150,70" fill="#1a3a5c" fill-opacity="0.14" stroke="#1a3a5c" stroke-width="2.5"/>
+          <circle cx="60" cy="240" r="6" fill="#1a3a5c"/>
+          <circle cx="320" cy="240" r="6" fill="#a3312a"/>
+          <path d="M 138.3 92.1 A 25 25 0 0 1 167.7 87.7" fill="none" stroke="#8a6d10" stroke-width="2"/>
+          <text x="30" y="270" font-family="sans-serif" font-size="13" font-weight="700" fill="#1a3a5c">Outpost</text>
+          <text x="280" y="270" font-family="sans-serif" font-size="13" font-weight="700" fill="#a3312a">Farthest point</text>
+          <text x="150" y="245" font-family="sans-serif" font-size="13" fill="#1a3a5c">long side = 13 km</text>
+          <text x="90" y="150" font-family="sans-serif" font-size="13" fill="#3a2f0c">short side = 6 km</text>
+          <text x="235" y="150" font-family="sans-serif" font-size="13" fill="#3a2f0c">mid side = 9 km</text>
+          <text x="130" y="55" font-family="sans-serif" font-size="11" fill="#8a6d10">obtuse angle (opposite the longest side)</text>
+        </svg>
+        <figcaption>Example only &mdash; a 13/9/6 km sector, not this case's real 18/11/9 km sector (Appendix B table above). Unequal sides make it scalene; the largest angle (opposite the 13 km side, computed with the Law of Cosines) is greater than a right angle, making it obtuse. The outpost sits at one end of the longest side, so the farthest point in the sector is the vertex at the <em>other</em> end of that same side &mdash; the truck's whole response trip is the length of the longest side itself. Classify and solve tonight's real 18/11/9 km sector yourself in the Working Notebook.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix C &mdash; The Interior Web: Standard Sector</summary>
+    <div class="inner">
+      <table id="apx-c-sides">
+        <tr><th>Side</th><th>Length (km)</th></tr>
+        <tr><td>Side 1</td><td class="num">5.7 [MA3]</td></tr>
+        <tr><td>Side 2</td><td class="num">5.7 [MA3]</td></tr>
+        <tr><td>Side 3</td><td class="num">5.7 [MA3]</td></tr>
+      </table>
+      <p class="side-note">The fixed ranger outpost for this sector sits at one vertex of the sector.</p>
+      <p>Number of Interior Web sectors radiating from the reserve's three fixed outposts: <strong>8</strong> [MA4] &mdash; split 3 at Outpost 1, 3 at Outpost 2, and 2 at Outpost 3 (see the worked example below for why the split matters).</p>
+
+      <h3 style="margin-top:22px">Worked example &mdash; how the fans actually tile the ground (illustrative counts, not this case's real 8-sector layout)</h3>
+      <figure>
+        <svg viewBox="0 0 400 340" width="400" height="340" role="img" aria-label="Example diagram showing three outposts, each the shared vertex of a partial fan of triangular sectors, sitting inside a dashed reserve boundary with open gap territory between and around them">
+          <rect x="20" y="20" width="360" height="280" fill="none" stroke="#5b6472" stroke-width="2" stroke-dasharray="6 4"/>
+          <text x="26" y="14" font-family="sans-serif" font-size="12" fill="#5b6472">fence line (reserve boundary)</text>
+
+          <polygon points="110,190 170,140 170,210" fill="#1a3a5c" fill-opacity="0.22" stroke="#1a3a5c" stroke-width="1.5"/>
+          <polygon points="110,190 170,210 150,250" fill="#1a3a5c" fill-opacity="0.34" stroke="#1a3a5c" stroke-width="1.5"/>
+          <circle cx="110" cy="190" r="4.5" fill="#1a3a5c"/>
+          <text x="55" y="176" font-family="sans-serif" font-size="12" font-weight="700" fill="#1a3a5c">Outpost 1 (2 sectors)</text>
+
+          <polygon points="300,110 360,80 360,140" fill="#c9a227" fill-opacity="0.30" stroke="#8a6d10" stroke-width="1.5"/>
+          <polygon points="300,110 360,140 340,172" fill="#c9a227" fill-opacity="0.42" stroke="#8a6d10" stroke-width="1.5"/>
+          <circle cx="300" cy="110" r="4.5" fill="#8a6d10"/>
+          <text x="255" y="96" font-family="sans-serif" font-size="12" font-weight="700" fill="#8a6d10">Outpost 2 (2 sectors)</text>
+
+          <polygon points="300,262 360,232 360,292" fill="#a3312a" fill-opacity="0.24" stroke="#a3312a" stroke-width="1.5"/>
+          <circle cx="300" cy="262" r="4.5" fill="#a3312a"/>
+          <text x="255" y="248" font-family="sans-serif" font-size="12" font-weight="700" fill="#a3312a">Outpost 3 (1 sector)</text>
+
+          <text x="130" y="115" font-family="sans-serif" font-size="12" font-style="italic" fill="#5b6472">open interior ground &mdash;</text>
+          <text x="106" y="129" font-family="sans-serif" font-size="12" font-style="italic" fill="#5b6472">no sector from any outpost reaches here</text>
+          <line x1="200" y1="136" x2="195" y2="195" stroke="#5b6472" stroke-width="1" stroke-dasharray="3 2"/>
+
+          <text x="26" y="320" font-family="sans-serif" font-size="11" fill="#5b6472">Example only: 5 sectors split 2/2/1 here. This case's real layout uses 8 sectors split 3/3/2 (table above) &mdash; same rule (each outpost's own fan is a partial wedge, never a full circle), different count.</text>
+        </svg>
+        <figcaption>Every Interior Web sector is equilateral, so the angle at the shared outpost vertex is always 60&deg; &mdash; six sectors sharing one outpost would close all the way around into a full circle. This case never lets that happen: no outpost's own fan closes into a circle, and the three fans (however many sectors each one gets) never touch each other or the fence, leaving real gap territory in between. This diagram uses a different, smaller sector count purely to keep the picture simple &mdash; tonight's real 8-sector, 3/3/2 layout follows the identical rule.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix D &mdash; Outpost Network Geometry</summary>
+    <div class="inner">
+      <p><strong>Reported pairwise straight-line distances between the reserve's three fixed outposts</strong>, taken from each outpost's own GPS log:</p>
+      <table id="apx-d-distances">
+        <tr><th>Outpost pair</th><th>Reported distance (km)</th></tr>
+        <tr><td>Outpost 1 &ndash; Outpost 2</td><td class="num">6.0 [MA5]</td></tr>
+        <tr><td>Outpost 2 &ndash; Outpost 3</td><td class="num">6.5 [MA5]</td></tr>
+        <tr><td>Outpost 1 &ndash; Outpost 3</td><td class="num">13.0 [MA5]</td></tr>
+      </table>
+
+      <h3 style="margin-top:22px">Worked example &mdash; how three distance estimates combine into one location</h3>
+      <figure>
+        <svg viewBox="0 0 380 260" width="380" height="260" role="img" aria-label="Example diagram showing three circles, one centered on each of three outposts, overlapping near a shared point labeled the sighting">
+          <circle cx="110" cy="160" r="95" fill="#1a3a5c" fill-opacity="0.10" stroke="#1a3a5c" stroke-width="2"/>
+          <circle cx="250" cy="95" r="105" fill="#c9a227" fill-opacity="0.14" stroke="#8a6d10" stroke-width="2"/>
+          <circle cx="250" cy="210" r="85" fill="#a3312a" fill-opacity="0.14" stroke="#a3312a" stroke-width="2"/>
+          <circle cx="110" cy="160" r="4" fill="#1a3a5c"/>
+          <circle cx="250" cy="95" r="4" fill="#8a6d10"/>
+          <circle cx="250" cy="210" r="4" fill="#a3312a"/>
+          <circle cx="196" cy="150" r="4.5" fill="#20262e"/>
+          <text x="60" y="145" font-family="sans-serif" font-size="12" font-weight="700" fill="#1a3a5c">Outpost 1</text>
+          <text x="255" y="80" font-family="sans-serif" font-size="12" font-weight="700" fill="#8a6d10">Outpost 2</text>
+          <text x="255" y="230" font-family="sans-serif" font-size="12" font-weight="700" fill="#a3312a">Outpost 3</text>
+          <text x="200" y="140" font-family="sans-serif" font-size="12" font-weight="700" fill="#20262e">sighting</text>
+          <text x="20" y="250" font-family="sans-serif" font-size="11" fill="#5b6472">Each circle's radius is that outpost's own reported distance to the sighting. If the outposts' own distances from each other are consistent, all three circles' edges meet at one real point.</text>
+        </svg>
+        <figcaption>Example only, with illustrative circles &mdash; not tonight's real 6.0/6.5/13.0 km outpost distances. This is the geometry behind "triangulating" a sighting: each outpost's estimate becomes a circle, and the outposts' own distances from each other have to be consistent for those three circles to actually agree on one point. Challenge D5(a) asks you to check whether tonight's real outpost distances (table above) pass that consistency test in the first place.</figcaption>
+      </figure>
+
+      <p style="margin-top:22px"><strong>Proposed radio-relay shortcut</strong>, a new direct line-of-sight route from Outpost 1 to a proposed relay tower site, surveyed along the reserve's road grid:</p>
+      <table id="apx-d-relay">
+        <tr><th>Measured direction</th><th>Distance (km)</th></tr>
+        <tr><td>East&ndash;west <a class="sterm" href="https://en.wikipedia.org/wiki/Surveying" target="_blank" rel="noopener">offset<span class="tip">A surveying term for a measured distance along one fixed direction (here, due east-west or due north-south) rather than a single straight-line measurement &mdash; the two offsets together are the two legs of a right triangle.</span></a></td><td class="num">6 [MA6]</td></tr>
+        <tr><td>North&ndash;south offset</td><td class="num">8 [MA6]</td></tr>
+      </table>
+      <p class="side-note">The straight-line (line-of-sight) distance for the relay route is not given &mdash; that is Challenge D5(b).</p>
+
+      <h3 style="margin-top:22px">Worked example &mdash; legs of a right triangle (not tonight's real offsets)</h3>
+      <figure>
+        <svg viewBox="0 0 320 260" width="320" height="260" role="img" aria-label="Example right triangle with a 3 km east-west leg and a 4 km north-south leg, hypotenuse marked with a question mark">
+          <polyline points="60,220 150,220 150,100" fill="none" stroke="#1a3a5c" stroke-width="2.5"/>
+          <line x1="60" y1="220" x2="150" y2="100" stroke="#a3312a" stroke-width="2.5" stroke-dasharray="7 5"/>
+          <rect x="138" y="208" width="12" height="12" fill="none" stroke="#1a3a5c" stroke-width="1.5"/>
+          <circle cx="60" cy="220" r="5" fill="#1a3a5c"/>
+          <text x="30" y="240" font-family="sans-serif" font-size="12" font-weight="700" fill="#1a3a5c">Outpost 1</text>
+          <text x="80" y="238" font-family="sans-serif" font-size="12" fill="#1a3a5c">east&ndash;west leg = 3 km</text>
+          <text x="155" y="165" font-family="sans-serif" font-size="12" fill="#1a3a5c">north&ndash;south leg = 4 km</text>
+          <text x="80" y="150" font-family="sans-serif" font-size="13" font-weight="700" fill="#a3312a">? km (hypotenuse)</text>
+          <circle cx="150" cy="100" r="5" fill="#a3312a"/>
+          <text x="140" y="88" font-family="sans-serif" font-size="12" font-weight="700" fill="#a3312a">relay site</text>
+        </svg>
+        <figcaption>Example only &mdash; uses a 3 km / 4 km leg pair, not tonight's real 6 km / 8 km offsets (table above). The two offsets are the two <a class="gterm" data-term="Leg">legs</a> of a right triangle; the straight-line distance is the hypotenuse, found with the Pythagorean theorem. Find tonight's real straight-line distance yourself in the Working Notebook (D5b).</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are not sourced as direct external citations. They are stated scenario assumptions, each grounded in a real basis described below. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+      <table id="apx-e-assumptions">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+        <tr><td>MA1</td><td>The Perimeter Loop's standard sector side lengths</td><td>18 km, 11 km, 9 km</td><td>No real reserve publishes the exact vertex coordinates of a boundary patrol sector. Chosen as a valid triangle (satisfying the <a class="gterm" data-term="Triangle Inequality Theorem">Triangle Inequality Theorem</a>) at a scale consistent with a boundary-hugging sector on a 360 km&sup2; reserve.</td></tr>
+        <tr><td>MA2</td><td>Number of Perimeter Loop sectors ringing the reserve</td><td>6</td><td>Chosen so six sectors at MA1's scale form a plausible boundary ring without claiming more ground than the reserve has or over-covering the interior.</td></tr>
+        <tr><td>MA3</td><td>The Interior Web's standard sector side length</td><td>5.7 km (all three sides equal)</td><td>Chosen so the resulting sector area is close to the reserve's own real patrol-team density standard &mdash; i.e., close to one team's worth of ground per sector.</td></tr>
+        <tr><td>MA4</td><td>Number of Interior Web sectors, and how they split across the three outposts</td><td>8 total (3 at Outpost 1, 3 at Outpost 2, 2 at Outpost 3)</td><td>Chosen so eight sectors at MA3's scale leave real, un-patrolled gaps in the reserve's interior. The uneven split is itself deliberate: since each equilateral sector's own vertex angle is 60&deg;, six sectors sharing one outpost would close into a full circle &mdash; this case never lets any outpost's fan do that (see Appendix C's worked example).</td></tr>
+        <tr><td>MA5</td><td>The three outposts' reported pairwise GPS distances</td><td>6.0 km, 6.5 km, 13.0 km</td><td>A stated scenario data set representing a real, routine field problem: GPS logs from different handheld units, taken on different days, do not always agree with each other.</td></tr>
+        <tr><td>MA6</td><td>The proposed relay route's east&ndash;west and north&ndash;south offsets</td><td>6 km, 8 km</td><td>A stated scenario survey figure for the proposed relay tower site, chosen as a clean right-triangle pair for Challenge D5(b).</td></tr>
+      </table>
+      <p class="side-note">Every one of these figures is sensitive &mdash; see the case's own reasoning in discussion, not printed here as a spoiler.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix G &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apx-sources-table">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Total area of a real, active East African rhino conservancy this reserve is modeled on</td><td>360 km&sup2;</td><td><a href="https://en.wikipedia.org/wiki/Ol_Pejeta_Conservancy" target="_blank" rel="noopener">Ol Pejeta Conservancy &mdash; Wikipedia</a></td><td>MEDIUM</td></tr>
+        <tr><td>S2</td><td>Real anti-poaching patrol-team coverage density at the same conservancy</td><td>1 team per 14 km&sup2;</td><td><a href="https://en.wikipedia.org/wiki/Ol_Pejeta_Conservancy" target="_blank" rel="noopener">Ol Pejeta Conservancy, "Poaching and security"</a></td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Vehicle speed limit inside Kenyan national parks/reserves</td><td>50 km/h</td><td><a href="https://www.masaimara.travel/nairobi-national-park-entry-fees.php" target="_blank" rel="noopener">Nairobi National Park Entrance Fees &amp; Park Rules</a></td><td>MEDIUM</td></tr>
+        <tr><td>S4</td><td>Total ranger workforce at the same real conservancy (context only)</td><td>150+ rangers</td><td><a href="https://www.savetherhino.org/programmes/kenya-ol-pejeta-conservancy/" target="_blank" rel="noopener">Save the Rhino International</a></td><td>MEDIUM</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which patrol plan to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Classify each standard sector (D1)</h4>
+    <div class="goal">Using Appendix B's 18/11/9 km sides and Appendix C's 5.7/5.7/5.7 km sides, classify each sector by side length and by angle.</div>
+    <div class="fieldrow"><label for="s1a-sides">Perimeter Loop &mdash; by side length</label>
+      <select id="s1a-sides"><option value="">choose one</option><option value="scalene">Scalene</option><option value="isosceles">Isosceles</option><option value="equilateral">Equilateral</option></select>
+    </div>
+    <div class="fieldrow"><label for="s1a-angle">Perimeter Loop &mdash; by angle</label>
+      <select id="s1a-angle"><option value="">choose one</option><option value="acute">Acute</option><option value="right">Right</option><option value="obtuse">Obtuse</option></select>
+      <button onclick="checkStep1()">Check</button><span class="fb" id="fb1a"></span>
+    </div>
+    <div class="fieldrow"><label for="s1b-sides">Interior Web &mdash; by side length</label>
+      <select id="s1b-sides"><option value="">choose one</option><option value="scalene">Scalene</option><option value="isosceles">Isosceles</option><option value="equilateral">Equilateral</option></select>
+    </div>
+    <div class="fieldrow"><label for="s1b-angle">Interior Web &mdash; by angle</label>
+      <select id="s1b-angle"><option value="">choose one</option><option value="acute">Acute</option><option value="right">Right</option><option value="obtuse">Obtuse</option></select>
+      <span class="fb" id="fb1b"></span>
+    </div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Area and staffing (D2)</h4>
+    <div class="goal">Find each sector's area (Heron's formula for the Perimeter Loop, the equilateral-triangle area formula for the Interior Web), then how many patrol teams one sector needs at 1 team per 14 km&sup2;.</div>
+    <div class="fieldrow"><label for="s2a">Perimeter Loop sector area (km&sup2;)</label><input type="number" step="0.01" id="s2a" placeholder="area, two decimals"><button onclick="checkStep2()">Check</button><span class="fb" id="fb2a"></span></div>
+    <div class="fieldrow"><label for="s2b">Interior Web sector area (km&sup2;)</label><input type="number" step="0.01" id="s2b" placeholder="area, two decimals"><span class="fb" id="fb2b"></span></div>
+    <div class="fieldrow"><label for="s2ta">Perimeter Loop teams / sector</label><input type="number" id="s2ta" placeholder="whole number of teams"><span class="fb" id="fb2ta"></span></div>
+    <div class="fieldrow"><label for="s2tb">Interior Web teams / sector</label><input type="number" id="s2tb" placeholder="whole number of teams"><span class="fb" id="fb2tb"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Response time (D3)</h4>
+    <div class="goal">At the reserve's shared 50 km/h patrol speed, find the travel time in minutes from each sector's outpost to its farthest point.</div>
+    <div class="fieldrow"><label for="s3a">Perimeter Loop response time (min)</label><input type="number" step="0.01" id="s3a" placeholder="minutes, two decimals"><button onclick="checkStep3()">Check</button><span class="fb" id="fb3a"></span></div>
+    <div class="fieldrow"><label for="s3b">Interior Web response time (min)</label><input type="number" step="0.01" id="s3b" placeholder="minutes, two decimals"><span class="fb" id="fb3b"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; The primary metric (D4)</h4>
+    <div class="goal">Using your own Step 2 areas and Step 3 times, build each option's minutes-per-km&sup2; ratio, then the percent margin between them (relative to the smaller, winning ratio).</div>
+    <div class="fieldrow"><label for="s4a">Perimeter Loop ratio (min/km&sup2;)</label><input type="number" step="0.0001" id="s4a" placeholder="minutes per square km"><button onclick="checkStep4()">Check</button><span class="fb" id="fb4a"></span></div>
+    <div class="fieldrow"><label for="s4b">Interior Web ratio (min/km&sup2;)</label><input type="number" step="0.0001" id="s4b" placeholder="minutes per square km"><span class="fb" id="fb4b"></span></div>
+    <div class="fieldrow"><label for="s4m">Percent margin</label><input type="number" step="0.01" id="s4m" placeholder="a percent, two decimals"><span class="fb" id="fb4m"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; Outpost-network geometry check (D5)</h4>
+    <div class="goal">(a) Using the Triangle Inequality Theorem, can the three outposts' reported pairwise distances (Appendix D) actually form a real triangle? (b) For the relay route's two offsets, label the legs and find the straight-line distance.</div>
+    <div class="fieldrow"><label for="s5a">Can the three distances form a real triangle?</label>
+      <select id="s5a"><option value="">choose one</option><option value="yes">Yes</option><option value="no">No</option></select>
+      <button onclick="checkStep5()">Check</button><span class="fb" id="fb5a"></span>
+    </div>
+    <div class="fieldrow"><label for="s5b">Relay route straight-line distance (km)</label><input type="number" step="0.01" id="s5b" placeholder="km"><span class="fb" id="fb5b"></span></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>"Dispatch just confirmed a sighting. Here's its location on the map. Under the Interior Web, which outpost handles this? &hellip; None of them do &mdash; it's outside every Interior Web sector you drew. Under the Perimeter Loop, it's inside Sector 4. You have sixty seconds: are you changing your recommendation, or not?"</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Show the coverage-gap numbers this twist is built on</label>
+      </div>
+      <div class="fieldrow" style="color:#e8e3d5" id="twistResultRow" style="display:none"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 &mdash; Ol Pejeta Conservancy (Wikipedia), total reserve area</li>
+      <li>S2 &mdash; Ol Pejeta Conservancy (Wikipedia), patrol-team density</li>
+      <li>S3 &mdash; Nairobi National Park entrance rules, patrol speed</li>
+      <li>S4 &mdash; Save the Rhino International, ranger workforce (context only)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Patrol Triangle &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE DATA — ported verbatim from cases/the-patrol-triangle/sensitivity_model.py.
+   case.md sha256 (at time of this build): d9705db15eb0eaa6b94097e3cd266ff9a070d6b9d25383c81e84fa76e7fac3ed
+   Contract: PARAMS/FLEX/evaluate()/evaluate_twist() (templates/INTERACTIVE_HTML_CONTRACT.md
+   section 2). evaluate() returns {A, B} as EFFICIENCY (km^2 per minute, higher wins) to match
+   the python model's "higher is better" contract, plus the raw area/time/ratio/team figures the
+   Working Notebook's own check functions compare a Hero's own numbers against -- never a
+   pre-computed margin_pct or winner literal (that stays inside this script's own arithmetic).
+   ================================================================ */
+const PARAMS = {
+  side_a_long_km: 18.0, side_a_mid_km: 11.0, side_a_short_km: 9.0,
+  side_b_km: 5.7,
+  patrol_speed_kmh: 50.0,
+  n_sectors_a: 6.0, n_sectors_b: 8.0,
+  density_km2_per_team: 14.0,
+  reserve_area_km2: 360.0
+};
+const FLEX = ["side_a_long_km", "side_a_mid_km", "side_a_short_km", "side_b_km"];
+
+// Appendix D outpost-network data (D5) -- independent of the balance test above.
+const OUTPOST_DIST = { d12: 6.0, d23: 6.5, d13: 13.0 };
+const RELAY_OFFSET = { ew: 6.0, ns: 8.0 };
+
+function _heronArea(a, b, c){
+  const s = (a + b + c) / 2;
+  const disc = s * (s - a) * (s - b) * (s - c);
+  if(disc <= 0) return NaN; // not a valid triangle -- see sensitivity_model.py's same guard
+  return Math.sqrt(disc);
+}
+function classifyTriangle(a, b, c){
+  const sides = (a === b && b === c) ? 'equilateral' : (a === b || b === c || a === c) ? 'isosceles' : 'scalene';
+  const sorted = [a, b, c].slice().sort((x, y) => x - y);
+  const [p, q, r] = sorted; // r is the longest side, opposite the largest angle
+  const lhs = p * p + q * q, rhs = r * r;
+  const angle = Math.abs(lhs - rhs) < 1e-9 ? 'right' : (lhs > rhs ? 'acute' : 'obtuse');
+  return { sides, angle };
+}
+function metrics(p){
+  const a1 = p.side_a_long_km, a2 = p.side_a_mid_km, a3 = p.side_a_short_km;
+  const area_a = _heronArea(a1, a2, a3);
+  const dist_a = Math.max(a1, a2, a3);
+  const time_a = dist_a / p.patrol_speed_kmh * 60;
+  const ratio_a = time_a / area_a;
+
+  const side_b = p.side_b_km;
+  const area_b = (Math.sqrt(3) / 4) * side_b * side_b;
+  const dist_b = side_b;
+  const time_b = dist_b / p.patrol_speed_kmh * 60;
+  const ratio_b = time_b / area_b;
+
+  const teams_per_sector_a = Math.ceil(area_a / p.density_km2_per_team);
+  const teams_per_sector_b = Math.ceil(area_b / p.density_km2_per_team);
+  const total_area_a = area_a * p.n_sectors_a;
+  const total_area_b = area_b * p.n_sectors_b;
+
+  return {
+    A: area_a / time_a, B: area_b / time_b,   // efficiency framing (higher wins) -- contract shape
+    area_a, area_b, dist_a, dist_b, time_a, time_b, ratio_a, ratio_b,
+    teams_per_sector_a, teams_per_sector_b,
+    teams_total_a: teams_per_sector_a * p.n_sectors_a, teams_total_b: teams_per_sector_b * p.n_sectors_b,
+    total_area_a, total_area_b,
+    gap_km2: p.reserve_area_km2 - total_area_b
+  };
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  return metrics(p);
+}
+function evaluate_twist(params){
+  // The twist (Twist tab) places a confirmed sighting outside every Interior Web
+  // sector but inside a Perimeter Loop sector -- a coverage-gap narrative, NOT a
+  // parameter perturbation. case.json.balance.twist_effect says explicitly it
+  // "does not change the computed ... ratio margin or which option wins that
+  // ratio." evaluate_twist() therefore runs the SAME arithmetic as evaluate();
+  // what the Twist tab actually surfaces is the (already-public) coverage-gap
+  // figure below, not a different ratio.
+  return evaluate(params);
+}
+/* ================================================================
+   CASE-AGNOSTIC helpers
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title, 'Heroes Academy Math Builder case study', '', 'Sources:', ...srcLis, '', location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions
+   ================================================================ */
+let twistApplied = false;
+function currentEval(){ return twistApplied ? evaluate_twist({}) : evaluate({}); }
+function selVal(id){ return document.getElementById(id).value; }
+
+function checkStep1(){
+  const cA = classifyTriangle(PARAMS.side_a_long_km, PARAMS.side_a_mid_km, PARAMS.side_a_short_km);
+  const cB = classifyTriangle(PARAMS.side_b_km, PARAMS.side_b_km, PARAMS.side_b_km);
+  fb('fb1a', selVal('s1a-sides') === cA.sides && selVal('s1a-angle') === cA.angle);
+  fb('fb1b', selVal('s1b-sides') === cB.sides && selVal('s1b-angle') === cB.angle);
+}
+function checkStep2(){
+  const e = currentEval();
+  fb('fb2a', near(val('s2a'), round(e.area_a, 2), 0.05));
+  fb('fb2b', near(val('s2b'), round(e.area_b, 2), 0.05));
+  fb('fb2ta', near(val('s2ta'), e.teams_per_sector_a, 0.001));
+  fb('fb2tb', near(val('s2tb'), e.teams_per_sector_b, 0.001));
+}
+function checkStep3(){
+  const e = currentEval();
+  fb('fb3a', near(val('s3a'), round(e.time_a, 2), 0.05));
+  fb('fb3b', near(val('s3b'), round(e.time_b, 2), 0.05));
+}
+function checkStep4(){
+  const e = currentEval();
+  const margin = 100 * (e.ratio_a - e.ratio_b) / e.ratio_b;
+  fb('fb4a', near(val('s4a'), round(e.ratio_a, 4), 0.0008));
+  fb('fb4b', near(val('s4b'), round(e.ratio_b, 4), 0.0008));
+  fb('fb4m', near(val('s4m'), round(margin, 2), 0.5));
+}
+function checkStep5(){
+  const d = OUTPOST_DIST;
+  const validTriangle = (d.d12 + d.d23 > d.d13) && (d.d12 + d.d13 > d.d23) && (d.d23 + d.d13 > d.d12);
+  const answerYes = selVal('s5a') === 'yes';
+  fb('fb5a', answerYes === validTriangle);
+  const hyp = Math.sqrt(RELAY_OFFSET.ew * RELAY_OFFSET.ew + RELAY_OFFSET.ns * RELAY_OFFSET.ns);
+  fb('fb5b', near(val('s5b'), round(hyp, 2), 0.05));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget
+   ================================================================ */
+const CASE_ID = "the-patrol-triangle";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+const DELIVERABLES = [
+  ["D1", "A labeled sector classification table for one standard sector from each option, with every side length listed, classified by side length (scalene or equilateral) and by angle (acute or obtuse), with the reasoning shown."],
+  ["D2", "An area-and-staffing table: the area of each option's standard sector, the total area each option covers across its stated number of sectors, and the number of patrol teams required per sector using the reserve's real patrol-team density standard."],
+  ["D3", "A response-time table: for each option's standard sector, the travel time in minutes from its outpost to the farthest point in the sector, at the reserve's shared maximum patrol speed."],
+  ["D4", "A primary-metric comparison: for each option, minutes of response time per square kilometer covered, computed from your D2 and D3 results, with the margin between the two options and your recommendation."],
+  ["D5", "An outpost-network geometry check: (a) using the Triangle Inequality Theorem, determine whether the three fixed outposts' reported pairwise distances can actually form a real triangle; (b) for the proposed radio-relay shortcut, label the two legs of the right-triangle route and compute the straight-line distance."]
+];
+
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (7 vocabulary terms + 2 how-to
+   entries = 9 total, mathsisfun.com/cuemath.com, verified live
+   2026-09-18). This is the STORY_GLOSSARY's math-vocabulary half —
+   the plain-English story terms (bearing, triangulating, radio-relay,
+   patrol-road grid, offset) are hand-wrapped .sterm links inline in
+   the Background/Appendix D prose above, matching this case's own
+   remaining P7 accessibility gaps named in QA_REPORT.md.
+   ================================================================ */
+const GLOSSARY = {
+  "Acute Triangle": {def: "A triangle in which all three interior angles measure less than 90 degrees.",
+    url: "https://www.mathsisfun.com/definitions/acute-triangle.html"},
+  "Obtuse Triangle": {def: "A triangle with one interior angle greater than 90 degrees.",
+    url: "https://www.mathsisfun.com/definitions/obtuse-triangle.html"},
+  "Scalene Triangle": {def: "A triangle with three sides that are all different lengths.",
+    url: "https://www.mathsisfun.com/definitions/scalene-triangle.html"},
+  "Isosceles Triangle": {def: "A triangle with exactly two sides (and two angles) equal.",
+    url: "https://www.mathsisfun.com/definitions/isosceles-triangle.html"},
+  "Equilateral Triangle": {def: "A triangle with all three sides (and all three angles) equal.",
+    url: "https://www.mathsisfun.com/definitions/equilateral-triangle.html"},
+  "Leg": {def: "In a right triangle, one of the two shorter sides that meet at the right angle (as opposed to the hypotenuse).",
+    url: "https://www.mathsisfun.com/pythagoras.html"},
+  "Triangle Inequality Theorem": {def: "The sum of the lengths of any two sides of a triangle must be greater than the length of the third side, or the three lengths cannot form a real triangle at all.",
+    url: "https://www.mathsisfun.com/geometry/triangle-inequality-theorem.html"},
+  "Area": {def: "The amount of two-dimensional space a shape covers, measured in square units.",
+    url: "https://www.mathsisfun.com/geometry/area.html"},
+  "Elapsed Time": {def: "The amount of time that passes between a start point and an end point -- here, a distance divided by a speed.",
+    url: "https://www.cuemath.com/measurement/elapsed-time/"},
+  "Proportion": {def: "An equation stating that two ratios are equal, written a/b = c/d -- used to solve for a missing amount when the other three are known.",
+    url: "https://www.mathsisfun.com/algebra/proportions.html"},
+  "Vertex": {def: "The point where two sides of a shape (like a triangle's two edges) meet -- a corner.",
+    url: "https://www.mathsisfun.com/definitions/vertex.html"},
+  "Law of Cosines": {def: "A formula relating a triangle's three side lengths to one of its angles -- lets you find an angle when you only know the sides, which is how this case checks whether a sector's angle is acute or obtuse.",
+    url: "https://www.mathsisfun.com/algebra/trig-cosine-law.html"},
+  "Pythagorean Theorem": {def: "For a right triangle, the square of the hypotenuse equals the sum of the squares of the two legs (a^2 + b^2 = c^2) -- used to find a straight-line distance from two perpendicular legs.",
+    url: "https://www.mathsisfun.com/pythagoras.html"},
+  "Heron's Formula": {def: "A way to find a triangle's area directly from its three side lengths, with no angle needed -- exactly what a scalene sector like the Perimeter Loop's requires.",
+    url: "https://www.mathsisfun.com/geometry/herons-formula.html"}
+};
+const HOWTO = [
+  ["How to find elapsed time", "Elapsed Time"],
+  ["How to find a missing amount in a proportion", "Proportion"]
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  twistApplied = document.getElementById('applyTwist').checked;
+  ['fb1a','fb1b','fb2a','fb2b','fb2ta','fb2tb','fb3a','fb3b','fb4a','fb4b','fb4m','fb5a','fb5b']
+    .forEach(id=>{ const el=document.getElementById(id); if(el){ el.className='fb'; el.textContent=''; } });
+  const row = document.getElementById('twistResultRow');
+  if(!row) return;
+  if(!twistApplied){ row.style.display='none'; row.innerHTML=''; return; }
+  const e = evaluate_twist({});
+  row.style.display='block';
+  row.innerHTML = 'The Interior Web\'s own 8 sectors cover ' + round(e.total_area_b,1) +
+    ' km&sup2; of the reserve\'s ' + PARAMS.reserve_area_km2 + ' km&sup2; total &mdash; leaving ' +
+    round(e.gap_km2,1) + ' km&sup2; that plan never reaches at all, including the sighting the Twist just described. ' +
+    'Your Step 4 ratio (min/km&sup2;) didn\'t change &mdash; the question is whether that ratio still settles the recommendation now that a real incident landed outside it.';
+}
+
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

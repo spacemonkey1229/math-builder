@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Wolf Interval — Interactive</title>
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:150px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  /* math vocabulary hover+hyperlink (T1-19) */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* real-world / story vocabulary hover+hyperlink (T1-21, MCS-47/MCS-48) --
+     distinct class + object shape from .gterm/GLOSSARY on purpose (see
+     templates/INTERACTIVE_HTML_CONTRACT.md and tier1_structural.py T1-21) */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted #7a8ba0;cursor:help;font-style:italic}
+  .sterm:hover, .sterm:focus{background:#eef3f8}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:250px;background:#2f3b4a;color:#fff;font-family:var(--sans);font-weight:400;font-style:normal;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#2f3b4a}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .story-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .story-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted #7a8ba0;
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+
+  /* wolf-interval circle-of-fifths diagram (case-specific) */
+  .cof-note{font-family:var(--sans);font-size:.78rem;color:var(--sub)}
+  .cof-legend{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px}
+  .cof-legend .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Wolf Interval</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Number Theory &middot; Fraction Operations</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Iris Callahan leans over the open belly of the <a class="sterm" href="https://en.wikipedia.org/wiki/Harpsichord" target="_blank" rel="noopener">harpsichord<span class="tip">A keyboard instrument that produces sound by plucking its strings when a key is pressed -- unlike a piano, which strikes its strings with a hammer.</span></a> -- the exposed strings and tuning pins inside the case, lid lifted -- a Baroque-era instrument that plucks its strings instead of striking them, piano-style -- one ear an inch from the <a class="sterm" href="https://en.wikipedia.org/wiki/Soundboard_(music)" target="_blank" rel="noopener">soundboard<span class="tip">The vibrating wooden panel inside a stringed instrument that turns a plucked string's small vibration into sound loud enough to hear across a room.</span></a>, and plucks the D above middle C against its <a class="sterm" href="https://en.wikipedia.org/wiki/Dominant_(music)" target="_blank" rel="noopener">dominant<span class="tip">The fifth note of a musical scale, counted up from the "home" note -- the second most important note in a key, and the note a perfect fifth measures to.</span></a>, A (a perfect fifth above it), twice in a row. The first time, the two strings lock into a single glassy tone with no flutter at all -- the sound early-music players call "pure." She holds her breath and plucks the same interval one octave higher (musicians call this move "one register over"), in a different key, and the room fills with something else: a low, grinding <a class="sterm" href="https://en.wikipedia.org/wiki/Beat_(acoustics)" target="_blank" rel="noopener">beat<span class="tip">A wobbling, pulsing loudness you hear when two pitches that are almost -- but not quite -- in tune sound together, caused by their sound waves drifting in and out of alignment.</span></a> -- the pulsing you hear when two pitches are almost, but not quite, in tune -- like two voices arguing instead of singing. Her apprentice, Marcus, winces from across the shop. "That's the <a class="sterm" href="https://en.wikipedia.org/wiki/Wolf_interval" target="_blank" rel="noopener">wolf<span class="tip">A musical interval so far out of tune it produces a harsh, uneven beating that early musicians said sounded like a wolf's howl -- the deliberately sacrificed interval in a tuning system that can't make every key sound pure.</span></a>," he says. "You can hear it howl."</p>
+  <p class="toolnote">This case describes a sound, not just a number. Before reading further, open <a href="https://en.wikipedia.org/wiki/Wolf_interval" target="_blank" rel="noopener">Wikipedia's "Wolf interval" article</a> and press play on its embedded audio examples ("Wolf fifth on C" and a mean fifth compared directly against a wolf fifth) -- thirty seconds of actually hearing the difference will do more than any paragraph can to make "a low, grinding beat... like two voices arguing instead of singing" concrete.</p>
+  <p>Iris built this harpsichord -- the shop calls it the Fenice -- for a period-performance ensemble that wants their home key to sound the way it did centuries ago: pure and beatless, no compromise. She can give them exactly that. But somewhere across the twelve keys the Fenice can be asked to play, the purity has to come out of somebody else's pocket -- stacking perfect intervals never quite closes the loop back to where it started. She can hide that debt in one ugly, unplayable interval, or spread it, in slivers too small to notice, over every key at once.</p>
+  <p>The delivery truck is due Thursday. Iris opens her tuning log and stares at the blank column where her decision goes.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Iris Callahan is the sole tuner and finishing luthier at Callahan Historical Keyboards, a small shop that builds and restores harpsichords for professional and academic customers. Tuning means turning each string's own small metal <a class="sterm" href="https://en.wikipedia.org/wiki/Tuning_pin" target="_blank" rel="noopener">tuning pin<span class="tip">A small peg a string is wound around. Turning it with a special tool (a "tuning lever" or "tuning hammer," not a screwdriver) tightens or loosens the string, which changes its tension -- and a string's tension is what sets its pitch.</span></a>, by hand, tiny fractions of a turn at a time, until that one string's pitch matches the target exactly -- and a harpsichord this size has dozens of strings, so retuning the whole instrument mid-concert is not something any working keyboardist does. Every instrument that leaves Iris's bench is tuned this way, string by string, before its first rehearsal, and the customer never gets a second visit before opening night -- whatever <a class="sterm" href="https://en.wikipedia.org/wiki/Musical_temperament" target="_blank" rel="noopener">temperament<span class="tip">The specific system a tuner picks for deciding exactly how in-tune, or how slightly out-of-tune, each of the twelve possible notes will be relative to each other.</span></a> she chooses is the temperament they perform in.</p>
+  <p>Her current commission is a two-manual harpsichord (one built with two separate keyboards, stacked one above the other, each connected to its own set of strings -- so a player can switch between two different tone colors mid-piece, or link the two keyboards together for a fuller, louder sound, the way an organist uses multiple manuals), the Fenice, built for the Cantilena Consort, a period-performance ensemble that plays almost exclusively in the instrument's <a class="sterm" href="https://en.wikipedia.org/wiki/Key_(music)" target="_blank" rel="noopener">home key<span class="tip">The one "home base" note, and the set of notes built around it, that a piece of music is written in -- also just called the "key." Everything else in the piece is heard as a distance from this note.</span></a> of D major and its closest relatives -- the handful of other keys nearest to D on the circle of fifths, sharing most of the same notes (SEE APPENDIX C). The consort's music director was explicit in the build contract: the home key must sound "pure," with no audible beating in its fifths and thirds -- a fifth and a third are both intervals, meaning the distance between two pitches; a fifth spans five letter-names of the musical alphabet (D up to A, for example) and a third spans three (D up to F#) -- this is the sound a Baroque audience would actually have heard.</p>
+  <p>A harpsichord's strings hold only one temperament at a time. There is no re-tuning between pieces at a concert, and no blending two systems on the same instrument -- Iris has to pick exactly one before the Fenice leaves her shop.</p>
+  <p>Her first option is Just Intonation: tune the Fenice's fifths and thirds pure in the home key of D major, exactly as the consort requested. Every interval in D major beats to nothing. But stacking twelve pure fifths to reach every other key never closes back to a whole number of octaves (SEE APPENDIX A) -- the small leftover gap has to land somewhere, and the traditional answer is to dump it all into one deliberately sacrificed interval, the "wolf" (named for the harsh, uneven howl its beating produces), which the consort would then have to avoid playing in entirely.</p>
+  <p>Her second option is 12-Tone Equal Temperament: divide that same unavoidable gap evenly across all twelve fifths (SEE APPENDIX A and APPENDIX B), so every key -- including D major -- is equally playable and no interval is ever catastrophically out of tune. The cost is that no key, not even the consort's own home key, is ever perfectly pure. Every ratio and constant this case relies on is sourced in APPENDIX D, and the full math vocabulary and "how to..." research list is in APPENDIX E. A separate glossary of the real-world, non-math vocabulary this case uses -- harpsichord parts, tuning terms, the acoustic cause of the wolf's "howl" -- is in APPENDIX F.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Iris Callahan. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Just Intonation</h4>
+      <p style="margin:0">Tune the Fenice's fifths and thirds pure in Just Intonation for the home key of D major.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; 12-Tone Equal Temperament</h4>
+      <p style="margin:0">Tune the Fenice in 12-Tone Equal Temperament, evenly usable across all twelve keys.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from the case study launch. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must include use of the "how to&hellip;" resource you researched in Challenge 1, and at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include:
+      <ul style="margin-top:8px">
+        <li><strong>D1.</strong> A prime-factorization proof table showing why twelve stacked pure fifths (ratio 3/2 each) can never equal a whole number of octaves (ratio 2/1 each) -- factor the two sides completely and use the definitions of <span class="gterm-slot" data-term="Prime"></span> and <span class="gterm-slot" data-term="Composite"></span> numbers to explain why the sets of prime factors can never match (SEE APPENDIX A).</li>
+        <li><strong>D2.</strong> A worked calculation of the exact size of that leftover gap (the "Pythagorean comma"), stacking twelve pure fifths and comparing the result to seven octaves, with your arithmetic shown step by step and the comma expressed as a fraction in lowest terms (SEE APPENDIX A AND APPENDIX B).</li>
+        <li><strong>D3.</strong> A calculation of how much of the comma each of the twelve fifths absorbs if Option B spreads it evenly -- dividing the comma's excess fraction by the whole number of fifths -- shown as a fraction-by-whole-number division, not a decimal shortcut (SEE APPENDIX B).</li>
+        <li><strong>D4.</strong> A calculation, using the octave ratio and the pure-fifth ratio, of how many additional pure-fifth-sized steps are needed to complete one full octave starting from a single fifth -- a whole number divided by a fraction -- and a one-paragraph explanation, in your own words, of what that leftover ratio represents (SEE APPENDIX A).</li>
+        <li><strong>D5.</strong> A distribution table comparing Option A's per-key mistuning (eleven keys pure, one wolf key carrying the full comma) against Option B's per-key mistuning (the comma divided evenly across all twelve keys), including each option's average fraction-of-a-semitone mistuning across the twelve keys (SEE APPENDIX B AND APPENDIX C).</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. If you are absent the day of a discussion, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Interval Ratios and Definitions</summary>
+    <div class="inner">
+      <p>All harpsichord tuning math starts from two agreed-on physical facts about pitch, plus one man-made convention for spreading error out evenly. All three are cited in Appendix D.</p>
+      <table id="apx-a-table">
+        <tr><th>Quantity</th><th>Definition</th><th>Value</th></tr>
+        <tr><td>Octave</td><td>frequency doubles (the "same note again," one register up)</td><td class="num">ratio 2/1</td></tr>
+        <tr><td>Pure ("just") perfect fifth</td><td>the acoustically beat-free fifth</td><td class="num">ratio 3/2 [S1]</td></tr>
+        <tr><td>Equal-tempered <span class="gterm-slot" data-term="Semitone-story"></span></td><td>1/12 of an octave, by convention (the smallest standard step in Western music -- e.g. from one piano key to the very next one, black or white)</td><td class="num">ratio 2^(1/12) [S2]</td></tr>
+        <tr><td>Equal-tempered perfect fifth</td><td>seven equal-tempered semitones</td><td class="num">ratio 2^(7/12) [S2]</td></tr>
+        <tr><td><span class="gterm-slot" data-term="Cent-story"></span> (the standard unit of mistuning)</td><td>1200 &times; log base 2 of the frequency ratio</td><td class="num">1200 cents per octave [S1]</td></tr>
+      </table>
+
+      <p><strong>D1/D4 worked step.</strong> A pure fifth (3/2) is smaller than a full octave (2/1). Dividing the octave by the fifth shows exactly how much more is needed to complete an octave starting from one fifth:</p>
+      <blockquote>2 &divide; (3/2)&nbsp; =&nbsp; 2 &times; (2/3)&nbsp; =&nbsp; 4/3</blockquote>
+      <p>So one pure fifth covers 3/4 of an octave's frequency ratio (since 3/2 &times; 4/3 = 2), and the remaining factor of 4/3 is what a second interval has to supply. This is a whole number (2) divided by a fraction (3/2) -- see Appendix E for how to do that division yourself.</p>
+
+      <p><strong>D1 worked step -- why the stack never closes.</strong> Stacking twelve pure fifths means multiplying 3/2 by itself twelve times, which equals 3<sup>12</sup> / 2<sup>12</sup>. Landing on a whole number of octaves would require 3<sup>12</sup> / 2<sup>12</sup> to equal some whole power of 2, i.e. 3<sup>12</sup> = 2<sup>k</sup> for a whole number k. Factor both sides completely:</p>
+      <ul>
+        <li>3<sup>12</sup> = 3 &times; 3 &times; 3 &times; 3 &times; 3 &times; 3 &times; 3 &times; 3 &times; 3 &times; 3 &times; 3 &times; 3 -- every prime factor is 3, a prime number.</li>
+        <li>2<sup>k</sup> = 2 &times; 2 &times; ... &times; 2 -- every prime factor is 2, a different prime number.</li>
+      </ul>
+      <p>Because 3 and 2 are both prime and are different primes, a product built entirely of 3s can never equal a product built entirely of 2s -- their prime factorizations can never match, for any whole number of fifths or octaves. (3<sup>12</sup> itself, 531,441, is composite -- it factors as twelve 3s -- but none of those factors is a 2, which is the whole proof.) Twelve fifths stacked can therefore never land exactly on a whole number of octaves. The size of that permanent mismatch is calculated in Appendix B.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix B &mdash; The Circle-of-Fifths Ledger</summary>
+    <div class="inner">
+      <p>Musicians call the chain of pure fifths used below the "<span class="gterm-slot" data-term="Circle of Fifths-story"></span>": start on D, go up by a pure fifth twelve times in a row (D-A-E-B-F#-C#-G#-D#-A#-F-C-G), and the twelfth step lands back near D again, having passed through all twelve keys exactly once. The listing order below (D first, G last) is only bookkeeping for adding up the total -- it is NOT a claim about which physical fifth becomes the wolf. Any one of the twelve fifths in the loop could be designated "last" and absorb the comma instead; which one Iris actually picks is a real tuner's choice, not fixed by the arithmetic. Historically, builders picked the fifth that sits farthest around the loop from the key(s) they most needed pure -- for a chain built outward from D in both directions, that is the fifth near G#/A-flat, the point diametrically opposite D, not the fifth adjacent to D itself.</p>
+
+      <p><strong>The twelve positions, numbered.</strong> Number the chain in order: 1&nbsp;D, 2&nbsp;A, 3&nbsp;E, 4&nbsp;B, 5&nbsp;F#, 6&nbsp;C#, 7&nbsp;G#, 8&nbsp;D#, 9&nbsp;A#, 10&nbsp;F, 11&nbsp;C, 12&nbsp;G, and then back to 1&nbsp;D again -- twelve evenly spaced positions arranged in a ring, each one fifth up from the position before it. G#, position 7, sits six positions away from D, position 1, in either direction around the ring (six steps going 1&rarr;7 forward, six steps going 1&rarr;7 the other way around too, since 12&nbsp;&minus;&nbsp;6 = 6) -- the maximum possible separation on a twelve-position ring, which is what "diametrically opposite" means here. That fixed six-step distance is exactly why tuners traditionally place the wolf at G#: farther around the ring from D means a more distantly related key, sharing fewer notes with D major -- and a piece written in a distantly related key is used less often by an ensemble built around D major, exactly the pattern Appendix C's own program list shows directly (the keys closest to D on the ring -- 0 and 1 steps away -- are programmed 6, 4, and 3 times this season; the single piece 6 steps away, at G#/A-flat, is programmed only once). Placing the wolf at the position least likely to come up in the actual repertoire is not a guess about geometry -- it is a bet on which key gets played the least, and Appendix C is exactly the evidence a real tuner would use to make that bet.</p>
+
+      <h3 style="margin-top:22px">Worked example &mdash; how to read the circle of fifths</h3>
+      <figure>
+        <svg viewBox="0 0 460 460" width="460" height="460" role="img" aria-label="Circle of fifths diagram: twelve notes arranged in a circle in the order D, A, E, B, F sharp, C sharp, G sharp, D sharp, A sharp, F, C, G, with G sharp marked as the traditional wolf position opposite D, and a dashed gap shown between G and D where the chain of fifths does not exactly close">
+          <circle cx="230" cy="230" r="170" fill="none" stroke="#dfe4ea" stroke-width="2"/>
+          <!-- the 11 "clean" fifth-to-fifth links of the chain (D->A->E->B->F#->C#->G#->D#->A#->F->C->G) -->
+          <line x1="230" y1="60"  x2="315" y2="82.8"  stroke="#1a3a5c" stroke-width="2.5"/>
+          <line x1="315" y1="82.8" x2="377.2" y2="145" stroke="#1a3a5c" stroke-width="2.5"/>
+          <line x1="377.2" y1="145" x2="400" y2="230" stroke="#1a3a5c" stroke-width="2.5"/>
+          <line x1="400" y1="230" x2="377.2" y2="315" stroke="#1a3a5c" stroke-width="2.5"/>
+          <line x1="377.2" y1="315" x2="315" y2="377.2" stroke="#c9a227" stroke-width="3.5"/>
+          <line x1="315" y1="377.2" x2="230" y2="400" stroke="#c9a227" stroke-width="3.5"/>
+          <line x1="230" y1="400" x2="145" y2="377.2" stroke="#c9a227" stroke-width="3.5"/>
+          <line x1="145" y1="377.2" x2="82.8" y2="315" stroke="#1a3a5c" stroke-width="2.5"/>
+          <line x1="82.8" y1="315" x2="60" y2="230" stroke="#1a3a5c" stroke-width="2.5"/>
+          <line x1="60" y1="230" x2="82.8" y2="145" stroke="#1a3a5c" stroke-width="2.5"/>
+          <line x1="82.8" y1="145" x2="145" y2="82.8" stroke="#1a3a5c" stroke-width="2.5"/>
+          <!-- the 12th link (G back to D) drawn dashed/red: the chain never truly closes here -->
+          <line x1="145" y1="82.8" x2="230" y2="60" stroke="#a3312a" stroke-width="3" stroke-dasharray="7,6"/>
+
+          <!-- note nodes -->
+          <circle cx="230" cy="60" r="16" fill="#1a3a5c"/>
+          <circle cx="315" cy="82.8" r="16" fill="#1a3a5c"/>
+          <circle cx="377.2" cy="145" r="16" fill="#1a3a5c"/>
+          <circle cx="400" cy="230" r="16" fill="#1a3a5c"/>
+          <circle cx="377.2" cy="315" r="16" fill="#1a3a5c"/>
+          <circle cx="315" cy="377.2" r="16" fill="#1a3a5c"/>
+          <circle cx="230" cy="400" r="20" fill="#a3312a"/>
+          <circle cx="145" cy="377.2" r="16" fill="#1a3a5c"/>
+          <circle cx="82.8" cy="315" r="16" fill="#1a3a5c"/>
+          <circle cx="60" cy="230" r="16" fill="#1a3a5c"/>
+          <circle cx="82.8" cy="145" r="16" fill="#1a3a5c"/>
+          <circle cx="145" cy="82.8" r="16" fill="#1a3a5c"/>
+
+          <!-- note labels -->
+          <text x="230" y="34"  font-family="sans-serif" font-size="17" font-weight="700" fill="#1a3a5c" text-anchor="middle">D</text>
+          <text x="335" y="60"  font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c" text-anchor="middle">A</text>
+          <text x="410" y="134" font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c" text-anchor="middle">E</text>
+          <text x="437" y="234" font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c" text-anchor="middle">B</text>
+          <text x="410" y="334" font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c" text-anchor="middle">F&#9839;</text>
+          <text x="335" y="410" font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c" text-anchor="middle">C&#9839;</text>
+          <text x="230" y="447" font-family="sans-serif" font-size="17" font-weight="700" fill="#a3312a" text-anchor="middle">G&#9839;</text>
+          <text x="115" y="410" font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c" text-anchor="middle">D&#9839;</text>
+          <text x="45"  y="334" font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c" text-anchor="middle">A&#9839;</text>
+          <text x="30"  y="234" font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c" text-anchor="middle">F</text>
+          <text x="45"  y="134" font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c" text-anchor="middle">C</text>
+          <text x="115" y="60"  font-family="sans-serif" font-size="15" font-weight="700" fill="#1a3a5c" text-anchor="middle">G</text>
+
+          <text x="230" y="242" font-family="sans-serif" font-size="12.5" fill="#5b6472" text-anchor="middle">12 pure fifths,</text>
+          <text x="230" y="257" font-family="sans-serif" font-size="12.5" fill="#5b6472" text-anchor="middle">1 gap left over</text>
+        </svg>
+        <figcaption>Reading this diagram: start at D (top) and go clockwise, one pure fifth per step -- D&rarr;A&rarr;E&rarr;B&rarr;F#&rarr;C#&rarr;G#&rarr;D#&rarr;A#&rarr;F&rarr;C&rarr;G. After twelve fifths you're back near D, but the dashed red line marks where the loop does <em>not</em> perfectly close (Appendix A's proof: 3<sup>12</sup> can never equal a whole power of 2). That leftover gap is the Pythagorean comma. The gold links and the larger red node mark G#/A-flat, the point in the loop diametrically opposite D -- the traditional "wolf" position, exactly where a tuning convention would concentrate the whole gap under Option A (Appendix C shows this is also where one of the consort's own programmed pieces sits).</figcaption>
+      </figure>
+      <div class="cof-legend">
+        <span><span class="sw" style="background:#1a3a5c"></span>the 12 pure fifths in the chain</span>
+        <span><span class="sw" style="background:#a3312a"></span>closest to D, diametrically opposite &mdash; traditional wolf position (G#/A-flat)</span>
+      </div>
+      <p class="cof-note">This diagram shows the general mechanism Appendix B already describes in words -- it draws no conclusion about which option (A or B) Iris should choose. That decision is yours to make with the numbers below.</p>
+
+      <p><strong>D2 &mdash; the Pythagorean comma.</strong> Twelve pure fifths, multiplied out:</p>
+      <blockquote>(3/2)<sup>12</sup> = 3<sup>12</sup> / 2<sup>12</sup> = 531,441 / 4,096&nbsp; =&nbsp; 129.746337890625</blockquote>
+      <p>Seven octaves:</p>
+      <blockquote>2<sup>7</sup> = 128</blockquote>
+      <p>The leftover ratio (the "Pythagorean comma") is twelve fifths divided by seven octaves:</p>
+      <blockquote>(531,441 / 4,096) &divide; 128&nbsp; =&nbsp; 531,441 / 524,288&nbsp; &asymp;&nbsp; 1.0136433</blockquote>
+      <p>In lowest terms this is already reduced: 531,441 = 3<sup>12</sup> (all factors of 3) and 524,288 = 2<sup>19</sup> (all factors of 2), so by the same reasoning as Appendix A they share no common factor to cancel. In cents, this comma measures <strong>&asymp; 23.46 cents</strong> [S1] -- a little under a quarter of a semitone.</p>
+
+      <p><strong>D3 &mdash; spreading the comma (Option B).</strong> The comma's excess over a perfect 1:1 match is:</p>
+      <blockquote>531,441/524,288 &minus; 1&nbsp; =&nbsp; 7,153/524,288&nbsp; &asymp;&nbsp; 0.0136433</blockquote>
+      <p>Equal temperament divides this excess evenly across the twelve fifths -- a fraction divided by a whole number:</p>
+      <blockquote>(7,153/524,288) &divide; 12&nbsp; =&nbsp; 7,153/6,291,456&nbsp; &asymp;&nbsp; 0.0011369&nbsp; per fifth</blockquote>
+      <p>which is <strong>&asymp; 1.955 cents</strong> of mistuning built into every single fifth, all twelve of them [S2].</p>
+
+      <p><strong>D5 &mdash; the two distributions, side by side.</strong> Which single fifth in the loop gets designated the wolf is a real tuner's choice, not fixed by the arithmetic (any one of the twelve could carry the comma instead, and the total/average below comes out the same regardless of which). Historically, builders placed it at the point in the loop farthest around from the key(s) they most needed pure -- for a chain built outward from D, that is the fifth near G#/A-flat, diametrically opposite D on the circle. That is the convention this case adopts under Option A: the wolf sits near G#, not adjacent to D.</p>
+      <table id="apx-b-table">
+        <tr><th>Fifth in the loop</th><th>Option A -- Just Intonation, mistuning of that fifth</th><th>Option B -- Equal Temperament, mistuning of that fifth</th></tr>
+        <tr><td>The other eleven fifths (pure, regardless of which one is designated the wolf)</td><td class="num">0 cents (pure, by construction)</td><td class="num">&asymp;1.955 cents, each</td></tr>
+        <tr><td>The fifth designated the wolf (by convention, near G#/A-flat -- diametrically opposite D)</td><td class="num">&asymp;23.46 cents (absorbs the entire comma)</td><td class="num">&asymp;1.955 cents</td></tr>
+        <tr class="hi"><td><strong>Total mistuning, all twelve fifths</strong></td><td class="num"><strong>&asymp;23.46 cents</strong></td><td class="num"><strong>&asymp;23.46 cents</strong></td></tr>
+        <tr class="hi"><td><strong>Average mistuning per key (total &divide; 12)</strong></td><td class="num"><strong>&asymp;1.955 cents = &asymp;0.0196 of a semitone</strong></td><td class="num"><strong>&asymp;1.955 cents = &asymp;0.0196 of a semitone</strong></td></tr>
+        <tr><td><strong>Worst single key's mistuning</strong></td><td class="num"><strong>&asymp;23.46 cents = &asymp;0.235 of a semitone (the wolf)</strong></td><td class="num"><strong>&asymp;1.955 cents = &asymp;0.0196 of a semitone (every key, equally)</strong></td></tr>
+      </table>
+      <p class="side-note">The two totals are identical because both options are distributing the exact same unavoidable comma from Appendix A -- Option A concentrates it in one interval the consort must never play near; Option B spreads it so thin no single key ever sounds obviously wrong, but no key, including D major, is ever perfectly pure either. (SEE APPENDIX C for which keys the consort actually plays.) The Working Notebook below will have you reproduce this table's own arithmetic from scratch rather than just read it off the page.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix C &mdash; The Cantilena Consort's Requested Program</summary>
+    <div class="inner">
+      <p>The consort's music director sent this repertoire list with the build contract, so Iris knows which keys the Fenice actually has to sound good in on opening night. Not every key on this list gets used equally, and the program includes pieces in keys nowhere near D major -- a detail the pitch should decide whether to weigh.</p>
+      <table id="apx-c-table">
+        <tr><th>Piece</th><th>Composer (style)</th><th>Key</th><th>Steps from D on the circle of fifths</th><th>Times programmed this season</th></tr>
+        <tr><td>Sonata in D major</td><td>house arrangement, after Scarlatti</td><td>D major (home key)</td><td class="num">0</td><td class="num">6</td></tr>
+        <tr><td>Suite in A major</td><td>house arrangement, after Rameau</td><td>A major</td><td class="num">1</td><td class="num">4</td></tr>
+        <tr><td>Prelude in G major</td><td>house arrangement, after Bach</td><td>G major</td><td class="num">1</td><td class="num">3</td></tr>
+        <tr><td>Toccata in E major</td><td>house arrangement, after Froberger</td><td>E major</td><td class="num">2</td><td class="num">2</td></tr>
+        <tr><td>Capriccio in B-flat major</td><td>house arrangement, after Frescobaldi</td><td>B-flat major</td><td class="num">4</td><td class="num">1</td></tr>
+        <tr><td>Fantasia in A-flat major</td><td>house arrangement, after Froberger</td><td>A-flat major (the wolf key itself, per Appendix B)</td><td class="num">6</td><td class="num">1</td></tr>
+      </table>
+      <p class="side-note">"Steps from D on the circle of fifths" counts the fewest fifth-jumps needed to reach that key from D, in either direction around the loop from Appendix B -- e.g. A major is one pure fifth up from D, so it is 1 step; A-flat major is 6 steps either way around the 12-key loop, the maximum possible, which is exactly why Appendix B's convention places the wolf there. All six pieces are constructed, in-house arrangements for this case and are not claims about any real recorded performance -- the key list and how often each is programmed are the scenario's own stated facts, not sourced data (SEE APPENDIX D for everything in this case that IS sourced to a real reference).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apx-d-table">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Definition of the pure ("just") perfect fifth (3:2), the pure octave (2:1), the Pythagorean comma's ratio (3<sup>12</sup>/2<sup>19</sup> = 531441/524288) and its size in cents (&asymp;23.46 cents)</td><td>3/2 fifth; 2/1 octave; 531441/524288; &asymp;23.46 cents</td><td><a href="https://en.wikipedia.org/wiki/Pythagorean_comma" target="_blank" rel="noopener">Wikipedia &mdash; "Pythagorean comma"</a></td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Definition of 12-tone equal temperament, the equal-tempered semitone ratio (2^(1/12)), the equal-tempered fifth ratio (2^(7/12), &asymp;700 cents) and its size relative to the pure fifth (&asymp;1.96 cents narrower)</td><td>2^(1/12) semitone; 2^(7/12) fifth = 700 cents; &asymp;1.96 cents narrower than 3:2</td><td><a href="https://en.wikipedia.org/wiki/Equal_temperament" target="_blank" rel="noopener">Wikipedia &mdash; "Equal temperament"</a></td><td>HIGH</td></tr>
+      </table>
+      <p class="side-note">Both S1 and S2 state fixed, universally-agreed mathematical definitions (the ratios that DEFINE a pure fifth, a pure octave, and 12-tone equal temperament) rather than a measured or disputed real-world quantity -- every downstream number in Appendices A and B (the comma, its cents value, the per-fifth tempering amount) is this case's own arithmetic, derived from S1/S2's definitions and independently checked by direct calculation (shown in Appendix A/B), not looked up separately. Confidence is graded HIGH because the definitions are unambiguous, dated to the access day, and are the actual defining quantities the case's math needs, not a proxy. Both sources fetched and confirmed live 2026-09-17 and re-verified 2026-09-18.</p>
+    </div>
+  </details>
+
+  <details open id="apx-story-glossary">
+    <summary>Appendix F &mdash; Story Vocabulary: The World of Harpsichord Tuning</summary>
+    <div class="inner">
+      <p>This case leans on real vocabulary from historical instrument-building and music theory that has nothing to do with the math itself. If any of these words are new to you, hover for a plain-English definition, or click through to a real reference article (opens in a new tab).</p>
+      <div class="story-grid" id="storyVocab"></div>
+      <p class="gloss-source">Links verified working 2026-09-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix E &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: the prime-factorization proof</h4>
+    <div class="goal">Twelve stacked pure fifths give 3<sup>12</sup> over some power of 2. Enter the exponent on 3 and the exponent on 2 in that comparison (Appendix A).</div>
+    <div class="fieldrow"><label for="s1a">Exponent on 3 (3<sup>?</sup>)</label><input type="number" id="s1a" placeholder="a whole number"><button onclick="checkStep1()">Check</button><span class="fb" id="fb1a"></span></div>
+    <div class="fieldrow"><label for="s1b">3<sup>12</sup> equals</label><input type="number" id="s1b" placeholder="a whole number"><span class="fb" id="fb1b"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: the Pythagorean comma</h4>
+    <div class="goal">Using Appendix A's ratios, compute twelve pure fifths as a fraction, seven octaves as a whole number, and the comma (fifths &divide; octaves) as a ratio and in cents.</div>
+    <div class="fieldrow"><label for="s2num">(3/2)<sup>12</sup> numerator</label><input type="number" id="s2num" placeholder="a whole number"><button onclick="checkStep2()">Check</button><span class="fb" id="fb2num"></span></div>
+    <div class="fieldrow"><label for="s2den">(3/2)<sup>12</sup> denominator</label><input type="number" id="s2den" placeholder="a whole number"><span class="fb" id="fb2den"></span></div>
+    <div class="fieldrow"><label for="s2oct">2<sup>7</sup> (seven octaves)</label><input type="number" id="s2oct" placeholder="a whole number"><span class="fb" id="fb2oct"></span></div>
+    <div class="fieldrow"><label for="s2ratio">Comma ratio (decimal, 4+ places)</label><input type="number" step="0.0001" id="s2ratio" placeholder="a decimal"><span class="fb" id="fb2ratio"></span></div>
+    <div class="fieldrow"><label for="s2cents">Comma size (cents, 2 decimals)</label><input type="number" step="0.01" id="s2cents" placeholder="a decimal number of cents"><span class="fb" id="fb2cents"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: spreading the comma (fraction &divide; whole number)</h4>
+    <div class="goal">Divide the comma's excess fraction (531,441 &minus; 524,288, over 524,288) by 12, the whole number of fifths, WITHOUT converting to a decimal first.</div>
+    <div class="fieldrow"><label for="s3num">Excess numerator (before dividing by 12)</label><input type="number" id="s3num" placeholder="a whole number"><button onclick="checkStep3()">Check</button><span class="fb" id="fb3num"></span></div>
+    <div class="fieldrow"><label for="s3den">Per-fifth denominator (after dividing by 12)</label><input type="number" id="s3den" placeholder="a whole number"><span class="fb" id="fb3den"></span></div>
+    <div class="fieldrow"><label for="s3cents">Per-fifth mistuning (cents, 3 decimals)</label><input type="number" step="0.001" id="s3cents" placeholder="a decimal number of cents"><span class="fb" id="fb3cents"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: whole number &divide; fraction</h4>
+    <div class="goal">Divide the octave ratio (2, a whole number) by the pure-fifth ratio (3/2, a fraction) to find what's left over after one fifth.</div>
+    <div class="fieldrow"><label for="s4num">Result numerator</label><input type="number" id="s4num" placeholder="a whole number"><button onclick="checkStep4()">Check</button><span class="fb" id="fb4num"></span></div>
+    <div class="fieldrow"><label for="s4den">Result denominator</label><input type="number" id="s4den" placeholder="a whole number"><span class="fb" id="fb4den"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; D5: the two averages, side by side</h4>
+    <div class="goal">Using your Step 2 comma-in-cents value, compute the AVERAGE mistuning per key (total &divide; 12 keys) under Option A and under Option B separately, then compare them.</div>
+    <div class="fieldrow"><label for="s5a">Option A average (cents/key, 3 decimals)</label><input type="number" step="0.001" id="s5a" placeholder="a decimal number of cents"><button onclick="checkStep5()">Check</button><span class="fb" id="fb5a"></span></div>
+    <div class="fieldrow"><label for="s5b">Option B average (cents/key, 3 decimals)</label><input type="number" step="0.001" id="s5b" placeholder="a decimal number of cents"><span class="fb" id="fb5b"></span></div>
+    <div class="fieldrow" id="s5compareRow" style="display:none"></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>At roughly the 15-minute mark: the consort's manager calls with news that wasn't in the original packet. Appendix C's Fantasia in A-flat major -- the one piece already sitting exactly in the wolf key under Option A's convention -- was easy to write off as "just one performance, we'll manage." Not anymore: the guest violinist the consort just booked for next month's high-profile benefit concert has built her entire feature spot around that Fantasia. It is no longer a piece the consort can quietly drop or reschedule. If you voted A on the theory of "it's only one performance, in a piece we could always cut," you now have to reckon with a piece that has become the centerpiece of the season's biggest booking. You have 60 seconds. Are you changing your plan &mdash; or not?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">See what the Twist does (and doesn't) change about the math</label>
+      </div>
+      <div id="twistResultBox" style="display:none;margin-top:10px;font-family:var(--sans);font-size:.88rem;color:#e8e3d5;border-top:1px solid #444;padding-top:10px"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 &mdash; Wikipedia, "Pythagorean comma"</li>
+      <li>S2 &mdash; Wikipedia, "Equal temperament"</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Wolf Interval &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE DATA -- ported verbatim from cases/the-wolf-interval/sensitivity_model.py.
+   case.md sha256 (at time of this build): e4323ca5abe829f637df5e68444667e0aaa338a88b479eabed7b7c46e1c9267d
+   Every PARAM below is either S1/S2-cited (Appendix D) or a fixed structural
+   count of 12-tone tuning (Appendix A/B) -- never an authorial assumption.
+   FLEX = [] is deliberate (see sensitivity_model.py's own docstring): there is
+   no stated Modeling Assumption in this case to flex against.
+   HARD LINE (MCS-37): this file never prints the balance_test verdict
+   (margin_pct) as a static literal -- the notebook computes it live, below.
+   ================================================================ */
+const PARAMS = {
+  fifth_num: 3, fifth_den: 2,
+  octave_num: 2, octave_den: 1,
+  n_fifths: 12, n_octaves: 7
+};
+const FLEX = [];
+
+function commaRatio(p){
+  return Math.pow(p.fifth_num / p.fifth_den, p.n_fifths) / Math.pow(p.octave_num / p.octave_den, p.n_octaves);
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const ratio = commaRatio(p);
+  const commaCents = 1200 * Math.log2(ratio);
+  const avgCentsPerKey = commaCents / p.n_fifths;   // true for A and for B alike -- see Appendix B
+  const score = -(avgCentsPerKey / 100);             // fraction of a semitone, sign flipped (higher = better)
+  return {A: score, B: score, comma_ratio: ratio, comma_cents: commaCents, avg_cents_per_key: avgCentsPerKey};
+}
+function evaluate_twist(params){
+  // The Twist changes which piece of repertoire is at stake, not the tuning
+  // arithmetic itself -- the comma, its cents value, and the per-key average
+  // are physical/mathematical facts (Appendix A/D), untouched by a booking
+  // decision. evaluate_twist() therefore reproduces the identical numbers on
+  // purpose; the Twist toggle below is honest about that rather than faking
+  // a recompute that wouldn't reflect what actually changed.
+  return evaluate(params);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC helpers
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title, 'Heroes Academy Math Builder case study', '', 'Sources:', ...srcLis, '', location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   Working Notebook check functions -- every check reads live from
+   evaluate()/evaluate_twist() above, never from a hardcoded literal.
+   ================================================================ */
+let twistApplied = false;
+function currentEval(){ return twistApplied ? evaluate_twist({}) : evaluate({}); }
+
+function checkStep1(){
+  fb('fb1a', near(val('s1a'), PARAMS.n_fifths, 0.001));
+  fb('fb1b', near(val('s1b'), Math.pow(PARAMS.fifth_num, PARAMS.n_fifths), 0.5));
+}
+function checkStep2(){
+  const e = currentEval();
+  const num = Math.pow(PARAMS.fifth_num, PARAMS.n_fifths);
+  const den = Math.pow(PARAMS.fifth_den, PARAMS.n_fifths);
+  const oct7 = Math.pow(PARAMS.octave_num, PARAMS.n_octaves);
+  fb('fb2num', near(val('s2num'), num, 0.5));
+  fb('fb2den', near(val('s2den'), den, 0.5));
+  fb('fb2oct', near(val('s2oct'), oct7, 0.5));
+  fb('fb2ratio', near(val('s2ratio'), round(e.comma_ratio,4), 0.001));
+  fb('fb2cents', near(val('s2cents'), round(e.comma_cents,2), 0.05));
+}
+function checkStep3(){
+  // excess = 3^12 - 2^19 = 531441 - 524288 = 7153 (Appendix B, D3)
+  const excessNumeric = Math.pow(PARAMS.fifth_num, PARAMS.n_fifths) - Math.pow(2, 19);
+  const perFifthDen = Math.pow(2, 19) * PARAMS.n_fifths;
+  const e = currentEval();
+  fb('fb3num', near(val('s3num'), excessNumeric, 0.5));
+  fb('fb3den', near(val('s3den'), perFifthDen, 0.5));
+  fb('fb3cents', near(val('s3cents'), round(e.avg_cents_per_key,3), 0.01));
+}
+function checkStep4(){
+  fb('fb4num', near(val('s4num'), 4, 0.001));
+  fb('fb4den', near(val('s4den'), 3, 0.001));
+}
+function checkStep5(){
+  const e = currentEval();
+  const target = round(e.avg_cents_per_key, 3);
+  const okA = near(val('s5a'), target, 0.01);
+  const okB = near(val('s5b'), target, 0.01);
+  fb('fb5a', okA);
+  fb('fb5b', okB);
+  const row = document.getElementById('s5compareRow');
+  if(okA && okB){
+    row.style.display = 'block';
+    const marginPct = 100 * Math.abs(val('s5a') - val('s5b')) / target;
+    row.innerHTML = `<span class="fb ok" style="margin-left:0">Both averages match &mdash; the percent margin between them, computed live from your own numbers, is ${round(marginPct,2)}%.</span>`;
+  } else {
+    row.style.display = 'none';
+  }
+}
+
+/* ================================================================
+   Twist toggle -- honestly reports that the arithmetic does not
+   change (see evaluate_twist()'s comment above); what changes is
+   which piece of repertoire the wolf key now costs the consort.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  twistApplied = document.getElementById('applyTwist').checked;
+  const box = document.getElementById('twistResultBox');
+  if(twistApplied){
+    const e = evaluate_twist({});
+    box.style.display = 'block';
+    box.innerHTML = `The comma (&asymp;${round(e.comma_cents,2)} cents) and the average mistuning per key (&asymp;${round(e.avg_cents_per_key,3)} cents) are exactly the same as before &mdash; the Twist is a fact about the consort's <em>schedule</em>, not a new fact about acoustics. What changed is which single piece now depends on the wolf key being avoidable.`;
+  } else {
+    box.style.display = 'none';
+  }
+  ['fb1a','fb1b','fb2num','fb2den','fb2oct','fb2ratio','fb2cents','fb3num','fb3den','fb3cents','fb4num','fb4den','fb5a','fb5b']
+    .forEach(id=>{ const el=document.getElementById(id); if(el){ el.className='fb'; el.textContent=''; } });
+  document.getElementById('s5compareRow').style.display = 'none';
+}
+
+/* ================================================================
+   Dilemma pick widget
+   ================================================================ */
+const CASE_ID = "the-wolf-interval";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+const DELIVERABLES = [
+  ["D1", "A prime-factorization proof table showing why twelve stacked pure fifths (ratio 3/2 each) can never equal a whole number of octaves (ratio 2/1 each)."],
+  ["D2", "A worked calculation of the Pythagorean comma (twelve fifths vs. seven octaves), expressed as a fraction in lowest terms."],
+  ["D3", "A calculation dividing the comma's excess fraction by the whole number of fifths (12), shown as a fraction-by-whole-number division."],
+  ["D4", "A calculation dividing the whole-number octave ratio (2) by the fractional fifth ratio (3/2)."],
+  ["D5", "A distribution table comparing Option A's and Option B's per-key mistuning, including each option's average fraction-of-a-semitone mistuning."]
+];
+
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   Math vocabulary glossary (T1-19, MCS-39) -- 9 terms, mathsisfun.com
+   and khanacademy.org, every URL fetched and confirmed live 2026-09-18
+   (several reused verbatim from already-verified sibling cases per
+   templates/INTERACTIVE_HTML_CONTRACT.md section 3's reuse rule:
+   Prime/Composite/Factor from the-equivalent-ledger and fret-board;
+   Exponent/Fraction/Reciprocal from the-equivalent-ledger and
+   downbeat-split; Ratio/Percent from downbeat-split).
+   ================================================================ */
+const GLOSSARY = {
+  "Prime": {def: "A whole number greater than 1 that can't be made by multiplying two smaller whole numbers.",
+    url: "https://www.mathsisfun.com/prime_numbers.html"},
+  "Composite": {def: "A whole number greater than 1 that CAN be made by multiplying two smaller whole numbers.",
+    url: "https://www.mathsisfun.com/definitions/composite-number.html"},
+  "Factor": {def: "A number that divides evenly into another number, or that multiplies with another to produce it.",
+    url: "https://www.mathsisfun.com/definitions/factor.html"},
+  "Exponent": {def: "A small raised number that says how many times to multiply a base by itself, e.g. the 12 in 3^12.",
+    url: "https://www.mathsisfun.com/definitions/exponent.html"},
+  "Fraction": {def: "A number that represents part of a whole, written as one number over another (numerator over denominator).",
+    url: "https://www.mathsisfun.com/fractions.html"},
+  "Reciprocal": {def: "A fraction flipped upside down (its numerator and denominator swapped) -- multiplying by the reciprocal is how you divide fractions.",
+    url: "https://www.mathsisfun.com/definitions/reciprocal.html"},
+  "Dividing Fractions": {def: "To divide by a fraction, flip it (take its reciprocal) and multiply instead -- the same method whether the other number is a fraction or a whole number.",
+    url: "https://www.mathsisfun.com/fractions_division.html"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b -- every interval in this case (3/2, 2/1) is a ratio.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"}
+};
+const HOWTO = [
+  ["How to factor a number", "Factor"],
+  ["How to divide a fraction by a whole number", "Dividing Fractions"],
+  ["How to divide a whole number by a fraction", "Dividing Fractions"]
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   Real-world / story vocabulary glossary (T1-21, MCS-47/MCS-48) --
+   12 terms, real-world sources (Wikipedia), every URL fetched and
+   confirmed live 2026-09-18. Deliberately a different object shape
+   ({desc, link}) and class ("sterm") from the math GLOSSARY above --
+   see templates/INTERACTIVE_HTML_CONTRACT.md / tier1_structural.py
+   T1-21 for why the two mechanisms must never share a shape.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Harpsichord": {desc: "A keyboard instrument that produces sound by plucking its strings when a key is pressed -- unlike a piano, which strikes its strings with a hammer.",
+    link: "https://en.wikipedia.org/wiki/Harpsichord"},
+  "Soundboard": {desc: "The vibrating wooden panel inside a stringed instrument that turns a plucked string's small vibration into sound loud enough to hear across a room -- the same job a guitar's body or a violin's belly does: the string alone is almost silent, but it makes a large, thin wooden surface vibrate with it, and that bigger surface is what actually pushes enough air to be heard.",
+    link: "https://en.wikipedia.org/wiki/Soundboard_(music)"},
+  "Tuning Pin": {desc: "A small peg a string is wound around. Turning it tightens or loosens the string, changing its tension -- and tension is what sets a string's pitch. There's no meter or app involved: a tuner turns the pin by ear alone, listening for the beat between the string and a reference pitch to slow down and vanish -- when the beat stops, the two pitches are locked exactly in tune.",
+    link: "https://en.wikipedia.org/wiki/Tuning_pin"},
+  "Temperament": {desc: "The specific system a tuner picks for deciding exactly how in-tune, or how slightly out-of-tune, each of the twelve possible notes will be relative to each other.",
+    link: "https://en.wikipedia.org/wiki/Musical_temperament"},
+  "Wolf Interval": {desc: "A musical interval so far out of tune it produces a harsh, uneven beating that early musicians said sounded like a wolf's howl. The faster two pitches beat, the rougher the sound: an ordinary tempered fifth's tiny mistuning beats slowly and gently, but the wolf's mistuning is roughly ten times bigger, so it beats roughly ten times faster and layers on top of the notes' other overtones -- turning what would be a slow, even wobble into a fast, rough, unstable flutter, which is why it sounds like a growl instead of a pulse.",
+    link: "https://en.wikipedia.org/wiki/Wolf_interval"},
+  "Circle Of Fifths": {desc: "A diagram/chain that arranges all twelve notes in order of pure fifths, showing how closely related (or distant) any two keys are.",
+    link: "https://en.wikipedia.org/wiki/Circle_of_fifths"},
+  "Beating": {desc: "A wobbling, pulsing loudness you hear when two pitches that are almost -- but not quite -- in tune sound together. Think of two people clapping at almost, but not quite, the same speed: sometimes their claps land together (louder), sometimes apart (quieter), and that repeating loud-quiet-loud pattern IS the beat -- the closer the two pitches, the slower the wobble; a wolf interval's beat is so fast and uneven it sounds harsh instead of just slow and gentle.",
+    link: "https://en.wikipedia.org/wiki/Beat_(acoustics)"},
+  "Register": {desc: "The range of high and low notes a voice or instrument can produce. The twelve notes of the circle of fifths repeat every octave, so \"one register over\" means playing that same set of twelve notes one octave higher or lower -- same note names, shifted up or down a full doubling of frequency.",
+    link: "https://en.wikipedia.org/wiki/Register_(music)"},
+  "Cent": {desc: "A tiny unit for measuring how far a note is from where it \"should\" be. For scale: the smallest playable step on a piano (one semitone) is 100 cents, so a wolf interval's ~23.46-cent error is under a quarter of that smallest step -- small compared to a whole semitone, but still a distinctly audible amount of mistuning.",
+    link: "https://en.wikipedia.org/wiki/Cent_(music)"},
+  "Dominant": {desc: "The fifth note of a musical scale, counted up from the home note -- the second most important note in a key, and the note a perfect fifth measures to.",
+    link: "https://en.wikipedia.org/wiki/Dominant_(music)"},
+  "Home Key": {desc: "The one \"home base\" note, and the set of notes built around it, that a piece of music is written in.",
+    link: "https://en.wikipedia.org/wiki/Key_(music)"},
+  "Semitone": {desc: "The smallest standard step in Western music -- e.g. from one piano key to the very next one, black or white.",
+    link: "https://en.wikipedia.org/wiki/Semitone"}
+};
+
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-term="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}</span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyVocab');
+  if(el) el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+/* Fill in the two Appendix A/Challenges "slot" spans (hand-placed, so a
+   specific occurrence links to a specific spot rather than wherever the
+   auto-linker's generic first-mention scan would otherwise land it). */
+document.querySelectorAll('.gterm-slot[data-term]').forEach(span => {
+  const term = span.dataset.term;
+  if(term === 'Cent-story'){ span.outerHTML = stermHTML('Cent', 'Cent'); }
+  else if(term === 'Semitone-story'){ span.outerHTML = stermHTML('Semitone', 'semitone'); }
+  else if(term === 'Circle of Fifths-story'){ span.outerHTML = stermHTML('Circle Of Fifths', 'circle of fifths'); }
+  else { span.outerHTML = gtermHTML(term); }
+});
+
+/* ================================================================
+   Auto-link every glossary concept (math AND story) where it's
+   actually used in prose, on top of the two dedicated appendix lists
+   above -- same mechanism templates/interactive_shell.html documents,
+   run twice (once per vocabulary set) so neither can double-link a
+   term the other already claimed a hand-placed slot for.
+   ================================================================ */
+function autoLinkTerms(containerSelectors, dict, buildHTML, seedExcludeSelector){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term], .sterm[data-term]').forEach(a => {
+    if(!a.closest(seedExcludeSelector)) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(dict).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #apx-story-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = buildHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+const SECTIONS = ['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist'];
+autoLinkTerms(SECTIONS, GLOSSARY, gtermHTML, '#apx-glossary');
+autoLinkTerms(SECTIONS, STORY_GLOSSARY, stermHTML, '#apx-story-glossary');
+autoAddCSVButtons(CASE_ID);
+
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

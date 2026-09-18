@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Fold Line — Interactive</title>
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted #7a8ba0;cursor:help;font-style:italic}
+  .sterm:hover, .sterm:focus{background:#eef3f8}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:240px;background:#2f3b4a;color:#fff;font-family:var(--sans);font-weight:400;font-style:normal;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#2f3b4a}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-fold" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M4 8l8-4 8 4"/><path d="M4 16l8 4 8-4"/></symbol>
+  <symbol id="icon-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8 8l12 12"/><path d="M8 16l12-12"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Fold Line</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Geometry &middot; Reflections &amp; Congruence</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Priya Nakamura runs her thumbnail down the chalk line on the <a class="sterm" href="https://thefabriccalculator.com/blog/fabric-bolt-widths-explained" target="_blank" rel="noopener">bolt<span class="tip">A large roll of fabric as sold by the manufacturer, wound to a standard width.</span></a> of fabric and doesn't like what she sees. Behind her, the cutting room's twelve tables are already stacked with tomorrow's tickets, and the big rotary cutter at station three is still ticking as it cools. She's been staring at the same folded half-pattern for ten minutes, turning it over, laying it flat, folding it back.</p>
+  <p>Every bodice front the shop cuts starts the same way: a pattern piece, a bolt of fabric, and a choice her cutters make a hundred times a shift without thinking about it. Fold the fabric and trace one line, and the piece comes off symmetric, free &mdash; but the fold pins the piece in place, and there's no way to shift it to use the fabric better. Or open the fabric flat, trace the piece twice, flip the second copy, and nest the two mirror images together like puzzle pieces &mdash; tighter on the fabric, but twice the tracing, twice the cutting.</p>
+  <p>She's run the numbers on this before, in her head, on scraps, in the margins of yesterday's cutting tickets. She's never actually written them down side by side. The shop's margin is thin enough that this decision, repeated three hundred times a day, either pads it or eats it &mdash; and nobody has told her which.</p>
+  <p>Her supervisor is waiting by the door for her answer before the morning run starts. Priya picks up her tape measure and turns back to the table.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Priya Nakamura is the cutting-room lead at a small-batch garment manufacturer that runs twelve cutting tables on a single 44-inch bolt line. She signs off on the cutting plan every morning, and any fabric wasted beyond what a plan predicts comes directly out of the shop's own margin &mdash; there is no separate materials budget to absorb it.</p>
+  <p>The shop's highest-volume item is a fitted bodice front panel, cut fresh every day. Priya must choose, once, a standing rule for how every cutter on the floor cuts that panel from now on. Two methods are on the table:</p>
+  <p><strong>The Fold Cut</strong> &mdash; fold the fabric in half along its length and lay the pattern's straight center-front edge exactly on the true fold. One tracing, one cutting pass through both layers, produces a complete, symmetric panel. Because the pattern's edge is locked to the fold, it cannot be rotated or shifted to avoid the curved waste at the armhole and side seam &mdash; a real, known industry effect called <a class="sterm" href="https://www.apexfashionlab.com/glossary/marker-making" target="_blank" rel="noopener">marker efficiency<span class="tip">The percentage of fabric drawn from the bolt that actually becomes finished garment, rather than scrap.</span></a>, the percentage of the fabric it uses that actually becomes garment rather than scrap (see Appendix D).</p>
+  <p><strong>The Open Cut</strong> &mdash; lay the fabric flat, unfolded, and trace the complete panel as two separate mirror-image half-pieces. Because each half is a free piece, not locked to a fold, a cutter can physically slide its paper pattern around on the flat fabric &mdash; the way you'd slide two puzzle pieces across a table until their edges touch &mdash; and nest it edge-to-edge against its mirror image, closing up more of the curved gaps that the Fold Cut leaves behind. It also means tracing and cutting the panel twice instead of once.</p>
+  <p>Every cutting decision has two costs, and they pull in opposite directions: the fabric consumed per panel (see Appendix A, Appendix B, and Appendix D) and the cutting-room labor spent marking and cutting it (see Appendix C). The shop's cutters are paid the same wage regardless of which method they use (see Appendix C), and the shop cuts the same 300 bodice fronts every day regardless of which method Priya picks. The panel's finished, sewn dimensions (see Appendix A) do not change between the two methods &mdash; only how much raw fabric and cutting time it takes to get there. None of the figures in this case are invented outright; every one is either cited to a real, live source or stated openly as a scenario assumption, with the basis for each assumption disclosed in Appendix E.</p>
+  <p>The vocabulary and "how to&hellip;" skills this case will ask you to research are listed in Appendix F &mdash; that is where Challenge 1 sends you. Every sourced figure and stated assumption in this case is documented in Appendix G.</p>
+  <p>Priya's supervisor knocks on the door frame.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Priya Nakamura. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Fold Cut</h4>
+      <p style="margin:0">One tracing and one cutting pass per panel, locked to the fabric's true fold.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Open Cut</h4>
+      <p style="margin:0">Trace and cut two separate mirror-image half-pieces per panel, then nest them edge-to-edge.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which you would choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include D1 (a coordinate-grid reflection diagram for each cutting method), D2 (a congruence check for each diagram in D1), D3 (a cutting-dimensions and yardage worksheet), and D4 (a cost-per-panel table and daily-run projection) &mdash; see the Deliverables checklist below for the full text of each.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; The Bodice Front Panel: Finished Dimensions</summary>
+    <div class="inner">
+      <table id="apx-a-table">
+        <tr><th>Measurement</th><th>Value</th></tr>
+        <tr><td>Finished width, fold edge to side seam (bust level)</td><td class="num">8 3/8 in</td></tr>
+        <tr><td>Finished length, shoulder to waist hem</td><td class="num">23 1/4 in</td></tr>
+        <tr><td>Side/shoulder <a class="sterm" href="https://en.wikipedia.org/wiki/Seam_allowance" target="_blank" rel="noopener">seam allowance<span class="tip">The extra fabric added beyond a garment's finished edge so two pieces can be sewn together without losing size.</span></a> (industry-standard)</td><td class="num">5/8 in</td></tr>
+        <tr><td>Waist hem allowance</td><td class="num">1 1/2 in</td></tr>
+      </table>
+      <p class="side-note">The finished width and length describe the sewn, worn panel &mdash; the same panel, sewn the same way, regardless of which cutting method produces it. Only the seam and hem allowances are added on top to get the panel's actual cutting dimensions, which is what Challenge D3 asks you to find. A 5/8-inch seam allowance is the near-universal U.S. home-sewing and light-manufacturing convention and applies at both the side seam and the shoulder seam. Note: the panel's real outline is curved at the armhole and side seam, not a rectangle &mdash; picture tracing a curvy puzzle-piece shape on graph paper, then drawing the smallest possible straight-sided rectangle that still contains the whole curvy outline: that rectangle's area is what this case calls the cutting bounding box, and it treats that rectangle as the fabric footprint the panel actually claims from the bolt.</p>
+
+      <h3>Worked example &mdash; how to reflect a half-pattern across the y-axis (illustrative numbers, not this case's real panel)</h3>
+      <figure>
+        <svg viewBox="0 0 400 360" width="400" height="360" role="img" aria-label="Example reflection diagram: a generic half-pattern with vertices A, B, C, D reflected across the y-axis to build a full symmetric shape, illustrating the Fold Cut technique">
+          <defs><pattern id="gridFold" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#dfe4ea" stroke-width="1"/></pattern></defs>
+          <rect x="40" y="20" width="320" height="310" fill="url(#gridFold)"/>
+          <line x1="40" y1="310" x2="360" y2="310" stroke="#5b6472" stroke-width="1.5"/>
+          <line x1="200" y1="20" x2="200" y2="330" stroke="#c9a227" stroke-width="3"/>
+          <text x="204" y="34" font-family="sans-serif" font-size="13" font-weight="700" fill="#8a6d10">line of symmetry (the y-axis)</text>
+          <text x="364" y="314" font-family="sans-serif" font-size="12" fill="#5b6472">x</text>
+          <text x="204" y="18" font-family="sans-serif" font-size="12" fill="#5b6472">y</text>
+          <polygon points="200,310 200,70 320,150 280,310" fill="#1a3a5c" fill-opacity="0.28" stroke="#1a3a5c" stroke-width="2.5"/>
+          <polygon points="200,310 200,70 80,150 120,310" fill="#c9a227" fill-opacity="0.22" stroke="#c9a227" stroke-width="2.5" stroke-dasharray="6 3"/>
+          <circle cx="200" cy="310" r="4" fill="#1a3a5c"/><text x="150" y="342" font-family="sans-serif" font-size="12" fill="#1a3a5c">A = A&#8242; (0, 0)</text>
+          <circle cx="200" cy="70" r="4" fill="#1a3a5c"/><text x="146" y="58" font-family="sans-serif" font-size="12" fill="#1a3a5c">B = B&#8242; (0, 6)</text>
+          <circle cx="320" cy="150" r="4" fill="#1a3a5c"/><text x="326" y="146" font-family="sans-serif" font-size="12" fill="#1a3a5c">C (3, 4)</text>
+          <circle cx="280" cy="310" r="4" fill="#1a3a5c"/><text x="284" y="342" font-family="sans-serif" font-size="12" fill="#1a3a5c">D (2, 0)</text>
+          <circle cx="80" cy="150" r="4" fill="#8a6d10"/><text x="4" y="146" font-family="sans-serif" font-size="12" fill="#8a6d10">C&#8242; (&minus;3, 4)</text>
+          <circle cx="120" cy="310" r="4" fill="#8a6d10"/><text x="36" y="342" font-family="sans-serif" font-size="12" fill="#8a6d10">D&#8242; (&minus;2, 0)</text>
+        </svg>
+        <figcaption>The half-pattern's straight edge (A&ndash;B) lies exactly on the y-axis &mdash; the <a class="gterm" data-term="Line Of Symmetry" href="https://www.mathsisfun.com/geometry/symmetry-line-plane-shapes.html" target="_blank" rel="noopener">line of symmetry<span class="tip">A line where a shape can be folded so that both halves match up exactly, edge for edge.<span class="go">Open a lesson on this &rarr;</span></span></a>. To reflect any point (x, y) across the y-axis, negate its x-coordinate: (x, y) &rarr; (&minus;x, y). Points A and B sit ON the line of symmetry, so each maps to itself; C(3, 4) maps to C&#8242;(&minus;3, 4) and D(2, 0) maps to D&#8242;(&minus;2, 0). The two halves &mdash; original (solid navy) and mirror image (dashed gold) &mdash; together form the complete, symmetric panel. <strong>Congruence check (D2):</strong> a reflection is a rigid motion &mdash; it changes no distances or angles &mdash; so AB &cong; A&#8242;B&#8242; (trivially, since A=A&#8242; and B=B&#8242;), BC &cong; B&#8242;C&#8242;, CD &cong; C&#8242;D&#8242;, and DA &cong; D&#8242;A&#8242;. Every corresponding pair of sides and angles matches exactly, so the original half and its mirror image are congruent. Draw your own version of this diagram for D1/D2 using this case's real Appendix A dimensions, not the numbers shown here.</figcaption>
+      </figure>
+
+      <h3>Worked example &mdash; the Open Cut: a free piece, reflected and shifted to nest (illustrative numbers)</h3>
+      <figure>
+        <svg viewBox="0 0 400 360" width="400" height="360" role="img" aria-label="Example nesting diagram: a generic half-pattern drawn as a free piece, then a reflected and translated copy nested edge-to-edge against it, illustrating the Open Cut technique">
+          <defs><pattern id="gridOpen" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#dfe4ea" stroke-width="1"/></pattern></defs>
+          <rect x="40" y="20" width="320" height="300" fill="url(#gridOpen)"/>
+          <line x1="40" y1="310" x2="360" y2="310" stroke="#5b6472" stroke-width="1.5"/>
+          <line x1="40" y1="20" x2="40" y2="330" stroke="#5b6472" stroke-width="1.5"/>
+          <text x="364" y="314" font-family="sans-serif" font-size="12" fill="#5b6472">x</text>
+          <text x="44" y="18" font-family="sans-serif" font-size="12" fill="#5b6472">y</text>
+          <polygon points="80,310 80,70 200,150 160,310" fill="#1a3a5c" fill-opacity="0.28" stroke="#1a3a5c" stroke-width="2.5"/>
+          <polygon points="320,310 320,70 200,150 240,310" fill="#c9a227" fill-opacity="0.22" stroke="#c9a227" stroke-width="2.5" stroke-dasharray="6 3"/>
+          <circle cx="80" cy="310" r="4" fill="#1a3a5c"/><text x="18" y="332" font-family="sans-serif" font-size="12" fill="#1a3a5c">A (1, 0)</text>
+          <circle cx="80" cy="70" r="4" fill="#1a3a5c"/><text x="18" y="58" font-family="sans-serif" font-size="12" fill="#1a3a5c">B (1, 6)</text>
+          <circle cx="160" cy="310" r="4" fill="#1a3a5c"/><text x="130" y="332" font-family="sans-serif" font-size="12" fill="#1a3a5c">D (3, 0)</text>
+          <circle cx="200" cy="150" r="4" fill="#3a2f0c"/><text x="150" y="132" font-family="sans-serif" font-size="12" fill="#3a2f0c">C = C&#8242; (4, 4) &mdash; pieces meet here</text>
+          <circle cx="320" cy="310" r="4" fill="#8a6d10"/><text x="292" y="332" font-family="sans-serif" font-size="12" fill="#8a6d10">A&#8242; (7, 0)</text>
+          <circle cx="320" cy="70" r="4" fill="#8a6d10"/><text x="292" y="58" font-family="sans-serif" font-size="12" fill="#8a6d10">B&#8242; (7, 6)</text>
+          <circle cx="240" cy="310" r="4" fill="#8a6d10"/><text x="222" y="332" font-family="sans-serif" font-size="12" fill="#8a6d10">D&#8242; (5, 0)</text>
+          <path d="M200,150 L160,310 L240,310 Z" fill="#a3312a" fill-opacity="0.10"/>
+          <text x="164" y="296" font-family="sans-serif" font-size="10.5" fill="#a3312a">small leftover gap</text>
+        </svg>
+        <figcaption>Piece 1 (solid navy) is a <a class="gterm" data-term="Reflection" href="https://www.mathsisfun.com/geometry/reflection.html" target="_blank" rel="noopener">free<span class="tip">A flip of a figure over a line, producing a mirror image the same distance from the line as the original point.<span class="go">Open a lesson on this &rarr;</span></span></a> piece &mdash; its straight edge (A&ndash;B) sits at x&nbsp;=&nbsp;1, not locked to any fold. To build its mirror-image partner: first reflect Piece 1's vertices across the y-axis (negate every x-coordinate: A(1,0)&rarr;(&minus;1,0), B(1,6)&rarr;(&minus;1,6), C(4,4)&rarr;(&minus;4,4), D(3,0)&rarr;(&minus;3,0)), then slide (translate) that reflected copy 8 units to the right. The slide lands one of its corners exactly on Piece 1's own outer corner C(4,4) &mdash; shown as Piece 2 (dashed gold). Because a straight-edged Fold Cut half-panel is locked to the axis, its mirror image can only ever meet it along that same fixed line; a free Open Cut piece has no such restriction, so it can be slid right up until the two outlines touch, leaving only the small reddish sliver shown here between D&ndash;C and D&#8242;&ndash;C as true waste. On the case's <em>real</em> panel &mdash; whose armhole/side-seam edge is a curve, not a straight line like B&ndash;C here &mdash; the same idea (free to slide, not pinned to a fold) lets a real cutter work a curved piece much closer to its mirror than a single corner touch, closing more of the gap than this straight-edged toy example shows. The small diagram below illustrates the general principle for a curved edge; it is not a claim that any two mirror curves interlock perfectly by reflection alone. That closer, longer contact is exactly what Appendix D's higher marker efficiency for the Open Cut (88% vs. 78%) is measuring. Because reflecting and then sliding are both rigid motions, Piece 2 is still congruent to Piece 1 (A&#8242;&cong;A, B&#8242;&cong;B, C&#8242;&cong;C, D&#8242;&cong;D) &mdash; every side length and angle is preserved, the same congruence argument as the Fold Cut diagram above, even though these two pieces never touch a fold. Draw your own version for D1/D2 using this case's real Appendix A dimensions.</figcaption>
+      </figure>
+
+      <h3>Why a curved edge nests tighter than a straight one (a close-up, illustrative only)</h3>
+      <figure>
+        <svg viewBox="0 0 260 380" width="260" height="380" role="img" aria-label="Simplified diagram of two mirror-image pieces sharing one curved seam line, showing how a curved edge lets two nested pieces touch along their entire length instead of at a single point">
+          <path d="M40,40 L130,40 Q170,120 130,160 Q90,200 130,240 Q170,280 130,340 L40,340 Z" fill="#1a3a5c" fill-opacity="0.28" stroke="#1a3a5c" stroke-width="2"/>
+          <path d="M220,40 L130,40 Q170,120 130,160 Q90,200 130,240 Q170,280 130,340 L220,340 Z" fill="#c9a227" fill-opacity="0.22" stroke="#c9a227" stroke-width="2" stroke-dasharray="6 3"/>
+          <path d="M130,40 Q170,120 130,160 Q90,200 130,240 Q170,280 130,340" fill="none" stroke="#a3312a" stroke-width="3"/>
+          <text x="8" y="26" font-family="sans-serif" font-size="12" fill="#1a3a5c">Piece 1</text>
+          <text x="180" y="26" font-family="sans-serif" font-size="12" fill="#8a6d10">Piece 2 (mirror)</text>
+          <text x="8" y="360" font-family="sans-serif" font-size="10.5" fill="#a3312a">shared curved seam &mdash; zero gap along its whole length</text>
+        </svg>
+        <figcaption>Here, both pieces are simply drawn on opposite sides of the same wavy boundary line &mdash; a shortcut to show the underlying <em>principle</em>, not a claim that any two mirror-image curves always fit together this neatly. Real garment nesting is a genuinely hard 2-D packing problem that professional marker-making software solves by trial, rotation, and small adjustments, not by a single clean reflection. What the reflect-and-shift math in the diagram above DOES guarantee, for any shape, straight or curved: the mirror copy is congruent to the original (same lengths, same angles) and free to be slid as close as its geometry allows, instead of being pinned to a fixed fold line. The closer, longer contact real cutters achieve with real curved pieces (versus the single-point contact the straight-edged toy example above shows) is exactly what shows up as Appendix D's higher marker efficiency number for the Open Cut &mdash; you do not need to be able to derive that packing by hand to trust the percentage.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix B &mdash; Bolt and Fabric</summary>
+    <div class="inner">
+      <table id="apx-b-table">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Bolt width</td><td class="num">44 in</td></tr>
+        <tr><td>Fabric price</td><td class="num">$3.70 per yard</td></tr>
+        <tr><td>Fabric content</td><td class="num">65% polyester / 35% cotton <a class="sterm" href="https://en.wikipedia.org/wiki/Broadcloth" target="_blank" rel="noopener">broadcloth<span class="tip">A tightly woven, plain-weave fabric traditionally used for shirting and lightweight garments.</span></a></td></tr>
+      </table>
+      <p class="side-note">A 44/45-inch bolt is the standard width for lightweight quilting- and shirting-weight cotton and cotton-blend fabric sold in the United States &mdash; a trade convention, not a standards-body figure. Priya's shop is built around a 44-inch bolt line specifically, so this case uses that width throughout.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix C &mdash; Cutting-Room Labor</summary>
+    <div class="inner">
+      <table id="apx-c-table">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Cutting-room wage (median, U.S., textile cutting occupation)</td><td class="num">$17.61 per hour</td></tr>
+        <tr><td><a class="sterm" href="https://textiletrainer.com/calculate-marker-efficiency-in-garment/" target="_blank" rel="noopener">Marking<span class="tip">Tracing a pattern piece's outline onto the fabric with chalk or a marking pen -- the step that happens right before cutting, so the cutter knows exactly where to cut.</span></a> + cutting time, Fold Cut (one tracing/cutting pass per panel)</td><td class="num">0.8 min</td></tr>
+        <tr><td>Marking + cutting time, Open Cut (two tracing/cutting passes per panel)</td><td class="num">1.6 min</td></tr>
+        <tr><td>Bodice fronts cut per day, this shop</td><td class="num">300</td></tr>
+      </table>
+      <p class="side-note">No public source publishes a per-panel marking-and-cutting time for a specific shop and pattern &mdash; this is an internal production-floor rate, not something any trade body tracks. The Open Cut time is set at exactly double the Fold Cut time, matching the shop's own floor observation.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix D &mdash; Marker Efficiency</summary>
+    <div class="inner">
+      <table id="apx-d-table">
+        <tr><th>Cutting method</th><th>Marker efficiency</th><th>What it means</th></tr>
+        <tr><td>Fold Cut</td><td class="num">78%</td><td>The pattern's straight edge is locked to the true fold and cannot be rotated or flipped to close up the curved waste at the armhole/side seam.</td></tr>
+        <tr><td>Open Cut</td><td class="num">88%</td><td>The two mirror-image half-pieces are free pieces and can be nested edge-to-edge against each other, closing most of that curved gap.</td></tr>
+      </table>
+      <p class="side-note">Marker efficiency is a real, standard garment-industry measure: the percentage of the fabric drawn from the bolt that ends up as usable garment, versus scrap. A "marker" is simply the traced layout &mdash; picture the chalk outlines of every pattern piece drawn directly onto a length of fabric before any cutting happens, arranged as tightly as the cutting method allows. Efficiency is defined as (total area of the pattern pieces) &divide; (total area of that traced-out layout) &times; 100. To find how much fabric a panel actually requires from the bolt, divide the panel's cutting-bounding-box area (Appendix A, Challenge D3) by its method's efficiency &mdash; efficiency describes what fraction of the fabric drawn becomes panel, so the fabric drawn must be larger than the panel itself.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are not sourced as direct external citations. They are stated scenario assumptions, each grounded in a real basis. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+      <table id="apx-e-table">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+        <tr><td>MA1</td><td>The bodice front panel's finished width, length, and hem allowance</td><td>Width 8 3/8 in; length 23 1/4 in; hem 1 1/2 in</td><td>No manufacturer publishes the exact dimensions of a specific proprietary commercial pattern. These values are sized consistently with published home-sewing pattern-envelope yardage requirements for a fitted bodice front.</td></tr>
+        <tr><td>MA2</td><td>Marking + cutting time per panel</td><td>Fold Cut 0.8 min; Open Cut 1.6 min</td><td>No trade body publishes a per-panel cutting-floor time; this is an internal production rate. The 2:1 ratio is fixed from the shop's own floor observation described in Background.</td></tr>
+        <tr><td>MA3</td><td>Marker efficiency, each method</td><td>Fold Cut 78%; Open Cut 88%</td><td>Both values are drawn from real, cited industry benchmark ranges for position-locked/single-piece markers (75&ndash;82%) and nested/optimized markers (82&ndash;90%) respectively.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix G &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apx-sources-table">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Standard U.S. commercial/home-sewing seam allowance</td><td>5/8 in</td><td><a href="https://en.wikipedia.org/wiki/Seam_allowance" target="_blank" rel="noopener">Wikipedia &mdash; Seam allowance</a></td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Standard bolt width for quilting/shirting-weight cotton</td><td>44/45 in</td><td><a href="https://thefabriccalculator.com/blog/fabric-bolt-widths-explained" target="_blank" rel="noopener">The Fabric Calculator</a></td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Definition and calculation method for marker efficiency</td><td>(pattern area / marker area) &times; 100</td><td><a href="https://textiletrainer.com/calculate-marker-efficiency-in-garment/" target="_blank" rel="noopener">Textile Trainer</a></td><td>MEDIUM</td></tr>
+        <tr><td>S4</td><td>44/45-inch poly-cotton broadcloth fabric price</td><td>$3.70 per yard</td><td><a href="https://www.onlinefabricstore.com/45-inch-white-broadcloth-fabric-.htm" target="_blank" rel="noopener">OnlineFabricStore</a></td><td>MEDIUM</td></tr>
+        <tr><td>S5</td><td>Median hourly wage, textile cutting occupation</td><td>$17.61 per hour</td><td><a href="https://www.bls.gov/oes/2023/may/oes516062.htm" target="_blank" rel="noopener">U.S. Bureau of Labor Statistics</a></td><td>HIGH</td></tr>
+        <tr><td>S6</td><td>Typical marker-efficiency ranges by nesting method</td><td>Single-size 75&ndash;82%; optimized nesting 82&ndash;90%</td><td><a href="https://www.apexfashionlab.com/glossary/marker-making" target="_blank" rel="noopener">Apex Fashion Lab</a></td><td>MEDIUM</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which method to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Cutting dimensions (mixed-number addition)</h4>
+    <div class="goal">Using Appendix A's finished width, finished length, seam allowance, and hem allowance, add the mixed numbers to find the panel's total cutting width and cutting length, in inches.</div>
+    <div class="fieldrow"><label for="s1w">Cutting width (in)</label><input type="number" step="0.01" id="s1w" placeholder="inches, as a decimal"><button onclick="checkStep1()">Check</button><span class="fb" id="fb1w"></span></div>
+    <div class="fieldrow"><label for="s1l">Cutting length (in)</label><input type="number" step="0.01" id="s1l" placeholder="inches, as a decimal"><span class="fb" id="fb1l"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Inches to yards</h4>
+    <div class="goal">Convert your Step 1 cutting length from inches to yards by multiplying by the fraction 1/36 (there are 36 inches in a yard).</div>
+    <div class="fieldrow"><label for="s2y">Cutting length (yd)</label><input type="number" step="0.0001" id="s2y" placeholder="yards, as a decimal"><button onclick="checkStep2()">Check</button><span class="fb" id="fb2y"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Cost per panel, each option</h4>
+    <div class="goal">Using the cutting bounding-box area, each method's marker efficiency (Appendix D) and the bolt width (Appendix B) to find fabric yardage, then price it (Appendix B) and add labor (minutes converted to hours, times the wage in Appendix C), find the total dollar cost per panel for each option.</div>
+    <div class="fieldrow"><label for="s3ff">Fold Cut &mdash; fabric cost ($)</label><input type="number" step="0.0001" id="s3ff" placeholder="dollars, as a decimal"><button onclick="checkStep3()">Check</button><span class="fb" id="fb3ff"></span></div>
+    <div class="fieldrow"><label for="s3lf">Fold Cut &mdash; labor cost ($)</label><input type="number" step="0.0001" id="s3lf" placeholder="dollars, as a decimal"><span class="fb" id="fb3lf"></span></div>
+    <div class="fieldrow"><label for="s3tf">Fold Cut &mdash; total per panel ($)</label><input type="number" step="0.0001" id="s3tf" placeholder="dollars, as a decimal"><span class="fb" id="fb3tf"></span></div>
+    <div class="fieldrow"><label for="s3fo">Open Cut &mdash; fabric cost ($)</label><input type="number" step="0.0001" id="s3fo" placeholder="dollars, as a decimal"><span class="fb" id="fb3fo"></span></div>
+    <div class="fieldrow"><label for="s3lo">Open Cut &mdash; labor cost ($)</label><input type="number" step="0.0001" id="s3lo" placeholder="dollars, as a decimal"><span class="fb" id="fb3lo"></span></div>
+    <div class="fieldrow"><label for="s3to">Open Cut &mdash; total per panel ($)</label><input type="number" step="0.0001" id="s3to" placeholder="dollars, as a decimal"><span class="fb" id="fb3to"></span></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Daily-run projection</h4>
+    <div class="goal">Multiply each option's per-panel total from Step 3 by the shop's 300-panel day, then state the dollar gap between the two daily totals.</div>
+    <div class="fieldrow"><label for="s4tf">Fold Cut &mdash; daily total ($)</label><input type="number" step="0.01" id="s4tf" placeholder="dollars, as a decimal"><button onclick="checkStep4()">Check</button><span class="fb" id="fb4tf"></span></div>
+    <div class="fieldrow"><label for="s4to">Open Cut &mdash; daily total ($)</label><input type="number" step="0.01" id="s4to" placeholder="dollars, as a decimal"><span class="fb" id="fb4to"></span></div>
+    <div class="fieldrow"><label for="s4gap">Dollar gap between the two daily totals</label><input type="number" step="0.01" id="s4gap" placeholder="dollars, as a decimal"><span class="fb" id="fb4gap"></span></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-scissors"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>"It's the middle of the shift. The fabric mill calls: their price for this broadcloth is rising from $3.70/yd to $6.50/yd, effective on the very next fabric order. Nothing else about either method changes &mdash; not the efficiencies, not the wage, not the marking/cutting times."</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Recompute Steps 3&ndash;4 with the twist applied</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 &mdash; Wikipedia, Seam allowance</li>
+      <li>S2 &mdash; The Fabric Calculator, Fabric Bolt Widths Explained</li>
+      <li>S3 &mdash; Textile Trainer, How to Calculate Marker Efficiency in Garment Manufacturing</li>
+      <li>S4 &mdash; OnlineFabricStore, 45" White Broadcloth Fabric</li>
+      <li>S5 &mdash; U.S. Bureau of Labor Statistics, OEWS Textile Cutting Machine Setters, Operators, and Tenders</li>
+      <li>S6 &mdash; Apex Fashion Lab, Marker Making glossary</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Fold Line &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE DATA — ported verbatim from cases/the-fold-line/sensitivity_model.py.
+   case.md sha256 (at time of this build): c32aaf5b710de547d85efdfd3d530934728fdf1bbac0cd10d99875c03f040f71
+   ================================================================ */
+const PARAMS = {
+  seam_allowance_in: 0.625,
+  bolt_width_in: 44.0,
+  price_per_yd: 3.70,
+  wage_per_hr: 17.61,
+  finished_width_in: 8.375,
+  finished_length_in: 23.25,
+  hem_allowance_in: 1.5,
+  t_fold_min: 0.8,
+  eff_fold: 0.78,
+  eff_open: 0.88,
+  twist_price_per_yd: 6.50,
+  panels_per_day: 300
+};
+const FLEX = ["t_fold_min", "eff_fold", "eff_open"];
+
+function totals(p, priceOverride){
+  const cuttingWidth = p.finished_width_in + p.seam_allowance_in;
+  const cuttingLength = p.finished_length_in + p.hem_allowance_in + p.seam_allowance_in;
+  const areaIn2 = cuttingWidth * cuttingLength;
+  const fabricIn2Fold = areaIn2 / p.eff_fold;
+  const fabricIn2Open = areaIn2 / p.eff_open;
+  const fabricYdFold = (fabricIn2Fold / p.bolt_width_in) / 36.0;
+  const fabricYdOpen = (fabricIn2Open / p.bolt_width_in) / 36.0;
+  const price = (priceOverride != null) ? priceOverride : p.price_per_yd;
+  const fabricCostFold = fabricYdFold * price;
+  const fabricCostOpen = fabricYdOpen * price;
+  const tFold = p.t_fold_min;
+  const tOpen = 2.0 * tFold;
+  const laborCostFold = (tFold / 60.0) * p.wage_per_hr;
+  const laborCostOpen = (tOpen / 60.0) * p.wage_per_hr;
+  const totalFold = fabricCostFold + laborCostFold;
+  const totalOpen = fabricCostOpen + laborCostOpen;
+  return {cuttingWidth, cuttingLength, areaIn2, fabricYdFold, fabricYdOpen,
+    fabricCostFold, fabricCostOpen, tFold, tOpen, laborCostFold, laborCostOpen,
+    totalFold, totalOpen};
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const t = totals(p);
+  return {A: -t.totalFold, B: -t.totalOpen, _t: t};
+}
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const t = totals(p, p.twist_price_per_yd);
+  return {A: -t.totalFold, B: -t.totalOpen, _t: t};
+}
+
+/* ================================================================
+   CASE-AGNOSTIC helpers
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title, 'Heroes Academy Math Builder case study', '', 'Sources:', ...srcLis, '', location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions
+   ================================================================ */
+let twistApplied = false;
+function currentEval(){ return twistApplied ? evaluate_twist({}) : evaluate({}); }
+
+function checkStep1(){
+  const e = currentEval();
+  fb('fb1w', near(val('s1w'), round(e._t.cuttingWidth,3), 0.05));
+  fb('fb1l', near(val('s1l'), round(e._t.cuttingLength,3), 0.05));
+}
+function checkStep2(){
+  const e = currentEval();
+  fb('fb2y', near(val('s2y'), round(e._t.cuttingLength/36,4), 0.002));
+}
+function checkStep3(){
+  const e = currentEval();
+  fb('fb3ff', near(val('s3ff'), round(e._t.fabricCostFold,4), 0.01));
+  fb('fb3lf', near(val('s3lf'), round(e._t.laborCostFold,4), 0.01));
+  fb('fb3tf', near(val('s3tf'), round(e._t.totalFold,4), 0.01));
+  fb('fb3fo', near(val('s3fo'), round(e._t.fabricCostOpen,4), 0.01));
+  fb('fb3lo', near(val('s3lo'), round(e._t.laborCostOpen,4), 0.01));
+  fb('fb3to', near(val('s3to'), round(e._t.totalOpen,4), 0.01));
+}
+function checkStep4(){
+  const e = currentEval();
+  const dailyFold = e._t.totalFold * PARAMS.panels_per_day;
+  const dailyOpen = e._t.totalOpen * PARAMS.panels_per_day;
+  fb('fb4tf', near(val('s4tf'), round(dailyFold,2), 0.5));
+  fb('fb4to', near(val('s4to'), round(dailyOpen,2), 0.5));
+  fb('fb4gap', near(val('s4gap'), round(Math.abs(dailyOpen-dailyFold),2), 0.5));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget
+   ================================================================ */
+const CASE_ID = "the-fold-line";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+const DELIVERABLES = [
+  ["D1", "A coordinate-grid diagram of the bodice front half-pattern for each cutting method, using reflection across the y-axis to construct the full symmetric panel and labeling the line of symmetry."],
+  ["D2", "A congruence check verifying the original half-pattern and its mirror image are congruent, for each diagram in D1."],
+  ["D3", "A cutting-dimensions and yardage worksheet: total cutting width/length via mixed-number addition of the finished dimensions and allowances, then inches-to-yards conversion."],
+  ["D4", "A cost-per-panel table and daily-run projection for each option: fabric cost (yardage adjusted for marker efficiency, times price per yard) plus labor cost (minutes converted to hours, times hourly wage), then multiplied across the shop's 300-panel day."]
+];
+
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (10 terms, mathsisfun.com
+   and khanacademy.org, verified live 2026-09-18)
+   ================================================================ */
+const GLOSSARY = {
+  "Line Of Symmetry": {def: "A line where a shape can be folded so that both halves match up exactly, edge for edge.",
+    url: "https://www.mathsisfun.com/geometry/symmetry-line-plane-shapes.html"},
+  "Symmetry": {def: "When a shape or object looks exactly the same after a flip, slide, or turn.",
+    url: "https://www.mathsisfun.com/geometry/symmetry.html"},
+  "Congruent": {def: "Two shapes are congruent when one can become the other using only turns, flips, and slides -- every length and angle stays the same.",
+    url: "https://www.mathsisfun.com/geometry/congruent.html"},
+  "Reflection": {def: "A flip of a figure over a line, producing a mirror image the same distance from the line as the original point.",
+    url: "https://www.mathsisfun.com/geometry/reflection.html"},
+  "Distance": {def: "How far apart two points or places are.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Mixed Number": {def: "A whole number and a fraction combined into one number, such as 1 1/2.",
+    url: "https://www.mathsisfun.com/numbers/fractions-mixed-addition.html"},
+  "Fraction": {def: "A part of a whole, written as one number over another, like 3/4.",
+    url: "https://www.mathsisfun.com/fractions_multiplication.html"},
+  "Unit": {def: "A defined quantity -- an inch, a yard, an hour -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"}
+};
+const HOWTO = [
+  ["How to reflect a figure across the Y-Axis", "Reflection"],
+  ["How to add with mixed numbers", "Mixed Number"],
+  ["How to multiply a fraction and a mixed number", "Fraction"],
+  ["How to convert an amount from one unit to another unit", "Unit"]
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  twistApplied = document.getElementById('applyTwist').checked;
+  ['fb1w','fb1l','fb2y','fb3ff','fb3lf','fb3tf','fb3fo','fb3lo','fb3to','fb4tf','fb4to','fb4gap'].forEach(id=>{
+    const el=document.getElementById(id); if(el){ el.className='fb'; el.textContent=''; }
+  });
+}
+
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>
