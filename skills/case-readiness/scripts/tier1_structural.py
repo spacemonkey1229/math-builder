@@ -2,7 +2,7 @@
 """
 TIER 1 — STRUCTURAL GATE  (machine, blocking)
 
-Twenty-three mechanical checks against SPEC.md.  Supersedes the inline script that
+Twenty-four mechanical checks against SPEC.md.  Supersedes the inline script that
 used to live in skills/case-qa/SKILL.md, with three defect fixes and six new
 continuity checks.
 
@@ -36,6 +36,7 @@ CHECK REGISTER  (name them by id in the QA report)
   T1-21  hover+hyperlink STORY-vocabulary glossary          MCS-47      [NEW, GAP not BLOCKER]
   T1-22  published HTML section parity with case.md         MCS-50      [NEW]
   T1-23  published HTML inline <script> parses (real JS)    MCS-50      [NEW]
+  T1-24  hand-drawn SVG connector lines actually connect     MCS-52      [NEW, advisory]
 """
 import argparse, json, os, re, sys, hashlib, unicodedata, subprocess, tempfile
 
@@ -1170,6 +1171,188 @@ def run(project, cid):
             R.ok('T1-23')
     else:
         R.polish('T1-23', "no published/ directory yet — MCS-50 has nothing to check")
+
+    # ---- T1-24 hand-drawn SVG connector lines actually connect (MCS-52, advisory) ----
+    # Found as a real, live defect (FlowState, 2026-09-17): a hand-drawn diagram's
+    # <path> connector had start/end coordinates that never actually touched the
+    # shape it was supposed to link to (a 95-140px gap to nowhere), so the line and
+    # its label appeared to float disconnected on the page. No existing check could
+    # have caught this -- T1-20 only asks whether ANY image/svg exists, T1-21 only
+    # checks glossary mechanics, and node --check (T1-23) only validates JS syntax,
+    # never SVG geometry. A human had to open the live page and look at it.
+    # This is a coordinate-geometry heuristic, not a full renderer: for every
+    # hand-drawn <svg> inside a <figure> (an <img>-only figure, i.e. a real photo,
+    # has nothing to check), it collects every anchor shape's approximate footprint
+    # (<rect>, <circle>) and every CONNECTOR path's endpoints (a path's first M/m
+    # point and last explicit coordinate pair -- good enough for a straight or
+    # gently-curved connector without implementing a real Bezier evaluator), then
+    # flags a connector whose endpoint sits farther than a generous tolerance from
+    # every anchor shape's bounding box. Advisory (POLISH), never a BLOCKER: a
+    # deliberately decorative flourish or a curve this approximation can't parse
+    # correctly would otherwise false-positive, and this check cannot verify LABEL
+    # placement (text overlapping a shape) at all -- a human/agent should still
+    # look at anything this flags, not just trust the count.
+    #
+    # Several false positives caught and fixed while BUILDING this check (same
+    # "verify the check itself, don't just trust it" discipline every other check
+    # here already follows) -- iterated against the FULL corpus (~160 cases),
+    # not just Week 4, since a heuristic this simple needs a wide net to shake
+    # out its blind spots before it can be trusted as advisory signal:
+    #   (1) A full-canvas background <rect x="0" y="0" width="<the whole
+    #       viewBox>">, present in nearly every hand-drawn diagram in this corpus,
+    #       made every point in the diagram "near a shape" and silently defeated
+    #       the entire check on first attempt -- it found 0 dangling endpoints in
+    #       a file with two genuinely disconnected ones. Excluded any rect whose
+    #       box covers >=95% of the parsed viewBox.
+    #   (2) <line> is a common, legitimate idiom for a chart axis/divider that is
+    #       SUPPOSED to span far beyond any single shape (e.g. a bar chart's own
+    #       x-axis baseline) -- checking <line> endpoints the same way as a <path>
+    #       connector produced a false positive on every bar/line chart in the
+    #       corpus. Scoped to `<path fill="none">` only (the actual convention
+    #       used for every real connector in this corpus, incl. the one genuine
+    #       bug this check exists to catch); a filled path (a closed, self-
+    #       contained illustrative blob, e.g. case-context/SKILL.md's option-2
+    #       shape convention) is exempt for the same reason.
+    #   (3) A naive "first/last numeric pair in the d string" parse mis-reads two
+    #       whole categories of legitimate path syntax: a RELATIVE command (any
+    #       lowercase l/c/q/s/t/a) draws from wherever the pen already is, so its
+    #       numbers are deltas, not coordinates -- reading them as absolute
+    #       coordinates invents a fake, usually-dangling endpoint (roofline-call's
+    #       `l-6 12`). An Arc command's 7 parameters (rx ry x-axis-rotation
+    #       large-arc-flag sweep-flag x y) are mostly NOT coordinates at all, so
+    #       blindly grabbing number-pairs from them is nonsense (the-sightline-
+    #       vote). Fixed by only evaluating a path whose `d` uses solely the
+    #       simple, absolute, easy-to-parse commands M/L/C/Q/S/T/Z (see
+    #       is_simple_absolute_path below) -- any relative or Arc command present
+    #       anywhere in the string takes the whole path out of consideration
+    #       rather than risk a wrong reading.
+    #   (4) A long, deliberately sweeping data/trend curve (a chart's own drawn
+    #       line, e.g. alert-curve, curves-turn, the-minimum-payment-trap) is not
+    #       a point-to-point connector at all -- its start and end are SUPPOSED
+    #       to land far apart, often outside any anchor shape's box, because the
+    #       curve itself IS the content, not a link between two shapes. Excluded
+    #       any path whose own coordinate bounding-box diagonal exceeds 45% of
+    #       the SVG viewBox's diagonal (SPAN_FRAC), on the theory that a real
+    #       connector is short relative to its diagram while a drawn data curve
+    #       typically isn't.
+    # Known, accepted residual limitation (not fixed, by design): a stick-figure
+    # or joint-chain diagram (the-weekly-rate) where segments legitimately meet
+    # OTHER LINE SEGMENTS' endpoints rather than a rect/circle anchor will still
+    # false-positive, because this check only recognizes <rect>/<circle> as
+    # anchors. Pooling path-to-path endpoints as anchors was tried and reverted:
+    # it introduced NEW false positives elsewhere (an overlay line in
+    # gerrymandering, a wave curve in tide-window) that were worse than the one
+    # it fixed. Left as-is, matching this check's own advisory/POLISH framing:
+    # a human or agent should still look, not just trust the count.
+    # Verified against the actual pre-fix FlowState file (git show 7e22196):
+    # correctly flags exactly the 2 known-broken connectors' 3 endpoints (one of
+    # the 4 endpoints legitimately landed near its target). Swept the full
+    # corpus (all cases with a case.md, not just Week 4): exactly 1 file flags
+    # (the-weekly-rate, the accepted residual above) -- 0 crashes.
+    def is_simple_absolute_path(d):
+        # False-positive fix (3): only trust a path whose `d` uses exclusively
+        # the simple, absolute commands M/L/C/Q/S/T/Z -- any relative command
+        # (lowercase) or Arc (A/a) means our naive "grab number pairs" reading
+        # would be wrong, so we skip the whole path rather than risk a false
+        # dangling flag on a path we can't actually interpret.
+        cmds = re.findall(r'[A-Za-z]', d)
+        return all(c in 'MLCQSTZ' for c in cmds)
+
+    if os.path.isdir(pub):
+        TOL = 40      # px -- generous; this is a "did anyone forget a shape entirely" net,
+                      # not a pixel-perfect layout linter
+        SPAN_FRAC = 0.45  # false-positive fix (4): a path whose own bounding-box
+                          # diagonal exceeds this fraction of the viewBox diagonal
+                          # is treated as a long data/trend curve, not a connector
+        html_files = [fn for fn in os.listdir(pub) if fn.lower().endswith('.html')]
+        dangling = []
+        for fn in html_files:
+            txt = open(os.path.join(pub, fn), encoding='utf-8', errors='ignore').read()
+            txt_nc = re.sub(r'(?is)<!--.*?-->', ' ', txt)
+            figures = re.findall(r'(?is)<figure\b[^>]*>(.*?)</figure>', txt_nc)
+            for fig_i, fig in enumerate(figures):
+                for svg_m in re.finditer(r'(?is)<svg\b([^>]*)>(.*?)</svg>', fig):
+                    svg_open_attrs, svg = svg_m.group(1), svg_m.group(2)
+                    vb = re.search(r'viewBox="[\d.\s-]*?\s([\d.]+)\s+([\d.]+)"', svg_open_attrs)
+                    vb_w, vb_h = (float(vb.group(1)), float(vb.group(2))) if vb else (None, None)
+
+                    boxes = []  # (x0,y0,x1,y1) per anchor shape
+                    for m in re.finditer(r'<rect\b([^>]*)/?>', svg):
+                        attrs = m.group(1)
+                        try:
+                            x = float(re.search(r'\bx="(-?[\d.]+)"', attrs).group(1))
+                            y = float(re.search(r'\by="(-?[\d.]+)"', attrs).group(1))
+                            w = float(re.search(r'\bwidth="(-?[\d.]+)"', attrs).group(1))
+                            hgt = float(re.search(r'\bheight="(-?[\d.]+)"', attrs).group(1))
+                        except (AttributeError, ValueError):
+                            continue
+                        if vb_w and x <= 1 and y <= 1 and w >= 0.95 * vb_w and hgt >= 0.95 * vb_h:
+                            continue  # false-positive fix (1): background canvas rect, not an anchor
+                        boxes.append((x, y, x + w, y + hgt))
+                    for m in re.finditer(r'<circle\b([^>]*)/?>', svg):
+                        attrs = m.group(1)
+                        try:
+                            cx = float(re.search(r'\bcx="(-?[\d.]+)"', attrs).group(1))
+                            cy = float(re.search(r'\bcy="(-?[\d.]+)"', attrs).group(1))
+                            r = float(re.search(r'\br="(-?[\d.]+)"', attrs).group(1))
+                            boxes.append((cx - r, cy - r, cx + r, cy + r))
+                        except (AttributeError, ValueError):
+                            continue
+                    if not boxes:
+                        continue  # nothing to anchor against (e.g. a bare-text/bar-only figure)
+
+                    def near_any(px, py):
+                        return any(x0 - TOL <= px <= x1 + TOL and y0 - TOL <= py <= y1 + TOL
+                                   for x0, y0, x1, y1 in boxes)
+
+                    endpoints = []  # (label, x, y)
+                    # A <path> used as a CONNECTOR (open, no fill) rather than a closed
+                    # decorative/illustrative shape (filled) -- a filled path is exempt,
+                    # since option 2's blob-shape convention (case-context/SKILL.md) draws
+                    # a whole self-contained illustration as one closed, filled path with
+                    # its own internal labels, not a link between two separate anchors.
+                    # <line> is deliberately NOT checked -- false-positive fix (2) above.
+                    for m in re.finditer(r'<path\b([^>]*)/?>', svg):
+                        attrs = m.group(1)
+                        if not re.search(r'\bfill="none"', attrs):
+                            continue
+                        dm = re.search(r'\bd="([^"]+)"', attrs)
+                        if not dm:
+                            continue
+                        d = dm.group(1)
+                        if not is_simple_absolute_path(d):
+                            continue  # false-positive fix (3): can't safely parse this one
+                        coords = re.findall(r'(-?[\d.]+)[,\s]+(-?[\d.]+)', d)
+                        if len(coords) < 2:
+                            continue
+                        xs = [float(c[0]) for c in coords]
+                        ys = [float(c[1]) for c in coords]
+                        if vb_w and vb_h:
+                            path_diag = ((max(xs) - min(xs)) ** 2 + (max(ys) - min(ys)) ** 2) ** 0.5
+                            vb_diag = (vb_w ** 2 + vb_h ** 2) ** 0.5
+                            if vb_diag and path_diag / vb_diag > SPAN_FRAC:
+                                continue  # false-positive fix (4): long sweeping data curve, not a connector
+                        sx, sy = xs[0], ys[0]
+                        ex, ey = xs[-1], ys[-1]
+                        endpoints.append((f"<path> start ({sx:g},{sy:g})", sx, sy))
+                        endpoints.append((f"<path> end ({ex:g},{ey:g})", ex, ey))
+
+                    for label, px, py in endpoints:
+                        if not near_any(px, py):
+                            dangling.append(f"{fn} figure #{fig_i+1}: {label} is not within "
+                                            f"{TOL}px of any drawn shape in the same <svg> — "
+                                            f"likely a connector that doesn't actually reach "
+                                            f"what it's meant to point at")
+        if dangling:
+            R.polish('T1-24', f"MCS-52 — {len(dangling)} possibly-dangling connector "
+                              f"endpoint(s) found: " + "; ".join(dangling[:5]) +
+                              (f" (+{len(dangling)-5} more)" if len(dangling) > 5 else "") +
+                              ". This is a coordinate heuristic, not a real renderer -- "
+                              "open the actual page and look before trusting it either way.")
+        else:
+            R.ok('T1-24')
+    else:
+        R.polish('T1-24', "no published/ directory yet — T1-24 has nothing to check")
 
     return R, h
 
