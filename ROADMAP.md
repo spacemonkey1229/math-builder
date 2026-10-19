@@ -1,5 +1,137 @@
 # Roadmap — Math Builder
 
+**Version 3.0 · 2026-10-19.** Direction: **tool → product → platform** (see [VISION.md](VISION.md);
+requirements in [PRD.md](PRD.md), cited here as R1–R7). Triggered by the first outside-user
+feedback (Anuj, 2026-10-17). Full reasoning trail for older numbers lives in
+[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md).
+
+This file has three parts: **(1)** the product roadmap — priorities, phases, parking lot;
+**(2)** reminders and open questions; **(3)** the content-pipeline status carried forward from
+v2.19, unchanged and dated 2026-09-06 (re-derive every count before trusting it — see
+00_SESSION.md).
+
+---
+
+## 1. Product roadmap
+
+### The ordering logic
+
+Zero cases are `VERIFIED`; no real cohort has ever used the system. So the order is:
+**fix what the first outside user hit → put real kids through it (with instrumentation) → add the
+coach → add submit/grade → add recognition → harden → generalize.** Every phase ends with a gate
+tied to real use, not to code being written.
+
+### Prioritized backlog (Anuj's feedback + known gaps)
+
+Score = value to a real learner/guide × confidence, against effort. S ≈ days, M ≈ 1–2 weeks,
+L ≈ multi-week. (Estimates are rough; re-size at phase start.)
+
+| Rank | Item | Req | Effort | Why this rank | Phase |
+|---|---|---|---|---|---|
+| 1 | Fix `phone-plan` instructions: tax stated in Step 4/twist; twist inherits chosen line count | R1 (F2, F4) | S | Verified defects a real user hit; cheap; reference fix for the sweep | 0 |
+| 2 | Sweep all published cases for the same two defects + add a Tier 1 lint | R1 | M | Same bug class is likely elsewhere; lint stops recurrence (needs ledger row) | 0 |
+| 3 | **Run a real case with Anuj's kids** (Track A3) with "This was confusing" feedback control | F9, R6 | S | The #1 blocker for the whole project; Anuj volunteered | 0 |
+| 4 | Identity + consent groundwork (signed assignment links, data policy) | R5 | M | Gate for any AI feature touching a child | 1a |
+| 5 | **Coach v1**: deterministic misconception diagnosis + hint ladder, pilot on `phone-plan` | R2 (F1, F3) | L | Highest learner value; deterministic-first keeps it cheap and safe | 1a |
+| 6 | One-click **Submit** + server-side numeric scoring + per-step results | R3 (F5) | M | Replaces export-and-hand-over; unlocks guide time savings | 1b |
+| 7 | **AI feedback on notes/pitch** (provisional, guide confirms) + calibration against gold set | R3 (F5) | L | Needs gold set and RUBRIC calibration first; do after #6 | 1b |
+| 8 | Stars / progress / streaks surfaced to learner | R4 (F6) | M | Motivation; low risk; no ranking | 2 |
+| 9 | Guide analytics: stuck-heatmap per step; feed into case-readiness | R6 | M | Closes the loop from kids to case quality | 2 |
+| 10 | Per-user accounts, parent view, automated tests for the admin app | R5 | L | Real login is long-standing Housekeeping; tests are zero today | 3 |
+| 11 | Acton integration discovery (what does "the whole Acton system" mean?) | F8 | S to scope | Can't size until Anuj describes the surface | 3 |
+| 12 | Engine/content seam; science pilot; later a subjective subject | R7 (F7) | L | Only after the first product loop is proven with real kids | 4 |
+
+### Phases and exit gates
+
+**Phase 0 — Fix and observe (now → ~2 weeks)**
+- Do: backlog #1–3. Instrument the case page so confusion is captured, not emailed.
+- Exit gate: `phone-plan` re-passes Tier 1/2 **and a live browser pass**; sweep list produced;
+  at least one real learner has attempted a case and their confusion points are logged. (This
+  also satisfies Track A3's "first real learner.")
+
+**Phase 1a — The Coach (~weeks 3–8)**
+- Do: #4, #5. Per-assignment signed links; misconception catalog + hint ladder; LLM tail;
+  leak and injection test suites; rate limits and spend cap.
+- Exit gate: leak test and injection test at **0 failures** on the pilot case; pilot learners
+  use hints; catalog match rate and hint helpfulness measured (set targets from the pilot).
+
+**Phase 1b — Submit and grade (~weeks 6–12, overlaps 1a)**
+- Do: #6, #7. Submit button; deterministic numeric scoring; AI feedback on notes (provisional);
+  gold-set calibration.
+- Exit gate: guide–AI agreement meets the bar agreed in PRD §R3 for the criteria being drafted;
+  guide still confirms every badge. Until the bar is met, AI feedback is shown to the guide only,
+  not to learners.
+
+**Phase 2 — Motivation and insight (~weeks 10–16)**
+- Do: #8, #9. Stars/progress/streaks; per-step stuck data to guides and to the authoring side.
+- Exit gate: pilot cohort retention/return use improved vs. Phase 0 baseline; at least one case
+  revised because of step-level stuck data.
+
+**Phase 3 — Harden and connect (after a real cohort completes)**
+- Do: #10, #11. Accounts/SSO, parent view, admin tests; Acton integration discovery with Anuj.
+- Exit gate: first case reaches `VERIFIED` (filled RUN_REPORT from a real cohort, MCS-29).
+
+**Phase 4 — Platform**
+- Do: #12. Extract engine/content seam; science pilot; then a rubric-judged subjective subject
+  with source-grounding rules.
+- Exit gate: a non-math case runs end-to-end on the same engine, authored by the pipeline,
+  graded with calibrated agreement.
+
+### Parking lot
+
+Ideas worth keeping, **not scheduled**. Each lists what would pull it forward.
+
+| Idea | Source | Why parked | Pull-forward trigger |
+|---|---|---|---|
+| **Leaderboard** | Anuj F6 | Conflicts with RUBRIC's "score as the point" warning; ranking minors needs guide control and cultural fit | Pilot data shows stars alone don't motivate **and** guides ask for it; design as opt-in, cohort-scoped, effort-based (not raw score) |
+| Peer-voted "best pitch" / hall of fame | spin-off of F6 | Needs a cohort and moderation | After first cohort completes 3+ cases |
+| Adaptive next-case recommendation from skill spine | existing data | Needs mastery signal from real use | After Phase 2 data |
+| Parent weekly digest | PRD persona | Needs accounts and consent | Phase 3 |
+| Voice hints / read-aloud | accessibility | Nice, not core | Learner need observed in pilot |
+| Per-character secret info forcing collaboration | existing Engagement idea | "Most interesting unexplored idea" — needs multi-learner session design | After the single-learner loop is proven |
+| Tempting-wrong-answer design as a first-class case feature | existing Engagement idea | Synergy with the misconception catalog; could become an authoring input | After Coach v1 — author with the catalog in mind |
+| Live-data cases | existing Engagement idea | Needs a deliberate decision (memory: prefer real, live, student-explorable data portals) | Independent track; revive with next content batch |
+| LTI / Google Classroom export | possible Acton integration | Surface unknown | After Acton discovery (#11) |
+| Marketing-tech-stack comparisons | Anuj's offer | Not yet received | When Anuj shares (see Reminders) |
+| Multilingual cases/hints | not requested | No signal | Only if a cohort needs it |
+| Printed-packet check, Drive publish | existing open items | Content track (below) | Content track |
+
+---
+
+## 2. Reminders and open questions
+
+**Reminders**
+- **Reply to Anuj** (feedback dated 2026-10-17): thank him; say the two instruction issues are
+  confirmed bugs and are being fixed first; **accept his offer to test with kids**; ask which
+  case he was using (his details match `phone-plan`, Idaho 8%, not `phone-plans`); ask what
+  "integrate into the Acton system" means in practice; **ask him to share the marketing-tech
+  comparison ideas he mentioned** (his own note: "remind me to share").
+- No fabricated claims to Anuj about timelines — the estimates above are rough.
+
+**Decisions needed from Manan** (details and recommendations in PRD §5)
+1. Notes graded as a percent, or via rubric criteria (recommended: criteria)?
+2. Park the leaderboard (recommended) or build it?
+3. Identity model: per-assignment signed links first (recommended)?
+4. Model vendor, budget, and key ownership for coach and grader.
+5. Consent/data policy for minors — owner and sign-off.
+6. Confirm `phone-plan` as pilot case.
+
+**Governance reminders**
+- New rules (e.g., the instruction-clarity lint) need a DOCTRINE_LEDGER row and critique pass
+  before they count; until wired to a check they stay UNWIRED.
+- Anything that changes the shape of the stack updates TECH_STACK.md **in the same pass**.
+- Adding an AI feature that touches children's work is a D-021-class decision (see
+  DECISIONS.md) — append, don't summarize elsewhere.
+
+---
+
+## 3. Content-pipeline status (carried forward from v2.19, as of 2026-09-06)
+
+> Numbers below are stale by construction; the ones that matter are re-derivable
+> (`python3 app/build_pipeline.py --verify`, `python3 scripts/apply_publish_gate.py`). Content
+> work continues in parallel with the product phases above, and per the *domain diversity*
+> guidance, new batches should keep spreading across domains rather than re-mining a few.
+
 **Last refreshed: 2026-09-06 (v2.19), against live scripts, not carried-forward numbers.**
 For the full reasoning behind any line below — why a number moved, what broke, what was fixed —
 see **[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md)**, the complete narrative log. This file is just

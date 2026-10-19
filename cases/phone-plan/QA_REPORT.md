@@ -62,3 +62,47 @@ updated: `state: TIER2_PASS`, `verdict: PASS`, `run_on: 2026-08-22`, `tier2.P3: 
 
 **Files changed:** `cases/phone-plan/FACILITATOR.md` (Trap section only), `cases/phone-plan/case.json`
 (`qa` block only). `case.md` not touched.
+
+## Notebook-instruction fix + re-verification — 2026-10-19
+**Trigger:** outside-user feedback (Anuj, 2026-10-17): Step 4/twist never said whether the 8% tax applies,
+and the twist was pinned to 2 lines instead of the line count the Hero chose in Step 2.
+**Changed (no `case.md` change; sha256 unchanged):** `published/Phone Plan - Interactive.html` — Step 4 now
+reads Step 2's line count (`currentLines()`), states tax-included totals / untaxed one-time credit / sign
+convention; Step 1 says pre-tax; Step 2 says Step 4 reuses the totals. `FACILITATOR.md` gained a note that
+the designed closeness is specific to 2 lines (3 lines: tie, credit wins outright; 4 lines: T costs more).
+`sensitivity_model.evaluate_twist()` gained an optional `lines` arg (default unchanged = 2).
+**Tier 1:** 24 checks, 0 blockers, 3 GAP (T1-14, T1-15, T1-21) — identical to the pre-change run (verified
+against HEAD's FACILITATOR.md); none introduced here.
+**Live browser pass:** Step 4 checked at 2/3/4 lines — correct answers ✓, the 2-line value is rejected at 3/4
+lines, lock/unlock works, 0 console errors, layout renders.
+**Tier 2:** P3 mechanical flag is the same recorded false positive (2026-08-22 adjudication stands; `case.md`
+unchanged). P5 mechanical clean. P4: adjudicated — canonical twist (2 lines: $150 vs $129.60) unchanged;
+interactive at 3 lines gives $0 savings, at 4 lines −$129.60, credit wins either way, disclosed in FACILITATOR.md.
+**P7 accessibility-cold-read — FIRST RUN, FAIL (pre-existing, not caused by this change):** a fresh subagent
+named ≥2 unexplained real-world terms ("carrier", "line", hotspot/GB, "plan tax", "device-upgrade credit") and
+a central unpicturable item (whether "$80 first 2 lines" is per line or combined). Same root cause as T1-21
+(no STORY_GLOSSARY). Fix route is `case-context` (+ `render_context.py`) and a worked example in case.md
+(which changes the hash and needs a full re-run). **`case.json.qa` NOT modified** — whether this demotes
+the case under D-020/MCS-41 is a human call.
+
+## Full re-run after case.md change — 2026-10-19 (supersedes the P7 FAIL note above)
+**Why case.md changed:** the P7 cold-read above failed; fixed through the pipeline (`case-context`), not by waiving.
+**Changes:** Background/Appendix A/B prose now define carrier, line, hotspot, coverage, plan tax and pre-tax total;
+Appendix A gained "How to read this table" with a labeled practice example (invented numbers, not Carrier V/T);
+`case.json.context_glossary[]` (carrier, mobile hotspot, GB, plan tax) + sources S3–S6, rendered with
+`render_context.py`; interactive HTML hand-synced to case.md; Dilemma-card wording "per-line rate at 2 lines"
+corrected to "flat price for the first 2 lines"; twist script clarifies "device-upgrade credit".
+**Tier 1:** 24 checks, 0 blockers, 2 GAP (T1-14/T1-15 guide-only figures, pre-existing class). T1-21 now PASS.
+**Tier 2 (new hash `4cb5068e…`):** every probe adjudicated by a fresh, context-free subagent or by fetch.
+| probe | result | note |
+|---|---|---|
+| P1 | PASS | correct arithmetic, metric named (monthly bill with tax at 2/3/4 lines, coverage as tiebreak), defensible position |
+| P2 | PASS | both sides defensible; B narrower (rests on hotspot + 4th line never arriving) but not collapsed |
+| P3 | PASS | guide's Trap 1 matches the cold solver's #1 path; Trap 2 matches its #2. Gap noted and addressed: hotspot/coverage non-price discussion added to FACILITATOR.md |
+| P4 | PASS | canonical twist at 2 lines unchanged ($150 vs $129.60); interactive at 3 lines → $0 savings, 4 lines → −$129.60, credit wins; disclosed in FACILITATOR.md |
+| P5 | PASS | mechanical, no flip/cap breach |
+| P6 | PASS | all 6 URLs fetched 2026-10-19; S1/S2 authors+licenses match; S3–S6 resolve and match claims (S6 is a hub page) |
+| P7 | PASS | re-run: 0 blocking terms; remaining notes were motivation (why a phone credit matters to a family that owns phones) and weighing coverage vs price, not vocabulary |
+**Residual, non-blocking (for a later pass, not fixed here):** Charity "close to the age" vs Appendix C "age 11";
+"before any discount or credit" in Assumption 1 reads oddly before the twist; Appendix E / glossary headings were
+empty in the P7 packet export (live HTML renders them — see browser pass).

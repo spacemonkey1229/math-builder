@@ -105,6 +105,8 @@ Six skills in `skills/`. Each one refuses to run if its upstream gate hasn't pas
 ```
 Math Builder/
 ├── README.md                    ← you are here
+├── VISION.md                    ← where this is going: tool → product → platform (PROPOSED)
+├── PRD.md                       ← learner-experience requirements R1–R7, feedback traceability
 ├── SPEC.md                      ← the case study contract (LOCKED v1.0)
 ├── DOCTRINE_LEDGER.md           ← every rule: PROPOSED → CODIFIED → WIRED → VERIFIED
 ├── DECISIONS.md                 ← append-only decision log

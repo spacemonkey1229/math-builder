@@ -236,3 +236,24 @@ qualify for promotion but never moves them, because promotion is `case-publish`'
 MCS-41. **Honest gap:** that script is a reconciliation sweep, not a pre-publish block —
 `case-publish` itself does not yet refuse to stamp `published` below `TIER2_PASS`. Until it does,
 MCS-41 is enforced after the fact rather than at the gate.
+
+### D-021 · 2026-10-19 · Direction: tool → product → platform; coach and AI grading are gated on identity, calibration, and real learners
+First outside-user feedback (Anuj, 2026-10-17) asked for a hint chatbot, bot-assisted diagnosis of
+wrong methods, one-click AI-graded submission (including note quality), learner recognition
+(stars/badges/leaderboard), and eventual extension to other subjects. Direction adopted as
+**PROPOSED** in `VISION.md`, `PRD.md`, and `ROADMAP.md` v3.0 (pending Manan's sign-off). Choices
+recorded: (1) fix the two verified `phone-plan` instruction defects first (twist never states
+whether the 8% tax applies; twist pinned to 2 lines regardless of the learner's selection);
+(2) the coach diagnoses wrong methods **deterministically from a per-case misconception catalog
+recomputed in code**, using a language model only to phrase hints and handle the long tail;
+(3) anything that counts as a grade is computed **server-side** — the client-side `evaluate()`
+port stays formative only; (4) AI note-quality grading maps to existing RUBRIC criteria rather
+than a percent of grade (preserving the mastery-gate/growth-score separation) and stays
+"provisional until a guide confirms" (MCS-12) until measured agreement with human graders
+meets an agreed bar; (5) the leaderboard is **parked**, with stars/badges/streaks first,
+because RUBRIC.md already warns scores corrupt motivation when they become the point; (6) no AI
+feature touches a child's work before per-assignment identity and a consent/data policy exist,
+which narrowly revisits D-018 (student page unauthenticated by design). **No stack change is made
+by this entry**, so TECH_STACK.md is unchanged; it must be updated in the same pass as the first
+phase that adds endpoints, identity, or a model vendor. **Open:** vendor/budget, consent owner,
+pilot case, Acton integration surface (PRD §5).

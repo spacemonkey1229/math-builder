@@ -79,12 +79,17 @@ def evaluate(params, lines=None):
     return {"A": -cost_V, "B": -cost_T}
 
 
-def evaluate_twist(params):
+def evaluate_twist(params, lines=None):
     """First-year total cost at the family's current (2-line) need: 12 months
-    of the monthly rate, minus Carrier V's one-time $150 credit."""
+    of the monthly rate, minus Carrier V's one-time $150 credit.
+
+    `lines` (added 2026-10-19): the interactive's Step 4 now follows the line
+    count the Hero chose in Step 2. Default stays lines_now (2), the line count
+    the discussion twist is framed at; at 3 lines the carriers tie so the
+    credit wins outright, at 4 lines Carrier T costs more."""
     p = dict(PARAMS)
     p.update(params or {})
-    base = evaluate(p, lines=p["lines_now"])
+    base = evaluate(p, lines=lines if lines is not None else p["lines_now"])
     annual_V = -base["A"] * 12 - p["twist_credit_V"]
     annual_T = -base["B"] * 12
     return {"A": -annual_V, "B": -annual_T}
