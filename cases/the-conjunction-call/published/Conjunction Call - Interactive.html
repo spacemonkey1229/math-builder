@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Conjunction Call — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+  /* BEGIN case-context AUTO-GENERATED CSS — edit case.json, not this block; see skills/case-publish/scripts/render_context.py */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  /* END case-context AUTO-GENERATED CSS */
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: Conjunction Call</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier 3</span>
+      <span class="pill">MS-stretch/HS-entry</span>
+      <span class="pill">Scientific Notation &middot; Factorial &middot; Absolute Value</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  <figure style="margin:0 0 20px">
+<svg class="diagram" viewBox="0 0 720 250" role="img" aria-labelledby="bnT bnD" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:8px">
+  <title id="bnT">Two views of Priya's decision</title>
+  <desc id="bnD">Left: Aurora-7 and a piece of debris on paths that pass within a 5 kilometer screening range. Right: one propellant supply of 0.024 kilograms with a disposal-reserve rule line at 0.0100 kilograms; only the part above the line can be spent on avoidance maneuvers.</desc>
+  <text x="20" y="26" font-size="14" font-weight="700" fill="#1a3a5c">Two paths, one close pass</text>
+  <circle cx="170" cy="140" r="70" fill="none" stroke="#c9a227" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="170" y="228" font-size="12" text-anchor="middle" fill="#5b6472">screening range: 5 km</text>
+  <path d="M30 200 Q170 90 310 80" fill="none" stroke="#1a3a5c" stroke-width="3"/>
+  <path d="M40 60 Q170 150 300 205" fill="none" stroke="#a3312a" stroke-width="3" stroke-dasharray="2 5"/>
+  <circle cx="165" cy="137" r="7" fill="#1a3a5c"/>
+  <circle cx="176" cy="148" r="6" fill="#a3312a"/>
+  <text x="48" y="188" font-size="12" fill="#1a3a5c" font-weight="700">Aurora-7</text>
+  <text x="212" y="64" font-size="12" fill="#a3312a" font-weight="700">tracked debris</text>
+  <text x="190" y="118" font-size="11" fill="#5b6472">closest approach</text>
+  <line x1="360" y1="20" x2="360" y2="236" stroke="#dfe4ea" stroke-width="2"/>
+  <text x="385" y="26" font-size="14" font-weight="700" fill="#1a3a5c">One tank of bookkeeping, not two tanks</text>
+  <rect x="400" y="60" width="90" height="150" fill="#e6f4ec" stroke="#1f7a4d" stroke-width="2"/>
+  <rect x="400" y="140" width="90" height="70" fill="#fbeceb" stroke="#a3312a" stroke-width="2"/>
+  <line x1="390" y1="140" x2="500" y2="140" stroke="#122943" stroke-width="2.5" stroke-dasharray="6 3"/>
+  <text x="510" y="64" font-size="12" fill="#1f7a4d" font-weight="700">total on board: 0.024 kg</text>
+  <text x="510" y="100" font-size="12" fill="#1f7a4d">above the line: free to spend</text>
+  <text x="510" y="116" font-size="12" fill="#1f7a4d">on avoidance maneuvers</text>
+  <text x="510" y="144" font-size="12" fill="#122943" font-weight="700">rule line: 0.0100 kg</text>
+  <text x="510" y="178" font-size="12" fill="#a3312a">below the line: kept for the</text>
+  <text x="510" y="194" font-size="12" fill="#a3312a">final de-orbit burn</text>
+</svg>
+<figcaption class="side-note" style="margin-top:6px">Illustration drawn for this case, not to scale. The line is a flight rule on one shared supply of propellant, not a physical wall. Figures: Appendices D and E.</figcaption>
+</figure>
+  <p>Priya Nakamura has the conjunction-screening report — the daily printout of every orbiting object predicted to pass close to her satellite — open in one window and a half-written de-orbit order open in the other, and she has been toggling between them for twenty minutes without touching either. The mission control room is quiet this late — just the hum of the server racks and the soft click of Deshawn's keyboard two desks over, still fighting yesterday's backlog of data radioed down from orbit.</p>
+<p>Aurora-7 has been hers since launch: four years of ocean-color data — satellite readings of light bouncing off the sea's surface, used to track algae blooms and water clarity — nobody else is collecting at this resolution, four years of late nights, and, as of this morning's fuel reading, not much propellant left to show for it. The season is starting: certain months bring more tracked fragments crossing Aurora-7's altitude band, the same way Earth passes through denser patches of comet debris at the same time every year, producing predictable meteor-shower peaks — and the fuel gauge is not going to get any fuller.</p>
+<p>Her manager wants an answer before the next shift takes over at 6:00 a.m.: de-orbit Aurora-7 now, clean and certain, or let her keep flying through the season and hope the numbers hold up if a close call gets real. Priya has run the screening report twice already. Both times she closed the laptop before finishing the last table.</p>
+<p>She opens it a third time, pulls the propellant readout up next to it, and starts typing.</p>
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+<div class="card" id="storyGlossaryCard">
+  <strong>Real-World Vocabulary</strong>
+  <p class="side-note" style="margin-top:6px">Hover any underlined term below (or in the prose
+    above) for a plain-English definition; click to open a real source on it. This is separate
+    from the math vocabulary in Appendix H &mdash; these are the real-world words the story
+    itself is told in.</p>
+  <div class="glossary-grid" id="storyGlossaryGrid"></div>
+</div>
+  <h2>Background</h2>
+  <p>Priya Nakamura is a satellite operations engineer at Meridian Orbital, a small-satellite operator, and she is personally responsible for signing off on Aurora-7's collision-avoidance decisions this week. Aurora-7 is aging and low on propellant, but its sensor package is still fully functional and still under contract to deliver ocean-color data through the end of the season.</p>
+<p>Two paths are open to her: <strong>De-Orbit Now</strong>, which ends Aurora-7's data collection immediately but with zero further fuel risk, and <strong>Fly The Season</strong>, which keeps Aurora-7 collecting data through the debris-conjunction season and spends reserve propellant on real avoidance maneuvers if and when a tracked object's predicted approach actually crosses the industry's real collision-probability threshold (SEE APPENDIX A).</p>
+<p>Meridian's disposal policy — consistent with standard orbital-debris-mitigation practice — requires every satellite to retain enough propellant to complete a controlled end-of-mission de-orbit burn (a deliberate final engine firing that lowers a satellite's orbit until it re-enters the atmosphere and burns up, instead of drifting as space debris for decades), whichever day that burn actually happens (SEE APPENDIX D). There is nothing physical to picture here at all — no tank-within-a-tank, no valve, no partition. It is pure bookkeeping: Aurora-7's flight computer reports one single number (kilograms of propellant remaining, Appendix D), and Priya's mission-control procedures are a rule about that number, exactly like a line item in a budget spreadsheet — "do not authorize any command that would make this number drop below 0.0100." Nothing in the hardware enforces it; the rule is entirely in what commands the humans and software agree to send. That reserved amount cannot be spent on anything else, including an avoidance maneuver, without leaving Aurora-7 unable to comply with the disposal requirement it will eventually have to meet regardless of which option Priya picks today.</p>
+<p>CelesTrak's SOCRATES Plus service screens every active payload against the full tracked-object catalog three times a day, propagating each object's orbit forward a week and reporting every predicted approach that comes within 5 km at closest approach — minimum range, relative speed, time of closest approach, and the maximum predicted collision probability for the pair (SEE APPENDIX A). Aurora-7's own conjunction log for the coming 45-day season is in Appendix C. Appendix B lays out how many objects share Aurora-7's altitude band and what that means for how many pairwise close-approach checks the screening system actually has to run. Appendix D covers Aurora-7's thruster and the propellant math that turns a maneuver's required velocity change into a mass of propellant spent. None of Appendix B, C, or D's figures for this specific fictional fleet are publicly published, so each is a stated scenario assumption, grounded in a real basis (SEE APPENDIX E).</p>
+<p>The vocabulary and the "how to…" skills this case will ask you to research are listed in <strong>APPENDIX F</strong> — that is where Challenge 1 sends you. Every sourced figure and stated assumption in this case is documented in <strong>APPENDIX I</strong>. If any real-world term in this case (not the math vocabulary) is unfamiliar, <strong>APPENDIX H</strong> explains it in plain English.</p>
+<p>She starts typing.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Priya Nakamura. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; De-Orbit Now</h4>
+      <p style="margin:0">End Aurora-7's data collection immediately, with a guaranteed-compliant disposal burn and zero further fuel risk.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Fly The Season</h4>
+      <p style="margin:0">Keep Aurora-7 collecting data through the debris-conjunction season, spending reserve propellant on real avoidance maneuvers only when a conjunction's predicted collision probability actually crosses the industry threshold.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include: <strong>D1</strong> a conjunction-count table (factorial-based combinations); <strong>D2</strong> a probability-notation screening table (scientific &harr; standard notation, absolute-value margin to the real threshold); <strong>D3</strong> a propellant-budget table (kilograms per m/s, then total cost of every threshold-crossing maneuver); <strong>D4</strong> a decision memo comparing Option A's certain outcome to Option B's computed outcome.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  <details><summary>Appendix A &mdash; Conjunction Screening: How It Really Works</summary><div class="inner"><p><strong>CelesTrak's SOCRATES Plus</strong> is a real, live, publicly available conjunction-screening service — a "conjunction," in this orbital sense, just means two tracked objects are predicted to pass unusually close to each other, not the grammar term. Three times a day, it takes the position of every tracked object in orbit and calculates ("propagates") where each one's own orbital path will carry it forward one week — the same kind of forward calculation you'd use to predict where a thrown ball will be a second from now, just applied to an object circling the Earth — and reports every predicted pair of objects whose closest approach comes within 5 km of each other. For each flagged pair it reports: the minimum predicted range (how close they actually get), the time of closest approach, the relative speed, and the maximum predicted collision probability (Pc) — a computed percent chance, built from how precisely each object's position is actually known, that the two paths result in an impact [S4].</p>
+<p>Real satellite operators do not maneuver for every reported conjunction — most predicted approaches carry a vanishingly small collision probability. NASA's own Conjunction Assessment and Risk Analysis (CARA) program uses a baseline maneuver-decision threshold of <strong>Pc ≥ 1 × 10⁻⁴</strong> (a 1-in-10,000 chance of collision): below that, no action is recommended; at or above it, a mitigation maneuver is recommended [S1]. NASA further notes that a well-executed mitigation maneuver is expected to reduce a flagged event's collision probability by about 1.5 orders of magnitude (a 10¹·⁵-fold, roughly 32-times, reduction — "order of magnitude" means a power of 10), down to roughly <strong>3.1 × 10⁻⁶</strong> [S1] — worth knowing, but not itself something this case's Challenges ask you to use.</p>
+<table><thead><tr><th>Quantity</th><th>Value</th></tr></thead><tbody><tr><td>SOCRATES screening range (objects closer than this at closest approach get reported at all)</td><td>5 km [S4]</td></tr><tr><td>SOCRATES screening frequency</td><td>3 times per day [S4]</td></tr><tr><td>SOCRATES forward propagation window</td><td>7 days [S4]</td></tr><tr><td>Real industry collision-probability maneuver threshold (Pc)</td><td>1 × 10⁻⁴ [S1]</td></tr></tbody></table></div></details>
+<details><summary>Appendix B &mdash; Aurora-7's Screening Population</summary><div class="inner"><p>Meridian Orbital does not publish, and no public catalog publishes, a single "number of objects sharing this specific satellite's altitude band" figure broken out per satellite — SOCRATES screens the full catalog (the running list of every known human-made object in orbit, updated by ground radar and telescopes), not a per-shell subset (SEE APPENDIX A). This case fixes a stated scenario count for Aurora-7's specific ~525-kilometer-high "sun-synchronous" orbital band (an orbit shaped so the satellite passes over any given point on Earth at the same local time every day — useful for comparing images day to day, and common enough that many satellites cluster in this same narrow altitude range) (MA1, Appendix E), grounded in the real scale of today's tracked-object catalog: <strong>46,875 objects are currently tracked and cataloged across all of Earth orbit</strong> [S2].</p>
+<table><thead><tr><th>Quantity</th><th>Value</th></tr></thead><tbody><tr><td>Total objects tracked and cataloged, all of Earth orbit</td><td>46,875 [S2]</td></tr><tr><td>Objects sharing Aurora-7's specific altitude band this season, screened as potential conjunction partners (including Aurora-7 herself)</td><td>36 [MA1]</td></tr></tbody></table>
+<p><em>Challenge D1 asks you to find, using a factorial-based combination formula, how many unique pairs can be formed from these 36 objects — and, separately, how many of those pairs involve Aurora-7 specifically.</em></p></div></details>
+<details><summary>Appendix C &mdash; Aurora-7's Conjunction Log, 45-Day Season</summary><div class="inner"><p>The six-event log below is a stated scenario dataset (MA2, Appendix E) for Aurora-7's specific 45-day debris season, formatted the way a real SOCRATES Plus report is formatted [S4]. It is not a live feed record pulled for a real, named satellite.</p>
+<table><thead><tr><th>Event</th><th>Day of season</th><th>Object pair</th><th>Predicted min. range (km)</th><th>Maximum predicted Pc</th><th>Avoidance Δv if maneuvered (m/s)</th></tr></thead><tbody><tr><td>E1</td><td>3</td><td>Aurora-7 / Debris 41-119</td><td>2.8</td><td>2.7 × 10⁻⁵</td><td>—</td></tr><tr><td>E2</td><td>9</td><td>Aurora-7 / Debris 33-882</td><td>0.6</td><td>3.4 × 10⁻⁴</td><td>3.5</td></tr><tr><td>E3</td><td>15</td><td>Aurora-7 / Debris 08-207</td><td>1.4</td><td>8.1 × 10⁻⁵</td><td>—</td></tr><tr><td>E4</td><td>22</td><td>Aurora-7 / Debris 51-644</td><td>0.9</td><td>1.9 × 10⁻⁴</td><td>6.0</td></tr><tr><td>E5</td><td>30</td><td>Aurora-7 / Debris 19-355</td><td>0.4</td><td>5.2 × 10⁻⁴</td><td>7.0</td></tr><tr><td>E6</td><td>41</td><td>Aurora-7 / Debris 27-908</td><td>1.1</td><td>1.1 × 10⁻⁴</td><td>4.5</td></tr></tbody></table>
+<p><em>"Debris ##-###" designators above are fictional, styled on the real NORAD-catalog-number format SOCRATES actually uses — they are not real catalog numbers. "Avoidance Δv if maneuvered" is left blank for any event your Challenge D2 table shows does not cross the real 1 × 10⁻⁴ threshold in Appendix A; those events require no maneuver at all, by the same real decision rule every operator actually uses.</em></p></div></details>
+<details><summary>Appendix D &mdash; Aurora-7's Thruster and Propellant Budget</summary><div class="inner"><p>Aurora-7 flies a Busek BIT-3 RF ion thruster — "RF" (radio-frequency) refers to how it energizes its propellant, and "ion thruster" means it produces thrust electrically rather than by burning chemical fuel. You do not need to know how it works internally: for this case's math, treat it as a black box fully described by the two numbers in the table below (specific impulse and thrust) — a real, flight-proven small-satellite propulsion system [S3].</p>
+<table><thead><tr><th>Quantity</th><th>Value</th></tr></thead><tbody><tr><td>Specific impulse (Isp), rated maximum — a standard measure of how efficiently a thruster turns propellant into thrust; a higher number means more push per kilogram spent</td><td>2,150 s [S3]</td></tr><tr><td>Thrust, rated maximum — the actual push force the thruster produces</td><td>1.1 mN [S3]</td></tr><tr><td>Standard gravity (g₀), a fixed physical constant used to convert Isp (measured in seconds) into a velocity</td><td>9.80665 m/s²</td></tr><tr><td>Aurora-7 stated wet mass — the spacecraft's mass including whatever propellant is still on board (as opposed to "dry mass," which would not count it)</td><td>12.0 kg [MA3]</td></tr><tr><td>Aurora-7 remaining reserve propellant, start of season</td><td>0.024 kg [MA4]</td></tr><tr><td>Minimum propellant Meridian's disposal policy requires Aurora-7 to retain for its own controlled end-of-mission de-orbit burn, whenever that burn happens</td><td>0.0100 kg [MA5]</td></tr></tbody></table>
+<p><em>Isp is measured in seconds because of how it is defined: exhaust velocity (how fast the thruster expels propellant out the back, in meters/second) equals Isp × g₀. Challenge D3 asks you to compute that exhaust velocity directly from the two rows above, then use dimensional reasoning — the same kind Challenge 1's "how to convert an amount with compound units" resource explains — to combine it with Aurora-7's wet mass into kilograms of propellant per meter/second of delta-v (Δv — engineers' standard way of measuring "how big" a maneuver is, meaning the total change in the spacecraft's velocity it requires, regardless of the spacecraft's mass), and apply it to every maneuver Challenge D2 shows is really required.</em></p></div></details>
+<details><summary>Appendix E &mdash; Modeling Assumptions</summary><div class="inner"><p>These figures are <strong>not sourced</strong> as direct external citations. They are stated scenario assumptions, each grounded in a real basis described below. A Hero may challenge them in discussion — that is a legitimate move.</p>
+<table><thead><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr></thead><tbody><tr><td>MA1</td><td>Number of tracked objects sharing Aurora-7's specific altitude band this season, screened as potential conjunction partners</td><td>36 (including Aurora-7)</td><td>No public catalog reports a single "objects sharing this specific satellite's shell" count broken out per satellite — SOCRATES screens the entire tracked catalog against itself, not a per-shell subset (Appendix A). A mid-inclination, ~525 km sun-synchronous shell is realistically one of the more congested LEO bands relative to the real 46,875-object catalog [S2], and dozens of objects sharing a single narrow altitude band over a 45-day window is a realistic order of magnitude for that congestion — not a specific real satellite's real, publicly reported count.</td><td>This sets the size of the screening table in Challenge D1. It does not change the risk of any individual conjunction in Appendix C, which is evaluated on its own reported probability regardless of how many other objects share the shell.</td></tr><tr><td>MA2</td><td>Aurora-7's six-event conjunction log for this season (Appendix C)</td><td>See Appendix C table</td><td>A specific 45-day conjunction history for a specific fictional satellite has no real-world source to look up — it is inherently a scenario construction, styled on the real report format SOCRATES actually produces (Appendix A) rather than pulled from a live feed for a real, named satellite.</td><td>The case's answer is sensitive to this data — different reported probabilities and required Δv values would change how much propellant Option B actually costs. This is disclosed here rather than hidden in the table.</td></tr><tr><td>MA3</td><td>Aurora-7's wet mass, used to convert delta-v into a mass of propellant spent</td><td>12.0 kg</td><td>Consistent with the mass class of small satellites the BIT-3 thruster is actually designed and flight-qualified for — the manufacturer's own published reference platform is a 14 kg 6U CubeSat [S3]; Aurora-7 is stated as a slightly lighter 6U-class bus.</td><td>The propellant-per-maneuver figures in Challenge D3 scale directly with this number; a heavier or lighter stated bus mass would change them proportionally.</td></tr><tr><td>MA4</td><td>Aurora-7's remaining reserve propellant at the start of the season</td><td>0.024 kg</td><td>Not publicly reported for any real, specific satellite's current fuel state — this is the case's own stated "aging, low-fuel" scenario detail, fixed at a small fraction of a plausible original tank load for a thruster system in this thrust class late in a multi-year mission.</td><td>This is the single most dilemma-relevant assumption in the case: it is the total pool of propellant Option B has to work with, for both this season's real threshold-crossing maneuvers and the disposal reserve in MA5. The case's answer is directly sensitive to this value.</td></tr><tr><td>MA5</td><td>Minimum propellant Meridian's disposal policy requires Aurora-7 to retain for its own end-of-mission de-orbit burn</td><td>0.0100 kg</td><td>Consistent with standard orbital-debris-mitigation practice, which requires an operator to be able to complete a controlled disposal maneuver at end of mission — no public figure exists for Aurora-7 specifically since Aurora-7 is fictional, so this case fixes a stated policy minimum. This reserve applies identically under both options: Option A spends it now, Option B defers it to the end of the season.</td><td>The case's answer is directly sensitive to this value, in the same pool as MA4.</td></tr></tbody></table>
+<p><em>No other figure in this case required a Modeling Assumption — see `RESEARCH_LOG.md` for the full source-by-source trail.</em></p></div></details>
+<details><summary>Appendix H &mdash; Plain-English Notes on Real-World Terms</summary><div class="inner"><p>This appendix explains real-world (non-math) terms and mechanisms used elsewhere in the case, for anyone unfamiliar with satellite operations. It does not affect any Challenge.</p>
+<table><thead><tr><th>Term</th><th>Plain-English explanation</th></tr></thead><tbody><tr><td>Conjunction / conjunction event</td><td>The term satellite operators use for two tracked objects predicted to pass unusually close together — not the grammar term.</td></tr><tr><td>SOCRATES / SOCRATES Plus</td><td>A real, free, public report that lists every predicted close approach between orbiting objects, refreshed three times a day.</td></tr><tr><td>Propagate an orbit forward</td><td>Using the physics of orbital motion to calculate where an object will be at a future time — the same kind of calculation as predicting where a thrown ball will land, just applied to a satellite.</td></tr><tr><td>Closest approach / time of closest approach (TCA) / minimum range / relative speed</td><td>The single moment two objects' predicted paths come nearest each other, when that moment happens, how close they get, and how fast they're moving relative to one another at that instant.</td></tr><tr><td>Collision probability (Pc)</td><td>A computed percent chance of impact, built from the two objects' predicted paths and how precisely those paths are actually known (tracking is never perfectly exact).</td></tr><tr><td>Maneuver / avoidance maneuver</td><td>A short engine burn that nudges a satellite's path just enough to miss the other object.</td></tr><tr><td>Debris season / debris-conjunction season</td><td>A period when tracked fragments happen to cross a satellite's orbital path more often — similar to how certain months bring more meteor showers.</td></tr><tr><td>De-orbit / de-orbit burn / disposal burn</td><td>A deliberate final engine firing that lowers a satellite's orbit until it re-enters the atmosphere and burns up, instead of drifting for decades as space debris.</td></tr><tr><td>Reserve / reserved propellant</td><td>Not a separate, physically walled-off tank — a flight-rule commitment not to spend that portion of the one shared propellant supply on anything except its designated purpose.</td></tr><tr><td>Tracked-object catalog</td><td>The running, continuously updated list of every known human-made object in orbit, maintained using ground-based radar and telescopes.</td></tr><tr><td>Sun-synchronous orbit / altitude band / LEO (low Earth orbit)</td><td>LEO is the region of space closest to Earth where most satellites (including the ISS) fly; a sun-synchronous orbit is shaped so a satellite crosses any given point on Earth at the same local time each day; an "altitude band" is a narrow range of orbital heights that many satellites in similar orbits share.</td></tr><tr><td>Delta-v (Δv)</td><td>Engineers' standard way of measuring "how big" a maneuver is: the total change in velocity required, independent of the spacecraft's actual mass.</td></tr><tr><td>Specific impulse (Isp)</td><td>A standard measure of how efficiently a thruster converts propellant into thrust — a higher number means more push per kilogram of propellant spent.</td></tr><tr><td>Exhaust velocity</td><td>How fast a thruster expels propellant out the back; directly related to Isp.</td></tr><tr><td>Wet mass / dry mass</td><td>Wet mass counts a spacecraft together with whatever propellant remains on board; dry mass would not include it.</td></tr><tr><td>Ion thruster</td><td>A small electric engine that produces thrust by accelerating a stream of charged propellant particles, rather than burning chemical fuel the way a traditional rocket engine does.</td></tr><tr><td>Ocean-color data</td><td>Satellite measurements of light reflected by the ocean's surface, used to track algae blooms, water clarity, and marine-ecosystem health.</td></tr><tr><td>6U CubeSat</td><td>A small, standardized satellite built from six 10 cm cube-shaped units stacked together (about the size of a shoebox) — a common, inexpensive small-satellite size class.</td></tr><tr><td>Gimbal</td><td>A mechanical mount that lets a thruster pivot slightly, so small aiming corrections don't require turning the entire spacecraft — background detail; no Challenge in this case uses it.</td></tr><tr><td>NORAD catalog number</td><td>The unique ID number the U.S. military's Space Surveillance Network assigns to every tracked object in orbit, the same way every car has a unique VIN — background detail only.</td></tr><tr><td>Input power (W)</td><td>How much electrical power the thruster draws while firing — background detail; not something any Challenge in this case calculates with.</td></tr><tr><td>Why screening is a "pairs" problem</td><td>Any two objects, not just Aurora-7 and one piece of debris, could in principle pass close to each other — so a thorough screening system has to check every possible pair among the tracked population, not just pairs involving one satellite. That is exactly why Challenge D1's combination count matters.</td></tr></tbody></table></div></details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-01. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Counting the pairs (D1)</h4>
+    <div class="goal">Appendix B says 36 objects share Aurora-7's altitude band (Aurora-7 included). Every pair of objects is one close-approach check the screening system must run. Count the unique pairs with a factorial-based combination formula, C(n, 2) = n! / (2! &times; (n &minus; 2)!), then count how many of those pairs include Aurora-7 herself.</div>
+    <div class="fieldrow"><label for="s1total">Total unique pairs among the 36 objects</label><input type="number" id="s1total" step="1"><span id="fb1a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1aurora">Pairs that involve Aurora-7</label><input type="number" id="s1aurora" step="1"><span id="fb1b" class="fb"></span></div>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Screening one event against the threshold (D2)</h4>
+    <div class="goal">Pick an event from Appendix C. Write its maximum collision probability in standard (decimal) notation, then find the absolute-value margin |Pc &minus; threshold| against the real 1 &times; 10<sup>&minus;4</sup> threshold and write it in scientific notation (mantissa between 1 and 10, times a power of 10). Finally decide whether the event crosses the threshold.</div>
+    <div class="fieldrow">
+      <label for="s2event">Event</label>
+      <select id="s2event"></select>
+    </div>
+    <div class="fieldrow"><label for="s2dec">Pc in standard notation</label><input type="number" id="s2dec" step="0.0000001"><span id="fb2a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2man">Margin &mdash; mantissa (1 to 10)</label><input type="number" id="s2man" step="0.01"><span id="fb2b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2exp">Margin &mdash; power of 10</label><input type="number" id="s2exp" step="1"><span id="fb2c" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2cross">Does it cross the threshold?</label>
+      <select id="s2cross"><option value="">choose&hellip;</option><option value="yes">Yes &mdash; maneuver recommended</option><option value="no">No &mdash; no action</option></select><span id="fb2d" class="fb"></span></div>
+    <button onclick="checkStep2()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Propellant per maneuver (D3)</h4>
+    <div class="goal">Exhaust velocity = Isp &times; g<sub>0</sub>. Propellant per m/s of delta-v = wet mass &divide; exhaust velocity. Enter it as a mantissa times 10<sup>&minus;4</sup> kg per m/s, then total the propellant for <em>every</em> event that crosses the threshold in the season you are currently working.</div>
+    <div class="fieldrow"><label for="s3kg">kg per m/s &mdash; mantissa (&times; 10<sup>&minus;4</sup>)</label><input type="number" id="s3kg" step="0.001"><span id="fb3a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3tot">Total propellant for all crossing events (kg)</label><input type="number" id="s3tot" step="0.00001"><span id="fb3b" class="fb"></span></div>
+    <button onclick="checkStep3()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; What is left, and the cushion (D4)</h4>
+    <div class="goal">Option B can only spend what is left after the mandatory disposal reserve. Compute the propellant available for avoidance (reserve propellant minus disposal minimum), subtract the Step 3 total, and express what remains (or the shortfall, as a negative number) in kilograms. Then give that remainder as a percent of the available propellant.</div>
+    <div class="fieldrow"><label for="s4left">Remaining after maneuvers (kg; negative = shortfall)</label><input type="number" id="s4left" step="0.000001"><span id="fb4a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s4pct">Cushion as % of available propellant</label><input type="number" id="s4pct" step="0.01"><span id="fb4b" class="fb"></span></div>
+    <button onclick="checkStep4()">Check</button>
+    <p class="side-note">The notebook checks your arithmetic. It does not tell you which option to recommend &mdash; that's your D4 memo.</p>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p>New SOCRATES screening result, just in. A previously uncataloged fragment &mdash; debris from an unrelated collision two weeks ago &mdash; has been tracked for the first time and screened against Aurora-7. Time of closest approach: day 44, one day before the season ends. Maximum predicted Pc: 6.0 &times; 10<sup>&minus;4</sup>. Required avoidance delta-v: 5.5 meters per second.</p>
+      <p>Use the same threshold rule you applied to the first six events. Tick the box below and re-run Steps 2&ndash;4 with the seventh event included. What just broke in your original plan &mdash; were you wrong, or just missing information nobody could have had? And does that change how much cushion you would want built in next time?</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Add the seventh event (E7) and re-run Steps 2&ndash;4</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] NASA Conjunction Assessment and Risk Analysis (CARA) program &mdash; <a href="https://www.nasa.gov/wp-content/uploads/2025/03/cara-faq-npr-handbook-2025.pdf" target="_blank" rel="noopener">CARA FAQ / NPR Handbook (2025)</a> (2026-09-17)</li>
+<li>[S2] ESA Space Debris Office &mdash; <a href="https://sdup.esoc.esa.int/discosweb/statistics/" target="_blank" rel="noopener">DISCOSweb Space Environment Statistics</a> (2026-09-17)</li>
+<li>[S3] Busek Co. Inc. &mdash; <a href="https://www.busek.com/bit3" target="_blank" rel="noopener">BIT-3 RF Ion Thruster product page</a> (2026-09-17)</li>
+<li>[S4] CelesTrak (T.S. Kelso) &mdash; <a href="https://celestrak.org/SOCRATES/" target="_blank" rel="noopener">SOCRATES Plus</a> (2026-09-17)</li>
+<li>[C1] Wikipedia &mdash; <a href="https://en.wikipedia.org/wiki/Ion_thruster" target="_blank" rel="noopener">Ion thruster</a> (2026-10-23)</li>
+<li>[C2] Wikipedia &mdash; <a href="https://en.wikipedia.org/wiki/Delta-v" target="_blank" rel="noopener">Delta-v</a> (2026-10-23)</li>
+<li>[C3] Wikipedia &mdash; <a href="https://en.wikipedia.org/wiki/Sun-synchronous_orbit" target="_blank" rel="noopener">Sun-synchronous orbit</a> (2026-10-23)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Conjunction Call &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+const PARAMS = {
+  isp_s: 2150.0,
+  g0: 9.80665,
+  wet_mass_kg: 12.0,
+  reserve_propellant_kg: 0.024,
+  disposal_reserve_kg: 0.0100,
+  threshold_pc: 0.0001,
+  n_objects: 36,
+  twist_pc: 0.0006,
+  twist_dv_ms: 5.5,
+  season_days: 45.0,
+};
+const FLEX = ["wet_mass_kg", "reserve_propellant_kg", "disposal_reserve_kg"];
+// Appendix C, as reported: [label, max Pc, avoidance delta-v if maneuvered (m/s) or null]
+const EVENTS = [
+  ["E1", 0.000027, null],
+  ["E2", 0.00034, 3.5],
+  ["E3", 0.000081, null],
+  ["E4", 0.00019, 6.0],
+  ["E5", 0.00052, 7.0],
+  ["E6", 0.00011, 4.5],
+];
+function currentEvents(){
+  return window.__TWIST_APPLIED__ ? EVENTS.concat([["E7", PARAMS.twist_pc, PARAMS.twist_dv_ms]]) : EVENTS;
+}
+function crosses(pc, p){ return pc >= p.threshold_pc; }
+function kgPerMs(p){ return p.wet_mass_kg / (p.isp_s * p.g0); }
+function requiredKg(events, p){
+  let dv = 0;
+  events.forEach(e => { if (crosses(e[1], p) && e[2] !== null) dv += e[2]; });
+  return dv * kgPerMs(p);
+}
+function leftoverKg(events, p){
+  return (p.reserve_propellant_kg - p.disposal_reserve_kg) - requiredKg(events, p);
+}
+function choose2(n){
+  let f = 1;
+  for (let i = 0; i < 2; i++) f *= (n - i) / (i + 1);
+  return Math.round(f);
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  const left = leftoverKg(EVENTS, p);
+  return {A: 0, B: left >= 0 ? p.season_days : -1, leftover_kg: left};
+}
+// Twist: a seventh event, E7, discovered late in the season
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  const ev = EVENTS.concat([["E7", p.twist_pc, p.twist_dv_ms]]);
+  const left = leftoverKg(ev, p);
+  return {A: 0, B: left >= 0 ? p.season_days : -1, leftover_kg: left};
+}
+(function(){
+  const sel = () => document.getElementById('s2event');
+  window.refreshEventSelect = function(){
+    const s = sel(); if (!s) return;
+    const keep = s.value;
+    s.innerHTML = currentEvents().map(e => '<option value="'+e[0]+'">'+e[0]+'</option>').join('');
+    if (keep) s.value = keep;
+  };
+  document.addEventListener('DOMContentLoaded', window.refreshEventSelect);
+})();
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkStep1(){
+  const n = PARAMS.n_objects;
+  fb('fb1a', near(parseFloat(val('s1total')), choose2(n), 0.5));
+  fb('fb1b', near(parseFloat(val('s1aurora')), n - 1, 0.5));
+}
+function checkStep2(){
+  const lab = document.getElementById('s2event').value;
+  const e = currentEvents().find(x => x[0] === lab);
+  if (!e) return;
+  const pc = e[1];
+  const margin = Math.abs(pc - PARAMS.threshold_pc);
+  const exp = Math.floor(Math.log10(margin) + 1e-9);
+  const man = margin / Math.pow(10, exp);
+  fb('fb2a', near(parseFloat(val('s2dec')), pc, 0.0000001));
+  fb('fb2b', near(parseFloat(val('s2man')), man, 0.02));
+  fb('fb2c', near(parseFloat(val('s2exp')), exp, 0.5));
+  fb('fb2d', document.getElementById('s2cross').value === (crosses(pc, PARAMS) ? 'yes' : 'no'));
+}
+function checkStep3(){
+  const kg = kgPerMs(PARAMS);
+  fb('fb3a', near(parseFloat(val('s3kg')), kg * 1e4, 0.01));
+  fb('fb3b', near(parseFloat(val('s3tot')), requiredKg(currentEvents(), PARAMS), 0.00002));
+}
+function checkStep4(){
+  const avail = PARAMS.reserve_propellant_kg - PARAMS.disposal_reserve_kg;
+  const left = leftoverKg(currentEvents(), PARAMS);
+  fb('fb4a', near(parseFloat(val('s4left')), left, 0.00001));
+  fb('fb4b', near(parseFloat(val('s4pct')), 100 * left / avail, 0.2));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "conjunction-call"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [["D1", "Conjunction-count table (factorial-based combination formula; factorial expression shown before simplifying)"], ["D2", "Probability-notation screening table (both notations + absolute-value margin to the threshold, in scientific notation)"], ["D3", "Propellant-budget table (kg per m/s of delta-v, then total propellant for every threshold-crossing event)"], ["D4", "Decision memo (recommendation with the arithmetic that supports it)"]];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,process])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${process ? `<div class="meta" style="margin:2px 0 6px">${process}</div>` : ''}
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Standard Notation": {def: "A number written the ordinary way, digit by digit, e.g. 0.00034 -- as opposed to scientific notation.",
+    url: "https://www.mathsisfun.com/definitions/standard-notation.html"},
+  "Scientific Notation": {def: "A compact way to write very large or very small numbers: a number from 1-10 times a power of 10.",
+    url: "https://www.mathsisfun.com/numbers/scientific-notation.html"},
+  "Factorial": {def: "The product of a whole number and every positive whole number below it, written n! -- e.g. 5! = 5 x 4 x 3 x 2 x 1.",
+    url: "https://www.mathsisfun.com/numbers/factorial.html"},
+  "Combination": {def: "A selection of items where order does not matter; the number of ways to pick r of n items is n! / (r! x (n - r)!).",
+    url: "https://www.mathsisfun.com/combinatorics/combinations-permutations.html"},
+  "Absolute Value": {def: "How far a number is from zero on the number line -- always zero or positive.",
+    url: "https://www.mathsisfun.com/numbers/absolute-value.html"},
+  "Order of Magnitude": {def: "A power of 10; two numbers differ by one order of magnitude when one is about ten times the other.",
+    url: "https://www.mathsisfun.com/definitions/order-of-magnitude.html"},
+  "Rate": {def: "A ratio that compares two quantities with different units, such as kilograms per meter/second.",
+    url: "https://www.mathsisfun.com/definitions/rate.html"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.mathsisfun.com/numbers/ratio.html"},
+  "Probability": {def: "A number between 0 and 1 describing how likely an event is to happen.",
+    url: "https://www.mathsisfun.com/data/probability.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.mathsisfun.com/percentage.html"}
+};
+const HOWTO = [
+  ["how to write a number in standard notation given its scientific notation", "Standard Notation"],
+  ["how to evaluate a factorial expression", "Factorial"],
+  ["how to write a number in scientific notation given its standard notation", "Scientific Notation"],
+  ["how to convert an amount with compound units", "Rate"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  // Adds E7 to the event picker and makes Steps 2-4 grade against the
+  // seven-event season. Prints no verdict -- the Check buttons still compute.
+  window.__TWIST_APPLIED__ = document.getElementById('applyTwist').checked;
+  if (window.refreshEventSelect) window.refreshEventSelect();
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+
+/* BEGIN case-context AUTO-GENERATED STORY_GLOSSARY — edit case.json.context_glossary[], not this block; see skills/case-publish/scripts/render_context.py */
+const STORY_GLOSSARY = {
+  "conjunction": {desc: "Satellite-operator word for two tracked objects predicted to pass unusually close together. Nothing to do with the grammar term.",
+    link: "https://www.nasa.gov/wp-content/uploads/2025/03/cara-faq-npr-handbook-2025.pdf"},
+  "SOCRATES Plus": {desc: "A real, free public report that lists every predicted close approach between orbiting objects, refreshed three times a day.",
+    link: "https://celestrak.org/SOCRATES/"},
+  "ion thruster": {desc: "A small electric engine that pushes a satellite by accelerating charged particles instead of burning chemical fuel. Very efficient, but very gentle.",
+    link: "https://en.wikipedia.org/wiki/Ion_thruster"},
+  "delta-v": {desc: "Engineers' measure of how big a maneuver is: the change in velocity it needs, whatever the spacecraft's mass.",
+    link: "https://en.wikipedia.org/wiki/Delta-v"},
+  "sun-synchronous": {desc: "An orbit shaped so the satellite crosses any given spot on Earth at the same local time every day, handy for comparing images day to day.",
+    link: "https://en.wikipedia.org/wiki/Sun-synchronous_orbit"}
+};
+/* END case-context AUTO-GENERATED STORY_GLOSSARY */
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#storyGlossaryCard')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryCard, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryTerms(["#overview", "#background", "#dilemma", "#challenges", "#appendices", "#notebook", "#twist"]);
+</script>
+</body>
+</html>
