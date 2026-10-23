@@ -84,6 +84,8 @@ def appendix_body_html(body):
                 out.append(table_html(header, rows))
                 i = j
                 continue
+        if line.startswith('> '):
+            line = line[2:]
         if line:
             if line.startswith('*') and line.endswith('*'):
                 out.append(f'<p><em>{md_inline_to_html(line[1:-1])}</em></p>')
@@ -131,7 +133,9 @@ def build(case_id):
     apps = parse_appendices(md)
     final_letter = apps[-1]["letter"] if apps else "?"
     sources_letter = apps[-2]["letter"] if len(apps) >= 2 else "?"
-    appx_html = appendices_html(md, skip_letters={sources_letter, final_letter})
+    skip = set(cfg["skip_appendix_letters"]) if "skip_appendix_letters" in cfg else {sources_letter, final_letter}
+    gloss_label = cfg.get("glossary_letter", f"Appendix {final_letter}")
+    appx_html = appendices_html(md, skip_letters=skip)
 
     title = case_json["title"]
     band = case_json.get("band", [])
@@ -153,7 +157,7 @@ def build(case_id):
         "{{CASE_OPTION_A_TEXT}}": cfg["option_a_text"],
         "{{CASE_OPTION_B_LABEL}}": cfg["option_b_label"],
         "{{CASE_OPTION_B_TEXT}}": cfg["option_b_text"],
-        "{{CASE_GLOSSARY_APPENDIX_LETTER}}": f"Appendix {final_letter}",
+        "{{CASE_GLOSSARY_APPENDIX_LETTER}}": gloss_label,
         "{{CASE_CHALLENGE_3_DELIVERABLES_SUMMARY}}": cfg["challenge3_summary"],
         "{{CASE_APPENDICES_A_THROUGH_F}}": appx_html,
         "{{CASE_GLOSSARY_VERIFIED_DATE}}": "2026-09-01",
