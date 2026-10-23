@@ -268,3 +268,18 @@ product surface (R8)**, not just a post-hoc log; (3) case defects found by real 
 **classes via gates (S4)**, with `phone-plan` as the reference example; (4) the **platform includes an
 author surface (R10)**, not only more subjects; (5) authenticity is handled by grading the reasoning trail
 (R11), not by detection. All PROPOSED. TECH_STACK.md unchanged until the event-log phase ships.
+
+### D-023 · 2026-10-23 · Purpose-first vision; simple leaderboard; 3-case pilot; K1–K6 rubric; policy v0.2
+Manan clarified the vision: students experience math in the real world to solidify concepts, learn to
+structure real-world problems and complexity, and gain exposure to fields and careers, with the deeper goal of
+confidence in complex problem solving. `VISION.md` v2.0 leads with that and moves guiding principles to their
+own section. Decisions: (1) the journey starts with a kickoff that is part of the assignment, picked from
+recommended cases that link week to week; (2) a **simple leaderboard** (completed cases and pitch depth),
+integrated with the journey tracker, with **profiles and history**, rewarding effort and depth (reverses the
+D-021 choice to park it; safeguards from R1c adopted: opt-in, cohort-scoped, alias default, depth counted by
+criteria with evidence not words); (3) a **rubric K1–K6** matched to these goals, with confidence, curiosity and
+hint counts never scored (R1a); (4) **pilot 3 cases**, recommendation in ROADMAP §2 pending Manan's call;
+(5) **POLICY_PRELIMINARY.md v0.2**, light and non-restrictive, corrected by R1b's fact-check (consent must name
+the vendor and data; zero retention not self-serve); (6) vendor/budget/key: paid API account owned by the
+operator, server-side key, hard caps; cost is not the constraint. All PROPOSED/PRELIMINARY. TECH_STACK.md is
+unchanged until the event-log phase ships.

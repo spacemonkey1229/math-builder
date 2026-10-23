@@ -87,6 +87,20 @@ Design:
 4. **Free-text "ask the coach."** Same guardrails; scoped to the current step and the case's
    appendices; refuses off-topic and refuses to produce a pitch for the learner.
 
+**Dialogue rules (from the R1a review).** These govern every Coach.AI turn:
+1. *Attempt before help.* No hint until the Hero has entered a number or written the formula they used.
+2. *Ask for the method, not the number.* "What did you start from?" The coach reads the Hero's own
+   formula back before diagnosing.
+3. *One question per turn, answerable from the page.*
+4. *Name the kind of mistake, never the operation.* "This looks like a pre-tax number" is allowed;
+   "add the tax" is not.
+5. *Stop rules.* After two failed turns on a step, offer a worked analogue with different numbers. A
+   correct method stated in words still needs the computation before the coach confirms. If the Hero
+   says "just tell me," offer the analogue and don't debate.
+*Top failure modes to test for:* answer extraction by rephrasing ("what is 2 times…"); validating a wrong
+method because the number is close; the model tail asserting a value is wrong when it has no key; a step-1
+hint that hands over step 3; implicitly endorsing the conclusion of a pitch.
+
 Guardrails (acceptance, testable):
 - **Leak test:** an automated suite sends adversarial prompts ("just tell me the answer,"
   "what number do I type," prompt-injection in the notebook text) across every step of the
@@ -121,13 +135,25 @@ Behavior:
   confirms."**
 - **Guide confirm** remains the gate for badges (MCS-12: machine drafts, human promotes).
 
-Reconciling Anuj's idea with the rubric (**decision needed — see §5**): he proposes "a small
-percentage of the grade" for note quality. RUBRIC.md deliberately separates a *mastery gate*
-(every criterion ≥ Proficient, no compensation) from a *growth score* (weighted composite, never
-shown as a grade). Recommendation: note quality maps to existing criteria (appendix of work,
-the process-reasoning criterion) rather than a new percent. The learner sees criteria
-feedback; the guide's growth score already weights them. This honors the ask — notes matter and
-are assessed — without breaking "no partial credit toward a badge."
+**The rubric must match our goals (decided; revision proposed by the R1a review).** RUBRIC.md's seven
+criteria predate the vision. Keep the split between a *mastery gate* (every criterion at least Proficient)
+and a separate *growth score*; the growth weights are untested. Proposed gate:
+
+| | Criterion (weight) | Proficient looks like |
+|---|---|---|
+| K1 | Structure the problem (20) | Names the decision metric and the variables, and sets one given fact aside as irrelevant. Absorbs old C7. |
+| K2 | Compute and deliver (15) | Every deliverable present; each number recomputes from the stated model; units carried. Merges C3+C4. |
+| K3 | Handle assumptions and complexity (20) | Names each assumption the winner depends on, flexes at least one, reports whether the winner changes. |
+| K4 | Defend the decision (25) | One side, argued from the numbers; states the strongest counter and what would change their mind. C2 without the word-count gate. |
+| K5 | Reflect and revise (10) | Names one error or assumption they changed, and why. New. |
+| K6 | Field exposure (10) | Uses one source a practitioner in this role would use for a number or rule the Hero lacked. A link that is only the case glossary is Not Yet. Reframes C1. |
+
+*Demoted to growth-only (recorded, not gated):* visual display (a badge shouldn't depend on a chart) and
+discussion participation (a contribution count penalizes quiet learners). *Never scored:* **confidence**
+(captured as a 1–4 pre/post self-rating visible only to the guide, to compare against K-scores);
+**curiosity** (a "what would you look up next" tag feeding the skills map); **hint counts** (a coaching
+signal). This is how Anuj's "small percentage for note quality" is honored: notes and reflection are
+assessed in K1, K3 and K5, inside the mastery gate and growth score, not as a separate percent.
 
 Calibration (acceptance, non-negotiable before any student sees an AI grade):
 - Build a **gold set**: the existing human-reviewed student work in `student_work/` plus new
@@ -142,17 +168,54 @@ Risks: grader inflating on fluent writing; prompt injection in the student's not
 Exemplary"); students gaming rubric language. Mitigations: evidence-quote requirement, injection
 tests, guide sampling of "Exemplary" verdicts.
 
-### R4 — Recognition: stars, badges, (leaderboard decision) (Phase 2)
+### R4 — Journey tracker, points, and a simple leaderboard (Phase 2; tracker data from Phase 0)
 
-*Story:* As a Hero, I can see what I've earned and what's next, and it feels good.
+*Story:* As a Hero, I see my journey, earn recognition for effort and depth, and have a reason to keep
+going. As a guide, I can see who is engaging and at what depth.
 
-- **Stars** per case tied to rubric criteria demonstrated (not rank). **Streaks/personal bests.**
-  Existing guide-awarded Badge 1 surfaced to the learner with progress ("3 of 5 cases").
-- **Leaderboard:** parked with explicit conditions (ROADMAP Parking lot). Two reasons: (1) the
-  project's own RUBRIC warns against score-as-point; (2) public ranking of minors needs
-  guide-controlled, opt-in design. If it ships, it ranks effort/behavior (cases completed,
-  revisions made, peer-voted best pitch), never raw score, and is cohort-scoped and guide-
-  controlled. Fit with Acton's culture is an explicit question for Anuj.
+**Points come from the same events that record the journey** (R9), so one source of truth feeds the
+tracker, the profile, and the leaderboard. Points reward effort and depth, never speed or raw score:
+
+| Event (all from the event log) | Counts when |
+|---|---|
+| Case completed | A guide confirms the submission. Per-week cap on counted completions. |
+| Pitch depth | One point per rubric criterion at Proficient or better **where the Hero's own quoted evidence is confirmed by the guide**. Counts criteria with evidence, never words, so length can't inflate it. A counter-argument counts only if it uses the other option's numbers. |
+| Revision made | The Hero revised after Coach.AI feedback (shows growth) |
+| Case feedback given | The Hero reflected on and rated the case (feeds the guide and the case-quality loop) |
+| New field explored | First case in a field cluster they haven't visited |
+
+**Leaderboard v1 (simple).** Shows two counts, **cases completed** and **pitch depth**, with a points
+total from the table above. Cohort-scoped, display name or alias by default, **opt-in** per Hero, no
+rank numbers beyond the cohort (tiers or alphabetical ties are fine). Guides see everyone. Not public.
+*Reviewer note (R1c):* recommends showing the two counts separately and not summing them, because a
+composite recreates score-as-point; the owner wants points for the tracker. Decision for Manan: keep
+points as an effort/depth tally (as above) but sort the board by cases completed.
+
+**Gaming and countermeasures (from review):**
+1. *Padding or pasting AI text to hit depth* → guide confirmation of each criterion, plus an optional
+   60-second spoken defense of any criterion before it counts (also supports R11).
+2. *Rushing for completion count* → completion requires step-attempt and revision events from the log;
+   weekly cap on counted completions.
+3. *Sharing answer keys in the cohort* → cohort-unique numbers where the case allows; rotating
+   assignments.
+
+**Protecting slower learners.** No resetting streaks; use grace weeks. Personal-best and "your last
+pitch vs. your first" views stay private to the Hero. No "most improved" public board (it makes
+struggle visible).
+
+**Other carrots, ranked by effort and risk (R1c):**
+| Carrot | Effort | When |
+|---|---|---|
+| Careers card per case (from `domains.json` `careers[]`: math used, entry path) | Low | Now |
+| Pitch of the week, chosen by the guide, shown with the author's alias | Low | Now |
+| Bonus twist unlocked after the pitch is submitted | Low–Med | Now |
+| "Question that changed the decision": the Hero's own what-if run through the case model | Med | Later |
+| Two-minute practitioner voice (agronomist, structural engineer) | High (licensing, vetting) | Later |
+| Learner-authored decision cases | High risk (unvetted numbers) | Later, if ever |
+
+Acceptance: points for any Hero can be recomputed from the event log alone; a guide can hide the
+leaderboard or any Hero from it; a Hero can leave or switch to an alias at any time.
+
 
 ### R5 — Identity, privacy, and consent (enabler for R2 and R3; Phase 1a)
 
@@ -167,6 +230,15 @@ unauthenticated *on purpose*, D-018).
   non-author child uses AI features (US context: COPPA/FERPA considerations — confirm with
   counsel/school policy; this PRD does not assert compliance).
 - Update TECH_STACK.md in the same pass as any change here (00_SESSION.md hard line).
+
+**Profile and history (also R5).** Points and recommendations need durable profiles. A Hero's profile
+shows five things, none of them a rank: (1) **fields explored** ("3 of 12 fields") with the career each
+touched; (2) **cases finished**, each with the Hero's own choice and one-line reason; (3) a **pinned
+favorite pitch** the Hero chooses, showing which criteria it met; (4) **growth**, meaning evidence per
+pitch over time with the Hero's own reflection; (5) **"still wondering"**, an open question carried into
+the next assignment. **Recommended next assignment:** field curiosity first (the Hero picks one of two
+cases in an adjacent field), then a skill-gap filter from step-level logs once about five cases of data
+exist. The guide sees the reason for each suggestion.
 
 ### R6 — Telemetry and the feedback loop (Phase 0 → ongoing)
 
@@ -189,44 +261,86 @@ unauthenticated *on purpose*, D-018).
   to history/civics dilemmas.
 - Do **not** build generic multi-subject abstractions before the second subject exists.
 
-## 3a. Worked examples (illustrative; numbers for `phone-plan` are recomputed in code)
+## 3a. Worked examples (illustrative; `phone-plan` numbers are recomputed in code)
 
-**Example 1 — the coach diagnoses a method (Step 2, "Check both", Carrier V at 3 lines).**
-Correct pre-tax is $95.00; with 8% tax, **$102.60**.
-| Hero enters | Catalog match (recomputed in code) | Coach says (Level 1) |
+**Example 1 — Coach.AI is a dialogue, not a hint button (Step 2, Carrier V at 3 lines).**
+Correct pre-tax is $95.00; with 8% tax, **$102.60**. *The UI/UX is the product here.*
+
+*Interaction design.* A Coach.AI panel sits beside each notebook step with that step's context pinned
+at the top. The answer field stays; the dialogue is what happens around it. Before checking, the Hero
+picks "How sure are you?" (a quick 3-way tap) — a confidence signal for the tracker, never graded.
+Coach.AI opens on a wrong answer or when asked. Quick-reply chips: *I'm stuck · Check my method · Show
+me a similar example.* The Hero can type a number, or their method in words. One question per turn.
+Every turn is logged (R9). The Hero can always keep working without opening the coach.
+
+> **Hero** enters 118.80 *(sure: 3 of 3)*
+> **Coach.AI** — I got something different. Can you tell me how you got 118.80?
+> **Hero** — 80 + 15×2, then tax.
+> **Coach.AI** — You applied the tax once and used the right rates. Let's look at how many lines you
+> charged the extra rate for. Where does the case say what counts as an extra line?
+> **Hero** — "beyond the first 2"... so only 1. 95, then 102.60.
+> **Coach.AI** — Check it. ✓ What did you notice that changed your answer?
+
+Behind the scenes the catalog matched `used_total_lines_in_equation`, (80 + 15×2) × 1.08 = 118.80. The
+coach named the *kind* of mistake and pointed to a place in the case; it never named the operation. Other
+entries for this step (Level 1 wording, which names a kind of mistake and a place to look):
+
+| Hero enters | Matches (computed in code) | Coach.AI's first move |
 |---|---|---|
-| 118.80 | `used_total_lines_in_equation`: (80 + 15×2) × 1.08 | "Your number looks like you counted 2 extra lines. Re-read D1: how many lines are *beyond the first 2* when the family has 3?" |
-| 110.81 | `tax_applied_twice`: 95 × 1.08 × 1.08 | "Check how many times Appendix B says the tax is added. Once, to which total?" |
-| 95.00 | `forgot_tax` | "That's the plan price. What does Appendix B add on top?" |
-| 160 (Step 1 y-intercept) | `flat_rate_per_line`: 80 × 2 | "Is $80 the price of one line, or of the first two together? Which row of Appendix A tells you?" |
-| 16.20 (Step 1 slope) | `tax_in_step1`: 15 × 1.08 | "Step 1 is before tax. Where does tax enter?" |
-| 7 (no match) | LLM tail, Socratic only | "Walk me through how you got 7 — what did you start from?" |
+| 110.81 | 95 × 1.08 × 1.08 | "Your number is higher than I expected. Where does Appendix B say the tax comes in?" |
+| 95.00 | forgot tax | "That looks like the plan price. Does the case say the family pays that, or something else?" |
+| 160 (Step 1 intercept) | 80 × 2 | "Which row of Appendix A describes the first two lines, and what does the row label say about them?" |
+| 135.00 | (80 + 15×3) × 1.08 | "Walk me through how many lines each rate applies to." |
+| 7 (no match) | model, Socratic only | "Walk me through how you got 7. What did you start from?" |
 
-**Example 2 — provisional feedback on a pitch, in rubric language** (never a raw score).
-*C2 The pitch — Proficient (draft).* "You take a firm stance for Carrier V and use the break-even
-you computed. Evidence from your text: 'at 3 lines both cost $102.60.' To reach Exemplary, state
-the strongest argument *against* V and answer it." *C7 Framing the question — Not Yet (draft,
-low confidence).* "Your pitch compares prices but doesn't say what question you're answering.
-What is the family really deciding?" The guide sees both drafts with confidence, evidence quotes,
-and an Override control; the Hero sees "Provisional until your guide confirms."
+**Example 2 — the end-of-case summary and its feedback (format varies by case).**
+*What it is.* A short summary of the Hero's position, the reasoning behind it, and what they'd want to
+know next. *Format is declared per case* (`pitch_format`: written · spoken · either), because the real
+world asks for different things: a written decision memo to a family, a two-minute spoken brief to a
+board. Default is "either"; the graded artifact is always text, so a spoken summary is recorded and
+transcribed into the same pipeline. A short spoken defense of a criterion is also the strongest check
+that the Hero owns their reasoning (R11).
 
-**Example 3 — what the guide sees before discussion** (invented cohort of 6, illustration only).
-Step 1: 4 of 6 asked for a hint; 3 were matched to `flat_rate_per_line`. Step 3: 2 reported
-break-even "1" (the lines-beyond-2 trap). Twist: not yet opened. Suggested opener: cold-call the
-Hero who entered 160 — "what was your $80 counting?" That is the Socratic move the data was
-built to enable.
+*Interaction, not a verdict screen.* Coach.AI shows three observations pulled from the Hero's own text
+(with quotes), asks one question, and lets the Hero revise once before it's sent to the guide. Revision
+history is kept and shows in the profile as growth. Feedback is in the revised rubric's language (R3), is
+labeled "Provisional until your guide confirms," and never shows a raw score.
+
+> *Framing the problem — Proficient (draft).* "You said the family is really deciding what to pay when
+> Charity's line arrives — 'the 3-line price is what matters.' That names the real question."
+> *Assumptions and complexity — Not Yet (draft, low confidence).* "You used the 8% tax but didn't say
+> why you trusted the $15 extra-line price to stay the same. What else would have to be true?"
+> *One question for you:* "What's the strongest reason to pick the other carrier, and how would you answer it?"
+
+**Example 3 — what the guide sees: skills, assessment, focus, strengths, and the Heroes' own feedback.**
+The guide needs the **core skill behind each step** and an **assessment of the cohort on each skill**, so
+they know where to focus the discussion, plus the Heroes' feedback on the case. Invented cohort of six:
+
+| Step | Core skill (from the case's standards) | First try | Hint requests | Signal |
+|---|---|---|---|---|
+| 1 Cost equations | Writing a linear equation: slope and y-intercept | 2 of 6 | 6 | ⚠ 3 Heroes read $80 as per line |
+| 2 Total with tax | Percent of a number; order of operations | 5 of 6 | 2 | ✓ strength |
+| 3 Break-even | Solving a system of linear equations | 3 of 6 | 4 | ⚠ 2 reported "1 line" instead of 3 |
+| Summary | Framing the problem; naming assumptions | 4 Proficient | n/a | Weak on assumptions |
+
+> **Suggested focus (generated, guide can edit):** "Open on Step 1. Cold-call a Hero who entered 160:
+> 'What was your $80 counting?' Then ask what 'x = 1' is counting in Step 3. Strength to name: everyone
+> applied the 8% tax once."
+
+*Heroes' feedback on the case* (collected at step 6 of the journey): "4 of 6 said the wording of Appendix A
+was confusing; 5 of 6 want to see a case in a field like this one." This flows two ways: into the guide's
+prep for next time, and into the case-quality queue (S4), which is how a defect class gets caught before
+the next cohort.
 
 **Example 4 — the same engine in other subjects (concept sketches, not cases).**
-- *Science (deterministic key):* a decision between two interventions where unit and
-  concentration conversions drive the answer. Catalog: `mL_vs_L`, `forgot_dilution_factor`,
-  `used_mean_not_median`. Grader: numeric key + rubric for the written methods.
-- *History/civics (rubric-judged):* a binary decision from a short primary-source packet. No
-  numeric key; the grader checks that every claim cites a packet source, that the strongest
-  opposing argument is stated fairly, and that evidence is distinguished from inference. Needs a
-  calibrated gold set and source-grounding rules before any learner sees an AI grade.
-- *Book review (rubric-judged):* "Would you recommend this book to a skeptical friend?" Graded on
-  a specific, quoted passage as evidence and a fair statement of the best objection.
-Each reuses the same loop — hint ladder, provisional feedback, guide confirm — with a different key.
+- *Science (deterministic key):* a decision between two interventions where unit and concentration
+  conversions drive the answer. Catalog: `mL_vs_L`, `forgot_dilution_factor`, `mean_not_median`.
+- *History/civics (rubric-judged):* a binary decision from a short primary-source packet. The grader checks
+  that every claim cites a packet source, the strongest opposing argument is stated fairly, and evidence is
+  separated from inference. Needs a calibrated gold set and source-grounding rules first.
+- *Book review (rubric-judged):* "Would you recommend this to a skeptical friend?" Graded on a quoted
+  passage as evidence and a fair statement of the best objection.
+Same loop each time: Coach.AI dialogue, provisional feedback, guide confirms. Different key.
 
 ## 3b. Additional requirements surfaced by the strategy pass
 
@@ -269,17 +383,22 @@ chatbot, with no matching step attempts, is flagged for the guide, not auto-fail
 | Testing | The admin app currently has zero automated tests (ROADMAP Housekeeping); R2/R3 endpoints ship with tests |
 | Verification | No feature is "done" on text checks alone — live browser pass required |
 
-## 5. Open decisions (for Manan; I'd decide the first three as recommended)
+## 5. Decisions (updated 2026-10-23 after Manan's answers)
 
-1. **Notes grading: percent vs. rubric criteria.** Recommend criteria (R3). Needs Manan, ideally
-   with Anuj's reaction to the reasoning.
-2. **Leaderboard: park or build.** Recommend park; ship stars/badges/streaks first.
-3. **Identity model:** per-assignment signed links first (R5), accounts later.
-4. **Model vendor/budget for coach and grader**, and who holds the API key and spend cap.
-5. **Consent and data policy** for minors — who signs off, and where does it live?
-6. **Acton integration surface** — what "the entire Acton system" means concretely (needs
-   Anuj); until known it stays a discovery item.
-7. **Which case is the pilot** — `phone-plan` recommended.
+**Decided**
+1. **Build a rubric that matches our goals.** Needed; see R3 (revision proposed by review).
+2. **Simple leaderboard.** Yes; design in R4.
+3. **Recommended assignments** that link week to week; see profile in R5.
+4. **Pilot 3 cases**, from different fields. Candidates under review (ROADMAP).
+
+**Being worked**
+5. **Model vendor, budget, key:** reviewed by R1a/b/c, summary in ROADMAP §2.
+6. **Preliminary data and AI policy:** drafted as POLICY_PRELIMINARY.md, reviewed by R1a/b/c; deliberately
+   light and non-restrictive for now.
+
+**Still open**
+7. Acton-system integration surface (needs Anuj).
+8. Final retention periods and legal review before any non-pilot use (POLICY_PRELIMINARY §9).
 
 ## 6. Metrics (proposed; baselines don't exist yet)
 

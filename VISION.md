@@ -1,209 +1,213 @@
 # VISION — Math Builder
 
-**Version 1.0 · 2026-10-19 · Status: PROPOSED (needs Manan's sign-off; see Open decisions in PRD.md)**
-Trigger: first outside-user feedback (Anuj, 2026-10-17) — "evolve it from a tool to a product,
-and eventually to a platform." This file turns that into a direction. It does not change the
-contract: SPEC.md, RUBRIC.md and the hard lines in 00_SESSION.md still govern.
+**Version 2.0 · 2026-10-23 · Status: PROPOSED (needs Manan's sign-off)**
+v1.0 (2026-10-19) opened with principles. This version opens with the purpose and moves the
+guiding principles to their own section near the end. It does not change the contract: SPEC.md,
+RUBRIC.md (under revision, see PRD R3) and the hard lines in 00_SESSION.md still govern.
 
 ---
 
-## One sentence
+## The vision
 
-**A learner defends a real decision with evidence they can show — and a coach that asks good
-questions (never gives the answer) helps them get there, then helps them see how they did.**
+**Students experience math in the real world.** Each case is a real decision with real numbers, so
+that a learner:
+
+1. **Solidifies math concepts** by needing them to defend a choice, not by practicing them in isolation.
+2. **Learns to structure real-world problems and complexity**: to decide what the question really is,
+   what to ignore, what to assume, and what they still don't know.
+3. **Gains exposure to fields and careers**: an insurer's actuary, a satellite crop analyst, a bridge
+   engineer. And finds something they want to be curious about.
+
+Underneath all three is the deeper goal: **confidence in complex problem solving.** A Hero should
+finish a case believing "I can take a messy, unfamiliar problem and make progress on it," and have
+evidence in their own history that it's true.
+
+Product and platform are how this reaches more learners and more subjects. They serve the purpose;
+they are not the purpose.
 
 ## Where we are, honestly
 
 - **Tool (today).** A rigorous authoring pipeline that produces quantitative case studies, each
-  with a self-checking interactive page, a facilitator guide, and a mechanical publish gate.
-  A hosted guide app (Flask on Vercel + Neon, shared passcode) runs assign → submit → score →
-  confirm → badge.
-- **What has never happened:** a real cohort in a real room. Zero cases are `VERIFIED`
-  (MCS-29). The first outside feedback (Anuj, using `phone-plan`) is the first signal from a
-  user who is not us — and it found real defects the gates did not (an ambiguous twist
-  instruction, a twist locked to a different scenario than the learner chose).
-- **Implication:** the next stage is not "more features." It is *make the learner's moment
-  inside one case excellent, prove it with real kids, then widen.*
+  with a self-checking interactive page, a facilitator guide, and a mechanical publish gate. A hosted
+  guide app (Flask on Vercel + Neon) runs assign → submit → score → confirm → badge.
+- **Not yet happened:** a real cohort in a real room. Zero cases are `VERIFIED` (MCS-29). The first
+  outside feedback (Anuj, using `phone-plan`) found real defects the gates missed.
+- **Implication:** make the learner's experience inside a case excellent, prove it with real kids on
+  a few cases, then widen.
 
 ## Three stages
 
 | | **Tool** (now) | **Product** (next) | **Platform** (later) |
 |---|---|---|---|
-| Who it serves | An author-operator and one guide | Heroes, guides and parents in a cohort | Any Acton-style studio; any subject |
-| Learner experience | Static case page; client-side "Check" buttons | Coach that hints and diagnoses; one-click Submit; fast, kind, rubric-anchored feedback; stars/badges | Same loop, subject-agnostic; richer recognition |
-| What "done" means for a case | Passes the publish gate | Passes the gate **and** survives real learners (Tier 3) | Authored by a pipeline, verified by data |
-| Grading | Machine first pass → guide confirms | AI-drafted, calibrated against human grades; guide confirms for badges | Per-subject graders (deterministic keys *and* rubric-judged writing) |
-| Biggest risk | Quality we cannot see | Trust: a bot that leaks answers, mis-grades, or mishandles kids' data | Generalizing before the first subject is proven |
+| Who it serves | An author-operator and one guide | Heroes, guides, parents in a cohort | Any studio; any subject |
+| Learner experience | Static page; client-side "Check" | Coach.AI dialogue per step; end-of-case summary with feedback; journey tracker, profile, points | Same loop in other subjects and fields |
+| Guide experience | Hand scoring | Skill-level view per step and per case; suggested focus; Heroes' feedback folded in | Same, plus authoring tools |
+| Grading | Machine first pass → guide confirms | AI-drafted against a rubric built for our goals; guide confirms | Per-subject graders |
+| Biggest risk | Quality we cannot see | Trust: answer leaks, mis-grading, children's data | Generalizing before one subject is proven |
+
+## The Hero's journey
+
+The journey tracker is the spine of the product. Each stop writes to the Hero's profile and history.
+
+1. **Pick an assignment.** The Hero chooses from recommended cases that follow from their journey
+   (fields explored, skills being built, what they asked to see more of), so one week links to the next.
+2. **Kickoff.** Part of the assignment itself: just enough to explain the problem and its world,
+   before any data. First vote, committed before reasoning.
+3. **Work the steps with Coach.AI.** The notebook steps are a dialogue, not a form. The Hero enters
+   an answer or a method; Coach.AI replies, asks, and probes. A wrong answer names the kind of
+   mistake; being stuck gets a hint; the final answer is never given.
+4. **Summary and feedback.** The Hero gives a summary pitch of their position. Coach.AI responds in the
+   language of the rubric, provisional until the guide confirms.
+5. **Discuss.** The live Socratic room: twist, re-vote, cold-calls. The guide arrives already knowing
+   where the room got stuck, which skills to focus on, and where the strengths are.
+6. **Reflect and give feedback on the case.** What was new, what was confusing, what they want to
+   explore. This feeds the guide's workflow and the case's quality loop.
+7. **Points, profile, history.** Completion and depth of work earn points. The profile shows the
+   Hero's journey (fields touched, cases finished, a favorite pitch, growth over time), not just a score.
+8. **Recommended next assignment**, which returns to step 1.
+
+## What the guide needs
+
+The guide is the buyer and the person in the room. Per case they need: the **core skill behind each
+step**, an **assessment of how the cohort did on each skill**, **suggested focus** ("three of six
+Heroes treated $80 as per-line; cold-call them"), **named strengths**, and the **Heroes' own feedback**
+on the case. This is a first-class surface, not an afterthought (PRD R8).
+
+## Incentives: the carrot
+
+Aimed at the right behavior: **effort and depth**, not speed or raw score.
+- **Simple leaderboard, v1.** Based on completed cases and the depth of pitches. Cohort-scoped to
+  start. Design details and anti-gaming rules are in PRD R4.
+- **Other carrots** (PRD R4): stars toward badges, personal bests, streaks, "most improved," fields
+  explored, a peer-voted favorite pitch.
+- **Integrated into the journey tracker,** so points come from the same events that record the
+  journey. That requires **profiles and history** (PRD R5, R9), which also make the experience feel
+  humane rather than like a scoreboard.
 
 ## Who we build for
 
-- **Hero (learner), MS/HS.** Wants to be taken seriously, hates being stuck alone, hates being
-  told the answer. Needs: unstick me without stealing the thinking; tell me honestly how I did.
-- **Guide (facilitator).** Needs: see who is stuck *where* before the discussion, trust the
-  score enough to confirm quickly, and keep the final say on badges.
-- **Parent / sponsor.** Needs: evidence of growth that is not a single number. (Anuj is the
-  prototype; he also volunteered to test with kids.)
-- **Author (us).** Needs: real-use data flowing back into case quality, so each case gets
-  better, not just published.
-
-## Strategy — hypotheses to test, not conclusions
-
-Everything below is a bet with a cheap way to find out. Nothing here is validated; the sources of
-evidence are one outside user's email and our own pipeline.
-
-**The bet.** In Acton-style studios the scarce thing is not worksheets — it is *guide time and
-trustworthy feedback on reasoning*. Decision-based cases plus an AI coach and a calibrated grader
-could let rigorous, discussion-based learning run beyond a room that happens to have an
-exceptional guide.
-
-**Customer, user, buyer — three different people.**
 | | Who | Wants | Decides? |
 |---|---|---|---|
-| User | Hero (MS/HS learner) | Get unstuck without being told; be taken seriously | No |
-| Buyer / champion | Guide, studio head, homeschool parent | Less prep and grading load; evidence of growth | Yes |
-| Influencer | Parents (Anuj is the prototype) | Proof the kid is learning real reasoning | Shapes adoption |
+| User | Hero (MS/HS learner) | Get unstuck without being told; be taken seriously; see their own growth | No |
+| Buyer / champion | Guide, studio head, homeschool parent | Less prep and grading; know where to focus; evidence of growth | Yes |
+| Influencer | Parents (Anuj is the prototype) | Proof the child is learning real reasoning and finding interests | Shapes adoption |
+| Author | Us, then other guides | Real-use data flowing back into case quality | n/a |
 
-**Wedge.** Quantitative cases for MS/HS in self-directed settings (Acton studios first, then
-microschools, pods, co-ops): small, reachable through one champion, and Socratic discussion is
-already the norm there. Not a general math-practice product.
+## Strategy: hypotheses to test, not conclusions
 
-**Why it could be defensible (honest: none of this is a moat yet).**
-1. A case library with mechanical truth gates (never a fabricated number or URL) — *trust*.
-2. Per-case misconception catalogs and step-level stuck data — a data flywheel a generic
-   chatbot lacks. Only real once kids use it.
-3. Guide-confirmed grading data that calibrates the AI grader.
-4. A pipeline that can produce and verify new cases at quality.
-Today the library is machine-verified but human-unproven (zero `VERIFIED`).
+Nothing here is validated. Evidence so far: one outside user's email and our own pipeline.
 
-**Where it differs from the obvious alternatives.** Answer-practice and generic AI tutors reward
-the right number; this rewards a *defended decision under ambiguity* and grades the reasoning.
-To map, not assert: the adjacent landscape (AI tutors, adaptive practice, project/case curricula,
-LMS/grading tools) — a Phase 0 research task, together with the marketing-tech comparisons Anuj
-offered to share.
+**The bet.** Building confidence in complex problem solving needs three things at once: *real*
+problems (so the stakes feel real), *structure* (a repeatable way to break a messy problem down), and
+*support at the moment of struggle* (so struggle produces progress, not quitting). A guide can't give
+that moment-by-moment support to every Hero; Coach.AI plus a skill-aware guide surface can.
 
-**Business model — open, decide after pilots.** Options: per-studio subscription · per-learner ·
-case packs · free tool + paid coach/grading · open core + hosted · nonprofit/grant. AI cost is a
-*variable per-learner cost*, so track cost per learner-case from the first pilot; it constrains
-every option. Kids' data makes trust a prerequisite for any of them.
+**What "deeper than a math tool" means for the strategy.**
+- The product teaches a *method* (frame → assume → compute → defend → revise) that transfers across
+  fields. The case library is the vehicle; the method is the point.
+- Confidence is built by *evidence the Hero can see*: a history of problems worked and positions
+  defended. The profile is therefore a core feature, not an add-on.
+- Exposure to fields is a *designed* part of recommendation, not a side effect of case topic.
+
+**Wedge.** Quantitative real-world cases for MS/HS in self-directed settings (Acton studios first,
+then microschools, pods, co-ops): small, reachable through one champion, Socratic discussion already
+the norm. Pilot on three cases from different fields.
+
+**Why it could be defensible (none of this is a moat yet).** (1) A case library with mechanical truth
+gates: trust. (2) Misconception catalogs plus step-level stuck data per case: a flywheel a generic
+chatbot lacks. (3) Guide-confirmed grading data that calibrates the grader. (4) Hero journey data
+(fields, skills, growth) that makes recommendations better over time.
+
+**Where it differs from alternatives.** Practice products and generic AI tutors reward the right
+number. This rewards a *defended decision under ambiguity*, grades the reasoning, and does it in
+real-world fields. To map, not assert: the adjacent landscape, plus the marketing-tech comparisons
+Anuj offered to share (Roadmap S2).
+
+**Business model: open, decide after pilots.** Per-studio, per-learner, case packs, free tool + paid
+coach/grading, open core + hosted, nonprofit/grant. AI is a *variable per-learner cost*, so cost per
+learner-case is tracked from pilot one.
 
 **Riskiest assumptions and the cheapest test for each.**
 | # | Assumption | Cheapest test | Before |
 |---|---|---|---|
-| 1 | Kids use a hint coach to think, not to extract answers | Pilot with Anuj's kids; log hint ladder use vs. final answers | Building Coach v1 at scale |
-| 2 | Guides trust AI-drafted grades enough to confirm quickly | Blind guide-vs-AI grading of the existing student work | Showing AI grades to learners |
-| 3 | Guides/parents would adopt and pay | ~5 structured conversations (Anuj's network, Acton guides) | Any pricing or multi-tenant work |
-| 4 | Case quality scales without the author in the loop | Measure pipeline throughput and gate-fail rate; step-level stuck data per case | Promising a catalog size |
-| 5 | The engine generalizes to another subject | One science case prototype end to end | Any platform abstraction |
-| 6 | Acton-system integration is worth building | Discovery with Anuj: what systems, what data, who owns it | Any integration work |
+| 1 | Heroes use Coach.AI to think, not to extract answers | Pilot; log dialogue and hint levels against final answers | Coach at scale |
+| 2 | Guides trust AI-drafted feedback enough to confirm fast | Blind guide-vs-AI grading of existing student work | AI feedback shown to Heroes |
+| 3 | Points for completed cases and pitch depth drive effort, not gaming | Pilot leaderboard; compare depth before/after; review outliers | Widening the leaderboard |
+| 4 | Heroes' confidence actually rises | Short before/after self-rating plus guide observation | Claiming the outcome |
+| 5 | Guides and parents would adopt and pay | About 5 structured conversations | Pricing, multi-tenant |
+| 6 | The engine generalizes to another subject | One science case end to end | Platform abstraction |
+| 7 | Acton-system integration is worth building | Discovery with Anuj | Any integration |
 
-**Rings — learn from each before widening.** Ring 1: one household (Anuj's kids). Ring 2: one
-studio cohort. Ring 3: several studios (accounts, multi-tenant, guide analytics). Ring 4: other
-subjects and the platform.
+**Rings: learn from each before widening.** Ring 1: one household (Anuj's kids), 3 pilot cases.
+Ring 2: one studio cohort. Ring 3: several studios. Ring 4: other subjects and the platform.
 
-**Quality is a system property, not a case fix.** Individual case defects (like the `phone-plan`
-step instructions and undefined vocabulary the first outside reader hit) are symptoms. The
-product answer is gates that catch the class — an instruction-clarity lint, a cold-read probe at
-authoring time, step-level confusion data fed back from real use — so the next 190 cases don't
-need the same repair. The `phone-plan` fix is the reference example, not the strategy.
-
-## The experience, end to end (one Hero, one case)
-
-1. **Assigned** — the guide assigns a case; the Hero opens a link (no account friction at first).
-2. **Launch** — overview hook, background, the binary dilemma; first vote *before* any data.
-3. **Work** — the notebook steps. Wrong answer → the coach says which *kind* of mistake it
-   resembles; stuck → a hint ladder; never the answer. (Worked examples: PRD §3a.)
-4. **Submit** — one click; numbers scored server-side; notes and pitch get rubric-language feedback,
-   marked provisional.
-5. **Discuss** — the live Socratic room is half the product: twist, re-vote, cold-calls. The guide
-   arrives already knowing where the room got stuck.
-6. **Grow** — stars toward a badge, what's still "Not Yet," next case recommended from the skills
-   map. Parents see evidence, not a rank.
+**Quality is a system property, not a case fix.** The defects the first outside reader hit in
+`phone-plan` are symptoms. The answer is gates that catch the class: an instruction-clarity lint, a
+cold-read probe at authoring time, step-level confusion data from real use. `phone-plan` is the
+reference example, not the strategy.
 
 ## How we'll know it works
 
-- **North star (proposed):** *cases a Hero completes with a defended position and reflection, that a
-  guide confirms* — per active Hero per month. Counts real finished reasoning, not logins.
-- **Learning outcomes (not just engagement):** rubric criteria moving Not Yet → Proficient over
-  successive cases; first-try-correct on a step after instruction fixes; transfer (a Hero applies
-  a method from case N in case N+k without a hint).
-- **Efficacy design:** the ~437-skill spine (as of 2026-09-06) gives a mastery map; define a simple
-  pre/post on the skills a case claims before asserting any learning gain.
-- **Guardrail metrics:** leak/injection failures (0), guide override rate, AI cost per learner-case,
-  hint-dependence (a Hero who only advances via Level 3 hints is a coaching signal, not a score).
+- **North star (proposed):** cases a Hero completes with a defended position and reflection,
+  confirmed by a guide, per active Hero per month.
+- **Outcomes tied to the vision:** can structure an ambiguous problem (a rubric criterion, PRD R3);
+  concept transfer (applies a method from case N in case N+k without a hint); breadth of fields
+  explored; **self-reported confidence** before and after, tracked as a signal, not graded.
+- **Guardrails:** leak and injection failures stay at 0; guide override rate; AI cost per
+  learner-case; whether the leaderboard drives depth, not just volume.
 
-## When we'd change course (kill / pivot criteria)
+## When we'd change course
 
-Decide these *before* the pilots so the data can't be rationalized afterward.
-- Hints are used mostly to extract answers after two design iterations → the coach is the wrong
-  form; fall back to guide-facing diagnosis only.
-- AI–guide agreement stays below the bar after calibration → keep AI as a guide-side draft tool;
-  never learner-facing.
-- No guide or studio outside Anuj's circle wants it in 5 conversations → stay a personal/portfolio
-  tool; skip multi-tenant and pricing work.
-- Cost per learner-case makes every business-model option negative → shrink the AI surface (more
-  deterministic, less LLM).
-- A science prototype needs a rewrite of the engine, not a content swap → the "platform" claim is
-  premature; stay math-first.
+Decided *before* the pilot so the data can't be rationalized afterward.
+- Coach.AI is used mostly to extract answers after two redesigns → it becomes guide-facing only.
+- AI–guide agreement stays under the bar → AI stays a guide-side draft tool.
+- The leaderboard produces volume without depth after two tuning rounds → drop points for volume;
+  keep personal best and profile only.
+- No one outside Anuj's circle wants it → stay a personal tool; skip pricing.
+- Cost per learner-case sinks every model → shrink the AI surface.
+- A science case needs an engine rewrite → the platform claim is premature; stay math-first.
+
+## Design principles
+
+The rules that shape *how* we build toward the vision.
+
+Existing: defensible ambiguity · never fabricate a number or URL · machine drafts, human promotes ·
+published ≠ verified · derive counts, never hand-write them.
+
+For the product stage:
+1. **Coach.AI asks; it never tells.** Hints climb a ladder; the final answer is never emitted.
+2. **Diagnose before you generate.** Detect common mistakes in code; use the model to phrase the
+   response and handle the long tail.
+3. **The server holds the key.** Anything that counts is computed server-side; client checks are
+   formative only.
+4. **Recognition rewards effort and depth.** Points reflect what a Hero did and showed, not speed.
+   Raw score is never the ranking.
+5. **Humans stay in the loop until the data says otherwise.** AI feedback starts as a draft a guide
+   confirms; autonomy is earned by measured agreement.
+6. **Children's data is a design input.** Minimal data, no identifiers to model vendors, consent
+   before launch (POLICY_PRELIMINARY.md).
+7. **One real thing before the general thing.** No platform abstraction before a second subject
+   forces its shape.
 
 ## Operating model and constraints
 
-Today this is one operator working with AI agents (model routing per 00_SESSION.md), plus Anuj's
-offer to help and test. Implications: build only what a pilot needs; buy/borrow the hard commodity
-parts (model API, auth, hosting) instead of building them; every phase must be shippable by one
-person in weeks; the pipeline's gates are the leverage that lets one operator keep quality. What
-we deliberately *stop* doing while Phases 0–1 run: broad new-case batches beyond what pilots
-need (content track continues at a lower cadence).
+One operator working with AI agents (model routing per 00_SESSION.md), plus Anuj's offer to help and
+test. Build only what a pilot needs; buy the commodity parts (model API, hosting, auth); every phase
+shippable by one person in weeks; the pipeline's gates are the leverage. While Phases 0–1 run,
+content batches slow to what the pilots need.
 
 ## Risks specific to AI in learning
 
-- **Answer-extraction and over-reliance** — mitigated by hint ladder, attempt-first, hint logging.
-- **Authentic work** — a Hero can ask any chatbot to write the pitch. Design response, not
-  detection: grade the *reasoning trail* (notes, step attempts, revisions), require the Hero's own
-  numbers and a reflection on what they got wrong, and let the guide's discussion be the check.
-- **Equity and access** — works on a shared phone/tablet; no reliance on paid add-ons.
-- **Children's data** — see S3 and PRD R5.
-
-## Principles
-
-Existing (keep): defensible ambiguity · never fabricate a number or URL · machine drafts,
-human promotes · published ≠ verified · derive counts, never hand-write them.
-
-New for the product stage:
-
-1. **The coach asks; it never tells.** Hints climb a ladder (nudge → pointer → worked analogue).
-   The final answer is never emitted. Same spirit as MCS-37 (no answers in placeholders).
-2. **Diagnose before you generate.** Most wrong answers in a well-built case are a *small
-   set of predictable mistakes* (forgot tax, used total lines instead of lines beyond 2).
-   Detect those in code first; use the language model to phrase the nudge and to handle the
-   long tail. Cheaper, safer, testable.
-3. **The server holds the key.** Anything that counts (a submitted grade) is computed server-
-   side. Client-side checks stay as instant, formative feedback only.
-4. **Mastery over rank.** RUBRIC.md already warns that scores "corrupt motivation the moment
-   they become the point." Recognition (stars, badges, streaks) attaches to *what you
-   demonstrated*, not to *where you rank against peers*. Leaderboards are parked, not rejected
-   (see ROADMAP Parking lot).
-5. **Humans stay in the loop until the data says otherwise.** AI grading starts as a draft the
-   guide confirms. Autonomy is earned by measured agreement with human graders, not assumed.
-6. **Kids' data is a design input, not a footnote.** Minimal data, no PII to model vendors,
-   consent before launch, per-assignment identity before any bot ships.
-7. **One real thing before the general thing.** Don't abstract the platform until a second
-   subject forces the shape. Keep the seam clean; don't build the framework.
-
-## What success looks like
-
-- **Product (12-month horizon):** a cohort of real Heroes completes cases end-to-end without
-  the author in the room; hint usage and stuck-points are visible per step; AI-drafted grades
-  agree with guide grades closely enough that confirming takes seconds; at least one case
-  reaches `VERIFIED`.
-- **Platform (beyond):** a second subject (science first) ships through the same engine with
-  its own deterministic keys; then one *subjective* subject (history/civics/book review)
-  graded against a rubric with source-grounding requirements, calibrated like math was.
+- **Answer-extraction and over-reliance:** hint ladder, attempt-first, dialogue logging.
+- **Authentic work:** a Hero can ask any chatbot to write the pitch. Design response: grade the
+  reasoning trail (step attempts, revisions, reflection) and let the discussion be the check.
+- **Gaming the leaderboard:** depth measures that can't be met by length alone; guide review of outliers.
+- **Equity and access:** works on a shared phone or tablet.
+- **Children's data:** POLICY_PRELIMINARY.md; Roadmap S3.
 
 ## Non-goals (for now)
 
-- Replacing the guide or the Socratic discussion — the bot supports the written work, not the
-  room.
+- Replacing the guide or the Socratic discussion.
 - A public marketplace, open signups, or monetization.
-- Public competitive rankings of children.
-- Rewriting the case-authoring pipeline; it works and is gated. We add a learner-facing layer
-  on top and feed data back into it.
+- Rankings on raw score.
+- Rewriting the authoring pipeline; we add a learner-facing layer and feed data back.

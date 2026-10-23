@@ -1,6 +1,6 @@
 # Roadmap — Math Builder
 
-**Version 3.0 · 2026-10-19.** Direction: **tool → product → platform** (see [VISION.md](VISION.md);
+**Version 3.1 · 2026-10-23.** Purpose: students experience math in the real world; direction: **tool → product → platform** (see [VISION.md](VISION.md);
 requirements in [PRD.md](PRD.md), cited here as R1–R7). Triggered by the first outside-user
 feedback (Anuj, 2026-10-17). Full reasoning trail for older numbers lives in
 [ROADMAP_HISTORY.md](ROADMAP_HISTORY.md).
@@ -51,10 +51,12 @@ L ≈ multi-week. (Estimates are rough; re-size at phase start.)
 | 3 | **Run a real case with Anuj's kids** (Track A3) with "This was confusing" feedback control | F9, R6 | S | The #1 blocker for the whole project; Anuj volunteered | 0 |
 | 3a | **Event log foundation** (every attempt, hint, reveal, submit as a row) | R9 | M | Everything after depends on it: coach, analytics, calibration, cost, efficacy | 0 |
 | 4 | Identity + consent groundwork (signed assignment links, data policy) | R5 | M | Gate for any AI feature touching a child | 1a |
-| 5 | **Coach v1**: deterministic misconception diagnosis + hint ladder, pilot on `phone-plan` | R2 (F1, F3) | L | Highest learner value; deterministic-first keeps it cheap and safe | 1a |
+| 5 | **Coach.AI v1**: dialogue per step, misconception catalog + hint ladder; pilot on the 3 cases | R2 (F1, F3) | L | Highest learner value; deterministic-first keeps it cheap and safe | 1a |
+| 5a | **Pilot readiness** for 3 cases (checklist in §2): fix data labeling, catalogs, skill tags | R1, R2 | M | R1b/R1a found blockers in each candidate | 0–1a |
+| 5b | **Revised rubric K1–K6** and a blind guide-graded gold set | R3 | M | Decided; must exist before AI feedback is shown | 1b |
 | 6 | One-click **Submit** + server-side numeric scoring + per-step results | R3 (F5) | M | Replaces export-and-hand-over; unlocks guide time savings | 1b |
 | 7 | **AI feedback on notes/pitch** (provisional, guide confirms) + calibration against gold set | R3 (F5) | L | Needs gold set and RUBRIC calibration first; do after #6 | 1b |
-| 8 | Stars / progress / streaks surfaced to learner | R4 (F6) | M | Motivation; low risk; no ranking | 2 |
+| 8 | **Journey tracker, points, profile and a simple leaderboard** (completed cases + pitch depth); recommended next assignment | R4, R5 (F6) | L | Decided by Manan; points from the event log; effort and depth, not speed | 2 |
 | 8a | **The room as a product surface**: stuck summary, vote/twist/re-vote, cold-call roster, timer | R8 | L | The Socratic discussion is half the product; guides are the buyers | 2 |
 | 9 | Guide analytics: stuck-heatmap per step; feed into case-readiness | R6 | M | Closes the loop from kids to case quality | 2 |
 | 10 | Per-user accounts, parent view, automated tests for the admin app | R5 | L | Real login is long-standing Housekeeping; tests are zero today | 3 |
@@ -66,28 +68,27 @@ L ≈ multi-week. (Estimates are rough; re-size at phase start.)
 ### Phases and exit gates
 
 **Phase 0 — Fix and observe (now → ~2 weeks)**
-- Do: backlog #1–3. Instrument the case page so confusion is captured, not emailed.
-- Exit gate: `phone-plan` re-passes Tier 1/2 **and a live browser pass**; sweep list produced;
+- Do: backlog #1–3, 3a, 5a. Event log; pilot-readiness fixes for the 3 pilot cases; instrument the case page so confusion is captured, not emailed.
+- Exit gate: pilot cases pass their readiness checklist (ROADMAP §2) and Tier 1/2 **and a live browser pass**; sweep list produced;
   at least one real learner has attempted a case and their confusion points are logged. (This
   also satisfies Track A3's "first real learner.")
 
 **Phase 1a — The Coach (~weeks 3–8)**
-- Do: #4, #5. Per-assignment signed links; misconception catalog + hint ladder; LLM tail;
-  leak and injection test suites; rate limits and spend cap.
+- Do: #4, #5. Per-assignment signed links; parent consent email naming the vendor and data; Coach.AI dialogue UI with misconception catalog + hint ladder; model for the long tail;
+  leak and injection test suites; paid-account server-side key, spend cap and kill switch.
 - Exit gate: leak test and injection test at **0 failures** on the pilot case; pilot learners
   use hints; catalog match rate and hint helpfulness measured (set targets from the pilot).
 
 **Phase 1b — Submit and grade (~weeks 6–12, overlaps 1a)**
-- Do: #6, #7. Submit button; deterministic numeric scoring; AI feedback on notes (provisional);
+- Do: #5b, #6, #7. Revised rubric K1–K6; Submit; deterministic numeric scoring; end-of-case summary (written or spoken per case) with AI feedback (provisional);
   gold-set calibration.
 - Exit gate: guide–AI agreement meets the bar agreed in PRD §R3 for the criteria being drafted;
   guide still confirms every badge. Until the bar is met, AI feedback is shown to the guide only,
   not to learners.
 
-**Phase 2 — Motivation and insight (~weeks 10–16)**
-- Do: #8, #9. Stars/progress/streaks; per-step stuck data to guides and to the authoring side.
-- Exit gate: pilot cohort retention/return use improved vs. Phase 0 baseline; at least one case
-  revised because of step-level stuck data.
+**Phase 2 — Journey, incentives, and the room (~weeks 10–16)**
+- Do: #8, #8a, #9. Journey tracker, profile and history; points and the simple leaderboard (opt-in, cohort-scoped); recommended next assignment; guide skill view with suggested focus; Heroes' case feedback; per-step stuck data to guides and to the authoring side.
+- Exit gate: depth of pitches does not fall as volume rises (leaderboard is driving depth, not just completions); return use up vs. Phase 0; at least one case revised because of step-level or Hero feedback.
 
 **Phase 3 — Harden and connect (after a real cohort completes)**
 - Do: #10, #11. Accounts/SSO, parent view, admin tests; Acton integration discovery with Anuj.
@@ -105,7 +106,6 @@ Ideas worth keeping, **not scheduled**. Each lists what would pull it forward.
 
 | Idea | Source | Why parked | Pull-forward trigger |
 |---|---|---|---|
-| **Leaderboard** | Anuj F6 | Conflicts with RUBRIC's "score as the point" warning; ranking minors needs guide control and cultural fit | Pilot data shows stars alone don't motivate **and** guides ask for it; design as opt-in, cohort-scoped, effort-based (not raw score) |
 | Peer-voted "best pitch" / hall of fame | spin-off of F6 | Needs a cohort and moderation | After first cohort completes 3+ cases |
 | Adaptive next-case recommendation from skill spine | existing data | Needs mastery signal from real use | After Phase 2 data |
 | Parent weekly digest | PRD persona | Needs accounts and consent | Phase 3 |
@@ -120,30 +120,83 @@ Ideas worth keeping, **not scheduled**. Each lists what would pull it forward.
 
 ---
 
-## 2. Reminders and open questions
+## 2. Decisions, pilot, vendor and policy (updated 2026-10-23)
+
+**Decided by Manan:** (1) build a rubric that matches our goals (K1–K6 proposed, PRD R3); (2) a simple
+leaderboard (PRD R4); (3) recommended assignments linking week to week (PRD R5 profile); (4) pilot
+**3 cases**; (5) a preliminary, non-restrictive policy (POLICY_PRELIMINARY.md v0.2).
+
+### Pilot: 3 cases (recommendation, after R1a/b/c review)
+
+No single trio came back clean. Findings by seat (full detail in the review notes):
+
+| Case | Field | R1a (math/coach) | R1b (sources/data) | R1c (engagement/corpus) |
+|---|---|---|---|---|
+| `phone-plan` | Consumer finance | **Most coachable**; catalog drafts now | State tax stated as fact, 8% unsupported by the cited page; carrier prices are fictional | Anuj already used it; domain over-mined; keep as returning-user control |
+| `field-watch` | Ag-tech / remote sensing | Hardest to coach; one-reading flip needs a probe | **Authored NDVI readings are presented as real satellite data** (blocking as written) | Strongest hook; zero existing remote-sensing cases |
+| `creek-span` | Civil engineering | One option effectively dominant under any plausible labor value | Steel price will decay; table labeled "current" is a 1989 edition | Heavy reading load; teacher note on safety |
+| `tide-window` *(R1c's swap)* | Oceanography | not checked | not checked | Zero existing cases, high data rating, "prediction published years ahead" hook |
+
+**Recommended trio:** `phone-plan` (first coach catalog; returning-user control), `field-watch` (best
+hook, after fixes below), and `tide-window` (new field; needs the same three checks). **Drop
+`creek-span`** from the pilot: its balance is one-sided in substance. This is a recommendation for
+Manan's call.
+
+**Pilot-readiness checklist (per case, Phase 0–1a):**
+- `phone-plan`: relabel the 8% as a stated assumption with the real-rate caveat (verify at
+  tax.idaho.gov); label carrier prices as invented; draft misconception catalog (R1a listed 4 wrong
+  methods with numbers).
+- `field-watch`: relabel NDVI readings as modeled, or source a real series; fix the "every 5 days"
+  wording (ESA: every spot on Earth); add a reading-flex sensitivity probe; define the buffer sign.
+- `tide-window`: run the R1a coachability, R1b data, and R1c engagement checks before committing.
+- All three: define the margin basis in each D-step (cases divide by different values); tag each step
+  with its core skill (R1a: step_id, deliverable_id, primary_skill, process_tag, misconception_ids[]).
+- None of these cases should be used to test the coach until its misconception catalog exists.
+
+### Model vendor, budget, key (plain words)
+
+- **Vendor:** the company whose model answers Coach.AI and writes feedback drafts.
+- **Budget:** billed per token, so it needs a hard cap.
+- **Key:** the secret credential that lets our server call the vendor and charges the account.
+  Whoever holds it can spend money and read the traffic.
+- **Cost is not the constraint.** From pricing pages R1b fetched on 2026-10-23: per learner-case about
+  **$0.003–0.005** on Claude Haiku 5.5, **$0.065–0.10** on Sonnet 5.5 (assumptions: ~24k input and ~5k
+  output tokens per case). A pilot month of 30 learner-cases is roughly **$0.10–0.15 on Haiku, $2–3 on
+  Sonnet**, about five times that with testing. Re-check prices before launch.
+- **Recommendation:** paid API account, owned by the operator personally (not a shared studio account);
+  Haiku 5.5 for the coach, Sonnet for the grader only if tests show Haiku is too weak; one server-side
+  env var per environment, marked sensitive, never in page code, logs or repo; hard monthly spend limit
+  in the vendor console plus app-side per-learner and per-day caps and a kill switch; rotate on suspected
+  exposure and at each phase. **Data terms matter more than price:** Anthropic does not train on
+  commercial customer content and keeps data about 30 days by default; zero retention is not self-serve.
+  Not verified by R1b: Anthropic's minimum cacheable prompt length, console spend-limit UI, and Vercel
+  sensitive-variable behavior.
+- **Decision for Manan:** who owns the account and holds the key (recommended: Manan personally for the
+  pilot).
+
+### Preliminary policy
+
+POLICY_PRELIMINARY.md v0.2 is deliberately light and does not restrict the platform. R1b's fact-check
+changed it: a parent's "OK" email is not enough because a child's text is sent to an AI vendor, so
+consent must name the vendor and the data sent; zero retention is not self-serve; an opaque id is still
+personal information; free text needs a warning and a scrub; parents can refuse further collection;
+FERPA likely doesn't apply to a private pilot but COPPA does. Not legal advice; counsel review before
+any non-pilot use.
+
+### Reviewer flags worth your attention
+
+- **Leaderboard:** R1c recommends showing the two counts separately rather than a summed score and
+  keeping the pilot view to the cohort and guide (not public). PRD R4 adopts cohort-scoped, opt-in,
+  alias-default, with points as an effort/depth tally. Your call on sorting and points.
+- **Rubric:** R1a recommends demoting visuals and discussion to growth-only and never scoring
+  confidence, curiosity, or hint counts (PRD R3).
 
 **Reminders**
-- **Reply to Anuj** (feedback dated 2026-10-17): thank him; say the two instruction issues are
-  confirmed bugs and are being fixed first; **accept his offer to test with kids**; ask which
-  case he was using (his details match `phone-plan`, Idaho 8%, not `phone-plans`); ask what
-  "integrate into the Acton system" means in practice; **ask him to share the marketing-tech
-  comparison ideas he mentioned** (his own note: "remind me to share").
-- No fabricated claims to Anuj about timelines — the estimates above are rough.
-
-**Decisions needed from Manan** (details and recommendations in PRD §5)
-1. Notes graded as a percent, or via rubric criteria (recommended: criteria)?
-2. Park the leaderboard (recommended) or build it?
-3. Identity model: per-assignment signed links first (recommended)?
-4. Model vendor, budget, and key ownership for coach and grader.
-5. Consent/data policy for minors — owner and sign-off.
-6. Confirm `phone-plan` as pilot case.
-
-**Governance reminders**
-- New rules (e.g., the instruction-clarity lint) need a DOCTRINE_LEDGER row and critique pass
-  before they count; until wired to a check they stay UNWIRED.
-- Anything that changes the shape of the stack updates TECH_STACK.md **in the same pass**.
-- Adding an AI feature that touches children's work is a D-021-class decision (see
-  DECISIONS.md) — append, don't summarize elsewhere.
+- **Reply to Anuj:** thank him; the instruction issues are fixed; accept his offer to test with
+  kids (this is Ring 1); ask what "integrate into the Acton system" means in practice; ask for 2
+  introductions; ask for the marketing-tech comparison ideas he offered to share.
+- Governance: new rules need a DOCTRINE_LEDGER row and critique pass; stack changes update
+  TECH_STACK.md in the same pass; AI features touching children's work are D-021-class decisions.
 
 ---
 
