@@ -21,6 +21,24 @@ Zero cases are `VERIFIED`; no real cohort has ever used the system. So the order
 coach → add submit/grade → add recognition → harden → generalize.** Every phase ends with a gate
 tied to real use, not to code being written.
 
+### Strategic tracks (run alongside the feature phases)
+
+Feature work below answers "what do we build." These answer "should we, for whom, and how do we
+know" (see VISION.md → Strategy). Each has an owner-decision, not just tasks.
+
+| Track | What | First step | Gate it informs |
+|---|---|---|---|
+| **S1 Discovery & demand** | ~5 conversations: Anuj, Acton guides/heads, 1–2 homeschool parents. What do they do today, what would they pay/switch for, what worries them (kids + AI) | Reply to Anuj; ask for 2 introductions | Pricing, multi-tenant, Acton integration |
+| **S2 Landscape scan** | Map adjacent products and what Anuj saw in marketing-tech stacks; write one-page differentiation | Research task + Anuj's comparisons | Positioning; what *not* to build |
+| **S3 Trust & safety foundation** | Data policy for minors, vendor terms, leak/injection test design, cost cap | Draft policy; pick vendor candidates | Any AI feature touching a child |
+| **S4 Quality systems** | Turn one-off case defects into gates: instruction-clarity lint, cold-read at authoring time, step-level confusion data feeding case-readiness | Sweep published cases for the `phone-plan` defect classes; propose ledger rows | Scale of the library |
+| **S5 Economics** | Track AI cost per learner-case from pilot 1; model unit economics for 2–3 business-model options | Instrument cost logging in Coach v1 | Business model |
+
+**Status 2026-10-23:** `phone-plan` reference fix is done and re-verified (commit `7fe1a04`:
+Step 4/twist follow the chosen line count, glossary + worked example added, all 7 Tier 2 probes
+pass). It is the *template* for S4, not a roadmap item in itself; backlog rows 1–2 below are now
+"sweep + lint," not "fix phone-plan."
+
 ### Prioritized backlog (Anuj's feedback + known gaps)
 
 Score = value to a real learner/guide × confidence, against effort. S ≈ days, M ≈ 1–2 weeks,
@@ -28,18 +46,22 @@ L ≈ multi-week. (Estimates are rough; re-size at phase start.)
 
 | Rank | Item | Req | Effort | Why this rank | Phase |
 |---|---|---|---|---|---|
-| 1 | Fix `phone-plan` instructions: tax stated in Step 4/twist; twist inherits chosen line count | R1 (F2, F4) | S | Verified defects a real user hit; cheap; reference fix for the sweep | 0 |
-| 2 | Sweep all published cases for the same two defects + add a Tier 1 lint | R1 | M | Same bug class is likely elsewhere; lint stops recurrence (needs ledger row) | 0 |
+| 1 | ~~Fix `phone-plan` instructions~~ **Done 2026-10-23** (reference fix, `7fe1a04`) | R1 (F2, F4) | — | Template for the sweep below | 0 |
+| 2 | Sweep all published cases for the `phone-plan` defect classes (unstated tax/scenario, pinned twist, undefined vocabulary) + wire the lint/cold-read as gates (**Track S4**) | R1 | M | Same classes likely elsewhere; gates stop recurrence (needs ledger rows) | 0 |
 | 3 | **Run a real case with Anuj's kids** (Track A3) with "This was confusing" feedback control | F9, R6 | S | The #1 blocker for the whole project; Anuj volunteered | 0 |
+| 3a | **Event log foundation** (every attempt, hint, reveal, submit as a row) | R9 | M | Everything after depends on it: coach, analytics, calibration, cost, efficacy | 0 |
 | 4 | Identity + consent groundwork (signed assignment links, data policy) | R5 | M | Gate for any AI feature touching a child | 1a |
 | 5 | **Coach v1**: deterministic misconception diagnosis + hint ladder, pilot on `phone-plan` | R2 (F1, F3) | L | Highest learner value; deterministic-first keeps it cheap and safe | 1a |
 | 6 | One-click **Submit** + server-side numeric scoring + per-step results | R3 (F5) | M | Replaces export-and-hand-over; unlocks guide time savings | 1b |
 | 7 | **AI feedback on notes/pitch** (provisional, guide confirms) + calibration against gold set | R3 (F5) | L | Needs gold set and RUBRIC calibration first; do after #6 | 1b |
 | 8 | Stars / progress / streaks surfaced to learner | R4 (F6) | M | Motivation; low risk; no ranking | 2 |
+| 8a | **The room as a product surface**: stuck summary, vote/twist/re-vote, cold-call roster, timer | R8 | L | The Socratic discussion is half the product; guides are the buyers | 2 |
 | 9 | Guide analytics: stuck-heatmap per step; feed into case-readiness | R6 | M | Closes the loop from kids to case quality | 2 |
 | 10 | Per-user accounts, parent view, automated tests for the admin app | R5 | L | Real login is long-standing Housekeeping; tests are zero today | 3 |
 | 11 | Acton integration discovery (what does "the whole Acton system" mean?) | F8 | S to scope | Can't size until Anuj describes the surface | 3 |
 | 12 | Engine/content seam; science pilot; later a subjective subject | R7 (F7) | L | Only after the first product loop is proven with real kids | 4 |
+| 13 | **Author surface**: guide-authored cases through the same gates | R10 | L | The other half of "platform"; prototype with Anuj/an Acton guide | 4 |
+| 14 | Authentic-work design: reasoning-trail grading, paste-detection flag | R11 | M | Required before AI grading is trusted; ships with Phase 1b | 1b |
 
 ### Phases and exit gates
 

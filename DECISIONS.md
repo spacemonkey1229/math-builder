@@ -257,3 +257,14 @@ which narrowly revisits D-018 (student page unauthenticated by design). **No sta
 by this entry**, so TECH_STACK.md is unchanged; it must be updated in the same pass as the first
 phase that adds endpoints, identity, or a model vendor. **Open:** vendor/budget, consent owner,
 pilot case, Acton integration surface (PRD §5).
+
+### D-022 · 2026-10-23 · Strategy pass: instrument first, treat the room as product, quality as gates
+A review of the 2026-10-19 direction (D-021) found it read as a feature list from one email. Added in
+`VISION.md`/`PRD.md`/`ROADMAP.md`: strategic tracks S1–S5 (discovery, landscape, trust, quality systems,
+economics); riskiest-assumption table with tests; pre-committed kill/pivot criteria; north-star and
+outcome definitions; worked examples (PRD §3a). Decisions recorded: (1) an **event log (R9) precedes the
+coach** so analytics, calibration and cost tracking share one substrate; (2) the **live discussion is a
+product surface (R8)**, not just a post-hoc log; (3) case defects found by real users are fixed as
+**classes via gates (S4)**, with `phone-plan` as the reference example; (4) the **platform includes an
+author surface (R10)**, not only more subjects; (5) authenticity is handled by grading the reasoning trail
+(R11), not by detection. All PROPOSED. TECH_STACK.md unchanged until the event-log phase ships.

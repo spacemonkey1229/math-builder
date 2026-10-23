@@ -189,6 +189,74 @@ unauthenticated *on purpose*, D-018).
   to history/civics dilemmas.
 - Do **not** build generic multi-subject abstractions before the second subject exists.
 
+## 3a. Worked examples (illustrative; numbers for `phone-plan` are recomputed in code)
+
+**Example 1 — the coach diagnoses a method (Step 2, "Check both", Carrier V at 3 lines).**
+Correct pre-tax is $95.00; with 8% tax, **$102.60**.
+| Hero enters | Catalog match (recomputed in code) | Coach says (Level 1) |
+|---|---|---|
+| 118.80 | `used_total_lines_in_equation`: (80 + 15×2) × 1.08 | "Your number looks like you counted 2 extra lines. Re-read D1: how many lines are *beyond the first 2* when the family has 3?" |
+| 110.81 | `tax_applied_twice`: 95 × 1.08 × 1.08 | "Check how many times Appendix B says the tax is added. Once, to which total?" |
+| 95.00 | `forgot_tax` | "That's the plan price. What does Appendix B add on top?" |
+| 160 (Step 1 y-intercept) | `flat_rate_per_line`: 80 × 2 | "Is $80 the price of one line, or of the first two together? Which row of Appendix A tells you?" |
+| 16.20 (Step 1 slope) | `tax_in_step1`: 15 × 1.08 | "Step 1 is before tax. Where does tax enter?" |
+| 7 (no match) | LLM tail, Socratic only | "Walk me through how you got 7 — what did you start from?" |
+
+**Example 2 — provisional feedback on a pitch, in rubric language** (never a raw score).
+*C2 The pitch — Proficient (draft).* "You take a firm stance for Carrier V and use the break-even
+you computed. Evidence from your text: 'at 3 lines both cost $102.60.' To reach Exemplary, state
+the strongest argument *against* V and answer it." *C7 Framing the question — Not Yet (draft,
+low confidence).* "Your pitch compares prices but doesn't say what question you're answering.
+What is the family really deciding?" The guide sees both drafts with confidence, evidence quotes,
+and an Override control; the Hero sees "Provisional until your guide confirms."
+
+**Example 3 — what the guide sees before discussion** (invented cohort of 6, illustration only).
+Step 1: 4 of 6 asked for a hint; 3 were matched to `flat_rate_per_line`. Step 3: 2 reported
+break-even "1" (the lines-beyond-2 trap). Twist: not yet opened. Suggested opener: cold-call the
+Hero who entered 160 — "what was your $80 counting?" That is the Socratic move the data was
+built to enable.
+
+**Example 4 — the same engine in other subjects (concept sketches, not cases).**
+- *Science (deterministic key):* a decision between two interventions where unit and
+  concentration conversions drive the answer. Catalog: `mL_vs_L`, `forgot_dilution_factor`,
+  `used_mean_not_median`. Grader: numeric key + rubric for the written methods.
+- *History/civics (rubric-judged):* a binary decision from a short primary-source packet. No
+  numeric key; the grader checks that every claim cites a packet source, that the strongest
+  opposing argument is stated fairly, and that evidence is distinguished from inference. Needs a
+  calibrated gold set and source-grounding rules before any learner sees an AI grade.
+- *Book review (rubric-judged):* "Would you recommend this book to a skeptical friend?" Graded on
+  a specific, quoted passage as evidence and a fair statement of the best objection.
+Each reuses the same loop — hint ladder, provisional feedback, guide confirm — with a different key.
+
+## 3b. Additional requirements surfaced by the strategy pass
+
+**R8 — The room as a product surface (Phase 2).** Support the live Socratic discussion: the guide's
+pre-discussion stuck summary (Example 3), a vote → twist → re-vote flow with a visible
+before/after, a cold-call roster that tracks who has spoken (the existing "track who's actually
+talking" backlog item), and a timer keyed to the facilitator's pacing table. Today the app logs
+discussions after the fact (`discussions` table); this makes them live. Acceptance: a guide
+runs a full session from one screen without notes.
+
+**R9 — Event log foundation (Phase 0, before the coach).** Every learner action becomes a row:
+`(learner, case, step, event_type, payload, ts)` — attempt, hint request and level, catalog match,
+twist reveal, submit, confirm. Without it the coach, analytics, calibration, efficacy and cost
+tracking each invent their own logging. Acceptance: any metric in VISION → "How we'll know"
+can be computed from the log alone. Extends the existing Postgres schema
+(`programs, learners, assignments, submissions, discussions, ratings, scores…`); update
+TECH_STACK.md in the same pass.
+
+**R10 — Author surface (Phase 4, the other half of "platform").** The platform is not only more
+subjects; it is letting a guide or teacher author a case through the same gates: a guided case
+builder, the cold-read and sensitivity probes run for them, and a publish gate they can't skip.
+The pipeline's skills (brainstorm → write → research → context → readiness) are the engine;
+the product question is how much of that a non-technical author can drive. Prototype with Anuj
+or one Acton guide authoring a single case.
+
+**R11 — Authentic-work design (Phase 1).** Grade the reasoning trail, not just the final text:
+require step attempts and notes to precede the pitch, include a "what I got wrong and why"
+reflection, and surface revision history to the guide. Acceptance: a pitch pasted whole from a
+chatbot, with no matching step attempts, is flagged for the guide, not auto-failed.
+
 ## 4. Non-functional requirements
 
 | Area | Requirement |
