@@ -34,6 +34,25 @@ A note on the case: Anuj's description (8% sales tax, "twist," "check both") mat
 `cases/phone-plan` (Idaho, Carrier V/T), **not** `cases/phone-plans` (Oregon, 22.53% combined
 wireless rate). Worth confirming with him; it changes nothing about the fix.
 
+## 2b. Feedback round 2 — weighed against the existing direction (2026-10-24)
+
+A second outside review arrived (onboarding, independence from the coach, experience challenges, pitch,
+strategy). Each item was tested against the existing vision rather than adopted by recency. Terms: the
+feedback's "coach" = our **Guide**; our AI is **Coach.AI**.
+
+| Feedback | Fit with the existing docs | Decision |
+|---|---|---|
+| **Module 1: refresher and skill assessment before the case** (find gaps and strengths, early wins, rising difficulty) | Strong fit: step-level skills and the skill grid already planned for the guide (R8); R1a's skill taxonomy gives each step a primary skill. Risk: becomes a content treadmill and drifts toward a generic practice product | **Adopt, scoped.** Case-scoped warm-up built from the case's own skills; skippable by strong Heroes; drills authored only for pilot skills first. R12 |
+| **Module 2: word problems, translate into steps, independent problem solving** | Overlaps K1 "structure the problem" and the Coach.AI rule "ask for the method" | **Adopt, as needed.** Short translate-to-steps scaffold triggered by the warm-up or by step-1 struggle. R12 |
+| **Independence from the coach; Duolingo / Omada / workout models** | Fits the purpose (confidence, independence). Conflicts if taken whole: a case is a 2–3 hour deep decision, not a bite-sized daily lesson; our principles already reject rewarding activity volume | **Adapt.** Take immediate feedback, weekly goals, progression, milestones, accountability digest; wrap them *around* the case; reject loss-aversion and volume rewards. VISION "learning workout" |
+| **A. Navigation and usability (the Salesforce bar)** | Not covered before; every screen should answer "what's my next step" for Hero and guide | **Adopt.** R14 (Home and next step) |
+| **B. Compliance and consistency (routines, accountability)** | Directly serves the closing goal: the platform, not the guide, runs assignment and chasing. The app already has due dates and an exception queue | **Adopt, high priority.** R13 |
+| **C. Coaching and motivation without constant guide involvement** | Extends Coach.AI to proactive support; must respect the policy (AI never contacts anyone outside the platform) | **Adopt.** In-app nudges for the Hero; email only to parent or guide. R14 |
+| **D. Gamification: reward persistence, mastery, improvement** | Already aligned (R4: effort and depth). Adds persistence and skill improvement as scored events | **Adopt.** R4 updated; grace-week streaks kept |
+| **Pitch structure** (problem and why it matters; solution in plain language; simple example; differentiation; outcomes) | Ambiguous as written: it reads as a scaffold for the Hero's pitch *and* as how we pitch the product. Fits both | **Adopt both.** Five-part scaffold for the Hero's summary (maps to K1, K3, K4); the same shape (problem, solution, example, differentiation, outcomes) is our outward pitch to The Humanist Academy and parents. Confirm which was meant |
+| **Strategy: habit-forming, personalized, measurable; scalable coaching** | Overlaps the vision; "beyond tutoring" is right, "habit-forming" is risky if it becomes the identity | **Adapt.** Habit mechanics serve real-problem confidence; we are not a daily practice app. Scalability and independence become explicit metrics |
+| **Closing goal: run with The Humanist Academy, then remove the guide from assignment, tracking, etc.; guide focuses on hard concepts and getting started** | Not in the docs; the strongest signal in the feedback. Reorders the roadmap: automation of operations moves ahead of leaderboard polish | **Adopt as the primary go-to-market goal.** R13, new roadmap phase |
+
 ## 3. Requirements
 
 ### R1 — Instruction clarity and scenario consistency (Phase 0)
@@ -183,6 +202,8 @@ tracker, the profile, and the leaderboard. Points reward effort and depth, never
 | Revision made | The Hero revised after Coach.AI feedback (shows growth) |
 | Case feedback given | The Hero reflected on and rated the case (feeds the guide and the case-quality loop) |
 | New field explored | First case in a field cluster they haven't visited |
+| Persistence | Came back after a hard step, or finished a case that took more than one sitting |
+| Skill improved | A skill moved from Not Yet to Practiced (or Practiced to Proficient) on the skill grid |
 
 **Leaderboard v1 (simple).** Shows two counts, **cases completed** and **pitch depth**, with a points
 total from the table above. Cohort-scoped, display name or alias by default, **opt-in** per Hero, no
@@ -327,7 +348,9 @@ they know where to focus the discussion, plus the Heroes' feedback on the case. 
 > 'What was your $80 counting?' Then ask what 'x = 1' is counting in Step 3. Strength to name: everyone
 > applied the 8% tax once."
 
-*Heroes' feedback on the case* (collected at step 6 of the journey): "4 of 6 said the wording of Appendix A
+*Operations the guide no longer does:* the assignment, the reminders, the progress digest, and the "who is behind" check all ran themselves; the guide's list holds exceptions only ("Wren hasn't started: 6 days"; "Otter asked for help on Step 3 twice").
+
+*Heroes' feedback on the case* (collected at the reflect step of the journey): "4 of 6 said the wording of Appendix A
 was confusing; 5 of 6 want to see a case in a field like this one." This flows two ways: into the guide's
 prep for next time, and into the case-quality queue (S4), which is how a defect class gets caught before
 the next cohort.
@@ -371,6 +394,54 @@ require step attempts and notes to precede the pitch, include a "what I got wron
 reflection, and surface revision history to the guide. Acceptance: a pitch pasted whole from a
 chatbot, with no matching step attempts, is flagged for the guide, not auto-failed.
 
+**R12 — Readiness on-ramp: case-scoped warm-up and word-problem scaffolds (Phase 1a, pilot skills first).**
+*Story:* As a Hero, before a case I quickly find out what I'm ready for, get early wins, and get help with the
+foundations the case needs, so I start with confidence.
+- **Source of skills:** each case already lists the skills it exercises; per step, R1a's minimum taxonomy adds
+  `primary_skill`. The warm-up is generated from those, not a separate curriculum.
+- **Warm-up:** a short set (target 5–8 items) on the case's prerequisite skills, increasing in difficulty,
+  starting with a win. Result is a skill grid (Not Yet / Practiced / Proficient) shared with the guide and used
+  by Coach.AI. A Hero with strong results skips straight to kickoff.
+- **Targeted drills:** only for skills the warm-up flags. **Every answer is recomputed in code**, never trusted
+  from a model (the project's rule for generated problem variants).
+- **Word-problem scaffold ("Module 2"):** when the gap is translating words into steps, a short lesson that
+  teaches the K1 move (name the question, list the quantities, set aside what you don't need, write the steps)
+  on a small everyday problem, then returns to the case.
+- **Scope guard:** author drills for the three pilot cases' skills only (for phone-plan: slope and
+  y-intercept, systems of linear equations, percent of a number); expand only after the pilot shows the warm-up
+  helps (VISION assumption 9).
+- Acceptance: a Hero can finish warm-up in a few minutes; guide sees the grid; a Hero can skip; warm-up never
+  blocks starting the case twice in a row.
+
+**R13 — Guide-free operations (Phase 1c; the primary goal of the first deployment).**
+*Story:* As a guide at The Humanist Academy, I no longer assign, track, chase or write progress updates; I
+see only who needs me.
+- **Auto-assign:** a Hero's next case is recommended from their journey and assigned automatically, with
+  guide override. Build on the existing `suggest_cases()` (ranks by interests, grade level, branch) and add the
+  skill grid and fields explored.
+- **Auto-track and remind:** due dates and cadence per Hero; in-app reminders to the Hero; a digest to the parent
+  and guide. Build on the app's existing exception kinds (OVERDUE, STALE, AWAITING REVIEW, NO OPEN WORK,
+  NEEDS RESUBMISSION, BADGE ELIGIBLE).
+- **Exception-first guide home:** the guide's default view lists who needs a person today and why: stuck on a
+  concept (with what they tried), hasn't started, awaiting review, badge-eligible.
+- **Automatic confirmation path:** AI-drafted scores flow to the guide as a light confirm; sampling replaces
+  per-item confirmation only after measured agreement meets the bar (R3). Badges stay a human decision.
+- Acceptance: for a pilot cohort, assignment, tracking, reminders and reports happen with no guide action;
+  guide minutes on operations fall and minutes on concept help rise (measured from the event log, R9).
+- **Open:** The Humanist Academy's program structure, cohort size, grade levels, current guide workflow and
+  tools (S1). This requirement is written against the existing roster model (programs, badges, assignments).
+
+**R14 — Home, next step, rhythm and nudges (Phase 1c → 2).**
+- **Hero home:** one primary action ("Continue Step 3", "Start your warm-up", "Pick your next case"), progress
+  at a glance, minimal navigation. Same principle for the guide's exception list.
+- **Weekly rhythm:** clear expectations per week (a case in progress, a due date), a weekly goal the Hero sets,
+  grace weeks instead of punishing streak resets.
+- **Nudges and contextual support:** in-app only for the Hero (a hard step gets a smaller piece and a check-in,
+  not a lecture); email only to a parent or guide. Consistent with POLICY_PRELIMINARY §3 (the AI never contacts
+  anyone outside the platform).
+- Acceptance: a first-time Hero finds their next action without help; a guide never needs more than two clicks
+  to reach any exception.
+
 ## 4. Non-functional requirements
 
 | Area | Requirement |
@@ -397,8 +468,9 @@ chatbot, with no matching step attempts, is flagged for the guide, not auto-fail
    light and non-restrictive for now.
 
 **Still open**
-7. Acton-system integration surface (needs Anuj).
-8. Final retention periods and legal review before any non-pilot use (POLICY_PRELIMINARY §9).
+7. **The Humanist Academy specifics** (program, cohort, grade levels, guide workflow, tools) and the Acton-system integration surface (needs Anuj).
+8. Which meaning of the feedback's "Pitch & Communication" was intended (Hero pitch, product pitch, or both; both are supported).
+9. Final retention periods and legal review before any non-pilot use (POLICY_PRELIMINARY §9).
 
 ## 6. Metrics (proposed; baselines don't exist yet)
 
@@ -409,4 +481,7 @@ chatbot, with no matching step attempts, is flagged for the guide, not auto-fail
 - Trust: guide–AI agreement per criterion; guide override rate (already tracked: "grading
   machine getting overridden").
 - Safety: leak-test failures (target 0), injection-test failures (target 0).
+- Independence: share of steps resolved without a human, per Hero across successive cases.
+- Scalability: guide minutes per Hero per week on operations (should fall) vs. concept help (should rise).
+- Warm-up: step-1 first-try rate and drop-off with vs. without the warm-up.
 - Delight (qualitative): learner and parent comments from the pilot.

@@ -283,3 +283,17 @@ hint counts never scored (R1a); (4) **pilot 3 cases**, recommendation in ROADMAP
 the vendor and data; zero retention not self-serve); (6) vendor/budget/key: paid API account owned by the
 operator, server-side key, hard caps; cost is not the constraint. All PROPOSED/PRELIMINARY. TECH_STACK.md is
 unchanged until the event-log phase ships.
+
+### D-024 · 2026-10-24 · First deployment at The Humanist Academy; automate the guide's operations; second feedback round weighed
+Manan shared a second review and set the goal: run the platform at **The Humanist Academy**, then remove the
+guide from assignment, tracking and similar blocking and tackling, so the guide helps with difficult concepts
+and getting started on a case. Each feedback item was weighed against the existing direction (PRD §2b), not
+adopted by recency. Decisions: (1) **guide-free operations (R13)** and **Home/next step (R14)** become a
+dedicated phase (1c) ahead of leaderboard polish, built on the existing `suggest_cases()` and exception queue;
+(2) a **case-scoped readiness warm-up and word-problem scaffold (R12)**, drills authored for pilot skills only
+and every answer recomputed in code; (3) Duolingo/Omada/workout ideas are **adapted around the case**, not
+adopted whole (no loss-aversion, no volume rewards); (4) persistence and skill improvement become point events
+(R4); (5) the feedback's pitch structure is adopted as a five-part scaffold for the Hero summary and as the
+shape of our outward pitch; (6) "habit-forming" is adopted in service of the purpose, not as a repositioning
+to a practice app; (7) independence and guide-time metrics are added. Unknown and tracked: The Humanist
+Academy's program, cohort and workflow (S1). All PROPOSED; TECH_STACK.md unchanged until a phase ships.

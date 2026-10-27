@@ -1,6 +1,6 @@
 # Roadmap — Math Builder
 
-**Version 3.1 · 2026-10-23.** Purpose: students experience math in the real world; direction: **tool → product → platform** (see [VISION.md](VISION.md);
+**Version 3.2 · 2026-10-24.** Purpose: students experience math in the real world; direction: **tool → product → platform** (see [VISION.md](VISION.md);
 requirements in [PRD.md](PRD.md), cited here as R1–R7). Triggered by the first outside-user
 feedback (Anuj, 2026-10-17). Full reasoning trail for older numbers lives in
 [ROADMAP_HISTORY.md](ROADMAP_HISTORY.md).
@@ -16,6 +16,10 @@ v2.19, unchanged and dated 2026-09-06 (re-derive every count before trusting it 
 
 ### The ordering logic
 
+**First deployment: The Humanist Academy.** The goal is to run the platform there, then take the guide out of
+assigning, tracking and chasing so the guide can focus on hard concepts and getting Heroes started. That
+makes **guide-free operations (R13)** a priority ahead of leaderboard polish.
+
 Zero cases are `VERIFIED`; no real cohort has ever used the system. So the order is:
 **fix what the first outside user hit → put real kids through it (with instrumentation) → add the
 coach → add submit/grade → add recognition → harden → generalize.** Every phase ends with a gate
@@ -28,7 +32,7 @@ know" (see VISION.md → Strategy). Each has an owner-decision, not just tasks.
 
 | Track | What | First step | Gate it informs |
 |---|---|---|---|
-| **S1 Discovery & demand** | ~5 conversations: Anuj, Acton guides/heads, 1–2 homeschool parents. What do they do today, what would they pay/switch for, what worries them (kids + AI) | Reply to Anuj; ask for 2 introductions | Pricing, multi-tenant, Acton integration |
+| **S1 Discovery & demand** | **The Humanist Academy first:** program structure, cohort size, grade levels, how the guide runs assignment and tracking today, tools in use, what the guide wishes they had time for. Then ~5 conversations: Anuj, Acton guides/heads, 1–2 homeschool parents (what they'd switch for, what worries them about kids + AI) | Reply to Anuj; ask for an intro to the Humanist Academy lead | Guide-free operations design (R13), pricing, Acton integration |
 | **S2 Landscape scan** | Map adjacent products and what Anuj saw in marketing-tech stacks; write one-page differentiation | Research task + Anuj's comparisons | Positioning; what *not* to build |
 | **S3 Trust & safety foundation** | Data policy for minors, vendor terms, leak/injection test design, cost cap | Draft policy; pick vendor candidates | Any AI feature touching a child |
 | **S4 Quality systems** | Turn one-off case defects into gates: instruction-clarity lint, cold-read at authoring time, step-level confusion data feeding case-readiness | Sweep published cases for the `phone-plan` defect classes; propose ledger rows | Scale of the library |
@@ -53,8 +57,11 @@ L ≈ multi-week. (Estimates are rough; re-size at phase start.)
 | 4 | Identity + consent groundwork (signed assignment links, data policy) | R5 | M | Gate for any AI feature touching a child | 1a |
 | 5 | **Coach.AI v1**: dialogue per step, misconception catalog + hint ladder; pilot on the 3 cases | R2 (F1, F3) | L | Highest learner value; deterministic-first keeps it cheap and safe | 1a |
 | 5a | **Pilot readiness** for 3 cases (checklist in §2): fix data labeling, catalogs, skill tags | R1, R2 | M | R1b/R1a found blockers in each candidate | 0–1a |
+| 5c | **Readiness on-ramp**: case-scoped warm-up + word-problem scaffold, pilot skills only | R12 | M | Sets Heroes up for the case; feeds the guide's skill view; test vs. no warm-up | 1a |
 | 5b | **Revised rubric K1–K6** and a blind guide-graded gold set | R3 | M | Decided; must exist before AI feedback is shown | 1b |
 | 6 | One-click **Submit** + server-side numeric scoring + per-step results | R3 (F5) | M | Replaces export-and-hand-over; unlocks guide time savings | 1b |
+| 6a | **Guide-free operations**: auto-assign (build on `suggest_cases`), auto-track and remind, parent/guide digest, exception-first guide home | R13 | L | The primary goal of the Humanist Academy deployment | 1c |
+| 6b | **Home and next step**: one action per screen, weekly rhythm, in-app nudges | R14 | M | Navigation, consistency and compliance without guide chasing | 1c |
 | 7 | **AI feedback on notes/pitch** (provisional, guide confirms) + calibration against gold set | R3 (F5) | L | Needs gold set and RUBRIC calibration first; do after #6 | 1b |
 | 8 | **Journey tracker, points, profile and a simple leaderboard** (completed cases + pitch depth); recommended next assignment | R4, R5 (F6) | L | Decided by Manan; points from the event log; effort and depth, not speed | 2 |
 | 8a | **The room as a product surface**: stuck summary, vote/twist/re-vote, cold-call roster, timer | R8 | L | The Socratic discussion is half the product; guides are the buyers | 2 |
@@ -86,8 +93,15 @@ L ≈ multi-week. (Estimates are rough; re-size at phase start.)
   guide still confirms every badge. Until the bar is met, AI feedback is shown to the guide only,
   not to learners.
 
-**Phase 2 — Journey, incentives, and the room (~weeks 10–16)**
-- Do: #8, #8a, #9. Journey tracker, profile and history; points and the simple leaderboard (opt-in, cohort-scoped); recommended next assignment; guide skill view with suggested focus; Heroes' case feedback; per-step stuck data to guides and to the authoring side.
+**Phase 1c — Run itself: guide-free operations (~weeks 8–14, overlaps 1b)**
+- Do: #6a, #6b. Auto-assign from the journey with guide override; auto-track, in-app reminders, parent/guide
+  digest; exception-first guide home; Hero home with one next step. **Run the Humanist Academy cohort.**
+- Exit gate: for the cohort, assignment, tracking, reminders and reports run with no guide action; guide
+  minutes on operations fall and minutes on concept help rise (measured from the event log); no exception
+  missed in a two-week audit. If operations minutes don't fall, fix before widening.
+
+**Phase 2 — Journey, incentives, and the room (~weeks 12–18)**
+- Do: #8, #8a, #9. Journey tracker, profile and history; points (now including persistence and skill improvement) and the simple leaderboard (opt-in, cohort-scoped); guide skill view with suggested focus; Heroes' case feedback; per-step stuck data to guides and to the authoring side.
 - Exit gate: depth of pitches does not fall as volume rises (leaderboard is driving depth, not just completions); return use up vs. Phase 0; at least one case revised because of step-level or Hero feedback.
 
 **Phase 3 — Harden and connect (after a real cohort completes)**
@@ -121,6 +135,10 @@ Ideas worth keeping, **not scheduled**. Each lists what would pull it forward.
 ---
 
 ## 2. Decisions, pilot, vendor and policy (updated 2026-10-23)
+
+**First deployment (Manan, 2026-10-24):** run the platform at **The Humanist Academy**, then remove the guide from
+assigning and tracking so the guide focuses on hard concepts and getting Heroes started. Second feedback round
+weighed in PRD §2b (warm-up, independence, navigation, consistency, gamification, pitch shape adopted or adapted).
 
 **Decided by Manan:** (1) build a rubric that matches our goals (K1–K6 proposed, PRD R3); (2) a simple
 leaderboard (PRD R4); (3) recommended assignments linking week to week (PRD R5 profile); (4) pilot
@@ -192,6 +210,7 @@ any non-pilot use.
   confidence, curiosity, or hint counts (PRD R3).
 
 **Reminders**
+- **Find out about The Humanist Academy** (program, cohort, grade levels, current guide workflow, tools). The repo only lists it as a school in the Acton Survey case data.
 - **Reply to Anuj:** thank him; the instruction issues are fixed; accept his offer to test with
   kids (this is Ring 1); ask what "integrate into the Acton system" means in practice; ask for 2
   introductions; ask for the marketing-tech comparison ideas he offered to share.
