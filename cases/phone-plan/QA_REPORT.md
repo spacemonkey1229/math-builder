@@ -106,3 +106,17 @@ corrected to "flat price for the first 2 lines"; twist script clarifies "device-
 **Residual, non-blocking (for a later pass, not fixed here):** Charity "close to the age" vs Appendix C "age 11";
 "before any discount or credit" in Assumption 1 reads oddly before the twist; Appendix E / glossary headings were
 empty in the P7 packet export (live HTML renders them — see browser pass).
+
+## Phase 0 pilot-readiness pass — 2026-10-28
+**Why:** pilot case; open issue that the 8% tax and carrier prices read as real facts.
+**Changes:** Background, Appendix B and the Idaho link note now say the carriers, prices and 8% rate are invented for
+practice (FACILITATOR.md, case.json MA1, interactive HTML and docx synced). Twist now says Charity needs a phone within
+the year, so the $150 credit counts dollar-for-dollar (found by P4, see below). Manifest refreshed.
+**Tier 1:** TIER1_PASS, 0 blockers, 2 GAP (T1-14/T1-15 guide-only figures, pre-existing class).
+**Tier 2 (fresh subagents / fetch):** P1 PASS; P2 PASS; P3 PASS (mechanical false positive, adjudicated 2026-08-22);
+P4 first run **FAIL** (credit worthless to a family that owns its phones, same class as Cold Chain), fixed, re-run **PASS**
+(taxed or untaxed credit, mid-year 3rd line, 12-month horizon all keep the flip); P5 PASS; P6 PASS (Idaho page loads,
+carries no load-bearing figure); P7 PASS (0 blocking terms, tax/price status clear).
+**UAT (live browser over local http, as a student):** page loads, no console errors, STORY_GLOSSARY present, invented-data
+wording visible, twist reveal works, Step 4 inherits the chosen line count (2/3/4). Not run: mobile viewport, real learner.
+**Residual, non-blocking:** 12-month comparison horizon is not stated explicitly (facilitator thread covers it).

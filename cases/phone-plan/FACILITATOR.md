@@ -50,7 +50,7 @@ find where the lines cross. Re-ask: "Do we agree on that process?"
 
 **"Do we need to make assumptions? Which ones are critical?"**
 
-Surface Appendix B's two real conventions: the flat 8% tax, and the assumption that today's
+Surface Appendix B's two real conventions: the flat 8% tax (an invented, simplified rate; the case says so), and the assumption that today's
 additional-line rate holds when the 3rd/4th line is actually added a year from now — a real,
 disclosed uncertainty neither carrier guarantees in writing.
 
@@ -66,7 +66,7 @@ disagree with everyone else's equation.
 Deliver slowly, with pauses:
 
 "Fiona stops by the Carrier V store just to compare notes. The rep tells her: sign up this month
-and get a one-time $150 device-upgrade credit (a one-time discount toward buying a new phone). Carrier T isn't offering anything like it right now."
+and get a one-time $150 device-upgrade credit (a one-time discount toward buying a new phone). Charity will need a phone of her own within the year, so for this case treat the full $150 as real money the family would use, dollar for dollar. Carrier T isn't offering anything like it right now."
 
 **Facilitator-only: what the numbers actually do (`case.json.derived`).** At the family's current
 2-line need, Carrier T saves $10.80 a month over Carrier V — $129.60 over a full year. Carrier V's
