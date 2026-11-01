@@ -1,0 +1,1218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Absorption Call — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Absorption Call</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Measurement &amp; Geometry</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+<p class="lede">Marcus Oyelaran stands at the back of the house, phone flashlight aimed at the rear wall, and claps once, hard. The sound doesn't die &mdash; it rolls forward over the empty seats, catches the ceiling, and comes back at him a half-second later, blurred and metallic. Somewhere behind the light board, the theater's production manager, Dana Ibok, is pacing. &ldquo;The mixer sounded like it was recorded in a parking garage,&rdquo; she says. &ldquo;Opening night is a rock trio doing a full PA set. Then next month we've got the songwriter series &mdash; just her, a guitar, and no mics at all.&rdquo; Marcus lets the echo fade before he answers. He's spent two decades tuning rooms that only ever needed to do one thing: carry a sermon clearly, or hold a chord. This one has to do both, on alternating Fridays, for the rest of the season.</p>
+<p>He runs his hand along the cinderblock at the back of the house &mdash; bare, hard, exactly the kind of surface that throws sound back as one sharp echo, the way a flat mirror throws back one sharp beam of light. Two binders sit open on the sound desk. One is stamped with a swatch of charcoal-gray absorptive panel, dense and dead to the touch. The other holds a diffusor panel, its face molded into a grid of pockets of different depths, like an oversized ice-cube tray &mdash; nothing flat for sound to bounce straight off of. Dana taps her watch. The panel order has to go out today if it's going to arrive before the amplified run opens.</p>
+<p>Marcus picks up both binders at once and doesn't set either one down.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+<p>Marcus Oyelaran is an independent acoustic consultant hired by the <strong>Hollow Oak Community Theater</strong>, a converted-warehouse black-box space, to solve a persistent complaint from its sound engineers and directors: the room is &ldquo;boomy,&rdquo; swallowing spoken dialogue and turning amplified music into mush. The theater's board has authorized a single, fixed acoustic-treatment project &mdash; applied only to the flat rear wall of the house, the largest untreated reflective surface in the room &mdash; to be installed before the venue's amplified show run begins. Marcus reports directly to the board and is accountable for both the acoustic outcome and the installed cost, which must be quoted against the board's approved treatment budget (see Appendix D).</p>
+<p>The theater's calendar is genuinely mixed. Most of the season is amplified: a rock trio, a hip-hop revue, and a musical with a mixed PA all depend on clear, controlled speech and vocals reproduced through loudspeakers &mdash; that is the room's dominant use for the coming season. But the theater also hosts an unamplified acoustic songwriter series later in the season, where a single performer and instrument must fill the room naturally, without a PA &mdash; a use that benefits from the room keeping some of its natural liveness rather than going acoustically &ldquo;dead.&rdquo;</p>
+<p>Marcus has narrowed the fix to two named options, both applied to the same rear-wall footprint and both quoted to fit inside the board's treatment budget (see Appendices B, C and D):</p>
+<div class="card"><strong>The Dead Wall</strong> &mdash; cover the rear wall in broadband absorptive panels, which convert most of the sound energy that strikes them into heat instead of reflecting it. This sharply shortens the room's reverberation time and favors speech and amplified-show clarity.</div>
+<div class="card"><strong>The Scatter Wall</strong> &mdash; cover the same rear wall in geometric diffusive panels, which redirect and break up reflections instead of removing most of that energy. This keeps more of the room's natural liveness intact for the unamplified acoustic series, while still breaking up the harshest, most disruptive echo off the flat rear wall.</div>
+<p>Every other surface in the house &mdash; floor, ceiling, both side walls, and the wall behind the stage &mdash; stays exactly as built; Marcus is not treating them (see Appendix A). The room's volume and dimensions are fixed by the building; he cannot change them (see Appendix A). Whichever option he recommends, the panels must cover the full rear wall &mdash; the board rejected partial coverage as visually inconsistent for a public house.</p>
+<p class="side-note">Several figures in this case are stated scenario assumptions rather than sourced facts, each disclosed with its basis and range (see Appendix E). Every sourced figure is cited with its publisher, date, and confidence grade (see Appendix F).</p>
+<h3>A Few Terms, Plainly</h3>
+<ul>
+  <li><strong>&ldquo;Boomy&rdquo;</strong> &mdash; Dana and Marcus's shorthand for an excessively long, muddying echo: spoken words blur into each other and separate musical notes seem to blend together, because the room takes too long to let each sound fade out before the next one arrives.</li>
+  <li><strong>PA (public address system)</strong> &mdash; the loudspeakers, microphones, and amplifiers used to reinforce sound electronically. &ldquo;Amplified&rdquo; shows use one; the unamplified acoustic series does not.</li>
+  <li><strong>Mixer / light board</strong> &mdash; the audio console (mixer) and lighting console (light board) technicians operate from during a show; mentioned only to set the scene, not needed for any calculation.</li>
+  <li><strong>NRC (Noise Reduction Coefficient)</strong> &mdash; a rating that summarizes how much sound a material absorbs: 0 means almost none (a hard, bare wall), 1 means almost all (an open window). A very high-performing panel, like Appendix B's Option A at 1.05, can test a little above 1 on the published rating scale &mdash; that is just how this particular rating is reported for top-tier products, not a different kind of number. This case uses NRC exactly the same way as &ldquo;absorption coefficient &alpha;&rdquo; &mdash; Appendix B's NRC figure is the &alpha; value plugged directly into Sabine's equation.</li>
+  <li><strong>Mid-band</strong> &mdash; how absorbing a material is can differ a little by pitch; &ldquo;mid-band&rdquo; just means this case uses one representative middle-of-the-range number for each material, rather than a full pitch-by-pitch table.</li>
+  <li><strong>Sabin</strong> &mdash; the unit total absorption is measured in, the same way length is measured in feet: an open window lets essentially all the sound through, so one square foot of open window equals one sabin, and every material in this case is measured against that same yardstick. A room's total absorption is the sum, over every surface, of that surface's area times its own absorption coefficient.</li>
+  <li><strong>&ldquo;Broadband&rdquo;</strong> (as in &ldquo;broadband absorptive panel&rdquo;) &mdash; means the panel absorbs sound well across the whole range of pitches, not just bass or just treble.</li>
+  <li><strong>Confidence grade (HIGH/MEDIUM/LOW, Appendix F)</strong> &mdash; how directly a source backs its figure: HIGH means the number comes straight from the maker or publisher of the fact itself; MEDIUM means it comes from a reputable page reporting on that same fact, once removed.</li>
+  <li><strong>GIK Acoustics 242 / RPG QRD-Skyline</strong> &mdash; real, commercially available acoustic-panel and diffusor product lines (the model names/codes themselves don't matter for any calculation), named here only as concrete, real-world reference points for the coefficients and panel sizes this case uses (see Appendix F).</li>
+  <li><strong>What a diffusor panel actually looks like.</strong> Picture a large plastic ice-cube tray, mounted flat against the wall with its open cells facing out into the room. Now imagine every cell was molded to a different depth &mdash; some barely dented in, some carved in deep &mdash; so that looking at the tray face-on, it's not one flat surface, it's a grid of shallow and deep pockets side by side. That is what a diffusor panel's face is: not flat, but pocked with cells of different depths, front-on to the room. This case does not ask you to work out <em>why</em> that shape behaves the way it does acoustically &mdash; the same way it does not ask you to derive <em>why</em> Sabine's constant is 0.161, or <em>why</em> a given material's absorption coefficient is what it is. Like those, &ldquo;a panel shaped this way measures as &alpha; = 0.48&rdquo; (Appendix B) is simply a lab-measured fact you are handed and use, not a mechanism to reconstruct.</li>
+</ul>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Marcus Oyelaran. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Dead Wall</h4>
+      <p style="margin:0">Cover the rear wall in broadband absorptive panels: shorter reverberation time, favors speech and amplified-show clarity.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Scatter Wall</h4>
+      <p style="margin:0">Cover the rear wall in diffusive panels: preserves more of the room's natural liveness for the unamplified acoustic series.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include:
+    <ul>
+      <li><strong>D1</strong> &mdash; A room-volume and baseline reverberation calculation: convert the given room dimensions to meters, compute the room's volume, and use Appendix A's baseline materials to find the room's current (untreated) RT60 via Sabine's equation.</li>
+      <li><strong>D2</strong> &mdash; An absorption (sabins) comparison table across the baseline room, Option A, and Option B, with each option's RT60 and its ratio to target RT60 (Appendix C).</li>
+      <li><strong>D3</strong> &mdash; A treatment cost calculation for each option, with a unit conversion between the metric wall area and the imperial cost rate.</li>
+      <li><strong>D4</strong> &mdash; A scaled rear-wall panel-layout diagram for at least one option, with treated area and panel count labeled.</li>
+    </ul></li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+<details open>
+  <summary>Appendix A &mdash; The Room, As Built</summary>
+  <div class="inner">
+    <p>Hollow Oak Community Theater is a rectangular black-box space. Its interior dimensions and its baseline (currently untreated) surface materials are fixed by the building and cannot be changed by either option.</p>
+    <blockquote><strong>Modeling Assumption (MA1).</strong> Hollow Oak is a fictional venue built for this case &mdash; no real theater has both options pre-quoted for it &mdash; so its dimensions and construction are stated scenario assumptions, not sourced figures (see Appendix E).</blockquote>
+    <table>
+      <tr><th>Quantity</th><th class="num">Value</th></tr>
+      <tr><td>Interior length</td><td class="num">40 ft</td></tr>
+      <tr><td>Interior width</td><td class="num">30 ft</td></tr>
+      <tr><td>Interior height</td><td class="num">16 ft</td></tr>
+    </table>
+    <p><strong>Unit conversion.</strong> 1 ft = 0.3048 m, exactly, by international agreement [S6].</p>
+    <h3>Baseline surface materials (before any treatment)</h3>
+    <table>
+      <tr><th>Surface</th><th>Dimensions</th><th>Material (as built)</th><th class="num">Absorption coefficient &alpha;</th></tr>
+      <tr><td>Floor</td><td>40 ft &times; 30 ft</td><td>Wood stage floor</td><td class="num">0.09 [S3]</td></tr>
+      <tr><td>Ceiling</td><td>40 ft &times; 30 ft</td><td>Painted gypsum drywall</td><td class="num">0.04 [S3]</td></tr>
+      <tr><td>Side walls (&times;2)</td><td>30 ft &times; 16 ft each</td><td>Painted concrete block</td><td class="num">0.07 [S3]</td></tr>
+      <tr><td>Stage wall (front)</td><td>40 ft &times; 16 ft</td><td>Painted concrete block</td><td class="num">0.07 [S3]</td></tr>
+      <tr><td>Rear wall (untreated baseline)</td><td>40 ft &times; 16 ft</td><td>Painted concrete block</td><td class="num">0.07 [S3]</td></tr>
+    </table>
+    <p class="side-note">Convert every area to square meters yourself in D1/D2 &mdash; the metric column is intentionally left for you to compute.</p>
+    <h3>Sabine's equation</h3>
+    <blockquote>RT60 = 0.161 &times; V / A &mdash; where V is the room's volume in cubic meters, and A is the room's total absorption in metric sabins: the sum, over every surface, of that surface's area in square meters multiplied by its absorption coefficient [S1] [S2].</blockquote>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix B &mdash; Option Spec Sheets</summary>
+  <div class="inner">
+    <p>Both options replace only the rear wall's baseline material (painted concrete block, &alpha; = 0.07) with a treatment panel covering the full 40 ft &times; 16 ft rear wall.</p>
+    <table>
+      <tr><th></th><th>Option A &mdash; The Dead Wall (absorptive)</th><th>Option B &mdash; The Scatter Wall (diffusive)</th></tr>
+      <tr><td>Panel type</td><td>Broadband absorptive acoustic panel</td><td>Geometric diffusive acoustic panel</td></tr>
+      <tr><td>Manufacturer reference</td><td>GIK Acoustics 242-style broadband panel [S4]</td><td>Wells-type diffusor (RPG QRD/Skyline family)</td></tr>
+      <tr><td class="num">Absorption coefficient &alpha; (mid-band)</td><td class="num">1.05 [S4]</td><td class="num">0.48 (ASSUMPTION &mdash; see Appendix E, MA2)</td></tr>
+      <tr><td>Standard panel size</td><td>2 ft &times; 4 ft (8 ft&sup2; per panel)</td><td>2 ft &times; 4 ft (8 ft&sup2; per panel)</td></tr>
+      <tr><td>Coverage required</td><td>Full rear wall (640 ft&sup2;)</td><td>Full rear wall (640 ft&sup2;)</td></tr>
+    </table>
+    <figure>
+      <svg viewBox="0 0 520 170" width="100%" role="img" aria-labelledby="dfsectitle dfsecdesc">
+        <title id="dfsectitle">Absorptive panel vs. diffusive panel, sliced through from the side</title>
+        <desc id="dfsecdesc">Left: a flat absorptive panel. Right: a diffusive panel's face is a grid of pockets molded to different depths, like an ice-cube tray. Each panel's measured absorption coefficient is given in Appendix B.</desc>
+        <text x="120" y="18" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1a3a5c" font-weight="700">A &mdash; The Dead Wall (absorptive)</text>
+        <rect x="60" y="30" width="120" height="90" fill="#4a4a4a"/>
+        <path d="M40 35 L58 75 L40 115" fill="none" stroke="#c9a227" stroke-width="2" marker-end="url(#arrowend)"/>
+        <text x="30" y="30" font-family="sans-serif" font-size="11" fill="#5b6472">sound in</text>
+        <text x="120" y="140" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b6472">soaks it in &mdash; no echo back</text>
+
+        <text x="390" y="18" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1a3a5c" font-weight="700">B &mdash; The Scatter Wall (diffusive)</text>
+        <g id="wellcols"></g>
+        <path d="M290 70 L320 70" fill="none" stroke="#c9a227" stroke-width="2" marker-end="url(#arrowend)"/>
+        <text x="290" y="30" font-family="sans-serif" font-size="11" fill="#5b6472">sound in</text>
+        <path d="M480 45 L460 60" stroke="#1a3a5c" stroke-width="1.5" marker-end="url(#arrowend2)"/>
+        <path d="M480 75 L458 78" stroke="#1a3a5c" stroke-width="1.5" marker-end="url(#arrowend2)"/>
+        <path d="M480 105 L460 92" stroke="#1a3a5c" stroke-width="1.5" marker-end="url(#arrowend2)"/>
+        <text x="390" y="140" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b6472">measured absorption alpha given in Appendix B</text>
+        <defs>
+          <marker id="arrowend" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#c9a227"/></marker>
+          <marker id="arrowend2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1a3a5c"/></marker>
+        </defs>
+      </svg>
+      <script>
+        (function(){
+          var svgns = "http://www.w3.org/2000/svg";
+          var g = document.currentScript.previousElementSibling.querySelector('#wellcols');
+          var depths = [70,40,85,55,30,75,45,90,60,35];
+          var x0 = 320, y0 = 30, colw = 14, maxh = 90, baseY = 120;
+          for (var i = 0; i < depths.length; i++) {
+            var h = depths[i];
+            var rect = document.createElementNS(svgns, 'rect');
+            rect.setAttribute('x', x0 + i * colw);
+            rect.setAttribute('y', baseY - h);
+            rect.setAttribute('width', colw - 2);
+            rect.setAttribute('height', h);
+            rect.setAttribute('fill', '#4a4a4a');
+            g.appendChild(rect);
+          }
+        })();
+      </script>
+      <figcaption>The absorptive panel (left, Option A) is a uniform, dense material. The diffusive panel (right, Option B) is a grid of pockets molded to different depths, like an ice-cube tray. Appendix B gives each panel's measured absorption coefficient (&alpha;); this case uses those measured values directly rather than deriving them.</figcaption>
+    </figure>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix C &mdash; Target Reverberation Times by Room Use</summary>
+  <div class="inner">
+    <table>
+      <tr><th>Room use</th><th class="num">Target RT60</th><th>Source</th></tr>
+      <tr><td>Speech / amplified show (dominant, season-majority use)</td><td class="num">0.9&ndash;1.2 s (midpoint 1.05 s used)</td><td>[S5]</td></tr>
+      <tr><td>Unamplified acoustic music (secondary use)</td><td class="num">1.6 s</td><td>ASSUMPTION &mdash; see Appendix E, MA3</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix D &mdash; Treatment Cost Data</summary>
+  <div class="inner">
+    <table>
+      <tr><th></th><th>Option A &mdash; The Dead Wall</th><th>Option B &mdash; The Scatter Wall</th></tr>
+      <tr><td class="num">Installed cost per square foot</td><td class="num">$45/ft&sup2; (ASSUMPTION &mdash; MA4)</td><td class="num">$65/ft&sup2; (ASSUMPTION &mdash; MA5)</td></tr>
+      <tr><td>Rear wall area to treat</td><td class="num">640 ft&sup2;</td><td class="num">640 ft&sup2;</td></tr>
+    </table>
+    <p>The board's approved treatment budget for this project is <strong>$50,000</strong>.</p>
+    <figure>
+      <svg viewBox="0 0 520 300" width="100%" role="img" aria-labelledby="d4title d4desc">
+        <title id="d4title">Rear-wall panel layout, to scale</title>
+        <desc id="d4desc">The 40 ft by 16 ft rear wall drawn to scale, tiled by an 10-by-8 grid of 2 ft by 4 ft panels (80 panels total, 640 square feet).</desc>
+        <rect x="40" y="20" width="440" height="176" fill="#eef3f8" stroke="#1a3a5c" stroke-width="2"/>
+        <!-- 10 columns x 8 rows of 2x4 ft panels, drawn to scale (11px per ft) -->
+        <g stroke="#c9a227" stroke-width="1" fill="none">
+        </g>
+        <g id="panelgrid"></g>
+        <text x="260" y="14" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#1a3a5c">40 ft</text>
+        <text x="20" y="112" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#1a3a5c" transform="rotate(-90 20 112)">16 ft</text>
+        <text x="260" y="230" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#5b6472">Rear wall: 10 columns &times; 8 rows of 2 ft &times; 4 ft panels = 80 panels, 640 ft&sup2; total (either option)</text>
+      </svg>
+      <script>
+        (function(){
+          var svgns = "http://www.w3.org/2000/svg";
+          var g = document.currentScript.previousElementSibling.querySelector('#panelgrid');
+          var cols = 10, rows = 8, cw = 44, ch = 22, x0 = 40, y0 = 20;
+          for (var r = 0; r < rows; r++) {
+            for (var c = 0; c < cols; c++) {
+              var rect = document.createElementNS(svgns, 'rect');
+              rect.setAttribute('x', x0 + c * cw);
+              rect.setAttribute('y', y0 + r * ch);
+              rect.setAttribute('width', cw);
+              rect.setAttribute('height', ch);
+              rect.setAttribute('fill', 'none');
+              rect.setAttribute('stroke', '#c9a227');
+              rect.setAttribute('stroke-width', '1');
+              g.appendChild(rect);
+            }
+          }
+        })();
+      </script>
+    </figure>
+    <p class="side-note">D4: this diagram tiles the rear wall with 2 ft &times; 4 ft panels (a standard commercial size for both absorptive and diffusive product lines) &mdash; 10 columns &times; 8 rows = 80 panels, 640 ft&sup2;, matching Appendix B's coverage requirement for either option.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix E &mdash; Modeling Assumptions</summary>
+  <div class="inner">
+    <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author, each with a disclosed basis and range. A Hero may challenge any of them in discussion &mdash; that is a legitimate move.</blockquote>
+    <table>
+      <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+      <tr><td>MA1</td><td>Room interior dimensions</td><td class="num">40 &times; 30 &times; 16 ft</td><td>Hollow Oak is fictional; a plausible mid-size black-box footprint is fixed for the whole case.</td><td>Scales both options' volume/areas equally; does not favor A or B by itself.</td></tr>
+      <tr><td>MA2</td><td>Diffusive panel absorption coefficient, mid-band</td><td class="num">&alpha; = 0.48</td><td>Manufacturer pages describe limited but non-zero absorption without a clean published coefficient; discussion sources place it roughly 0.25&ndash;0.55.</td><td>Load-bearing for Option B's RT60; flexed &plusmn;50% below.</td></tr>
+      <tr><td>MA3</td><td>Target RT60, unamplified acoustic music</td><td class="num">1.6 s</td><td>Sourced targets place amplified music near 1.0 s and orchestral music at 2+ s; scaled to the lower-middle for a small solo-act venue.</td><td>Changes how close Option B reads to its own target; flexed &plusmn;50% below.</td></tr>
+      <tr><td>MA4</td><td>Absorptive panel installed cost</td><td class="num">$45/ft&sup2;</td><td>Professional broadband panel installed pricing commonly discussed in a $30&ndash;$60/ft&sup2; range; midpoint used.</td><td>Affects D3's cost comparison only.</td></tr>
+      <tr><td>MA5</td><td>Diffusive panel installed cost</td><td class="num">$65/ft&sup2;</td><td>Diffusor products are consistently discussed as costing more per unit area than flat absorptive panels; a value above MA4 used.</td><td>Affects D3's cost comparison only.</td></tr>
+      <tr><td>MA6</td><td>Baseline surface material by location</td><td>floor 0.09, ceiling 0.04, walls 0.07</td><td>Typical construction for a converted-warehouse black-box theater; coefficients are sourced [S3], the surface assignment is an author choice.</td><td>Applies equally to both options.</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Appendix F &mdash; Sources</summary>
+  <div class="inner">
+    <table>
+      <tr><th>#</th><th>Claim</th><th class="num">Value</th><th>Source</th><th>Confidence</th></tr>
+      <tr><td>S1</td><td>Sabine's formula, metric form</td><td class="num">RT60 = 0.161V/A</td><td><a href="https://www.acoustics-engineering.com/html/sabin.html" target="_blank" rel="noopener">Acoustics Engineering</a></td><td>HIGH</td></tr>
+      <tr><td>S2</td><td>Sabine's formula, corroborating</td><td class="num">0.161 (m) / 0.049 (ft)</td><td><a href="https://www.sengpielaudio.com/calculator-RT60.htm" target="_blank" rel="noopener">Sengpiel Berlin</a></td><td>HIGH</td></tr>
+      <tr><td>S3</td><td>Baseline absorption coefficients</td><td class="num">0.04&ndash;0.09</td><td><a href="https://www.sengpielaudio.com/calculator-RT60Coeff.htm" target="_blank" rel="noopener">Sengpiel Berlin</a></td><td>MEDIUM</td></tr>
+      <tr><td>S4</td><td>Absorptive panel NRC</td><td class="num">1.05</td><td><a href="https://www.gikacoustics.com/product/242-acoustic-art-panels-3-625-inch/" target="_blank" rel="noopener">GIK Acoustics</a></td><td>HIGH</td></tr>
+      <tr><td>S5</td><td>Target RT60, theater/legit stage</td><td class="num">0.9&ndash;1.2 s</td><td><a href="https://commercial-acoustics.com/sound-advice/rt60-chart/" target="_blank" rel="noopener">Commercial Acoustics</a></td><td>MEDIUM</td></tr>
+      <tr><td>S6</td><td>Foot-to-meter conversion</td><td class="num">0.3048 m</td><td><a href="https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors" target="_blank" rel="noopener">NIST</a></td><td>HIGH</td></tr>
+    </table>
+  </div>
+</details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <details id="apx-story-glossary">
+    <summary>Real-World Vocabulary &mdash; the acoustics/theater terms this case uses</summary>
+    <div class="inner">
+      <p><strong>Not the math vocabulary above</strong> &mdash; this is the real-world setting vocabulary: what an acoustic consultant, a black-box theater, and the panels themselves actually are. Hover for a plain-English definition; click to open a real reference (opens in a new tab).</p>
+      <div class="glossary-grid" id="storyGlossaryVocab"></div>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+<div class="stepbox">
+  <h4>Step 1 &mdash; Room volume &amp; baseline RT60</h4>
+  <div class="goal">Convert the room's dimensions to meters, find its volume, and use Appendix A's baseline materials to find its current (untreated) RT60.</div>
+  <div class="fieldrow"><label for="n1L">Length (m)</label><input type="number" id="n1L" step="0.01" placeholder="e.g. a number"></div>
+  <div class="fieldrow"><label for="n1W">Width (m)</label><input type="number" id="n1W" step="0.01" placeholder="e.g. a number"></div>
+  <div class="fieldrow"><label for="n1H">Height (m)</label><input type="number" id="n1H" step="0.01" placeholder="e.g. a number"></div>
+  <div class="fieldrow"><label for="n1V">Your computed volume (m&sup3;)</label><input type="number" id="n1V" step="0.01" placeholder="your answer"><button onclick="checkVolume()">Check</button><span class="fb" id="fb1V"></span></div>
+  <div class="fieldrow"><label for="n1RT">Your computed baseline RT60 (s)</label><input type="number" id="n1RT" step="0.01" placeholder="your answer"><button onclick="checkBaseline()">Check</button><span class="fb" id="fb1RT"></span></div>
+</div>
+
+<div class="stepbox">
+  <h4>Step 2 &mdash; Option comparison</h4>
+  <div class="goal">Compute each option's RT60 and its ratio to the target RT60 for the use it serves.</div>
+  <div class="fieldrow"><label for="n2A">Option A &mdash; your RT60 (s)</label><input type="number" id="n2A" step="0.001" placeholder="your answer"></div>
+  <div class="fieldrow"><label for="n2B">Option B &mdash; your RT60 (s)</label><input type="number" id="n2B" step="0.001" placeholder="your answer"><button onclick="checkOptions()">Check both</button><span class="fb" id="fb2"></span></div>
+  <div class="sliderow">
+    <label for="alphaSlider" style="min-width:220px">Explore: diffusive coefficient &alpha;</label>
+    <input type="range" id="alphaSlider" min="0.10" max="1.00" step="0.01" value="0.48" oninput="onAlphaSlide()">
+    <span class="val" id="alphaVal">0.48</span>
+  </div>
+  <p class="side-note" id="alphaOut">Slide to see how the diffusive coefficient assumption (MA2, disclosed range 0.25&ndash;0.55) moves Option B's own score &mdash; without changing Option A's, which depends on no disclosed assumption.</p>
+</div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+<p><strong>At roughly the 15-minute mark:</strong> Dana emails Marcus that the theater just added a third, previously unconfirmed booking &mdash; a string quartet doing an unamplified holiday concert &mdash; to the same month as the rock trio's amplified run. The acoustic (non-amplified) portion of the calendar, which most Heroes will have treated as a minor secondary use, is now roughly as large as the amplified portion for that stretch of the season. Nothing about the computed RT60 values changes &mdash; the physics is exactly what it was &mdash; but the framing that let Heroes call one use &ldquo;dominant&rdquo; and the other &ldquo;secondary&rdquo; just got shakier.</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist: re-score both options against a single blended target (the average of the speech and music targets) instead of each option's own target.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+<li>S1/S2 &mdash; Sabine's reverberation-time formula (Acoustics Engineering; Sengpiel Berlin)</li>
+<li>S3 &mdash; Baseline material absorption coefficients (Sengpiel Berlin)</li>
+<li>S4 &mdash; GIK Acoustics broadband panel NRC rating</li>
+<li>S5 &mdash; Target RT60 chart (Commercial Acoustics)</li>
+<li>S6 &mdash; NIST exact foot-to-meter conversion</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Absorption Call &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// From cases/the-absorption-call/case.json (sha256 of case.md recorded in QA_REPORT.md) and
+// cases/the-absorption-call/sensitivity_model.py -- this is a direct JS port, same PARAMS/FLEX/
+// evaluate()/evaluate_twist() shape and arithmetic, per templates/INTERACTIVE_HTML_CONTRACT.md.
+const FT_TO_M = 0.3048; // NIST SP811, S6
+
+const PARAMS = {
+  room_length_ft: 40.0,
+  room_width_ft: 30.0,
+  room_height_ft: 16.0,
+  sabine_k: 0.161,
+  alpha_floor: 0.09,
+  alpha_ceiling: 0.04,
+  alpha_walls: 0.07,
+  alpha_absorptive: 1.05,
+  alpha_diffusive: 0.48,
+  target_speech: 1.05,
+  target_music: 1.6
+};
+const FLEX = ["alpha_diffusive", "target_music"];
+
+function geometry(p){
+  const L = p.room_length_ft * FT_TO_M, W = p.room_width_ft * FT_TO_M, H = p.room_height_ft * FT_TO_M;
+  const V = L * W * H;
+  const floor = L * W, ceiling = L * W, side_walls = 2 * (W * H), stage_wall = L * H, rear_wall = L * H;
+  return {V, floor, ceiling, side_walls, stage_wall, rear_wall};
+}
+function rt60(V, sabins, k){ return sabins ? (k * V / sabins) : NaN; }
+function closeness(rtv, target){ return 1.0 - Math.abs(rtv / target - 1.0); }
+
+function baselineSabins(p, g){
+  return g.floor*p.alpha_floor + g.ceiling*p.alpha_ceiling + g.side_walls*p.alpha_walls
+       + g.stage_wall*p.alpha_walls + g.rear_wall*p.alpha_walls;
+}
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  const g = geometry(p);
+  const baseline = baselineSabins(p, g);
+  const rearBaseline = g.rear_wall * p.alpha_walls;
+  const sabinsA = baseline - rearBaseline + g.rear_wall * p.alpha_absorptive;
+  const sabinsB = baseline - rearBaseline + g.rear_wall * p.alpha_diffusive;
+  const rtA = rt60(g.V, sabinsA, p.sabine_k), rtB = rt60(g.V, sabinsB, p.sabine_k);
+  return {A: closeness(rtA, p.target_speech), B: closeness(rtB, p.target_music), rtA, rtB, V: g.V};
+}
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  const g = geometry(p);
+  const baseline = baselineSabins(p, g);
+  const rearBaseline = g.rear_wall * p.alpha_walls;
+  const sabinsA = baseline - rearBaseline + g.rear_wall * p.alpha_absorptive;
+  const sabinsB = baseline - rearBaseline + g.rear_wall * p.alpha_diffusive;
+  const rtA = rt60(g.V, sabinsA, p.sabine_k), rtB = rt60(g.V, sabinsB, p.sabine_k);
+  const blended = (p.target_speech + p.target_music) / 2.0;
+  return {A: closeness(rtA, blended), B: closeness(rtB, blended), rtA, rtB, blended};
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = safeStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = safeStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = safeStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkVolume(){
+  const p = PARAMS;
+  const trueV = p.room_length_ft*FT_TO_M * p.room_width_ft*FT_TO_M * p.room_height_ft*FT_TO_M;
+  const yourV = parseFloat(val('n1V'));
+  fb('fb1V', near(yourV, trueV, 5), trueV);
+}
+function checkBaseline(){
+  const r = evaluate({});
+  const g = geometry(PARAMS);
+  const baseline = baselineSabins(PARAMS, g);
+  const trueRT = rt60(g.V, baseline, PARAMS.sabine_k);
+  const yourRT = parseFloat(val('n1RT'));
+  fb('fb1RT', near(yourRT, trueRT, 0.15), trueRT);
+}
+function checkOptions(){
+  const r = evaluate({});
+  const yourA = parseFloat(val('n2A')), yourB = parseFloat(val('n2B'));
+  const okA = near(yourA, r.rtA, 0.05), okB = near(yourB, r.rtB, 0.05);
+  fb('fb2', okA && okB, r);
+}
+function onAlphaSlide(){
+  const a = parseFloat(document.getElementById('alphaSlider').value);
+  document.getElementById('alphaVal').textContent = a.toFixed(2);
+  const r = evaluate({alpha_diffusive: a});
+  const out = document.getElementById('alphaOut');
+  out.textContent = "At \u03b1=" + a.toFixed(2) + ", Option B's RT60 works out to " + round(r.rtB,2)
+    + " s. Option A's RT60 (" + round(r.rtA,2) + " s) never moves, because it doesn't depend on this assumption.";
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const _memStore = new Map();
+const safeStorage = {
+  getItem(k){ try { return localStorage.getItem(k); } catch(e){ return _memStore.has(k) ? _memStore.get(k) : null; } },
+  setItem(k,v){ try { localStorage.setItem(k,v); } catch(e){ _memStore.set(k, String(v)); } },
+};
+const CASE_ID = "the-absorption-call"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) safeStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = safeStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Room-volume &amp; baseline reverberation calculation", "Convert room dimensions to metric; find volume and current RT60 via Sabine's equation."],
+  ["D2", "Absorption (sabins) comparison table", "Baseline vs. Option A vs. Option B, with each option's RT60 and ratio to target."],
+  ["D3", "Treatment cost calculation", "Total installed cost for each option, with a unit conversion between wall area and cost rate."],
+  ["D4", "Scaled rear-wall panel-layout diagram", "To-scale diagram of the treated wall with panel count labeled."]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,process])=>{
+    const checked = safeStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = safeStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${process ? `<div class="meta" style="margin:2px 0 6px">${process}</div>` : ''}
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>safeStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = safeStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  safeStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ safeStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Volume": {def: "The amount of three-dimensional space a shape encloses.",
+    url: "https://www.khanacademy.org/math/geometry-home/geometry-volume-surface-area"},
+  "Surface Area": {def: "The total area of every outside face of a 3-D shape, added together.",
+    url: "https://www.khanacademy.org/math/geometry-home/geometry-volume-surface-area"},
+  "Prism": {def: "A solid with two parallel, congruent polygon bases joined by rectangular side faces.",
+    url: "https://www.khanacademy.org/math/geometry-home/geometry-volume-surface-area"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Unit": {def: "A defined quantity -- a centimeter, an hour, a liter -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Measurement": {def: "Assigning a number to a physical quantity -- length, time, mass -- using a chosen unit.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"}
+};
+const HOWTO = [
+  ["How to convert an amount with compound units", "Unit"],
+  ["How to find the surface area of a prism", "Surface Area"],
+  ["How to find the volume of a prism", "Volume"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+
+/* ================================================================
+   CASE-SPECIFIC -- STORY_GLOSSARY (MCS-47): real-world SETTING
+   vocabulary, distinct field names {desc, link} and distinct class
+   "sterm" from GLOSSARY's math vocabulary above (load-bearing, see
+   templates/INTERACTIVE_HTML_CONTRACT.md / T1-21).
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Reverberation": {desc: "The persistence of sound in a room after the original sound stops, caused by repeated reflections off the room's surfaces.",
+    link: "https://en.wikipedia.org/wiki/Reverberation"},
+  "Black-box theater": {desc: "A simple, usually square or rectangular performance space with black walls and floor, built to be reconfigured for many different kinds of shows.",
+    link: "https://en.wikipedia.org/wiki/Black_box_theater"},
+  "Sabin": {desc: "The unit of sound absorption: one square foot (or square meter) of a perfectly absorbing surface equals one sabin.",
+    link: "https://en.wikipedia.org/wiki/Sabin_(unit)"},
+  "NRC (Noise Reduction Coefficient)": {desc: "A single number, from 0 to 1, that summarizes how much sound a material absorbs (0 = a hard bare wall, 1 = a perfect sound-swallower like an open window).",
+    link: "https://en.wikipedia.org/wiki/Noise_reduction_coefficient"},
+  "Diffusor": {desc: "An acoustic treatment panel, shaped with pockets of different depths instead of a flat face, used as an alternative to absorptive panels for treating echoes.",
+    link: "https://en.wikipedia.org/wiki/Diffusion_(acoustics)"},
+};
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm gterm" data-term="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a reference on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryVocab');
+  if(el) el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const r = applied ? evaluate_twist({}) : evaluate({});
+  const note = document.getElementById('alphaOut');
+  if(note){
+    note.textContent += applied
+      ? " (Twist applied: both options are now scored against a single blended target.)"
+      : "";
+  }
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

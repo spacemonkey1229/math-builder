@@ -1,0 +1,1262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Yield Die — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39/MCS-47).
+  case.json sha256 at build time: cases/the-yield-die/case.json qa.case_md_sha256 =
+  d950343c0722a7aa4989b3210ba88bff0f781a1977adc1246d52bc6bc6615feb (confirm this file
+  has not drifted from the source of record). This file's <script> below is a JS port
+  of cases/the-yield-die/sensitivity_model.py's PARAMS/evaluate() -- same names, same
+  arithmetic -- so the printed page, this live calculator, and Tier 2 probe 5 can never
+  quietly diverge.
+
+  HARD LINE (MCS-37): nowhere outside a <script> tag's computation does this file print
+  the case's revenue-per-wafer verdict, the winning option, or margin_pct as a static
+  literal. The Working Notebook computes everything live from the case's own numbers;
+  it never hands over the conclusion.
+
+  P7 remediation note: this file is the real published artifact case-readiness's
+  QA_REPORT.md asked for -- Appendix H's flat 55-term markdown table is ported here as
+  a genuine STORY_GLOSSARY of {desc,link} hover+hyperlink entries (class="sterm"),
+  auto-linked at first mention across Overview/Background/Dilemma/Challenges/Appendices,
+  not just listed at the bottom of the page. Every link below was checked live against
+  the English Wikipedia API (existence + redirect target) before being used here.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:130px;font-size:.9rem}
+  textarea{font-family:var(--sans)}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:110px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+  .twistcalc{background:#2a313b;border-radius:8px;padding:14px 16px;margin-top:14px}
+  .twistcalc .out{font-family:var(--sans);font-size:.9rem;margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .twistcalc .out div{background:#20262e;border-radius:6px;padding:8px 10px}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ---- story/domain-vocabulary hover + hyperlink terms -- a SEPARATE
+         layer from .gterm (math vocabulary). Same tooltip mechanism,
+         different accent color (ok-green instead of gold) so the two
+         layers are visually distinguishable at a glance. ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:240px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+  <symbol id="icon-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Adventure</div>
+        <h1>Case Study: The Yield Die</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Scientific Notation</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Priya Anand has the reticle-order screen open on her laptop, the cursor parked on a field marked DIE SIZE (MM&sup2;) that will not let her submit until it is filled. Behind her, the small conference room's speakerphone is muted but blinking &mdash; the board is already dialed in, waiting on the number she promised them an hour ago. Someone taped a printout of two chip floorplans to the whiteboard this morning, side by side, one noticeably smaller than the other, both labeled only &ldquo;Option A&rdquo; and &ldquo;Option B&rdquo; in marker.</p>
+  <p>TSMC's wafer-start slot for their process quarter closes today. Once Priya submits this field and the mask set is cut, there is no redo &mdash; the company's entire first tape-out budget rides on whichever number goes in that box next. Her phone buzzes face-down on the table: the CEO, again, asking if she's decided.</p>
+  <p>She has run each option's numbers twice already and gotten two different confident answers depending on which sheet she was reading. The engineer at her elbow, headset still around his neck from the last stand-up, taps the smaller floorplan. &ldquo;More chips per wafer. It's not close.&rdquo;</p>
+  <p>Priya doesn't reach for the field yet. More chips is not the same question as more money, and she has not yet run both all the way through. She opens a blank spreadsheet instead of typing the number.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Priya Anand is the director of silicon engineering at a fabless AI-chip startup preparing its first commercial tape-out with <strong>TSMC</strong>, the foundry that manufactures the company's chip design onto physical silicon wafers. Priya has final sign-off on one irreversible decision before the mask set (the physical stencil used to pattern every wafer) is cut: how large, in square millimeters, to make the die &mdash; the single rectangle of silicon that becomes one finished chip once the wafer is cut apart. Two floorplans are ready to go, labeled <strong>The Compact Die</strong> and <strong>The Full Die</strong> (SEE APPENDIX B).</p>
+
+  <p>A wafer is a large, thin, circular disc of silicon; TSMC patterns many identical copies of a die onto one wafer, then cuts the wafer apart into individual chips (SEE APPENDIX B). A smaller die means more copies fit on each wafer &mdash; but it is not the only thing that changes. Wafers are not manufactured perfectly: microscopic manufacturing flaws, called defects, land at random across the wafer's surface, and any die unlucky enough to contain one at all normally fails testing and cannot be sold. A larger die area is more likely to contain at least one defect than a smaller die area is, so the two options do not just differ in how many dies fit on a wafer &mdash; they differ in what fraction of those dies actually work (SEE APPENDIX D). The two options also do not carry the same chip: the Full Die packs proportionally more transistors &mdash; and therefore more compute capability &mdash; onto its larger area, which the company can sell for a proportionally higher price per chip (SEE APPENDIX C, APPENDIX E).</p>
+
+  <p>The company has committed to exactly one wafer lot with TSMC this quarter &mdash; the budget will not stretch to run both options &mdash; so Priya's decision is final for this product generation, and the mask order must be placed before today's reticle lock deadline (SEE APPENDIX A). Every number in this case, from the wafer's own area down to the fraction of a defect per square centimeter, is large or small enough that it is normally written in scientific notation rather than standard notation; TSMC's own engineering documentation does the same (SEE APPENDIX F). The vocabulary and the &ldquo;how to&hellip;&rdquo; skills this case will ask you to research are listed in the final appendix &mdash; that is where Challenge 1 sends you (SEE APPENDIX F). All figures in this case are sourced (SEE APPENDIX G). Real-world industry terms used throughout this case are defined in plain language (SEE APPENDIX H).</p>
+
+  <figure>
+    <svg id="waferDiagram" viewBox="0 0 640 300" role="img" aria-labelledby="wafertitle wafedesc">
+      <title id="wafertitle">Wafer die-grid comparison, Option A vs Option B</title>
+      <desc id="wafedesc">Two circular wafers of the same diameter, one tiled with a fine grid of small dies (Option A, the Compact Die), one tiled with a coarser grid of larger dies (Option B, the Full Die). Both show unused, curved edge-loss positions in a lighter shade.</desc>
+      <defs>
+        <clipPath id="wclipA"><circle cx="150" cy="150" r="128"/></clipPath>
+        <clipPath id="wclipB"><circle cx="480" cy="150" r="128"/></clipPath>
+      </defs>
+      <g>
+        <circle cx="150" cy="150" r="130" fill="#eef3f8" stroke="var(--navy)" stroke-width="2"/>
+        <g id="gridA" clip-path="url(#wclipA)"></g>
+        <circle cx="150" cy="150" r="130" fill="none" stroke="var(--navy)" stroke-width="2"/>
+        <text x="150" y="8" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--navy-dk)">Option A &mdash; Compact Die</text>
+        <text x="150" y="308" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--sub)">more gross positions, more edge waste</text>
+      </g>
+      <g>
+        <circle cx="480" cy="150" r="130" fill="#eef3f8" stroke="var(--navy)" stroke-width="2"/>
+        <g id="gridB" clip-path="url(#wclipB)"></g>
+        <circle cx="480" cy="150" r="130" fill="none" stroke="var(--navy)" stroke-width="2"/>
+        <text x="480" y="8" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--navy-dk)">Option B &mdash; Full Die</text>
+        <text x="480" y="308" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--sub)">fewer, larger positions, less edge waste per position</text>
+      </g>
+    </svg>
+    <figcaption>A wafer (the round disc, Appendix B) is tiled with a rectangular grid of die-shaped positions. A smaller die (left, Option A) fits more raw positions on the same wafer than a larger die (right, Option B) &mdash; but positions near the curved rim that a square grid can't cleanly fill are lost to edge loss, and this diagram does not by itself show which option makes more <em>working, sellable</em> chips &mdash; that requires Appendix D's yield model. Illustrative, drawn to convey the geometry concept (each option's own relative die-size ratio, 1:2 by area per Appendix B), not a pixel-exact render of the true gross-die counts.</figcaption>
+  </figure>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Priya Anand. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Compact Die</h4>
+      <p style="margin:0">Order the smaller floorplan &mdash; more gross dies per wafer, but a smaller share of the company's total transistor budget and compute capability per chip.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Full Die</h4>
+      <p style="margin:0">Order the larger floorplan &mdash; fewer gross dies per wafer, but more transistors and more compute capability &mdash; and a higher price &mdash; per chip.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the &ldquo;how to&hellip;&rdquo; questions from the case study launch. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more &ldquo;excellent&rdquo; words pitching a firm stance to your audience on which you would choose and why. Your pitch must include:
+      <ul style="margin:8px 0 0 18px">
+        <li>a.) Use of the &ldquo;how to&hellip;&rdquo; resource you researched in Challenge 1.</li>
+        <li>b.) At least one original visual display of the data.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">Include the following:
+      <ul style="margin:8px 0 0 18px">
+        <li><strong>D1 &mdash; A scientific-notation conversion table.</strong> Convert every raw figure in Appendices B&ndash;E (the wafer's diameter and area, both die-option areas, the transistor density, and the defect density) from standard notation into scientific notation, and convert at least one given scientific-notation figure back into standard notation &mdash; showing the exponent shift for every row, not just the final form.</li>
+        <li><strong>D2 &mdash; A transistor-count comparison.</strong> Compute the total transistor count for each die option (transistor density &times; die area) entirely in scientific notation, showing the exponent arithmetic when the two scientific-notation figures are multiplied together.</li>
+        <li><strong>D3 &mdash; A gross-die-per-wafer table.</strong> Apply Appendix B's wafer-geometry formula for both options, carrying every intermediate figure in scientific notation, then convert each final gross-die count back to standard notation.</li>
+        <li><strong>D4 &mdash; A yield-and-net-good-die table.</strong> Apply Appendix D's defect-density yield model for both options with the defect density entered in scientific notation, showing the resulting yield percentage and the net (good, sellable) die count per wafer for each option.</li>
+        <li><strong>D5 &mdash; A revenue-per-wafer recommendation memo.</strong> Compute net good dies &times; price per die (Appendix E) for both options, with every figure shown in scientific notation before it is converted to a final dollar total, recommend a die size, and name the one figure in this case your recommendation depends on most &mdash; and state what value that figure would have to take for your recommendation to flip.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. If you are absent the day of a discussion post 500 &ldquo;excellent&rdquo; words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Priya's Wafer Commitment and the Reticle Lock Deadline</summary>
+    <div class="inner">
+      <p class="side-note">The concrete constraints Priya is operating under before the mask set is cut.</p>
+      <table id="apxA"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Wafer lots committed to TSMC for this tape-out, this quarter</td><td>1 lot (fixed; the company cannot afford to run both options)*</td></tr>
+      <tr><td>Hours remaining before the reticle (mask) order locks</td><td>3 hours*</td></tr>
+      </table>
+      <p class="side-note">*Narrative detail only &mdash; not a researched figure.<br>Referenced from Overview and Background.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Wafer and Die Geometry</summary>
+    <div class="inner">
+      <p class="side-note">The physical geometry behind how many dies of each option fit on one wafer.</p>
+      <table id="apxB"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>TSMC standard wafer diameter used for this tape-out</td><td>300 mm (3.00 &times; 10&sup2; mm) = 30.0 cm (3.00 &times; 10&sup1; cm) [S1]</td></tr>
+      <tr><td>Wafer usable area (computed from diameter, converted to cm first &mdash; every other figure in this appendix is in cm&sup2;)</td><td>706.86 cm&sup2; (7.07 &times; 10&sup2; cm&sup2;) &mdash; computed as &pi; &times; (30.0 cm &divide; 2)&sup2; = &pi; &times; (15.0 cm)&sup2;</td></tr>
+      <tr><td>Gross-die-per-wafer formula (the second term subtracts the die-shaped positions lost to edge loss, near the wafer's round rim, that a purely square/rectangular grid of dies can't cleanly fill)</td><td>Gross Dies = (Wafer Area &divide; Die Area) &minus; (&pi; &times; Wafer Diameter) &divide; &radic;(2 &times; Die Area) [S2]</td></tr>
+      <tr><td>Option A &mdash; &ldquo;The Compact Die&rdquo; &mdash; die area</td><td>100 mm&sup2; = 1.00 cm&sup2; (1.00 &times; 10&#8304; cm&sup2;) [S3]</td></tr>
+      <tr><td>Option B &mdash; &ldquo;The Full Die&rdquo; &mdash; die area</td><td>200 mm&sup2; = 2.00 cm&sup2; (2.00 &times; 10&#8304; cm&sup2;) [S3]</td></tr>
+      <tr><td>Option A &mdash; gross dies per wafer (computed)</td><td>640 dies (6.40 &times; 10&sup2; dies)</td></tr>
+      <tr><td>Option B &mdash; gross dies per wafer (computed)</td><td>306 dies (3.06 &times; 10&sup2; dies)</td></tr>
+      </table>
+      <p class="side-note">Referenced from Background and forces D1's and D3's scientific-notation geometry computations.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Transistor Density and Chip Compute Scale</summary>
+    <div class="inner">
+      <p class="side-note">How many transistors &mdash; and therefore how much compute capability &mdash; each option actually packs onto its silicon.</p>
+      <table id="apxC"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Transistor density at the leading-edge logic node used for this tape-out</td><td>2.00 &times; 10&#8312; transistors/mm&sup2; (200 million/mm&sup2;) &mdash; see Modeling Assumptions, MA1 [S4]</td></tr>
+      <tr><td>Option A total transistor count (computed)</td><td>2.00 &times; 10&sup1;&#8313; transistors (20 billion)</td></tr>
+      <tr><td>Option B total transistor count (computed)</td><td>4.00 &times; 10&sup1;&#8313; transistors (40 billion)</td></tr>
+      </table>
+      <p class="side-note">Referenced from Background and forces D2's scientific-notation multiplication.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; The Defect-Density Yield Model</summary>
+    <div class="inner">
+      <p class="side-note">The real yield mechanics that make gross die count alone the wrong number to compare.</p>
+      <table id="apxD"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Defect-density yield model used</td><td>Seeds model: DY = 1 &divide; (1 + A &times; D&#8320;), where A is die area (cm&sup2;) and D&#8320; is defect density (defects/cm&sup2;) [S5]</td></tr>
+      <tr><td>Defect density assumed for this tape-out's process node</td><td>3.0 &times; 10&#8315;&sup1; defects/cm&sup2; (0.30) &mdash; see Modeling Assumptions, MA2 [S6]</td></tr>
+      <tr><td>Option A &mdash; yield (computed)</td><td>1 &divide; (1 + 0.30 &times; 1.00) = 0.7692 (76.92%)</td></tr>
+      <tr><td>Option B &mdash; yield (computed)</td><td>1 &divide; (1 + 0.30 &times; 2.00) = 0.6250 (62.50%)</td></tr>
+      <tr><td>Option A &mdash; net good dies per wafer (computed)</td><td>492 dies (4.92 &times; 10&sup2; dies)</td></tr>
+      <tr><td>Option B &mdash; net good dies per wafer (computed)</td><td>191 dies (1.91 &times; 10&sup2; dies)</td></tr>
+      </table>
+      <p class="side-note">Referenced from Background and forces D4's yield computation. <strong>Both options' yields must be computed from the same defect density.</strong> A pitch that applies a different defect density to each option, or skips computing yield for one option, has not completed D4.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Pricing: What Each Die Is Worth</summary>
+    <div class="inner">
+      <p class="side-note">The revenue side of the decision &mdash; each option is not just a different die size, it is a different, differently-priced product.</p>
+      <table id="apxE"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Real-world reference used to anchor a dollars-per-transistor figure</td><td>Nvidia H100 GPU compute die: 8.0 &times; 10&sup1;&#8304; transistors (80 billion) [S7], street/OEM price range $25,000&ndash;$40,000, midpoint $30,000 used [S8] &mdash; see Modeling Assumptions, MA3</td></tr>
+      <tr><td>Derived dollars-per-transistor figure</td><td>$30,000 &divide; 8.0 &times; 10&sup1;&#8304; = 3.75 &times; 10&#8315;&#8311; $/transistor</td></tr>
+      <tr><td>Option A &mdash; price per good die (computed)</td><td>3.75 &times; 10&#8315;&#8311; &times; 2.00 &times; 10&sup1;&#8313; = $7,500</td></tr>
+      <tr><td>Flagship pricing premium applied to Option B only</td><td>&times;1.19 &mdash; see Modeling Assumptions, MA4 [S9]</td></tr>
+      <tr><td>Option B &mdash; price per good die (computed)</td><td>(3.75 &times; 10&#8315;&#8311; &times; 4.00 &times; 10&sup1;&#8313;) &times; 1.19 = $15,000 &times; 1.19 = $17,850</td></tr>
+      <tr><td>Option A &mdash; revenue per wafer (computed)</td><td>492 &times; $7,500 = $3,690,000</td></tr>
+      <tr><td>Option B &mdash; revenue per wafer (computed)</td><td>191 &times; $17,850 = $3,409,350</td></tr>
+      </table>
+      <p class="side-note">Referenced from Background and forces D5's revenue-per-wafer computation.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="side-note">These figures are <strong>not TSMC's own disclosed, exact figures</strong> &mdash; no foundry publicly discloses its current proprietary defect density or transistor density for a specific node. They are industry-representative figures, chosen from real published ranges and disclosed here rather than presented as this case's chip's own confirmed specification. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+      <table id="apxMA"><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+      <tr><td>MA1</td><td>Transistor density at the assumed leading-edge logic node</td><td>2.00 &times; 10&#8312; transistors/mm&sup2; (200 million/mm&sup2;)</td><td>A round, representative figure chosen from within the real published range for TSMC's N3-generation logic process &mdash; 167 to ~300 million transistors/mm&sup2; across a disclosed target figure and independently-reported estimates (see Appendix G &mdash; Sources, S4).</td><td>This figure scales both options' transistor counts and prices by the same factor, so it does not change which option wins &mdash; only the absolute dollar figures in D5.</td></tr>
+      <tr><td>MA2</td><td>Defect density assumed for this tape-out's process node</td><td>3.0 &times; 10&#8315;&sup1; defects/cm&sup2; (0.30)</td><td>A representative figure for a leading-edge line that has <strong>not yet fully matured</strong> &mdash; this is the company's <em>first</em> tape-out on this node, so a higher, less-mature defect density is a more defensible planning assumption than the &ldquo;mature, established line&rdquo; benchmark, while still sitting below the real, disclosed ceiling a major foundry has reported for one of its own newest nodes (see Appendix G &mdash; Sources, S6). This is the one figure in the case that is not knowable in advance for any specific, not-yet-running process line.</td><td>Work D4/D5 under this value to see which option wins, and by how much. If the true defect density were meaningfully higher or lower than this figure, would your recommendation change &mdash; and at roughly what value would it flip?</td></tr>
+      <tr><td>MA3</td><td>Real-world product used to derive the dollars-per-transistor pricing benchmark</td><td>Nvidia H100 GPU compute die: 80 billion transistors, $30,000 midpoint of its disclosed street/OEM price range (see Appendix G &mdash; Sources, S7/S8)</td><td>The real product's own price is for a fully packaged, sold unit, not a bare die &mdash; used here only as an illustrative proxy to derive a per-transistor benchmark, disclosed rather than presented as this case's own chip's confirmed market price.</td><td>Affects both options' absolute prices equally, so it does not change which option wins &mdash; only the absolute dollar figures in D5.</td></tr>
+      <tr><td>MA4</td><td>Flagship pricing premium applied to Option B (the Full Die) only, beyond pure linear per-transistor scaling</td><td>&times;1.19</td><td>Real market pricing shows a large, more-capable chip does not sell for a merely proportional multiple of a smaller chip's price &mdash; comparing two real, disclosed products shows the larger, more-capable chip's real dollars-per-transistor rate running several times higher than the smaller chip's (see Appendix G &mdash; Sources, S9). This case applies a deliberately conservative, disclosed fraction of that real effect.</td><td><strong>This is the figure most directly in tension with MA2.</strong> A higher premium favors Option B; a higher defect density favors Option A.</td></tr>
+      </table>
+      <p class="side-note">Referenced from Appendix D and Appendix E.</p>
+    </div>
+  </details>
+
+  <details id="apx-glossary">
+    <summary>Appendix F &mdash; &ldquo;How To&hellip;&rdquo; Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-09. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix G &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxG"><tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+      <tr><td>S1</td><td>Standard leading-edge silicon wafer diameter</td><td>300 mm</td><td>Wevolver &mdash; <a href="https://www.wevolver.com/article/200-mm-wafer-vs-300-mm-wafer-a-technical-comparison-for-engineers" target="_blank" rel="noopener">200 mm Wafer vs 300 mm Wafer: A Technical Comparison for Engineers</a></td><td>current industry standard</td><td>HIGH</td></tr>
+      <tr><td>S2</td><td>Gross-die-per-wafer geometry formula (edge-loss corrected)</td><td>Gross Dies = (Wafer Area &divide; Die Area) &minus; (&pi; &times; Wafer Diameter) &divide; &radic;(2 &times; Die Area)</td><td>AnySilicon &mdash; <a href="https://anysilicon.com/die-per-wafer-formula-free-calculators/" target="_blank" rel="noopener">Die Per Wafer Formula &amp; Free Calculators</a>; Silicon Analysts &mdash; <a href="https://siliconanalysts.com/guide/chips-per-wafer" target="_blank" rel="noopener">How Many Chips Per Wafer? GDPW Calculator &amp; Die Yield Guide</a></td><td>2026</td><td>MEDIUM</td></tr>
+      <tr><td>S3</td><td>Realistic real-world die-size range (grounds Option A/B's design-choice areas)</td><td>IoT MCU ~25 mm&sup2;, Smartphone SoC ~120 mm&sup2;, Laptop CPU ~200 mm&sup2;, Nvidia H100 ~814 mm&sup2;</td><td>Silicon Analysts &mdash; <a href="https://siliconanalysts.com/guide/chips-per-wafer" target="_blank" rel="noopener">How Many Chips Per Wafer? GDPW Calculator &amp; Die Yield Guide</a></td><td>2026</td><td>MEDIUM</td></tr>
+      <tr><td>S4</td><td>Transistor density range, TSMC N3-generation (3nm-class) logic node</td><td>167&ndash;300 million transistors/mm&sup2; (target 250)</td><td>TechPowerUp &mdash; <a href="https://www.techpowerup.com/265991/tsmc-3nm-process-packs-250-million-transistors-per-square-millimeter" target="_blank" rel="noopener">TSMC 3nm Process Packs 250 Million Transistors Per Square Millimeter</a>; corroborated by WikiChip Fuse and PhoneArena reporting the same figure</td><td>2026</td><td>MEDIUM</td></tr>
+      <tr><td>S5</td><td>Seeds defect-density die-yield model</td><td>DY = 1 &divide; (1 + A&times;D&#8320;)</td><td>UC Berkeley IEOR, Prof. Robert C. Leachman &mdash; <a href="https://fog.misty.com/perry/cod/references/yield_models.pdf" target="_blank" rel="noopener">Yield Modeling and Analysis, IEOR 130</a></td><td>Spring 2014 course notes (model: Seeds, 1967)</td><td>HIGH</td></tr>
+      <tr><td>S6</td><td>Representative &ldquo;mature, manufacturable&rdquo; defect-density benchmark; real Intel 18A figure</td><td>D&#8320; &lt; 0.1 defects/cm&sup2; &rarr; ~90% yield (1 cm&sup2; die) benchmark; Intel 18A reported D&#8320; &lt; 0.40 defects/cm&sup2;</td><td>Vik's Newsletter (Vikram Sekar) &mdash; <a href="https://www.viksnewsletter.com/p/how-foundries-calculate-die-yield" target="_blank" rel="noopener">How Foundries Calculate Die Yield</a></td><td>2024-09-15</td><td>MEDIUM</td></tr>
+      <tr><td>S7</td><td>Nvidia H100 (GH100) compute-die transistor count</td><td>80 billion transistors</td><td>NVIDIA &mdash; <a href="https://www.advancedclustering.com/wp-content/uploads/2022/03/gtc22-whitepaper-hopper.pdf" target="_blank" rel="noopener">H100 Tensor Core GPU Architecture (Hopper Whitepaper)</a></td><td>2022</td><td>HIGH</td></tr>
+      <tr><td>S8</td><td>Real-world street/OEM price range, packaged Nvidia H100 GPU module</td><td>$25,000&ndash;$40,000 (midpoint $30,000 used)</td><td>IntuitionLabs &mdash; <a href="https://intuitionlabs.ai/articles/nvidia-ai-gpu-pricing-guide" target="_blank" rel="noopener">NVIDIA H100 Price 2026: $25K&ndash;40K, Plus H200/B200/B300</a></td><td>early 2026</td><td>MEDIUM</td></tr>
+      <tr><td>S9</td><td>Real-world evidence that a larger, more-capable chip commands a per-transistor price well above a smaller chip's, not merely a proportional multiple</td><td>Nvidia L4: 35.8 billion transistors, ~$2,000&ndash;$3,000 street price (implied ~7&times;10&#8315;&#8312; $/transistor) versus Nvidia H100's ~3.75&times;10&#8315;&#8311; $/transistor &mdash; roughly a 5&times; real gap, of which this case applies only a 19% fraction (MA4)</td><td>JarvisLabs &mdash; <a href="https://jarvislabs.ai/blog/l4-gpu-price" target="_blank" rel="noopener">NVIDIA L4 GPU: Price, Specs &amp; Cloud Pricing Guide</a></td><td>2026</td><td>MEDIUM</td></tr>
+      </table>
+      <p class="side-note">A full record of what was searched, found, and set aside while sourcing this case is kept in a separate research log, outside this document.</p>
+    </div>
+  </details>
+
+  <details open id="apx-story-glossary">
+    <summary>Appendix H &mdash; Real-World Vocabulary</summary>
+    <div class="inner">
+      <p class="side-note">This case uses real semiconductor-industry terms. None of these are math vocabulary (that list is Appendix F) &mdash; this list is here so the industry setting itself does not get in the way of the math. Hover any underlined term below (or anywhere it first appears in the prose above) for a plain-English definition; click it to open a real source. Every link opens in a new tab and was checked live before this page was published.</p>
+      <div class="glossary-grid" id="storyGlossaryGrid"></div>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &middot; Scientific-Notation Conversions (D1)</h4>
+    <div class="goal">Convert Appendix B's wafer diameter (cm) and both die areas (cm&sup2;) into scientific notation, entering each as a coefficient (1&ndash;10) and a base-10 exponent.</div>
+    <div class="fieldrow"><label>Wafer diameter &mdash; coefficient</label><input type="number" id="d1_c1" step="any"><label style="min-width:0">&times; 10^</label><input type="number" id="d1_e1" step="1" style="width:70px"><span id="fb_d1a"></span></div>
+    <div class="fieldrow"><label>Option A die area &mdash; coefficient</label><input type="number" id="d1_c2" step="any"><label style="min-width:0">&times; 10^</label><input type="number" id="d1_e2" step="1" style="width:70px"><span id="fb_d1b"></span></div>
+    <div class="fieldrow"><label>Option B die area &mdash; coefficient</label><input type="number" id="d1_c3" step="any"><label style="min-width:0">&times; 10^</label><input type="number" id="d1_e3" step="1" style="width:70px"><span id="fb_d1c"></span></div>
+    <button onclick="checkD1()">Check Step 1</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &middot; Transistor Count (D2)</h4>
+    <div class="goal">Multiply Appendix C's transistor density by each option's die area (both in scientific notation) to find each option's total transistor count.</div>
+    <div class="fieldrow"><label>Option A transistors (coefficient &times; 10^exp)</label><input type="number" id="d2_c1" step="any"><label style="min-width:0">&times; 10^</label><input type="number" id="d2_e1" step="1" style="width:70px"><span id="fb_d2a"></span></div>
+    <div class="fieldrow"><label>Option B transistors (coefficient &times; 10^exp)</label><input type="number" id="d2_c2" step="any"><label style="min-width:0">&times; 10^</label><input type="number" id="d2_e2" step="1" style="width:70px"><span id="fb_d2b"></span></div>
+    <button onclick="checkD2()">Check Step 2</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &middot; Gross Dies Per Wafer (D3)</h4>
+    <div class="goal">Apply Appendix B's formula for both options: Gross Dies = (Wafer Area &divide; Die Area) &minus; (&pi; &times; Wafer Diameter) &divide; &radic;(2 &times; Die Area). Give each as a whole number of dies.</div>
+    <div class="fieldrow"><label>Option A gross dies</label><input type="number" id="d3_a" step="1"><span id="fb_d3a"></span></div>
+    <div class="fieldrow"><label>Option B gross dies</label><input type="number" id="d3_b" step="1"><span id="fb_d3b"></span></div>
+    <button onclick="checkD3()">Check Step 3</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &middot; Yield and Net Good Dies (D4)</h4>
+    <div class="goal">Apply Appendix D's Seeds model, DY = 1 &divide; (1 + A &times; D&#8320;), to both options at the same defect density, then multiply by each option's gross die count.</div>
+    <div class="fieldrow"><label>Option A yield (%)</label><input type="number" id="d4_ya" step="any"><span id="fb_d4a"></span></div>
+    <div class="fieldrow"><label>Option A net good dies</label><input type="number" id="d4_na" step="1"><span id="fb_d4b"></span></div>
+    <div class="fieldrow"><label>Option B yield (%)</label><input type="number" id="d4_yb" step="any"><span id="fb_d4c"></span></div>
+    <div class="fieldrow"><label>Option B net good dies</label><input type="number" id="d4_nb" step="1"><span id="fb_d4d"></span></div>
+    <button onclick="checkD4()">Check Step 4</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &middot; Revenue Per Wafer and Recommendation (D5)</h4>
+    <div class="goal">Compute net good dies &times; price per die (Appendix E) for each option, then write your recommendation. There is no single "correct" recommendation to check &mdash; the Check button only verifies your arithmetic.</div>
+    <div class="fieldrow"><label>Option A revenue per wafer ($)</label><input type="number" id="d5_ra" step="any"><span id="fb_d5a"></span></div>
+    <div class="fieldrow"><label>Option B revenue per wafer ($)</label><input type="number" id="d5_rb" step="any"><span id="fb_d5b"></span></div>
+    <button onclick="checkD5()">Check Step 5</button>
+    <div class="fieldrow" style="margin-top:14px;align-items:flex-start">
+      <label style="min-width:220px">Which figure does your recommendation depend on most, and what value would flip it?</label>
+      <textarea id="d5_note" rows="3" style="flex:1;min-width:220px;border:1px solid #bcc4cf;border-radius:6px;padding:8px" placeholder="Name the assumption and the value that would flip your recommendation." oninput="localStorage.setItem(CASE_ID+'_d5note', this.value)"></textarea>
+    </div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Reveal this only after you've finished working through the case &mdash; the Twist is meant to land after your analysis, not before.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-clock"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've finished the case &mdash; reveal it</button>
+    <div id="twistNarrative" style="display:none">
+      <p>TSMC just told Priya their measured defect density on this line came in different than the 0.30 defects/cm&sup2; Appendix D assumed. Use the slider below to try any defect density you like and watch D3&ndash;D5's arithmetic recompute live &mdash; this is the same formula you already used by hand, just wired to move instantly.</p>
+      <p>Does your recommendation survive every value on this slider, or only some of them? Which end of the slider is closer to what Appendix D called &ldquo;a leading-edge line that has not yet fully matured&rdquo;?</p>
+      <div class="twistcalc">
+        <div class="sliderow">
+          <label style="font-family:var(--sans);min-width:170px">Defect density D&#8320; (defects/cm&sup2;)</label>
+          <input type="range" id="twistSlider" min="0.15" max="0.45" step="0.01" value="0.30" oninput="updateTwistCalc()">
+          <span class="val" id="twistSliderVal">0.30</span>
+        </div>
+        <div class="out">
+          <div>Option A yield: <strong id="twYA">&ndash;</strong></div>
+          <div>Option B yield: <strong id="twYB">&ndash;</strong></div>
+          <div>Option A net good dies: <strong id="twNA">&ndash;</strong></div>
+          <div>Option B net good dies: <strong id="twNB">&ndash;</strong></div>
+          <div>Option A revenue/wafer: <strong id="twRA">&ndash;</strong></div>
+          <div>Option B revenue/wafer: <strong id="twRB">&ndash;</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] Wevolver &mdash; 200 mm Wafer vs 300 mm Wafer: A Technical Comparison for Engineers</li>
+      <li>[S2] AnySilicon; Silicon Analysts &mdash; Die-per-wafer geometry formula</li>
+      <li>[S5] UC Berkeley IEOR (Prof. Robert C. Leachman) &mdash; Yield Modeling and Analysis</li>
+      <li>[S7] NVIDIA &mdash; H100 Tensor Core GPU Architecture (Hopper Whitepaper)</li>
+      <li>Full citations: Appendix G.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Yield Die &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/the-yield-die/
+   case.json / sensitivity_model.py. JS port of PARAMS/evaluate() -- same
+   names, same arithmetic as sensitivity_model.py -- so the printed page,
+   this live calculator, and Tier 2 probe 5 can never quietly diverge.
+   ================================================================ */
+const PARAMS = {
+  wafer_diameter_mm: 300.0,          // S1 -- Appendix B
+  die_area_A_mm2: 100.0,             // S3 -- Appendix B
+  die_area_B_mm2: 200.0,             // S3 -- Appendix B
+  transistor_density_per_mm2: 2.0e8, // MA1 -- Appendix C
+  defect_density_D0_per_cm2: 0.30,   // MA2 -- Appendix D
+  dollars_per_transistor: 3.75e-7,   // MA3 -- Appendix E
+  flagship_premium_B: 1.19,          // MA4 -- Appendix E
+};
+const FLEX = ["defect_density_D0_per_cm2"];
+
+function grossDies(waferDiameterCm, dieAreaCm2){
+  const Aw = Math.PI * Math.pow(waferDiameterCm / 2.0, 2);
+  return Aw / dieAreaCm2 - (Math.PI * waferDiameterCm) / Math.sqrt(2.0 * dieAreaCm2);
+}
+function yieldFrac(defectDensityD0, dieAreaCm2){
+  return 1.0 / (1.0 + defectDensityD0 * dieAreaCm2);
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const waferDiameterCm = p.wafer_diameter_mm / 10.0;
+  const areaA = p.die_area_A_mm2 / 100.0;
+  const areaB = p.die_area_B_mm2 / 100.0;
+
+  const grossA = Math.floor(grossDies(waferDiameterCm, areaA));
+  const grossB = Math.floor(grossDies(waferDiameterCm, areaB));
+
+  const yieldA = yieldFrac(p.defect_density_D0_per_cm2, areaA);
+  const yieldB = yieldFrac(p.defect_density_D0_per_cm2, areaB);
+
+  const goodA = Math.floor(grossA * yieldA);
+  const goodB = Math.floor(grossB * yieldB);
+
+  const transistorsA = p.transistor_density_per_mm2 * p.die_area_A_mm2;
+  const transistorsB = p.transistor_density_per_mm2 * p.die_area_B_mm2;
+
+  const priceA = p.dollars_per_transistor * transistorsA;
+  const priceB = p.dollars_per_transistor * transistorsB * p.flagship_premium_B;
+
+  const revenueA = goodA * priceA;
+  const revenueB = goodB * priceB;
+
+  return {A: revenueA, B: revenueB, grossA, grossB, yieldA, yieldB, goodA, goodB,
+          transistorsA, transistorsB, priceA, priceB};
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions. Each derives its
+   expected value live from PARAMS/evaluate() above -- nothing here is
+   a pre-computed literal answer displayed to the reader.
+   ================================================================ */
+function checkD1(){
+  const okA = near(val('d1_c1'), 3.00, 0.05) && near(val('d1_e1'), 1, 0.001);
+  const okB = near(val('d1_c2'), 1.00, 0.05) && near(val('d1_e2'), 0, 0.001);
+  const okC = near(val('d1_c3'), 2.00, 0.05) && near(val('d1_e3'), 0, 0.001);
+  fb('fb_d1a', okA); fb('fb_d1b', okB); fb('fb_d1c', okC);
+}
+function checkD2(){
+  const r = evaluate({});
+  const expA = r.transistorsA, expB = r.transistorsB;
+  const expA_c = expA / Math.pow(10, Math.floor(Math.log10(expA)));
+  const expA_e = Math.floor(Math.log10(expA));
+  const expB_c = expB / Math.pow(10, Math.floor(Math.log10(expB)));
+  const expB_e = Math.floor(Math.log10(expB));
+  const okA = near(val('d2_c1'), expA_c, 0.05) && near(val('d2_e1'), expA_e, 0.001);
+  const okB = near(val('d2_c2'), expB_c, 0.05) && near(val('d2_e2'), expB_e, 0.001);
+  fb('fb_d2a', okA); fb('fb_d2b', okB);
+}
+function checkD3(){
+  const r = evaluate({});
+  fb('fb_d3a', near(val('d3_a'), r.grossA, 1));
+  fb('fb_d3b', near(val('d3_b'), r.grossB, 1));
+}
+function checkD4(){
+  const r = evaluate({});
+  fb('fb_d4a', near(val('d4_ya'), r.yieldA * 100, 0.5));
+  fb('fb_d4b', near(val('d4_na'), r.goodA, 1));
+  fb('fb_d4c', near(val('d4_yb'), r.yieldB * 100, 0.5));
+  fb('fb_d4d', near(val('d4_nb'), r.goodB, 1));
+}
+function checkD5(){
+  const r = evaluate({});
+  fb('fb_d5a', near(val('d5_ra'), r.A, Math.max(1, r.A * 0.01)));
+  fb('fb_d5b', near(val('d5_rb'), r.B, Math.max(1, r.B * 0.01)));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-yield-die";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+(function restoreD5Note(){
+  const saved = localStorage.getItem(CASE_ID+'_d5note');
+  if(saved){ const el = document.getElementById('d5_note'); if(el) el.value = saved; }
+})();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ['ch1','Challenge 1 -- posted a "how to..." resource link'],
+  ['ch2','Challenge 2 -- 250+ word pitch, with visual'],
+  ['D1','D1 -- scientific-notation conversion table'],
+  ['D2','D2 -- transistor-count comparison'],
+  ['D3','D3 -- gross-die-per-wafer table'],
+  ['D4','D4 -- yield-and-net-good-die table'],
+  ['D5','D5 -- revenue-per-wafer recommendation memo'],
+  ['ch4','Challenge 4 -- appendix of your work/process'],
+  ['ch5','Challenge 5 -- discussion participation (2x, or 500-word makeup)']
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Every entry below is REUSED VERBATIM from an already-verified
+   GLOSSARY entry in another published case in this corpus (legitimate
+   reuse of a fetched-and-confirmed source per MCS-21): "Scientific
+   Notation"/"Exponent"/"Base"/"Order of Operations"/"Percent"/"Decimal"
+   from cases/the-qubit-budget and cases/the-bracket-bet (khanacademy.org,
+   verified); "Standard Notation" from cases/codebreaker (mathsisfun.com,
+   verified); "Coefficient" from cases/seton-hall (mathsisfun.com,
+   verified). KEEP THIS EXACT OBJECT SHAPE -- double-quoted label keys,
+   unquoted def/url property names, https:// urls -- T1-19's regex
+   depends on it.
+   ================================================================ */
+const GLOSSARY = {
+  "Scientific Notation": {def: "A compact way to write very large or very small numbers: a number from 1-10 times a power of 10.",
+    url: "https://www.khanacademy.org/math/8th-grade-illustrative-math/unit-7-exponents-and-scientific-notation"},
+  "Standard Notation": {def: "A number written out in full using digits and place value, e.g. 4,033,000...(26 zeros).",
+    url: "https://www.mathsisfun.com/definitions/standard-notation.html"},
+  "Exponent": {def: "A small raised number showing how many times to multiply a base by itself, e.g. the 3 in 2³.",
+    url: "https://www.khanacademy.org/math/pre-algebra/pre-algebra-exponents-radicals"},
+  "Base": {def: "The number being multiplied repeatedly in an exponential expression, e.g. the 2 in 2³.",
+    url: "https://www.khanacademy.org/math/pre-algebra/pre-algebra-exponents-radicals"},
+  "Coefficient": {def: "A number multiplied by a variable, e.g. the 6 in 6z.",
+    url: "https://www.mathsisfun.com/definitions/coefficient.html"},
+  "Order of Operations": {def: "The agreed sequence for evaluating a multi-step expression: parentheses, exponents, multiplication/division, addition/subtraction.",
+    url: "https://www.khanacademy.org/math/pre-algebra/pre-algebra-arith-review/pre-algebra-order-of-operations/a/order-of-operations-review"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Square Root": {def: "A value that can be multiplied by itself to give the original number, written with the &radic; symbol, e.g. the square root of 9 is 3.",
+    url: "https://www.mathsisfun.com/square-root.html"},
+  "Pi": {def: "The ratio of a circle's circumference to its diameter, written &pi;, approximately 3.14159.",
+    url: "https://www.mathsisfun.com/definitions/pi.html"},
+};
+const HOWTO = [
+  ["How to write a number in scientific notation given its standard notation", "Scientific Notation"],
+  ["How to write a number in standard notation given its scientific notation", "Standard Notation"],
+  ["How to evaluate an exponential expression", "Exponent"],
+  ["How to convert a percent to a decimal", "Percent"],
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #apx-story-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+
+/* ================================================================
+   CASE-SPECIFIC -- story/domain-vocabulary glossary (separate layer
+   from GLOSSARY/gterm above, which stays math-only). This ports ALL
+   ~53 terms from case.md's Appendix H ("Real-World Vocabulary") into
+   real inline hover+hyperlink entries -- the direct P7 remediation
+   this file exists to deliver (see QA_REPORT.md's P7 section and
+   case.json.qa.tier2.P7_waiver: seven rounds against the flat
+   Appendix H markdown table never converged; this is the "real
+   published interactive HTML with inline hover glosses" that
+   QA_REPORT.md's own recommendation asked for). Every link below is a
+   real, live English Wikipedia article, checked via the Wikipedia API
+   (existence + redirect target) on 2026-09-09 before being used here --
+   none is a domain already on T1-19's math allowlist, per MCS-47.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Tape-out": {desc: "The point at which a chip's design is declared finished and sent to a foundry to be manufactured. Everything before this is design work; everything after is manufacturing.",
+    link: "https://en.wikipedia.org/wiki/Tape-out"},
+  "Fabless": {desc: "A company that designs chips but does not own or operate the factories that manufacture them -- it pays a foundry like TSMC to do the physical manufacturing.",
+    link: "https://en.wikipedia.org/wiki/Fabless_manufacturing"},
+  "Foundry": {desc: "A company that manufactures chips designed by other companies, using its own factories. TSMC is the world's largest foundry.",
+    link: "https://en.wikipedia.org/wiki/Semiconductor_fabrication_plant"},
+  "Silicon": {desc: "The base material chips are manufactured from -- a thin, hard, semiconducting element. \"Silicon\" is also used loosely to mean \"chips\" in general.",
+    link: "https://en.wikipedia.org/wiki/Silicon"},
+  "Wafer": {desc: "A large, thin, circular disc of silicon on which many identical copies of a chip design are manufactured at once, then cut apart.",
+    link: "https://en.wikipedia.org/wiki/Wafer_(electronics)"},
+  "Wafer lot": {desc: "A batch of wafers processed together as one manufacturing order. A foundry commitment is usually made and billed by the lot, not the individual wafer.",
+    link: "https://en.wikipedia.org/wiki/Wafer_(electronics)"},
+  "Process quarter": {desc: "Foundries schedule manufacturing capacity in advance; a wafer-start slot is a reserved place in that schedule for a customer's wafers to begin processing during a given quarter.",
+    link: "https://en.wikipedia.org/wiki/Semiconductor_device_fabrication"},
+  "Process node": {desc: "A named generation of manufacturing technology that determines how small and how densely packed a chip's transistors can be. Newer nodes generally pack more transistors into the same area.",
+    link: "https://en.wikipedia.org/wiki/Semiconductor_device_fabrication"},
+  "Reticle": {desc: "The physical stencil(s) used to pattern each layer of a chip design onto a wafer, similar to a stencil used in printing. Once made for a specific die size, changing the size means starting over with a new one.",
+    link: "https://en.wikipedia.org/wiki/Photomask"},
+  "Floorplan": {desc: "The physical layout of a chip's internal components -- where each functional block sits on the die.",
+    link: "https://en.wikipedia.org/wiki/Floorplan_(microelectronics)"},
+  "Die": {desc: "A single, individual rectangle of silicon -- one un-packaged chip -- before it is cut from the wafer and packaged.",
+    link: "https://en.wikipedia.org/wiki/Die_(integrated_circuit)"},
+  "Transistor": {desc: "The basic microscopic on/off switch that all digital computation is built from. A chip's total transistor count is a rough proxy for how much computing capability it has.",
+    link: "https://en.wikipedia.org/wiki/Transistor"},
+  "Defect": {desc: "A microscopic manufacturing flaw (a stray particle, a processing error, etc.) that lands at random on a wafer during manufacturing and can make any die it lands on stop working correctly.",
+    link: "https://en.wikipedia.org/wiki/Crystallographic_defect"},
+  "Yield": {desc: "The fraction (or percentage) of manufactured dies that actually work and can be sold, out of all the dies attempted.",
+    link: "https://en.wikipedia.org/wiki/Yield_(engineering)"},
+  "Edge loss": {desc: "Gross die counts near the round edge of a circular wafer are reduced because square/rectangular dies cannot be cut cleanly from a curved edge -- some die-shaped positions there are unusable.",
+    link: "https://en.wikipedia.org/wiki/Wafer_(electronics)"},
+  "GDPW": {desc: "An abbreviation for \"Gross Dies Per Wafer\" -- the raw count of die-shaped positions that fit on a wafer, before accounting for yield.",
+    link: "https://en.wikipedia.org/wiki/Die_(integrated_circuit)"},
+  "GPU": {desc: "\"Graphics Processing Unit\" -- a chip originally built for rendering images, now also widely used for AI computation because of its ability to do many calculations in parallel.",
+    link: "https://en.wikipedia.org/wiki/Graphics_processing_unit"},
+  "SoC": {desc: "\"System on a Chip\" -- a single chip that combines multiple functions (such as a processor, memory controller, and graphics) that might otherwise be separate chips.",
+    link: "https://en.wikipedia.org/wiki/System_on_a_chip"},
+  "MCU": {desc: "\"Microcontroller Unit\" -- a small, simple, low-power chip used to control a single device or function, much less powerful than a GPU or SoC.",
+    link: "https://en.wikipedia.org/wiki/Microcontroller"},
+  "Bare die": {desc: "The raw silicon rectangle straight from the wafer, as opposed to a \"packaged chip\" (mounted, wired, and enclosed in a protective housing with connectors) ready to be installed and sold.",
+    link: "https://en.wikipedia.org/wiki/Integrated_circuit_packaging"},
+  "OEM price": {desc: "\"Original Equipment Manufacturer\" price -- the price a manufacturer or authorized reseller charges, as distinct from a marked-up retail or resale price.",
+    link: "https://en.wikipedia.org/wiki/Original_equipment_manufacturer"},
+  "Street price": {desc: "The price real buyers actually pay in the open market, which can differ from any single published list price -- it moves with supply, demand, and discounting.",
+    link: "https://en.wikipedia.org/wiki/Price"},
+  "Board of directors": {desc: "The small group of senior leaders and/or investor representatives a company's executives are accountable to for major decisions.",
+    link: "https://en.wikipedia.org/wiki/Board_of_directors"},
+  "CEO": {desc: "\"Chief Executive Officer\" -- the single most senior executive running the company day-to-day, who reports to the board above.",
+    link: "https://en.wikipedia.org/wiki/Chief_executive_officer"},
+  "Reticle-order screen": {desc: "The internal software portal through which a chip company formally submits its finalized die design and size to the foundry, starting the manufacturing process.",
+    link: "https://en.wikipedia.org/wiki/Photomask"},
+  "Reticle lock deadline": {desc: "The cutoff time by which the die-size decision must be finalized and submitted, because once the reticle (mask) is manufactured to a specific size, it cannot be resized.",
+    link: "https://en.wikipedia.org/wiki/Photomask"},
+  "Leading-edge node": {desc: "Among the newest, smallest, most advanced manufacturing technology generations a foundry offers, as opposed to older, larger, cheaper \"mature\" nodes. Leading-edge nodes typically have higher defect densities early on.",
+    link: "https://en.wikipedia.org/wiki/Semiconductor_device_fabrication"},
+  "First tape-out": {desc: "A company's very first time sending a design to be manufactured, treated with extra caution because the company has no track record with that specific foundry, process, or design flow yet.",
+    link: "https://en.wikipedia.org/wiki/Tape-out"},
+  "Flagship pricing premium": {desc: "A real, common industry pricing practice: a company's largest, most-capable product in a lineup is often priced more than proportionally higher than a smaller product.",
+    link: "https://en.wikipedia.org/wiki/Price_discrimination"},
+  "Commercially sensitive": {desc: "Information a company deliberately keeps private because revealing it would help competitors or hurt negotiating position -- why no foundry publishes its actual, current defect density.",
+    link: "https://en.wikipedia.org/wiki/Trade_secret"},
+  "Compute capability": {desc: "The practical amount of useful computation a chip can perform per unit time. This case uses transistor count only as a rough stand-in for it.",
+    link: "https://en.wikipedia.org/wiki/Computer_performance"},
+  "Flagship product": {desc: "The single most capable, most expensive product in a company's lineup at a given time, as opposed to entry-level or mid-range products in the same family.",
+    link: "https://en.wikipedia.org/wiki/Core_product"},
+  "AI chip": {desc: "A chip built specifically to run the heavy repetitive math behind AI models efficiently, as opposed to general-purpose chips built to run any ordinary software.",
+    link: "https://en.wikipedia.org/wiki/Neural_processing_unit"},
+  "Director of silicon engineering": {desc: "A senior engineering leadership title at a chip company, typically responsible for the technical decisions and tradeoffs involved in actually designing and manufacturing a chip.",
+    link: "https://en.wikipedia.org/wiki/Integrated_circuit_design"},
+  "Seeds model": {desc: "A defect-density die-yield model named after its original author (R.B. Seeds, 1967) -- like many named formulas, it is simply called after the person credited with first deriving it.",
+    link: "https://en.wikipedia.org/wiki/Yield_(engineering)"},
+  "N3 node": {desc: "A marketing/generational label, not a literal physical measurement -- modern \"Nnm\" node names track a foundry's own generation numbering more than one exact real-world distance.",
+    link: "https://en.wikipedia.org/wiki/3_nm_process"},
+  "Intel": {desc: "A large, real semiconductor company that, like TSMC, both designs and manufactures its own chips -- one of TSMC's real-world competitors as a manufacturer.",
+    link: "https://en.wikipedia.org/wiki/Intel"},
+  "Compute die": {desc: "On a multi-chip product, the \"compute die\" is specifically the one doing the actual calculations, as opposed to memory or other supporting dies on the same package.",
+    link: "https://en.wikipedia.org/wiki/Die_(integrated_circuit)"},
+  "Inference-class": {desc: "AI use splits into \"training\" (teaching a model) and \"inference\" (using an already-trained model). An inference-class GPU is built and priced for the lighter inference workload.",
+    link: "https://en.wikipedia.org/wiki/Inference"},
+  "Hero": {desc: "This program's own term for the student completing the case study -- used the same way \"the reader\" or \"the student\" would be used elsewhere.",
+    link: "https://en.wikipedia.org/wiki/Problem-based_learning"},
+  "Adventure studio": {desc: "An internal label naming which format/track of case study this is, out of more than one the program offers -- not something that changes how the math works.",
+    link: "https://en.wikipedia.org/wiki/Problem-based_learning"},
+  "Excellent word-count bar": {desc: "This program's own standard for thorough, well-reasoned writing (as opposed to word count alone) -- the specific rubric is set by the discussion facilitator, not by this document.",
+    link: "https://en.wikipedia.org/wiki/Rubric_(academic)"},
+  "Stand-up meeting": {desc: "A short daily team meeting (commonly held standing up, to keep it brief) common in engineering workplaces -- used here only as background texture for the scene.",
+    link: "https://en.wikipedia.org/wiki/Stand-up_meeting"},
+  "CPU": {desc: "\"Central Processing Unit\" -- the general-purpose main chip of a computer, historically the single chip that ran most software, as distinct from a GPU.",
+    link: "https://en.wikipedia.org/wiki/Central_processing_unit"},
+  "IoT": {desc: "\"Internet of Things\" -- small, often single-purpose internet-connected devices, the typical use case for a small, low-power MCU.",
+    link: "https://en.wikipedia.org/wiki/Internet_of_things"},
+  "GH100": {desc: "Nvidia's own internal engineering name for the specific compute die used inside the H100 product -- \"H100\" is the product name a customer buys; \"GH100\" is the die itself.",
+    link: "https://en.wikipedia.org/wiki/Hopper_(microarchitecture)"},
+  "Whitepaper": {desc: "A detailed technical document a company publishes to describe how a product works, typically aimed at engineers and customers rather than general consumers.",
+    link: "https://en.wikipedia.org/wiki/White_paper"},
+  "IEOR": {desc: "\"Industrial Engineering and Operations Research\" -- the university department whose course produced the yield-model source cited in this case.",
+    link: "https://en.wikipedia.org/wiki/Industrial_engineering"},
+  "Logic node": {desc: "Chips broadly split into \"logic\" (the switching circuits that perform computation) and \"memory\" (circuits that store data). A logic node is a process tuned for computation circuits specifically.",
+    link: "https://en.wikipedia.org/wiki/Logic_gate"},
+  "Sensitivity analysis": {desc: "How much a final answer or recommendation would change if one particular input turned out to be wrong or different.",
+    link: "https://en.wikipedia.org/wiki/Sensitivity_analysis"},
+  "Confidence rating": {desc: "This case's own label for how trustworthy each cited source is -- HIGH (a primary source, or multiple independent outlets agreeing), MEDIUM (a real source with some caveat), LOW (too weak to rely on).",
+    link: "https://en.wikipedia.org/wiki/Fact-checking"},
+  "Wafer-start slot": {desc: "The foundry's scheduling term for when a customer's wafers are allowed to begin processing -- it cannot open until the reticle for it has been finalized (\"reticle lock\").",
+    link: "https://en.wikipedia.org/wiki/Photomask"},
+  "Packaged chip": {desc: "A bare die mounted, wired, and enclosed in a protective housing with connectors -- ready to be installed and sold as a finished product. Its price includes far more than just the silicon.",
+    link: "https://en.wikipedia.org/wiki/Integrated_circuit_packaging"},
+  "Mask set": {desc: "The full set of physical stencils, one per manufacturing layer, needed to pattern a specific chip design onto a wafer.",
+    link: "https://en.wikipedia.org/wiki/Photomask"},
+};
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#apx-story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #apx-story-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkStoryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — wafer/die-grid diagram (Background). Drawn as a
+   simple square-tiled grid so a reader can SEE the geometry concept
+   Appendix B's formula describes (smaller die -> more raw positions
+   on the same wafer, at the cost of proportionally more curved-edge
+   waste) -- purely illustrative layout math (grid spacing derived
+   from a fixed ratio, not from Appendix B's own gross-die counts),
+   so it never duplicates or leaks a computed case figure.
+   ================================================================ */
+function drawWaferGrid(gid, cx, cy, r, cellSize){
+  const g = document.getElementById(gid);
+  if(!g) return;
+  const ns = 'http://www.w3.org/2000/svg';
+  for(let x = cx - r; x < cx + r; x += cellSize){
+    for(let y = cy - r; y < cy + r; y += cellSize){
+      const rect = document.createElementNS(ns, 'rect');
+      rect.setAttribute('x', x + 1);
+      rect.setAttribute('y', y + 1);
+      rect.setAttribute('width', cellSize - 2);
+      rect.setAttribute('height', cellSize - 2);
+      rect.setAttribute('fill', '#c9d8e8');
+      rect.setAttribute('stroke', '#ffffff');
+      rect.setAttribute('stroke-width', '1');
+      g.appendChild(rect);
+    }
+  }
+}
+drawWaferGrid('gridA', 150, 150, 128, 16);   // Option A -- smaller die, finer grid
+drawWaferGrid('gridB', 480, 150, 128, 22.6); // Option B -- larger die (ratio matches Appendix B's 1:2 area), coarser grid
+
+/* ================================================================
+   CASE-SPECIFIC — twist reveal + live slider recompute. The slider
+   drives evaluate() live from the reader's own chosen defect density;
+   nothing here prints the case's own base-case verdict as a static
+   literal -- every figure shown is computed on demand from whatever
+   value the reader currently has the slider set to.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+  updateTwistCalc();
+}
+function updateTwistCalc(){
+  const d0 = parseFloat(document.getElementById('twistSlider').value);
+  document.getElementById('twistSliderVal').textContent = d0.toFixed(2);
+  const r = evaluate({defect_density_D0_per_cm2: d0});
+  document.getElementById('twYA').textContent = (r.yieldA*100).toFixed(2) + '%';
+  document.getElementById('twYB').textContent = (r.yieldB*100).toFixed(2) + '%';
+  document.getElementById('twNA').textContent = r.goodA.toLocaleString();
+  document.getElementById('twNB').textContent = r.goodB.toLocaleString();
+  document.getElementById('twRA').textContent = '$' + r.A.toLocaleString(undefined, {maximumFractionDigits:0});
+  document.getElementById('twRB').textContent = '$' + r.B.toLocaleString(undefined, {maximumFractionDigits:0});
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

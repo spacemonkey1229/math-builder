@@ -1,0 +1,1091 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Marginal Detection — Interactive</title>
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+  .sterm{position:relative;color:#5b3f14;text-decoration:none;border-bottom:1.5px dotted #8a6d2b;cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted #8a6d2b;
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+  /* CASE-SPECIFIC: light-curve chart dots */
+  .lc-dot{fill:var(--navy)}
+  .lc-dot.transit{fill:var(--bad)}
+  .lc-line{stroke:var(--gold);stroke-width:2;fill:none}
+  .lc-axis{stroke:var(--sub);stroke-width:1}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-star" viewBox="0 0 24 24"><path d="M12 2l3 7 7 .5-5.5 4.8 1.8 7-6.3-4-6.3 4 1.8-7L2 9.5 9 9z"/></symbol>
+  <symbol id="icon-scope" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Marginal Detection</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Statistics &amp; Probability &mdash; Displaying Data</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Ingrid Solberg reloads the pipeline dashboard for the third time before her coffee finishes cooling &mdash; a spreadsheet-like table of every candidate her team's telescopes have flagged, one row per star. One row is highlighted in yellow, not green: a candidate that cleared the automated flagging threshold overnight, barely. She clicks the row and a second window opens beside it, a plot of twenty small points scattered across the screen &mdash; a night's worth of brightness measurements for one star, one candidate, one dip that might be a planet crossing in front of it and might be nothing at all.</p>
+  <p>Tomorrow's four-hour telescope slot is the only one her team has this week, and it is already spoken for twice &mdash; once by this candidate, which wants a second night of data to firm up the detection, and once by a start-of-survey policy that says an unclaimed slot defaults automatically to whichever fresh target sits at the top of the queue. Ingrid has to actually assign the slot, by typing a target name into a single scheduling field, before she leaves tonight, or the automatic default fills it for her.</p>
+  <p>She pulls up two ways of reading the same twenty points. One fits a straight line through the quiet stretches of the night and measures the dip against how far the leftover static strays from that line. The other ignores the idea of a trend entirely and just asks how unusual the dip looks against the ordinary spread of a normal night for this star. The two methods do not agree. Ingrid's cursor sits in the scheduling field, blinking, next to the label TOMORROW'S SLOT.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Ingrid Solberg leads the candidate-vetting team for the Sable Peak Survey, a ground-based exoplanet-transit program that shares its telescope time, night by night, across dozens of active candidates and a queue of never-yet-observed targets. Her job is not to discover planets herself &mdash; it is to decide, every single night, which candidates deserve another look and which should be set aside so a fresh target can have its turn.</p>
+  <p>Every candidate the survey's pipeline flags starts the same way: a star's brightness is measured over and over across one night, producing a light curve &mdash; a plot of brightness against time (SEE APPENDIX A). If the brightness drops during a short window and then recovers, that dip might be a planet passing in front of the star (a transit). But real light curves are never flat outside the dip. Every star drifts a little over a night as the telescope tracks it through changing air thickness and temperature &mdash; and that drift is often curved, not straight, which matters enormously for how "big" a dip has to be before it counts as a real signal instead of ordinary noise (SEE APPENDIX B).</p>
+  <p>The survey has a standing internal policy for exactly this situation, agreed on by the vetting team before this case begins: a candidate is worth spending a follow-up slot on only if its dip's significance &mdash; how many multiples of the night's own noise spread the dip represents &mdash; reaches 3.0 or higher (SEE APPENDIX B). Below that line, the dip is scheduled to be logged and set aside, no slot spent. There are exactly two candidate methods on Ingrid's desk for calculating that significance number from the same twenty data points, and depending on which one she trusts, this candidate lands on opposite sides of the 3.0 line (SEE APPENDIX A, APPENDIX B). Real exoplanet-survey pipelines &mdash; including NASA's own Kepler mission &mdash; set their own, much higher, formal discovery threshold using exactly this kind of significance ratio, which is why the number itself, not just a gut read of the dip, is what the team's policy is built around (SEE APPENDIX C). Every figure Ingrid is working from tonight, sourced or assumed, is documented in (SEE APPENDIX D), and the math vocabulary and procedures needed to build and check her two significance reads are listed in (SEE APPENDIX E).</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Ingrid Solberg. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Re-observe</h4>
+      <p style="margin:0">Spend tomorrow's follow-up slot re-observing the marginal candidate to try to firm up the detection.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Abandon</h4>
+      <p style="margin:0">Abandon the marginal candidate and spend the slot on a fresh, unexamined target instead.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix E. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which option you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a scatter plot of all 20 flux points with the transit window marked; <strong>D2</strong> a calculated line of best fit through the 16 out-of-transit points, plus a written judgment of correlation strength and why the drift is non-linear; <strong>D3</strong> the naive significance ratio computed from D2's line, compared to the 3.0 threshold; <strong>D4</strong> a box-and-whisker plot of the 16 out-of-transit points with the five-number summary, plus the distribution-aware significance ratio and an outlier check; <strong>D5</strong> a one-paragraph recommendation stating both ratios and explaining why they disagree.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; The Marginal Candidate's Overnight Light Curve</summary>
+    <div class="inner">
+      <p>Twenty brightness measurements, one every 15 minutes across a 4-hour-45-minute window. "Flux" here just means "how bright the star looked" at each measurement. "Normalized" means the star's own typical brightness is set to a baseline of zero, so every value in the table is reported as a tiny parts-per-million (ppm) deviation above (+) or below (&minus;) that baseline &mdash; the same idea as reporting a temperature as "+2&deg; above normal" instead of the raw thermometer reading. The four points inside the suspected transit window are marked.</p>
+      <div class="chartwrap">
+        <svg id="lcChart" viewBox="0 0 640 260" role="img" aria-label="Scatter plot of the candidate's 20 flux measurements over the night, with the naive line of best fit"></svg>
+        <div class="cap">Time step (15-minute cadence) vs. flux deviation (ppm). Red points are the suspected transit window (t = 8&ndash;11). Gold line: the naive line of best fit through the 16 out-of-transit points (D2) &mdash; notice how it systematically over/under-shoots the curved drift.</div>
+      </div>
+      <div class="chartwrap">
+        <svg id="residChartDiagram" viewBox="0 0 640 120" role="img" aria-label="Diagram contrasting a linear trend line with a non-linear curved trend"></svg>
+        <div class="cap">Why "non-linear" matters for D2: a straight line (left) assumes a constant rate of change; this night's actual drift (right) curves, so a straight-line fit's residuals are not evenly spread &mdash; build your own version of this comparison using Appendix A's 16 out-of-transit points.</div>
+      </div>
+      <table id="apxA">
+        <thead><tr><th>Time step (t)</th><th>Minutes elapsed</th><th>Flux (ppm deviation)</th><th>In transit?</th></tr></thead>
+        <tbody id="apxABody">
+          <tr><td>0</td><td>0</td><td class="num">+127</td><td></td></tr>
+          <tr><td>1</td><td>15</td><td class="num">+128</td><td></td></tr>
+          <tr><td>2</td><td>30</td><td class="num">-12</td><td></td></tr>
+          <tr><td>3</td><td>45</td><td class="num">-40</td><td></td></tr>
+          <tr><td>4</td><td>60</td><td class="num">+9</td><td></td></tr>
+          <tr><td>5</td><td>75</td><td class="num">+68</td><td></td></tr>
+          <tr><td>6</td><td>90</td><td class="num">-17</td><td></td></tr>
+          <tr><td>7</td><td>105</td><td class="num">-112</td><td></td></tr>
+          <tr class="hi"><td>8</td><td>120</td><td class="num">-257</td><td>TRANSIT</td></tr>
+          <tr class="hi"><td>9</td><td>135</td><td class="num">-221</td><td>TRANSIT</td></tr>
+          <tr class="hi"><td>10</td><td>150</td><td class="num">-167</td><td>TRANSIT</td></tr>
+          <tr class="hi"><td>11</td><td>165</td><td class="num">-215</td><td>TRANSIT</td></tr>
+          <tr><td>12</td><td>180</td><td class="num">-68</td><td></td></tr>
+          <tr><td>13</td><td>195</td><td class="num">-51</td><td></td></tr>
+          <tr><td>14</td><td>210</td><td class="num">-17</td><td></td></tr>
+          <tr><td>15</td><td>225</td><td class="num">-50</td><td></td></tr>
+          <tr><td>16</td><td>240</td><td class="num">+9</td><td></td></tr>
+          <tr><td>17</td><td>255</td><td class="num">+46</td><td></td></tr>
+          <tr><td>18</td><td>270</td><td class="num">+146</td><td></td></tr>
+          <tr><td>19</td><td>285</td><td class="num">+83</td><td></td></tr>
+        </tbody>
+      </table>
+      <p class="side-note">This exact night's data is a stated Modeling Assumption (MA1) &mdash; no survey publishes a specific still-unconfirmed candidate's raw pipeline output. Bounded by real published photometric-precision figures for a bright target (Appendix C, S1). For scale: a real confirmed transiting planet, HD 189733 b, produces a dip of roughly 24,000 ppm &mdash; about 100&times; larger than this candidate's dip (Appendix C, S5).</p>
+    </div>
+  </details>
+
+  <details id="apx-b">
+    <summary>Appendix B &mdash; Two Significance Reads and the Follow-Up Threshold</summary>
+    <div class="inner">
+      <p><strong>Method 1 &mdash; the naive line of best fit read.</strong> Fit a straight line to the 16 out-of-transit points. Take the <strong>sample standard deviation</strong> of those 16 points' residuals from the line &mdash; divide the sum of squared residuals by (16 &minus; 1) = 15, then take the square root (the same "divide by n&minus;1" convention your calculator's stdev function uses by default, not a population or regression-standard-error version) &mdash; as "one unit of noise." Extend the line into the transit window and measure the dip against it: <strong>the dip depth is the line's predicted value at the midpoint of the transit window (t=9.5) minus the average (mean) of the four in-transit flux values</strong>, then divide that dip depth by the noise unit above.</p>
+      <p><strong>Method 2 &mdash; the distribution-aware box-and-whisker read.</strong> Find the five-number summary of the 16 out-of-transit points, using the <strong>linear-interpolation method</strong> for Q1 and Q3 (the same method spreadsheet software's PERCENTILE.INC function uses by default, not the "split the data in half and take the median of each half" method). Estimate "one unit of noise" as 0.7413 &times; the interquartile range built from the data's quartiles (0.7413 &asymp; 1 &divide; 1.349, where 1.349 is how many standard deviations apart Q1 and Q3 sit for a normal, bell-shaped distribution &mdash; a standard conversion from IQR to a standard-deviation-comparable spread). Measure the dip against the out-of-transit median: <strong>the dip depth is the out-of-transit median minus the average (mean) of the four in-transit flux values</strong>, then divide that dip depth by the noise unit above.</p>
+      <p><strong>Why they can disagree:</strong> the night's drift is curved, non-linear, not straight &mdash; a straight-line fit through a curved pattern systematically misses low or high in places, which can inflate or deflate the leftover residual noise depending on exactly where the transit falls. The box-and-whisker read never tries to model the shape of the drift at all.</p>
+      <div class="chartwrap">
+        <svg id="bwChart" viewBox="0 0 640 140" role="img" aria-label="Box and whisker plot of the 16 out-of-transit flux points"></svg>
+        <div class="cap">Box-and-whisker five-number summary of the 16 out-of-transit points (Method 2's own worked example — build yours from the data, then check it against this shape).</div>
+      </div>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Sable Peak Survey's follow-up significance threshold (MA2)</td><td class="num">3.0&sigma;</td></tr>
+        </tbody>
+      </table>
+      <p class="side-note">The 3.0 threshold is Sable Peak's own internal "worth a second look" bar &mdash; not a discovery claim, and set well below Kepler's real, formal 7.1&sigma; discovery bar (Appendix C, S2), since a follow-up night only adds more evidence rather than announcing a discovery.</p>
+    </div>
+  </details>
+
+  <details id="apx-c">
+    <summary>Appendix C &mdash; Why This Distinction Is Real</summary>
+    <div class="inner">
+      <p><strong>Real surveys set formal significance bars far above 3.0.</strong> NASA's Kepler mission flagged a "Threshold Crossing Event" only once a candidate's combined detection statistic &mdash; the same kind of significance ratio this case computes, just built from many nights of data stacked together instead of one &mdash; exceeded <strong>7.1 standard deviations</strong> &mdash; chosen so the pipeline's roughly 17 million statistical trials (each time the pipeline checked one star's data for a possible signal counts as one trial; run millions of trials and even pure random noise will occasionally look like a signal somewhere by chance) were expected to produce only about one false alarm from random noise alone [S2].</p>
+      <p><strong>Real photometric noise, at this brightness range, really is in this ballpark.</strong> NASA's TESS mission was designed to reach 200 parts-per-million precision in a one-hour bin at TESS magnitude 10, with in-flight performance later found even better for the brightest stars [S1]. This case's noise level (point-to-point scatter of roughly 50&ndash;130 ppm) is consistent with a bright target on a smaller, ground-based telescope.</p>
+      <p><strong>Public data-sharing tools like the ones Ingrid's team would actually use are real and currently live.</strong> AAVSO, founded in 1911, is the largest variable-star-observer organization in the world and maintains a shared, publicly contributed observation database [S3]. NASA's Exoplanet Archive is the standard public repository for confirmed-planet parameters and light curves [S4, S5].</p>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p>These figures are <strong>not sourced from an external publisher</strong> &mdash; they are stated scenario assumptions. A Hero may challenge them in discussion.</p>
+      <table>
+        <thead><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr></thead>
+        <tbody>
+          <tr><td>MA1</td><td>The candidate's full 20-point overnight light curve</td><td>See Appendix A</td><td>No survey publishes a specific still-unconfirmed candidate's raw pipeline output; noise scale bounded by TESS's published precision [S1], dip size set ~100&times; below a real confirmed transit [S5].</td></tr>
+          <tr><td>MA2</td><td>Sable Peak's own follow-up significance threshold</td><td class="num">3.0</td><td>No public survey policy states any specific survey's own internal bar; set well below Kepler's real 7.1&sigma; discovery threshold [S2].</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Exoplanet-Survey Vocabulary</h3>
+    <p>This case uses real observational-astronomy and survey-operations terms. Hover any term below for a plain-English definition; click it to open a real source.</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Links verified working 2026-09-18.</p>
+  </div>
+
+  <details open id="apx-glossary">
+    <summary>Appendix E &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <details id="apx-sources">
+    <summary>Sources</summary>
+    <div class="inner">
+      <ul class="src-list">
+        <li>[S1] Photometry of 10 Million Stars from the First Two Years of TESS Full Frame Images: Part II &mdash; Research Notes of the AAS, Nov 2020. TESS's 200 ppm/hr precision design target at T=10.</li>
+        <li>[S2] Tenenbaum et al., "Detection of Potential Transit Signals in the First Twelve Quarters of Kepler Mission Data," arXiv:1212.2915, Dec 2012. Kepler's real 7.1&sigma; detection cutoff.</li>
+        <li>[S3] Wikipedia &mdash; American Association of Variable Star Observers. AAVSO's founding/scale (secondary source, qualitative use only).</li>
+        <li>[S4] NASA Exoplanet Archive. Standard public confirmed-exoplanet database.</li>
+        <li>[S5] NASA Exoplanet Archive &mdash; HD 189733 b overview page. Real transit depth (~2.4%) used for scale comparison.</li>
+      </ul>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Fit the trend (D2)</h4>
+    <div class="goal">Compute a line of best fit through the 16 out-of-transit points (by hand, spreadsheet, or Desmos). Enter your line's slope and intercept.</div>
+    <div class="fieldrow"><label for="s1m">Slope (ppm per time step)</label><input type="number" id="s1m" step="any" placeholder="a decimal"><span class="fb" id="fb1"></span></div>
+    <div class="fieldrow"><label for="s1c">Intercept (ppm)</label><input type="number" id="s1c" step="any" placeholder="a decimal"></div>
+    <button onclick="checkStep1()">Check</button>
+    <div class="fieldrow" id="s1out" style="margin-top:8px"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Naive significance ratio (D3)</h4>
+    <div class="goal">Using your Step 1 line, the notebook computes the residual standard deviation of the 16 out-of-transit points and the dip depth automatically. Enter your own computed significance ratio to check it.</div>
+    <div class="fieldrow"><label for="s2sig">Your computed sig_naive</label><input type="number" id="s2sig" step="any" placeholder="dip ÷ residual SD"><span class="fb" id="fb2"></span></div>
+    <button onclick="checkStep2()">Check</button>
+    <div class="fieldrow" id="s2out" style="margin-top:8px"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Distribution-aware significance ratio (D4)</h4>
+    <div class="goal">Find Q1 and Q3 of the 16 out-of-transit points by hand, then enter them here along with your computed significance ratio.</div>
+    <div class="fieldrow"><label for="s3q1">Q1 (ppm)</label><input type="number" id="s3q1" step="any"></div>
+    <div class="fieldrow"><label for="s3q3">Q3 (ppm)</label><input type="number" id="s3q3" step="any"></div>
+    <div class="fieldrow"><label for="s3sig">Your computed sig_robust</label><input type="number" id="s3sig" step="any" placeholder="dip ÷ robust noise unit"><span class="fb" id="fb3"></span></div>
+    <button onclick="checkStep3()">Check</button>
+    <div class="fieldrow" id="s3out" style="margin-top:8px"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Compare to the threshold (D5)</h4>
+    <div class="goal">Given your two significance ratios above and Appendix B's 3.0 threshold, what do you conclude?</div>
+    <div class="fieldrow">
+      <label for="s4pattern">Pattern found</label>
+      <select id="s4pattern">
+        <option value="">-- choose --</option>
+        <option value="both-clear">Both methods clear 3.0</option>
+        <option value="both-miss">Both methods miss 3.0</option>
+        <option value="disagree">The methods disagree</option>
+      </select>
+    </div>
+    <p class="side-note">This step is not machine-graded &mdash; it's your judgment call, the same one Ingrid has to make. Use it to organize your D5 written recommendation.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-scope"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>The twist here isn't new data &mdash; it's a reveal. Ask the room: "Given ONLY the naive line-of-best-fit read, would you approve the slot?" Take the vote. Then show the box-and-whisker read side by side and ask what changed their mind, if anything.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Show both significance ratios side by side, computed live from Appendix A's data</label>
+      </div>
+      <div id="twistOut" style="margin-top:10px;font-family:var(--sans)"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] Research Notes of the AAS, "Photometry of 10 Million Stars from the First Two Years of TESS Full Frame Images: Part II," Nov 2020.</li>
+      <li>[S2] Tenenbaum et al., arXiv:1212.2915, Dec 2012.</li>
+      <li>[S3] Wikipedia &mdash; American Association of Variable Star Observers.</li>
+      <li>[S4, S5] NASA Exoplanet Archive.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Marginal Detection &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from
+   cases/the-marginal-detection/case.json (sha256 of case.md:
+   6317cceafd7db5f9... — see QA_REPORT.md for the full hash).
+   ================================================================ */
+const FLUX = [127,128,-12,-40,9,68,-17,-112,-257,-221,-167,-215,-68,-51,-17,-50,9,46,146,83];
+const TRANSIT_IDX = [8,9,10,11];
+const MINUTES = FLUX.map((_,i)=>i*15);
+const THRESHOLD = 3.0;
+
+function ootIndices(){ return FLUX.map((_,i)=>i).filter(i=>!TRANSIT_IDX.includes(i)); }
+
+function residSD(m,c){
+  const oot = ootIndices();
+  const resid = oot.map(i => FLUX[i] - (m*i+c));
+  const mean = resid.reduce((a,b)=>a+b,0)/resid.length;
+  const varr = resid.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(resid.length-1);
+  return Math.sqrt(varr);
+}
+function naiveDip(m,c){
+  const lineAtTransit = TRANSIT_IDX.map(i=>m*i+c);
+  const meanLine = lineAtTransit.reduce((a,b)=>a+b,0)/lineAtTransit.length;
+  const meanTransit = TRANSIT_IDX.map(i=>FLUX[i]).reduce((a,b)=>a+b,0)/TRANSIT_IDX.length;
+  return meanLine - meanTransit;
+}
+function sigNaive(m,c){ return naiveDip(m,c)/residSD(m,c); }
+
+function percentile(sorted,p){
+  const n=sorted.length;
+  if(n===1) return sorted[0];
+  const k=(n-1)*(p/100), f=Math.floor(k), cIdx=Math.min(f+1,n-1);
+  if(f===cIdx) return sorted[f];
+  return sorted[f]+(sorted[cIdx]-sorted[f])*(k-f);
+}
+function median(sorted){
+  const n=sorted.length, mid=Math.floor(n/2);
+  return n%2 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2;
+}
+function sigRobust(q1,q3){
+  const oot = ootIndices().map(i=>FLUX[i]).sort((a,b)=>a-b);
+  const iqr = q3-q1;
+  const robustSigma = 0.7413*iqr;
+  const med = median(oot);
+  const meanTransit = TRANSIT_IDX.map(i=>FLUX[i]).reduce((a,b)=>a+b,0)/TRANSIT_IDX.length;
+  const dip = med - meanTransit;
+  return dip/robustSigma;
+}
+// The case's own best-fit line and quartiles, for Step-1/3 tolerance checks only
+// (never printed as a literal verdict — used inside computation, per MCS-37).
+function trueBestFit(){
+  const oot = ootIndices();
+  const n=oot.length, meanX=oot.reduce((a,b)=>a+b,0)/n, meanY=oot.map(i=>FLUX[i]).reduce((a,b)=>a+b,0)/n;
+  let num=0,den=0;
+  oot.forEach(i=>{ num += (i-meanX)*(FLUX[i]-meanY); den += (i-meanX)*(i-meanX); });
+  const m = num/den, c = meanY - m*meanX;
+  return {m,c};
+}
+function trueQuartiles(){
+  const oot = ootIndices().map(i=>FLUX[i]).sort((a,b)=>a-b);
+  return {q1: percentile(oot,25), q3: percentile(oot,75)};
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title,'Heroes Academy Math Builder case study','','Sources:',...srcLis,'',location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = safeStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = safeStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = safeStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Appendix A table + scatter chart render.
+   ================================================================ */
+function renderApxA(){
+  // The data table itself (#apxABody) is authored as STATIC markup above, per the
+  // interactive-shell contract ("write appendix tables as normal <table> markup") --
+  // this function only draws the charts derived from that same FLUX array, so a
+  // reader who never executes this script (a text/plain-text extraction, e.g. a
+  // printed packet or a cold-read tool) still sees every real data value.
+  const svg = document.getElementById('lcChart');
+  const W=640,H=260,padL=48,padR=14,padT=14,padB=34;
+  const xs = MINUTES, ys = FLUX;
+  const xmin=Math.min(...xs), xmax=Math.max(...xs);
+  const ymin=Math.min(...ys), ymax=Math.max(...ys);
+  const xScale = x => padL + (x-xmin)/(xmax-xmin)*(W-padL-padR);
+  const yScale = y => H-padB - (y-ymin)/(ymax-ymin)*(H-padT-padB);
+  let svgEls = `<line class="lc-axis" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}"/>`;
+  svgEls += `<line class="lc-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}"/>`;
+  svgEls += `<text x="${W/2}" y="${H-6}" font-size="10" text-anchor="middle" fill="#5b6472">Minutes elapsed</text>`;
+  svgEls += `<text x="12" y="${H/2}" font-size="10" text-anchor="middle" fill="#5b6472" transform="rotate(-90 12 ${H/2})">Flux (ppm)</text>`;
+  ys.forEach((y,i)=>{
+    const cls = TRANSIT_IDX.includes(i) ? 'lc-dot transit' : 'lc-dot';
+    svgEls += `<circle class="${cls}" cx="${xScale(xs[i]).toFixed(1)}" cy="${yScale(y).toFixed(1)}" r="4"/>`;
+  });
+  // D2 — the case's own best-fit line through the 16 out-of-transit points,
+  // drawn across the full night so a reader can see where it over/under-shoots
+  // the curved drift (a real worked example for the D2 deliverable, not a
+  // pre-computed verdict — the line's slope/intercept are geometry, not the
+  // balance_test answer).
+  const truth = trueBestFit();
+  const x0 = xmin, x1 = xmax;
+  const y0 = truth.m*(x0/15) + truth.c, y1 = truth.m*(x1/15) + truth.c;
+  svgEls += `<line class="lc-line" x1="${xScale(x0).toFixed(1)}" y1="${yScale(y0).toFixed(1)}" x2="${xScale(x1).toFixed(1)}" y2="${yScale(y1).toFixed(1)}"/>`;
+  svg.innerHTML = svgEls;
+
+  // D4 — box-and-whisker plot of the 16 out-of-transit points (a real worked
+  // example of the five-number summary, not the case's answer key).
+  const bw = document.getElementById('bwChart');
+  if(bw){
+    const oot = ootIndices().map(i=>FLUX[i]).sort((a,b)=>a-b);
+    const q = trueQuartiles();
+    const bmin = oot[0], bmax = oot[oot.length-1], bmed = median(oot);
+    const BW=640,BH=140,bpadL=48,bpadR=14,bpadT=20,bpadB=30;
+    const bxScale = v => bpadL + (v-bmin)/(bmax-bmin)*(BW-bpadL-bpadR);
+    const midY = (BH-bpadT-bpadB)/2 + bpadT;
+    let b = `<line class="lc-axis" x1="${bpadL}" y1="${BH-bpadB}" x2="${BW-bpadR}" y2="${BH-bpadB}"/>`;
+    b += `<text x="${BW/2}" y="${BH-6}" font-size="10" text-anchor="middle" fill="#5b6472">Flux (ppm), 16 out-of-transit points</text>`;
+    // whiskers
+    b += `<line class="lc-axis" x1="${bxScale(bmin).toFixed(1)}" y1="${midY}" x2="${bxScale(q.q1).toFixed(1)}" y2="${midY}"/>`;
+    b += `<line class="lc-axis" x1="${bxScale(q.q3).toFixed(1)}" y1="${midY}" x2="${bxScale(bmax).toFixed(1)}" y2="${midY}"/>`;
+    b += `<line class="lc-axis" x1="${bxScale(bmin).toFixed(1)}" y1="${midY-10}" x2="${bxScale(bmin).toFixed(1)}" y2="${midY+10}"/>`;
+    b += `<line class="lc-axis" x1="${bxScale(bmax).toFixed(1)}" y1="${midY-10}" x2="${bxScale(bmax).toFixed(1)}" y2="${midY+10}"/>`;
+    // box
+    b += `<rect x="${bxScale(q.q1).toFixed(1)}" y="${midY-18}" width="${(bxScale(q.q3)-bxScale(q.q1)).toFixed(1)}" height="36" fill="#eef3f8" stroke="#1a3a5c" stroke-width="1.5"/>`;
+    b += `<line x1="${bxScale(bmed).toFixed(1)}" y1="${midY-18}" x2="${bxScale(bmed).toFixed(1)}" y2="${midY+18}" stroke="#c9a227" stroke-width="2.5"/>`;
+    bw.innerHTML = b;
+  }
+
+  // Small illustrative diagram: a straight (linear) trend vs. a curved
+  // (non-linear, quadratic-shaped) trend, side by side -- grounds the D2
+  // "why is this non-linear" written judgment with an actual picture, not
+  // just prose. Purely illustrative (arbitrary sample curve shape), not a
+  // re-plot of Appendix A's real numbers, so it never doubles as an answer.
+  const rd = document.getElementById('residChartDiagram');
+  if(rd){
+    let d = '';
+    const drawAxes = (ox) => {
+      d += `<line class="lc-axis" x1="${ox+10}" y1="100" x2="${ox+280}" y2="100"/>`;
+      d += `<line class="lc-axis" x1="${ox+10}" y1="10" x2="${ox+10}" y2="100"/>`;
+    };
+    drawAxes(10);
+    d += `<line class="lc-line" x1="20" y1="85" x2="280" y2="25"/>`;
+    d += `<text x="150" y="112" font-size="10" text-anchor="middle" fill="#5b6472">Linear trend</text>`;
+    drawAxes(340);
+    let path = 'M 350 30 ';
+    for(let px=350; px<=610; px+=10){
+      const t = (px-480)/60;
+      const y = 55 + 28*t*t/6 - 2;
+      path += `L ${px} ${Math.max(12,Math.min(95,y))} `;
+    }
+    d += `<path class="lc-line" d="${path}" fill="none"/>`;
+    d += `<text x="480" y="112" font-size="10" text-anchor="middle" fill="#5b6472">Non-linear (curved) trend</text>`;
+    rd.innerHTML = d;
+  }
+}
+renderApxA();
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  const m = parseFloat(val('s1m')), c = parseFloat(val('s1c'));
+  if(isNaN(m) || isNaN(c)){ fb('fb1', false); return; }
+  const truth = trueBestFit();
+  const ok = near(m, truth.m, Math.abs(truth.m)*0.35 + 0.05) && near(c, truth.c, Math.abs(truth.c)*0.35 + 3);
+  fb('fb1', ok);
+  const rsd = residSD(m,c);
+  document.getElementById('s1out').innerHTML =
+    `<span class="side-note">Your line's residual standard deviation over the 16 out-of-transit points: <strong>${round(rsd,2)} ppm</strong>. Use this in Step 2.</span>`;
+}
+function checkStep2(){
+  const m = parseFloat(val('s1m')), c = parseFloat(val('s1c'));
+  const claimed = parseFloat(val('s2sig'));
+  if(isNaN(m) || isNaN(c) || isNaN(claimed)){ fb('fb2', false); return; }
+  const actual = sigNaive(m,c);
+  fb('fb2', near(claimed, actual, 0.15));
+  document.getElementById('s2out').innerHTML =
+    `<span class="side-note">Computed live from your Step 1 line: dip ${round(naiveDip(m,c),1)} ppm &divide; residual SD ${round(residSD(m,c),2)} ppm.</span>`;
+}
+function checkStep3(){
+  const q1 = parseFloat(val('s3q1')), q3 = parseFloat(val('s3q3'));
+  const claimed = parseFloat(val('s3sig'));
+  if(isNaN(q1) || isNaN(q3) || isNaN(claimed)){ fb('fb3', false); return; }
+  const truthQ = trueQuartiles();
+  const q1ok = near(q1, truthQ.q1, 8), q3ok = near(q3, truthQ.q3, 8);
+  const actual = sigRobust(q1,q3);
+  const ok = q1ok && q3ok && near(claimed, actual, 0.15);
+  fb('fb3', ok);
+  document.getElementById('s3out').innerHTML =
+    `<span class="side-note">IQR = Q3 &minus; Q1 = ${round(q3-q1,1)} ppm; 0.7413&times;IQR = ${round(0.7413*(q3-q1),2)} ppm.</span>`;
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const _memStore = new Map();
+const safeStorage = {
+  getItem(k){ try { return localStorage.getItem(k); } catch(e){ return _memStore.has(k) ? _memStore.get(k) : null; } },
+  setItem(k,v){ try { localStorage.setItem(k,v); } catch(e){ _memStore.set(k, String(v)); } },
+};
+const CASE_ID = "the-marginal-detection";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) safeStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = safeStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1","Scatter plot of all 20 flux points, transit window marked","Plot Appendix A"],
+  ["D2","Line of best fit through the 16 out-of-transit points + correlation/non-linear judgment","Fit + interpret"],
+  ["D3","Naive significance ratio vs. the 3.0 threshold","Line-fit residual SD"],
+  ["D4","Box-and-whisker plot + distribution-aware significance ratio + outlier check","Five-number summary"],
+  ["D5","Written recommendation naming both ratios and explaining the disagreement",""]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,process])=>{
+    const checked = safeStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = safeStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${process ? `<div class="meta" style="margin:2px 0 6px">${process}</div>` : ''}
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>safeStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = safeStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  safeStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ safeStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, allowlisted).
+   ================================================================ */
+const GLOSSARY = {
+  "Non-linear": {def: "A pattern in data that does not follow a straight line — it curves.",
+    url: "https://www.cuemath.com/calculus/nonlinear-functions/"},
+  "Outlier": {def: "A data point that falls far outside the overall pattern of the rest of the data.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics/mean-median-summarizing-center/a/outliers-review"},
+  "Scatter Plot": {def: "A graph that plots pairs of values as points, used to see the relationship between two variables.",
+    url: "https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data"},
+  "Correlation": {def: "A measure of how strongly two variables move together.",
+    url: "https://www.mathsisfun.com/data/correlation.html"},
+  "Quartiles": {def: "The three values that split ranked data into four equal-sized groups.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/box-whisker-plots/a/interquartile-range-review"},
+  "Line of Best Fit": {def: "A straight line drawn through a scatter plot that best approximates the data's trend.",
+    url: "https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data/eyeballing-the-line-of-best-fit/a/eyeballing-the-line-of-best-fit"},
+  "Box and Whisker Plot": {def: "A chart showing a data set's five-number summary: minimum, Q1, median, Q3, and maximum.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/box-whisker-plots/a/box-plot-review"},
+  "Mean": {def: "The \"average\": add up every value in a data set, then divide by how many values there are.",
+    url: "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-median-basics/a/mean-median-and-mode-review"},
+  "Residual": {def: "The vertical distance between a real data point and a fitted line — how far off the line's prediction was for that one point.",
+    url: "https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data/residuals-least-squares-rsquared/a/introduction-to-residuals"},
+};
+const HOWTO = [
+  ["How to draw a line of best fit given a set of data", "Line of Best Fit"],
+  ["How to create a box and whisker plot given a set of data", "Box and Whisker Plot"],
+  ["How to create a scatter plot given a set of data", "Scatter Plot"],
+  ["How to identify correlation given a scatter plot or set of data", "Correlation"]
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — story/domain-vocabulary glossary (MCS-47), separate
+   from the math GLOSSARY above. Links verified live 2026-09-18.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Transit": {desc: "In astronomy, the passage of a smaller body (like a planet) directly between an observer and a larger body (like a star), causing a small, temporary dip in the star's observed brightness.",
+    link: "https://en.wikipedia.org/wiki/Methods_of_detecting_exoplanets"},
+  "Light Curve": {desc: "A graph of an object's brightness over time — the basic dataset a transit search is built from.",
+    link: "https://en.wikipedia.org/wiki/Light_curve"},
+  "Exoplanet": {desc: "A planet that orbits a star other than the Sun.",
+    link: "https://en.wikipedia.org/wiki/Exoplanet"},
+  "Photometric": {desc: "Relating to photometry — the measurement of the brightness (flux) of an astronomical object.",
+    link: "https://en.wikipedia.org/wiki/Photometry_(astronomy)"},
+  "Pipeline": {desc: "In data science and astronomy, an automated sequence of processing steps that turns raw measurements into flagged results, run without a human doing each step by hand.",
+    link: "https://en.wikipedia.org/wiki/Data_pipeline"},
+  "Kepler Mission": {desc: "A real NASA space telescope (2009–2018) that searched for transiting exoplanets and set a formal statistical bar for what counted as a real detection.",
+    link: "https://en.wikipedia.org/wiki/Kepler_space_telescope"},
+  "Signal-to-Noise": {desc: "A measure of how much a real signal stands out above the random background noise in a measurement — the same idea behind this case's significance ratio.",
+    link: "https://en.wikipedia.org/wiki/Signal-to-noise_ratio"},
+  "Magnitude": {desc: "The astronomy scale for how bright a star looks. Lower numbers are BRIGHTER stars — it runs backward from what you'd expect. \"TESS magnitude 10\" just names one specific brightness level used to report a precision figure.",
+    link: "https://en.wikipedia.org/wiki/Apparent_magnitude"},
+  "Statistical Trials": {desc: "Every time a survey checks one star's data for a possible signal, that's one \"trial.\" Run millions of trials and pure random noise will eventually look like a signal somewhere by chance — which is why a real discovery needs a very high bar, not just \"looks unusual.\"",
+    link: "https://en.wikipedia.org/wiki/Multiple_comparisons_problem"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const box = document.getElementById('twistOut');
+  const apply = document.getElementById('applyTwist').checked;
+  if(!apply){ box.innerHTML=''; return; }
+  const truth = trueBestFit(), q = trueQuartiles();
+  const sn = round(sigNaive(truth.m, truth.c),3);
+  const sr = round(sigRobust(q.q1, q.q3),3);
+  box.innerHTML = `<div class="row" style="display:flex;justify-content:space-between;border-bottom:1px solid #444;padding:6px 0">
+      <span>Naive (line-of-best-fit) significance</span><strong>${sn}</strong></div>
+    <div class="row" style="display:flex;justify-content:space-between;padding:6px 0">
+      <span>Robust (box-and-whisker) significance</span><strong>${sr}</strong></div>
+    <p style="margin-top:10px">Threshold is 3.0. Which one do you trust, and why?</p>`;
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

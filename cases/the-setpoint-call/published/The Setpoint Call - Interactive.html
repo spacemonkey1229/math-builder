@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Setpoint Call — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md
+  (A7, DOCTRINE_LEDGER MCS-37/MCS-39). CASE-AGNOSTIC shell mechanics unchanged; CASE-SPECIFIC
+  content filled below for cases/the-setpoint-call. case.md sha256 as of this build:
+  d61706b78d4eb8db73e4b2172eab7fa67811e025447aaa00804f36210ef13d96 (case.json.qa.case_md_sha256).
+
+  HARD LINE (MCS-37): this file must never print the case's balance verdict (total cost per
+  bottle for either path, margin_pct, which option wins) as a static literal anywhere outside
+  a <script> tag's live computation. The Working Notebook computes everything from PARAMS; it
+  never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ---- story/domain glossary (MCS-47) — .sterm, distinct field shape
+         (desc/link) from the math GLOSSARY (def/url) above ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted #7a8ca3;cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:#eef3f8}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted #7a8ca3;
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* CASE-SPECIFIC — gauge dial banner */
+  .gauge-caption{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. Keep id="ha-logo" and
+     id="icon-check"; add a case-specific gauge icon for the twist
+     heading and the banner diagram.
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <!-- CASE-SPECIFIC: speed gauge (twist heading + banner) -->
+  <symbol id="icon-gauge" viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 1 9-9"/><path d="M12 12l5-3"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Adventure</div>
+        <h1>Case Study: The Setpoint Call</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">HS</span>
+      <span class="pill">Calculus &middot; Derivatives &amp; Optimization</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+
+  <figure>
+    <svg viewBox="0 0 700 190" role="img" aria-labelledby="bannerTitle" aria-label="diagram" class="case-diagram">
+      <title id="bannerTitle">A speed gauge with a needle pinned at the current rated ceiling, and a dotted marker further around the dial showing where the cost math says the needle should sit</title>
+      <rect x="0" y="0" width="700" height="190" fill="#eef3f8"/>
+      <g transform="translate(150,95)">
+        <circle cx="0" cy="0" r="72" fill="#20262e"/>
+        <circle cx="0" cy="0" r="60" fill="#fff"/>
+        <path d="M -42 30 A 60 60 0 1 1 42 30" fill="none" stroke="#dfe4ea" stroke-width="10"/>
+        <path d="M -42 30 A 60 60 0 0 1 -6 -59.7" fill="none" stroke="#1f7a4d" stroke-width="10"/>
+        <!-- needle pinned at current rated ceiling -->
+        <line x1="0" y1="0" x2="-30" y2="-18" stroke="#a3312a" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="0" cy="0" r="5" fill="#1a3a5c"/>
+        <!-- dotted marker further around the dial for the calculus optimum -->
+        <line x1="0" y1="0" x2="40" y2="-46" stroke="#c9a227" stroke-width="2.5" stroke-dasharray="3,3"/>
+        <text x="-70" y="52" font-family="sans-serif" font-size="9" fill="#5b6472">rated ceiling</text>
+        <text x="34" y="-52" font-family="sans-serif" font-size="9" fill="#8a6d0c">r*</text>
+      </g>
+      <text x="330" y="66" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">Which speed setpoint</text>
+      <text x="330" y="88" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">actually costs less per</text>
+      <text x="330" y="110" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">bottle -- the one the</text>
+      <text x="330" y="132" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">math wants, or the one</text>
+      <text x="330" y="154" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">the guarding allows?</text>
+    </svg>
+    <figcaption class="gauge-caption">An original diagram for this case: Line 3's speed dial, its current legal ceiling in red, and the calculus-derived cost-minimizing speed the guarding doesn't yet clear it for, in gold (SEE APPENDIX A, APPENDIX B).</figcaption>
+  </figure>
+
+  <p class="lede">The label applicator on Line 3 hums at its usual clip, and Marisol Feng watches from the catwalk as cases stack up at the palletizer below, half her attention already on the spreadsheet glowing on her tablet. The plant just landed the biggest co-packing contract in its history &mdash; a national sports-drink brand, every bottle running through this exact line &mdash; and somebody upstairs wants a speed number by the end of her shift.</p>
+  <p>Her tablet has two tabs open. One is a quote from the guarding contractor: new interlocked panels, sensor curtains, the whole retrofit Line 3 would need to legally run faster than it does today. The other is her own derivative, half-finished, chasing the exact speed where cost per bottle bottoms out before climbing again. That speed keeps landing past the line's current rated ceiling &mdash; which means the contractor's quote isn't optional if she wants to actually reach it.</p>
+  <p>Her shift lead leans over the rail. &ldquo;Corporate needs the speed setpoint locked before the contract's first production week. Not next week &mdash; this week.&rdquo; Marisol nods without looking up. Below her, the labeler spins bottle after bottle past its glue wheel, steady, ordinary, waiting on a number she hasn't found the courage to write down yet.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+
+  <p>Marisol Feng is the process engineer responsible for Line 3 at Bellcross Bottling, a <a class="sterm" data-sterm="Co-Packer" href="https://en.wikipedia.org/wiki/Co-packer" target="_blank" rel="noopener">contract manufacturer<span class="tip">A company that packages products for its clients, under the client's own brand.<span class="go">Open a source on this &rarr;</span></span></a> that fills and labels beverages under other companies' brands. Bellcross itself owns and runs Line 3's equipment; the sports-drink brand owns the drink's recipe and label design and pays Bellcross a fee for every bottle Bellcross fills, labels, and ships &mdash; the brand never touches the machinery. Bellcross has just signed a multi-month exclusive co-packing agreement with that national sports-drink brand, and every bottle in that agreement will run on Line 3's <a class="sterm" data-sterm="Rotary Labeler" href="https://en.wikipedia.org/wiki/Bottling_line" target="_blank" rel="noopener">rotary labeler<span class="tip">A labeling machine whose bottles ride a rotating turret past a fixed glue/label-applying station as the turret turns -- the standard way high-speed bottling lines apply labels.<span class="go">Open a source on this &rarr;</span></span></a>, a machine that carries bottles around a spinning carousel and glues a label onto each one as it passes a fixed applicator station. Marisol is accountable for setting the line's operating speed for the life of the contract &mdash; a single number that determines the plant's cost per bottle for months to come (SEE APPENDIX A).</p>
+  <p>Line 3's labeler currently runs no faster than its manufacturer-rated, ANSI/PMMI-compliant maximum safe speed &mdash; the ceiling set by the machine's existing <a class="sterm" data-sterm="Machine Guarding" href="https://en.wikipedia.org/wiki/Machine_guarding" target="_blank" rel="noopener">guarding<span class="tip">A safety feature -- a shield or device -- covering hazardous areas of a machine to prevent contact with moving parts.<span class="go">Open a source on this &rarr;</span></span></a> and <a class="sterm" data-sterm="Interlock" href="https://en.wikipedia.org/wiki/Interlock_(engineering)" target="_blank" rel="noopener">interlock<span class="tip">A device that keeps a machine from operating until its guards are in place or required conditions are met.<span class="go">Open a source on this &rarr;</span></span></a> configuration (SEE APPENDIX B). Running faster than that ceiling without matching guarding upgrades is not just inadvisable, it is a documented machine-safety-standard violation. Marisol and her shift lead have started calling the choice by its two paths. <strong>The Guarding Upgrade</strong> means paying a contractor now to install the additional interlocked guarding the safety standard requires to legally clear Line 3 for a higher operating speed &mdash; the speed Marisol's own cost model says minimizes cost per bottle &mdash; before the new contract's first production week begins (SEE APPENDIX C). <strong>The Rated Cap</strong> means leaving Line 3's guarding as it is and running the entire contract at the labeler's current rated ceiling &mdash; no retrofit, no capital outlay, but also no access to the lower cost per bottle the math says is possible above that ceiling (SEE APPENDIX B, APPENDIX C).</p>
+  <p>A faster line does not automatically mean a cheaper bottle, however: Line 3's cost per bottle depends on both how fast it runs and how much retrofit capital that speed required, spread across every bottle the new contract will actually produce (SEE APPENDIX C). The guarding contractor has exactly one install slot before the contract's first production week &mdash; a scheduled window in which the contractor's crew would take Line 3 fully offline to mount the new panels, guarding, and PLC and test them before handing the line back &mdash; and after that slot passes, the next available one is too late to matter for this decision. The vocabulary and &ldquo;how to&hellip;&rdquo; procedures this case will ask you to research are listed in (SEE APPENDIX E); every priced or sourced figure is documented in the Sources list in the footer below.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Marisol Feng. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Guarding Upgrade</h4>
+      <p style="margin:0">Fund the guarding/interlock retrofit now to legally clear Line 3 for the calculus-derived cost-minimizing speed.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Rated Cap</h4>
+      <p style="margin:0">Hold Line 3 at its current rated maximum safe speed for the life of the contract, with no capital outlay.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix E. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which path you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a total-cost-per-bottle function TC(r), where r is Line 3's operating speed in bottles per minute, built from Appendix A's cost-rate-per-minute function CR(r) and time-per-bottle function MPU(r) as TC(r) = CR(r) &times; MPU(r), showing how you built each factor before multiplying; <strong>D2</strong> using the product rule (and the power rule where a factor contains a 1/r term), differentiate TC(r), set TC&prime;(r) = 0, and solve algebraically for the speed r* that minimizes cost per bottle, showing every step including which terms cancel; <strong>D3</strong> using both the first derivative test and a concavity (second-derivative) check, confirm r* is a genuine local minimum and not a local maximum, and state (in your own words) whether TC(r) actually has a local maximum for r &gt; 0; <strong>D4</strong> a check of r* against Appendix B's rated safe-speed ceiling &mdash; state whether the unconstrained optimum is legally reachable, then evaluate TC(r) at both r* and the rated ceiling; <strong>D5</strong> a total-cost-per-bottle comparison over the life of the contract for both real paths &mdash; The Guarding Upgrade's TC(r*) plus Appendix C's retrofit cost spread over Appendix C's contract volume, versus The Rated Cap's TC at the rated ceiling with no retrofit cost &mdash; stating which path has the lower true cost per bottle, in dollars and as a percent; and <strong>D6</strong> an original visual display (a graph of TC(r), built in Desmos or by hand, or an equivalent chart) showing cost per bottle versus line speed, with r* and the rated ceiling both labeled.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apxA">
+    <summary>Appendix A &mdash; Line 3's Cost Structure</summary>
+    <div class="inner">
+      <p class="apxnote">The two factors that combine into Line 3's total cost per bottle, TC(r), where r is the line's operating speed in bottles per minute. Referenced from Background and Dilemma; forces Challenge 3 (D1, D2, D3).</p>
+      <table id="tblApxA">
+        <tr><th>&nbsp;</th><th>Value</th></tr>
+        <tr><td>Base cost rate to operate Line 3, independent of speed &mdash; attendant labor (fully burdened, meaning the <a class="sterm" data-sterm="Labor Burden" href="https://www.rippling.com/blog/labor-burden" target="_blank" rel="noopener">labor burden<span class="tip">The true cost of an employee to an employer -- base wage plus payroll taxes, benefits, and workers' compensation -- expressed as a multiplier on wage.<span class="go">Open a source on this &rarr;</span></span></a> is already added on top of the base wage) plus baseline utilities/compressed air draw ($ per minute) &mdash; the constant <em>a</em> in CR(r) = a + b&middot;r</td><td class="num">$0.90/min (labor+burden $0.45/min from [S1]+[S2]/MA2; baseline utility draw $0.45/min, MA1)</td></tr>
+        <tr><td>Incremental cost rate per unit of speed increase &mdash; additional power draw, mechanical wear, and defect/rework cost per added bottle-per-minute of speed ($ per (bottle/min)), the coefficient <em>b</em> in CR(r) = a + b&middot;r</td><td class="num">$0.0004/(bottle/min) (MA3, informed by [S3]'s industrial electricity price)</td></tr>
+        <tr><td>Fixed downstream handling time per bottle &mdash; final case-packing/palletizing time that does not depend on labeler speed (minutes per bottle), the constant <em>d</em> in MPU(r) = 1/r + d</td><td class="num">0.02 min/bottle (MA4)</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apxB">
+    <summary>Appendix B &mdash; Line 3's Rated Speed and the Safety Standard</summary>
+    <div class="inner">
+      <p class="apxnote">The speed ceiling Line 3 cannot legally exceed without additional guarding, and the standard that sets it. Referenced from Background and Dilemma; forces Challenge 3 (D3, D4, D6).</p>
+      <table id="tblApxB">
+        <tr><th>&nbsp;</th><th>Value</th></tr>
+        <tr><td>Line 3's current manufacturer-rated maximum safe operating speed, at its existing guarding/interlock configuration (bottles per minute)</td><td class="num">150 bottles/min (MA5, within the 100&ndash;500 bpm industry range for rotary labelers [S4])</td></tr>
+        <tr><td>The machine-guarding safety standard requiring a <a class="sterm" data-sterm="Risk Assessment" href="https://en.wikipedia.org/wiki/Risk_assessment" target="_blank" rel="noopener">risk assessment<span class="tip">A safety process of identifying hazards and evaluating how likely they are to cause harm, before a change (like a higher machine speed) is allowed to go into effect.<span class="go">Open a source on this &rarr;</span></span></a> (and, where warranted, added guarding/interlocking) whenever a packaging machine's operating parameters &mdash; including speed &mdash; change</td><td class="num">ANSI/PMMI B155.1, <em>Safety Requirements for Packaging Machinery and Packaging-Related Converting Machinery</em> [S6]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apxC">
+    <summary>Appendix C &mdash; The Two Paths' Costs and the Contract</summary>
+    <div class="inner">
+      <p class="apxnote">The capital cost of each real path and the volume it must be justified against. Referenced from Background and Dilemma; forces Challenge 3 (D5).</p>
+      <table id="tblApxC">
+        <tr><th>&nbsp;</th><th>Value</th></tr>
+        <tr><td>Guarding/interlock retrofit cost to legally clear Line 3 for a higher operating speed (USD, one-time)</td><td class="num">$44,000 (MA6, extending the per-door interlock cost range in [S5] to a full-line retrofit: turret access panels &mdash; guards around the rotating carousel that carries bottles through the labeler &mdash; infeed/outfeed conveyor guarding, and an updated safety <a class="sterm" data-sterm="PLC" href="https://en.wikipedia.org/wiki/Programmable_logic_controller" target="_blank" rel="noopener">PLC<span class="tip">A programmable logic controller -- a ruggedized industrial computer that runs the control logic for machinery like conveyors and safety interlocks.<span class="go">Open a source on this &rarr;</span></span></a>)</td></tr>
+        <tr><td>Total bottle volume the new co-packing contract will run on Line 3 over its life (bottles)</td><td class="num">10,000,000 bottles (MA7)</td></tr>
+        <tr><td>Guarding contractor's install lead time relative to the contract's first production week</td><td class="num">One install slot, six weeks out (MA8 &mdash; matches Background's own stated urgency, not an independent estimate)</td></tr>
+      </table>
+      <p class="apxnote">Put together, these three retrofit items close off every point on Line 3 a person's body could reach while it runs faster than today's ceiling. The turret access panels are fixed metal-and-mesh guards bolted around the gap between the spinning turret and the machine's stationary frame &mdash; the pinch point where a hand could get pulled in as the turret rotates. The infeed/outfeed conveyor guarding is the same idea along the straight conveyor belts carrying bottles in and out, and the sensor curtains sit across the labeler's open access points, watching for a hand or arm to break their light beams. The safety PLC is wired to every one of those guards and switches; the instant one opens or a beam breaks, the PLC's control logic cuts power to the motor. That combination is what lets a risk assessment under ANSI/PMMI B155.1 (Appendix B) &mdash; typically an on-site inspection followed by a written certificate posted at the machine &mdash; sign off on raising Line 3's rated speed at all.</p>
+    </div>
+  </details>
+
+  <details id="apxMA">
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author/researcher, because a genuine multi-tier search found no public source publishing them for a specific bottling line or a one-off safety retrofit. A Hero may challenge them in discussion &mdash; that is a legitimate move.</blockquote>
+      <table id="tblApxMA">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Baseline utility/compressed-air draw component of the base cost rate <em>a</em></td><td class="num">$0.45/min</td><td>No public source publishes a per-minute utility draw for a specific rotary labeler; set at rough parity with the sourced labor+burden component so neither dominates the base rate arbitrarily.</td><td>Shifts <em>a</em> directly, which moves r* and the theoretical minimum, but does not independently flip which real option wins (see the sensitivity disclosure below).</td></tr>
+        <tr><td>MA2</td><td>Labor burden multiplier applied to [S1]'s $20.78/hr median wage</td><td class="num">1.3&times; (within [S2]'s 1.25&times;&ndash;1.4&times; range)</td><td>[S2] documents a manufacturing labor burden of roughly 1.25&times;&ndash;1.4&times; base wage (payroll taxes, benefits, workers' comp); 1.3&times; is the range's lower-middle value.</td><td>Shifts the sourced-labor component of <em>a</em>; not independently flexed (bundled into <em>a</em>, treated as a derived/cited quantity, not a stated scenario assumption).</td></tr>
+        <tr><td>MA3</td><td>Incremental cost rate, <em>b</em>, in CR(r) = a + b&middot;r</td><td class="num">$0.0004/(bottle/min)</td><td>No public source models a per-speed-unit cost coefficient for a rotary labeler. Approximates a real, documented mechanism &mdash; higher speed increases motor power draw (informed by [S3]) and defect/rework/jam rate (a faster-spinning turret gives the glue less time to set and less time for a sensor to catch a misaligned label before the next bottle arrives, so more bottles come out crooked or unlabeled and have to be pulled and reworked) &mdash; as a stated scenario simplification.</td><td>The assumption the cost curve is most sensitive to: sets both the location of r* and how steeply cost rises past it.</td></tr>
+        <tr><td>MA4</td><td>Fixed downstream handling time per bottle, <em>d</em>, in MPU(r) = 1/r + d</td><td class="num">0.02 min/bottle</td><td>No public source publishes a per-bottle downstream case-packing/palletizing time for a specific line; a 50 bottle/min-equivalent downstream station is a representative order of magnitude.</td><td>Sets the scale at which cost per bottle is minimized (r* = &radic;(a/(b&middot;d))) together with MA3.</td></tr>
+        <tr><td>MA5</td><td>Line 3's current rated maximum safe operating speed</td><td class="num">150 bottles/min</td><td>Protagonist-specific: Line 3 is an older, conservatively-guarded machine within the industry's documented 100&ndash;500 bpm range [S4], not a new high-speed installation.</td><td>This case's load-bearing, dilemma-flipping dial &mdash; directly sets how far below r* the current legal ceiling sits.</td></tr>
+        <tr><td>MA6</td><td>Guarding/interlock retrofit cost</td><td class="num">$44,000</td><td>No public source prices a full-line retrofit; [S5] prices a single interlocked door at $1,500&ndash;$5,000. This retrofit covers multiple hazard zones, not one door.</td><td>The single most load-bearing protagonist-specific number: what The Guarding Upgrade must recover across Appendix C's contract volume.</td></tr>
+        <tr><td>MA7</td><td>Total contract volume on Line 3</td><td class="num">10,000,000 bottles</td><td>Protagonist-specific: a multi-month exclusive co-packing commitment at realistic <a class="sterm" data-sterm="Line Utilization" href="https://en.wikipedia.org/wiki/Capacity_utilization" target="_blank" rel="noopener">line utilization<span class="tip">How much of a machine or production line's maximum possible output is actually being used, as a percent of its full capacity.<span class="go">Open a source on this &rarr;</span></span></a> (well under running the line at full speed nonstop for the whole contract).</td><td>Sets how thinly the retrofit's fixed cost is spread &mdash; this case's other load-bearing, dilemma-flipping dial.</td></tr>
+        <tr><td>MA8</td><td>Guarding contractor's install lead time</td><td class="num">One slot, six weeks out</td><td>Matches the Background's own stated urgency verbatim &mdash; not an independent estimate.</td><td>None &mdash; fixed by the narrative, not a sensitivity lever.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix E &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-09. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Industrial Process-Control Vocabulary</h3>
+    <p>This case uses real machine-safety and industrial process-control terms. Hover any term below for a plain-English definition; click it to open a real source (Wikipedia).</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Links verified working 2026-09-09.</p>
+  </div>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Build TC(r) and evaluate it at the rated ceiling</h4>
+    <div class="goal">Build CR(r) = a + b&middot;r and MPU(r) = 1/r + d from Appendix A, combine them as TC(r) = CR(r) &times; MPU(r), then evaluate all three at Line 3's current rated ceiling (Appendix B).</div>
+    <div class="fieldrow"><label for="nbCRcap">CR(r) at the rated ceiling ($/min)</label>
+      <input type="number" id="nbCRcap" step="0.0001" placeholder="in dollars per minute"> <span class="fb" id="fbCRcap"></span></div>
+    <div class="fieldrow"><label for="nbMPUcap">MPU(r) at the rated ceiling (min/bottle)</label>
+      <input type="number" id="nbMPUcap" step="0.0001" placeholder="in minutes per bottle"> <span class="fb" id="fbMPUcap"></span></div>
+    <div class="fieldrow"><label for="nbTCcap">TC(r) at the rated ceiling ($/bottle)</label>
+      <input type="number" id="nbTCcap" step="0.000001" placeholder="in dollars per bottle"> <span class="fb" id="fbTCcap"></span></div>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: Product rule &mdash; find r*</h4>
+    <div class="goal">Differentiate TC(r) with the product rule (and the power rule for the 1/r term), set TC&prime;(r) = 0, and solve algebraically for r*.</div>
+    <div class="fieldrow"><label for="nbRstar">r* (bottles per minute)</label>
+      <input type="number" id="nbRstar" step="0.01" placeholder="in bottles per minute"> <span class="fb" id="fbRstar"></span></div>
+    <button onclick="checkStep2()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: First derivative test and concavity check</h4>
+    <div class="goal">Confirm r* is a genuine local minimum using both the first derivative test and a concavity (second-derivative) check. Then decide whether TC(r) has a local maximum anywhere for r &gt; 0.</div>
+    <div class="fieldrow"><label for="nbRstarKind">Is r* a local minimum or a local maximum?</label>
+      <select id="nbRstarKind"><option value="">choose one</option><option value="min">Local minimum</option><option value="max">Local maximum</option></select> <span class="fb" id="fbRstarKind"></span></div>
+    <div class="fieldrow"><label for="nbConcavity">Concavity of TC(r) at r* (TC&Prime;(r*))</label>
+      <select id="nbConcavity"><option value="">choose one</option><option value="pos">Positive (concave up)</option><option value="neg">Negative (concave down)</option></select> <span class="fb" id="fbConcavity"></span></div>
+    <div class="fieldrow"><label for="nbHasMax">Does TC(r) have a local maximum for r &gt; 0?</label>
+      <select id="nbHasMax"><option value="">choose one</option><option value="yes">Yes</option><option value="no">No</option></select> <span class="fb" id="fbHasMax"></span></div>
+    <button onclick="checkStep3()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: Check r* against the rated ceiling</h4>
+    <div class="goal">Evaluate TC(r) at both r* and the rated ceiling, and decide whether the unconstrained calculus optimum is legally reachable under Line 3's current guarding.</div>
+    <div class="fieldrow"><label for="nbTCrstar">TC(r*) ($/bottle)</label><input type="number" id="nbTCrstar" step="0.000001" placeholder="in dollars per bottle"> <span class="fb" id="fbTCrstar"></span></div>
+    <div class="fieldrow"><label for="nbReachable">Is r* legally reachable under Line 3's current guarding?</label>
+      <select id="nbReachable"><option value="">choose one</option><option value="yes">Yes</option><option value="no">No</option></select> <span class="fb" id="fbReachable"></span></div>
+    <button onclick="checkStep4()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; D5: Total cost per bottle over the life of the contract</h4>
+    <div class="goal">Amortize Appendix C's retrofit cost over its contract volume, add it to TC(r*) for The Guarding Upgrade, compare against The Rated Cap's TC at the rated ceiling (no retrofit cost), and find the dollar and percent gap.</div>
+    <div class="fieldrow"><label for="nbAmortized">Amortized retrofit cost ($/bottle)</label><input type="number" id="nbAmortized" step="0.000001" placeholder="in dollars per bottle"> <span class="fb" id="fbAmortized"></span></div>
+    <div class="fieldrow"><label for="nbTotalA">The Guarding Upgrade's total cost ($/bottle)</label><input type="number" id="nbTotalA" step="0.000001" placeholder="in dollars per bottle"> <span class="fb" id="fbTotalA"></span></div>
+    <div class="fieldrow"><label for="nbTotalB">The Rated Cap's total cost ($/bottle)</label><input type="number" id="nbTotalB" step="0.000001" placeholder="in dollars per bottle"> <span class="fb" id="fbTotalB"></span></div>
+    <div class="fieldrow"><label for="nbGapPct">Gap between the two paths (as a percent)</label><input type="number" id="nbGapPct" step="0.01" placeholder="as a percent"> <span class="fb" id="fbGapPct"></span></div>
+    <button onclick="checkStep5()">Check</button>
+    <p class="side-note">D6's graph of TC(r) is built outside this notebook &mdash; in Desmos, or by hand &mdash; with r* and the rated ceiling both labeled.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Reveal this only after you've finished working through the case &mdash; the Twist is meant to land after your analysis, not before.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-gauge"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've finished the case &mdash; reveal it</button>
+    <div id="twistNarrative">
+      <p>Corporate calls back that afternoon: the sports-drink brand has exercised its volume-renewal option. The new co-packing contract's total bottle commitment on Line 3 <strong>triples</strong>, from 10,000,000 to 30,000,000 bottles.</p>
+      <p>This changes only how thinly The Guarding Upgrade's retrofit cost is spread &mdash; The Rated Cap has no retrofit cost to amortize in the first place, so its cost per bottle is completely unaffected. Appendix C's contract volume (MA7) was always a stated Modeling Assumption, not a sourced figure. If the contract really does run three times longer than assumed, does your D5 comparison still say what you thought it said?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the volume-renewal option: triple the contract volume Q for The Guarding Upgrade's amortization only (The Rated Cap is unaffected) and recompute Step 5's totals.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] O*NET OnLine (attributing U.S. Bureau of Labor Statistics) &mdash; <a href="https://www.onetonline.org/link/summary/51-9111.00" target="_blank" rel="noopener">Summary Report for 51-9111.00, Packaging and Filling Machine Operators and Tenders</a> (2025 wage data, MEDIUM confidence)</li>
+      <li>[S2] Rippling &mdash; <a href="https://www.rippling.com/blog/labor-burden" target="_blank" rel="noopener">How To Calculate Labor Burden: Complete 2025 Guide</a> (2025, MEDIUM confidence)</li>
+      <li>[S3] U.S. Energy Information Administration &mdash; <a href="https://www.eia.gov/electricity/monthly/update/end-use.php" target="_blank" rel="noopener">Electricity Monthly Update</a> (June 2026, HIGH confidence)</li>
+      <li>[S4] Quadrel &mdash; <a href="https://www.quadrel.com/rotary-labeling-machines/" target="_blank" rel="noopener">Rotary Labeling Machines</a> (accessed 2026-09-09, MEDIUM confidence)</li>
+      <li>[S5] The Safety Geek &mdash; <a href="https://thesafetygeek.com/interlocked-guards-vs-fixed-guards/" target="_blank" rel="noopener">Interlocked vs Fixed Guards</a> (accessed 2026-09-09, LOW confidence)</li>
+      <li>[S6] PMMI &mdash; <a href="https://www.pmmi.org/standards-and-regulations" target="_blank" rel="noopener">Standards, Technical Reports, Regulations and Directives</a>, corroborated by The ANSI Blog's <a href="https://blog.ansi.org/ansi/ansi-pmmi-b155-1-2023-packaging-machinery-safety/" target="_blank" rel="noopener">ANSI/PMMI B155.1-2023 overview</a> (2023 current edition, MEDIUM confidence)</li>
+      <li>MA1&ndash;MA8 (except the sourced/derived pieces of MA1&ndash;MA3) are stated Modeling Assumptions, not sourced figures &mdash; see the Modeling Assumptions appendix above for the full basis.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Setpoint Call &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/the-setpoint-call/case.json
+   (case.md sha256: d61706b78d4eb8db73e4b2172eab7fa67811e025447aaa00804f36210ef13d96).
+   JS port of cases/the-setpoint-call/sensitivity_model.py -- same PARAMS/FLEX/evaluate()/
+   evaluate_twist() shape, so the Working Notebook and the Python sensitivity model can
+   never silently drift. Nothing here hardcodes the balance-test verdict (total cost per
+   bottle, margin, winner) -- every derived figure is computed live below.
+   ================================================================ */
+const PARAMS = {
+  a: 0.90,          // Appendix A, sourced/derived: [S1]/[S2]/MA2 wage+burden + baseline utility (MA1)
+  b: 0.0004,        // Appendix A, Modeling Assumption MA3 -- incremental cost rate
+  d: 0.02,          // Appendix A, Modeling Assumption MA4 -- fixed downstream handling time
+  r_cap: 150.0,     // Appendix B, Modeling Assumption MA5 -- Line 3's current rated max safe speed
+  U: 44000.0,       // Appendix C, Modeling Assumption MA6 -- guarding/interlock retrofit cost
+  Q: 10000000.0     // Appendix C, Modeling Assumption MA7 -- total contract volume on Line 3
+};
+const FLEX = ["b", "d", "r_cap", "U", "Q"];
+function rStar(p){ return Math.sqrt(p.a / (p.b * p.d)); }
+function crOf(r, p){ return p.a + p.b * r; }
+function mpuOf(r, p){ return 1 / r + p.d; }
+function tcOf(r, p){ return crOf(r, p) * mpuOf(r, p); }
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const rs = rStar(p);
+  const totalA = tcOf(rs, p) + p.U / p.Q;
+  const totalB = tcOf(p.r_cap, p);
+  // Lower total cost per bottle is better for Marisol -- return negative so
+  // higher score wins, matching sensitivity_model.py's convention.
+  return { A: -totalA, B: -totalB, rStar: rs, tcRStar: tcOf(rs, p), tcRCap: tcOf(p.r_cap, p),
+           amortized: p.U / p.Q, totalA, totalB };
+}
+function evaluate_twist(params){
+  const pA = Object.assign({}, PARAMS, params || {});
+  pA.Q = pA.Q * 3.0; // confirmed volume-renewal option, Option A's amortization base only
+  const rs = rStar(pA);
+  const totalA = tcOf(rs, pA) + pA.U / pA.Q;
+  const pB = Object.assign({}, PARAMS, params || {});
+  const totalB = tcOf(pB.r_cap, pB);
+  return { A: -totalA, B: -totalB, totalA, totalB };
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions. Read evaluate()/
+   evaluate_twist() from the JS data block above rather than re-deriving
+   the arithmetic inline, so the notebook and sensitivity_model.py can
+   never silently drift apart.
+   ================================================================ */
+function checkStep1(){
+  const p = PARAMS;
+  const crCap = crOf(p.r_cap, p);
+  const mpuCap = mpuOf(p.r_cap, p);
+  const tcCap = tcOf(p.r_cap, p);
+  fb('fbCRcap', near(parseFloat(val('nbCRcap')), crCap, 0.001));
+  fb('fbMPUcap', near(parseFloat(val('nbMPUcap')), mpuCap, 0.0005));
+  fb('fbTCcap', near(parseFloat(val('nbTCcap')), tcCap, 0.0002));
+}
+function checkStep2(){
+  const rs = rStar(PARAMS);
+  fb('fbRstar', near(parseFloat(val('nbRstar')), rs, 1));
+}
+function checkStep3(){
+  const kind = document.getElementById('nbRstarKind').value;
+  const concavity = document.getElementById('nbConcavity').value;
+  const hasMax = document.getElementById('nbHasMax').value;
+  fb('fbRstarKind', kind === 'min');
+  fb('fbConcavity', concavity === 'pos');
+  fb('fbHasMax', hasMax === 'no');
+}
+function checkStep4(){
+  const r = evaluate({});
+  const reachable = document.getElementById('nbReachable').value;
+  fb('fbTCrstar', near(parseFloat(val('nbTCrstar')), r.tcRStar, 0.0002));
+  fb('fbReachable', reachable === 'no');
+}
+function checkStep5(){
+  const twistEl = document.getElementById('applyTwist');
+  const applied = twistEl && twistEl.checked;
+  const r = applied ? evaluate_twist({}) : evaluate({});
+  const gapPct = 100 * Math.abs(r.totalA - r.totalB) / Math.max(r.totalA, r.totalB);
+  const amortized = applied ? PARAMS.U / (PARAMS.Q * 3.0) : PARAMS.U / PARAMS.Q;
+  fb('fbAmortized', near(parseFloat(val('nbAmortized')), amortized, 0.0002));
+  fb('fbTotalA', near(parseFloat(val('nbTotalA')), r.totalA, 0.0003));
+  fb('fbTotalB', near(parseFloat(val('nbTotalB')), r.totalB, 0.0002));
+  fb('fbGapPct', near(parseFloat(val('nbGapPct')), gapPct, 0.5));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-setpoint-call";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Total-cost-per-bottle function TC(r) = CR(r) x MPU(r)"],
+  ["D2", "Product-rule derivation of r*"],
+  ["D3", "First derivative test and concavity check classifying r*"],
+  ["D4", "r* checked against the rated ceiling, TC(r) evaluated at both"],
+  ["D5", "Total-cost-per-bottle comparison for both real paths, in dollars and percent"],
+  ["D6", "Original visual display of TC(r) with r* and the rated ceiling labeled"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   "Derivative"/"Critical Point"/"Power Rule" reused verbatim from
+   cases/the-optimal-can's own verified GLOSSARY (mathsisfun.com);
+   "Concavity" reused verbatim from cases/the-optimal-can's/cases/curves-turn's
+   own verified GLOSSARY (mathsisfun.com); "Product Rule" reused verbatim from
+   cases/alert-curve's own verified GLOSSARY (khanacademy.org); "First
+   Derivative Test"/"Optimization" reused verbatim from cases/the-marginal-call's
+   own verified GLOSSARY (khanacademy.org); "Percent" reused verbatim from the
+   shared STARTER_GLOSSARY (khanacademy.org). All 8 URLs previously fetched and
+   confirmed live for their respective cases -- legitimate reuse per MCS-21.
+   ================================================================ */
+const GLOSSARY = {
+  "Derivative": {def: "A function that gives the slope of the original function's tangent line at every point -- how fast the output changes as the input changes.",
+    url: "https://www.mathsisfun.com/calculus/derivatives-introduction.html"},
+  "Critical Point": {def: "A point where a function's derivative is zero or undefined -- a candidate for a local maximum or minimum.",
+    url: "https://www.mathsisfun.com/calculus/maxima-minima.html"},
+  "Concavity": {def: "Whether a curve bends upward (like a cup) or downward (like a frown) -- tells you if a critical point is a minimum or a maximum.",
+    url: "https://www.mathsisfun.com/calculus/concave-up-down-convex.html"},
+  "Power Rule": {def: "A shortcut for differentiating x^n: bring the exponent down as a multiplier, then reduce the exponent by 1.",
+    url: "https://www.mathsisfun.com/calculus/derivatives-rules.html"},
+  "Product Rule": {def: "A rule for differentiating a product of two functions: (uv)' = u'v + uv'.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-differentiation-1-new/ab-2-8/a/product-rule-review"},
+  "First Derivative Test": {def: "A method that classifies a critical point as a local minimum, local maximum, or neither by checking whether the derivative's sign changes on either side of it.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-diff-analytical-applications-new/ab-5-4/a/applying-the-first-derivative-test-to-find-extrema"},
+  "Optimization": {def: "Using calculus (typically derivatives) to find the input that makes a function's output as large or as small as possible.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-diff-analytical-applications-new/ab-5-11/v/minimizing-sum-of-squares"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+};
+const HOWTO = [
+  ["How to find a derivative using the power rule", "Power Rule"],
+  ["How to use the product rule to differentiate a product of functions", "Product Rule"],
+  ["How to find critical points of a function", "Critical Point"],
+  ["How to use the first derivative test to classify a critical point", "First Derivative Test"],
+  ["How to solve an optimization problem using derivatives", "Optimization"],
+  ["How to find the percent of a number", "Percent"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-SPECIFIC — story/domain-vocabulary glossary (MCS-47), separate from
+   the math GLOSSARY above. {desc, link} field names and the .sterm class
+   are the load-bearing difference that keeps this from colliding with
+   T1-19's math-only glossary check. First 5 terms (Interlock, Machine Guarding,
+   Co-Packer, Process Control, Fixed Cost) verified live on en.wikipedia.org
+   2026-09-09, this session. Risk Assessment/PLC/Rotary Labeler/Line Utilization
+   added after a P7 accessibility cold-read (2026-09-09) flagged 7 unexplained
+   real-world concepts on the first pass; all 4 verified live on en.wikipedia.org
+   2026-09-09, this same remediation round. Labor Burden reuses this case's own
+   already-verified [S2] source (rippling.com/blog/labor-burden, confirmed
+   reachable in the P6 data-decay pass) rather than a new fetch, since Wikipedia
+   has no dedicated page distinguishing "labor burden" from ordinary benefits.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Interlock": {desc: "A device that keeps a machine from operating until its guards are in place or required conditions are met.",
+    link: "https://en.wikipedia.org/wiki/Interlock_(engineering)"},
+  "Machine Guarding": {desc: "A safety feature -- a shield or device -- covering hazardous areas of a machine to prevent contact with moving parts.",
+    link: "https://en.wikipedia.org/wiki/Machine_guarding"},
+  "Co-Packer": {desc: "A company that packages products for its clients, under the client's own brand -- also called a contract packager.",
+    link: "https://en.wikipedia.org/wiki/Co-packer"},
+  "Process Control": {desc: "The use of control theory and industrial systems to monitor, control, and optimize a continuous manufacturing process.",
+    link: "https://en.wikipedia.org/wiki/Process_control"},
+  "Fixed Cost": {desc: "A business expense, like a one-time retrofit, that does not depend on how much is produced -- as opposed to a cost that scales with output.",
+    link: "https://en.wikipedia.org/wiki/Fixed_cost"},
+  "Risk Assessment": {desc: "A safety process, typically run by a safety engineer or outside safety consultant, that identifies hazards and evaluates how likely they are to cause harm before a change (like a higher machine speed) is allowed to go into effect. It produces a written sign-off (or a list of required fixes) that becomes the machine's new legal operating limit.",
+    link: "https://en.wikipedia.org/wiki/Risk_assessment"},
+  "PLC": {desc: "A programmable logic controller -- a ruggedized industrial computer that runs the control logic for machinery like conveyors and safety interlocks. It is wired directly to switches on each guard; the instant a switch signals a guard has opened, the PLC cuts power to the motor.",
+    link: "https://en.wikipedia.org/wiki/Programmable_logic_controller"},
+  "Rotary Labeler": {desc: "A labeling machine whose bottles ride a rotating turret past a fixed glue/label-applying station as the turret turns -- the standard way high-speed bottling lines apply labels.",
+    link: "https://en.wikipedia.org/wiki/Bottling_line"},
+  "Line Utilization": {desc: "How much of a machine or production line's maximum possible output is actually being used, as a percent of its full capacity. A real line is rarely at 100%: shift changes, cleaning and changeovers between orders, minor stops, and day-to-day order volume all keep actual output below the theoretical maximum of running flat-out, nonstop, forever. Illustrative example only (not this case's own figures): a line running two 8-hour shifts a day, with time lost to changeovers and cleaning, might average only 40-60% of the output it would produce running at full speed nonstop, 24 hours a day, forever.",
+    link: "https://en.wikipedia.org/wiki/Capacity_utilization"},
+  "Labor Burden": {desc: "The true cost of an employee to an employer -- base wage plus payroll taxes, benefits, and workers' compensation -- expressed as a multiplier on wage. Worked example (not this case's own numbers): a $20/hr wage at a 1.3x burden multiplier becomes about $26/hr, which is then divided by 60 to get a cost per minute.",
+    link: "https://www.rippling.com/blog/labor-burden"},
+  "Sensor Curtains": {desc: "A safety device (also called a light curtain) that uses a grid of infrared light beams to detect when a person's hand or body enters a hazardous area near a machine, automatically stopping it the instant a beam breaks.",
+    link: "https://en.wikipedia.org/wiki/Light_curtain"},
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const goal = document.querySelector('#notebook .stepbox:nth-of-type(5) .goal');
+  if(goal){
+    goal.textContent = applied
+      ? "Twist applied: the contract volume Q is now tripled for The Guarding Upgrade's amortization only (The Rated Cap is unaffected). Recompute the amortized retrofit cost and both paths' total cost per bottle with the updated figure."
+      : "Amortize Appendix C's retrofit cost over its contract volume, add it to TC(r*) for The Guarding Upgrade, compare against The Rated Cap's TC at the rated ceiling (no retrofit cost), and find the dollar and percent gap.";
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

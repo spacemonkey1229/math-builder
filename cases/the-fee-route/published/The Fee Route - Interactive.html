@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Fee Route — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  See templates/INTERACTIVE_HTML_CONTRACT.md for the shape contract this file follows.
+  case.md sha256 as of this build: 71f8b4e3c73996754edb7c77f8c78df2ce2881c5998e3dea5bc0d97ee38301ef
+  HARD LINE (MCS-37): this file must never print the case's balance verdict (which rail
+  wins, the margin, the dollar totals) as a static literal anywhere outside a <script> tag.
+  The Working Notebook computes both rails' net revenue live from the case's own numbers;
+  it never hands over the recommendation.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+  .apxnote{font-family:var(--sans);font-size:.82rem;color:var(--sub)}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:260px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  /* ---- math glossary hover + hyperlink terms (T1-19) ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ---- story (real-world payments vocabulary) glossary -- separate class/color from .gterm ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* CSV export -- present on every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+
+  /* CASE-SPECIFIC — settlement-graph diagram */
+  .graph-edge{stroke:#1a3a5c;stroke-width:2.4}
+  .graph-edge.cycle{stroke:#c9a227;stroke-width:3.4}
+  .graph-vertex circle{fill:#eef3f8;stroke:#1a3a5c;stroke-width:2.4}
+  .graph-vertex.cycle circle{fill:#f7edcf;stroke:#8a6d2b}
+  .graph-vertex text.vlabel{font-family:Georgia,serif;font-size:16px;font-weight:700;fill:#1a3a5c;text-anchor:middle}
+  .graph-vertex text.vsub{font-family:sans-serif;font-size:8.5px;fill:#5b6472;text-anchor:middle}
+  .graph-edge-label{font-family:sans-serif;font-size:11px;fill:#20262e;text-anchor:middle}
+  .graph-edge-label tspan{fill:#5b6472;font-size:9.5px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-node" viewBox="0 0 24 24"><circle cx="5" cy="12" r="3"/><circle cx="19" cy="6" r="3"/><circle cx="19" cy="18" r="3"/><path d="M8 12l8-5M8 12l8 6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Fee Route</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Discrete Math &middot; Graph Theory</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Priya Nair has the routing dashboard open on one monitor and a support ticket open on the other, and neither screen is making her feel good about tomorrow's migration window. Fernbrook Refill Co.'s AI reorder agent — the little background service that watches every customer's smart water-filter sensor and fires off a replacement-cartridge charge the instant a filter reads low — has been quietly running on the card network since launch. Today it fires off thousands of these charges again, one sensor at a time, each one a few dollars or less, each one carrying its own slice of interchange fee.</p>
+  <p>A Slack thread from the platform engineering channel is still open in the corner: a rival subscription brand just posted, half-bragging and half-panicked, that switching its own reorder agent to a stablecoin settlement rail cut its per-transaction fee to almost nothing — and then, three weeks later, ate a five-figure loss on a wave of disputed charges nobody could claw back. Priya has read the thread twice.</p>
+  <p>The migration ticket is sitting in her queue, approved by finance, waiting only on her sign-off: flip Fernbrook's reorder agent from the card rail to the stablecoin rail by Friday, or don't. She has the network map taped above her desk — banks, processors, a custodian, a settlement ledger, every arrow between them — and a blinking cursor in the ticket's one open field: Approve or Hold.</p>
+  <p>Her coffee's gone cold. The migration either happens tonight or it doesn't happen this quarter.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Priya Nair is the Payments Infrastructure Lead at Fernbrook Refill Co., a small subscription company that sells smart-home consumable refills — water-filter cartridges, air-purifier pods — through sensors that detect low supply and trigger an automatic reorder. Fernbrook's AI reorder agent, not a human, initiates every one of these purchases: it holds its own small balance, watches sensor data, and fires a payment the instant a threshold is crossed. Priya owns the agent's payment-routing configuration and is accountable for both the fee line on Fernbrook's income statement and the dispute-loss line, with no one else on the four-person payments team empowered to override her sign-off before Friday.</p>
+  <p>Every one of these reorder-agent purchases currently settles over the traditional card network: the customer's card issuer, a card-network switch, and Fernbrook's acquiring processor each sit on the path the money travels, and each one takes a cut (see Appendix A for the full settlement network map, Appendix B for the card rail's real, published fee schedule). The alternative on the table is a stablecoin settlement rail: the agent's own on-chain balance moves through a stablecoin ledger to a custodian bank that converts it back to dollars in Fernbrook's account, at a near-zero published fee (see Appendix A, Appendix C). The catch, stated plainly in Fernbrook's own vendor contract for each rail, is chargeback recourse: the card rail's dispute-resolution process lets Fernbrook recover most of the value of a disputed charge, while the stablecoin rail offers no recourse mechanism at all — once funds settle on-chain, a successful fraud or dispute event is a total, unrecoverable loss (see Appendix D for how often that is expected to happen and how much of a disputed charge each rail actually leaves on Fernbrook's books).</p>
+  <p>The two options sit on Priya's whiteboard under their working names: <strong>The Card Bridge</strong>, keeping every reorder-agent transaction on the existing card-network settlement path, and <strong>The Coin Rail</strong>, migrating every reorder-agent transaction to the stablecoin settlement path. Whichever Priya recommends applies to all of Fernbrook's reorder-agent volume — there is no partial migration option before Friday's window closes. The vocabulary and "how to&hellip;" procedures needed to work through the settlement network are listed in Appendix E, and every sourced or assumed figure in this case is documented in Appendix F.</p>
+  <p>Priya has to recommend one rail, defend the expected net-revenue math behind it using the actual settlement network graph, and file the migration ticket before she leaves tonight.</p>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Payments &amp; Settlement Vocabulary</h3>
+    <p class="side-note" style="border-top:none;padding-top:0;margin-top:0">The math vocabulary Challenge 1 sends you to research lives in Appendix E below. These are the real payments-industry terms this case's own story uses — hover any one for a plain definition, or click through to a real source.</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Sources: Wikipedia (&ldquo;Interchange fee,&rdquo; &ldquo;Chargeback,&rdquo; &ldquo;Settlement (finance),&rdquo; &ldquo;Custodian bank,&rdquo; &ldquo;Stablecoin,&rdquo; &ldquo;Issuing bank,&rdquo; &ldquo;Acquiring bank,&rdquo; &ldquo;Blockchain,&rdquo; &ldquo;Card not present transaction,&rdquo; &ldquo;Basis point,&rdquo; &ldquo;EMV&rdquo;). Links verified working 2026-09-09.</p>
+  </div>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Priya Nair. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Card Bridge</h4>
+      <p style="margin:0">Keep every reorder-agent transaction on the existing card-network settlement path — real chargeback recourse, but every one of Fernbrook's small charges pays a percentage fee plus a flat per-transaction fee.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Coin Rail</h4>
+      <p style="margin:0">Migrate every reorder-agent transaction to the stablecoin settlement path — near-zero fees, but zero dispute recourse: a fraud or dispute event is a total, unrecoverable loss.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix E. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance to your audience on which rail you would choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include:
+      <ul>
+        <li><strong>D1</strong> &mdash; A labeled drawing of the settlement network as a weighted graph: every vertex from Appendix A's node list and every edge with its fee weight written on it, plus an explicit identification of at least one cycle in the graph, and a sentence stating what that cycle means for Fernbrook's settlement options.</li>
+        <li><strong>D2</strong> &mdash; A shortest-path determination: compute the total weighted cost of both candidate paths between the Issuing Bank (IB) and the Custodian (CU), show the arithmetic for each, and state which path is mathematically the shortest and why.</li>
+        <li><strong>D3</strong> &mdash; An Euler-audit determination: using the degree of every vertex in Appendix A's graph, determine whether the settlement network graph has an Euler circuit, an Euler path, or neither, and justify by actually counting each vertex's degree.</li>
+        <li><strong>D4</strong> &mdash; An expected-net-revenue-retained table comparing Option A (The Card Bridge's path) and Option B (The Coin Rail's path): total weighted path fee, expected fraud/dispute loss, and net revenue retained per $1,000 processed for each, shown step by step.</li>
+        <li><strong>D5</strong> &mdash; A one-paragraph written recommendation, using correct graph-theory vocabulary (vertex, edge, path, weighted graph, cycle) throughout, that names which rail retains more net revenue per $1,000 processed and explicitly addresses why comparing raw per-transaction fee percentages alone, without weighting each rail's real expected fraud-loss exposure, would have been misleading.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apxA">
+    <summary>Appendix A &mdash; Settlement Network Map</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D1, D2, D3). Fernbrook's payments team maintains this map of every node and connection in its two available settlement rails, current as of this quarter's vendor contracts.</p>
+      <table id="tblApxAVertices">
+        <tr><th>Vertex</th><th>What it is</th></tr>
+        <tr><td>IB</td><td>Issuing Bank — the customer's own <span class="sterm-placeholder" data-sterm="Issuing Bank">card-issuing bank</span></td></tr>
+        <tr><td>CN</td><td>Card Network Hub — the Visa/Mastercard settlement switch</td></tr>
+        <tr><td>AQ</td><td>Acquiring Processor — Fernbrook's card processor</td></tr>
+        <tr><td>CU</td><td>Custodian / Off-Ramp Bank — converts stablecoin balances back to USD</td></tr>
+        <tr><td>ST</td><td>Stablecoin Settlement Ledger — the on-chain USDC (a stablecoin: a cryptocurrency token designed to hold a steady 1-to-1 value with the US dollar) settlement layer</td></tr>
+        <tr><td>AW</td><td>Agent Wallet — the reorder agent's own on-chain stablecoin balance</td></tr>
+        <tr><td>MB</td><td>Merchant Bank Account — Fernbrook's own settlement account, where funds land either way</td></tr>
+      </table>
+
+      <table id="tblApxAEdges">
+        <tr><th>Edge</th><th>Weight (fee)</th><th>What it represents</th></tr>
+        <tr><td>IB — CN</td><td class="num">0.14% [S2]</td><td>Card network assessment fee</td></tr>
+        <tr><td>CN — AQ</td><td class="num">1.89% + $0.10 [S1]</td><td>Card interchange fee</td></tr>
+        <tr><td>AQ — MB</td><td class="num">0% (MA)</td><td>Acquirer settles into Fernbrook's own bank account — no additional acquirer-to-merchant-bank transfer fee modeled</td></tr>
+        <tr><td>CN — CU</td><td class="num">0.30% (MA2)</td><td>A real, publicly announced card-network-to-stablecoin-custodian settlement pilot — not used by either of Fernbrook's two options, shown for completeness of the network map</td></tr>
+        <tr><td>AW — ST</td><td class="num">$0.01 [S5]</td><td>On-chain network fee to move the agent's stablecoin balance onto the settlement ledger</td></tr>
+        <tr><td>ST — CU</td><td class="num">0.05% (MA — informed by [S6])</td><td>Off-ramp conversion fee</td></tr>
+        <tr><td>CU — MB</td><td class="num">0% (MA)</td><td>Custodian wires converted USD into Fernbrook's own bank account — no additional custodian-to-merchant-bank wire fee modeled</td></tr>
+      </table>
+      <p class="side-note"><strong>Option A (The Card Bridge)'s path:</strong> IB → CN → AQ → MB. <strong>Option B (The Coin Rail)'s path:</strong> AW → ST → CU → MB. The CN — CU edge exists in the real network but is not part of either option under decision this week — Fernbrook's current acquiring contract does not route through it. It is included here because it is a real connection in the settlement graph, not because it is one of the two choices.</p>
+
+      <figure>
+        <svg viewBox="0 0 760 420" role="img" class="case-diagram" aria-label="Labeled weighted graph of the settlement network: seven vertices IB, CN, AQ, MB, CU, ST, AW connected by seven weighted edges">
+          <title id="graphTitle">Fernbrook's settlement network drawn as a weighted graph</title>
+          <!-- edges (drawn first, under the vertices) -->
+          <line class="graph-edge" x1="100" y1="100" x2="300" y2="100"/>              <!-- IB-CN -->
+          <line class="graph-edge cycle" x1="300" y1="100" x2="300" y2="300"/>        <!-- CN-AQ -->
+          <line class="graph-edge cycle" x1="300" y1="300" x2="500" y2="380"/>        <!-- AQ-MB -->
+          <line class="graph-edge cycle" x1="300" y1="100" x2="500" y2="220"/>        <!-- CN-CU -->
+          <line class="graph-edge cycle" x1="500" y1="220" x2="500" y2="380"/>        <!-- CU-MB -->
+          <line class="graph-edge" x1="680" y1="220" x2="500" y2="220"/>              <!-- ST-CU -->
+          <line class="graph-edge" x1="680" y1="80" x2="680" y2="220"/>               <!-- AW-ST -->
+
+          <!-- edge weight labels -->
+          <text class="graph-edge-label" x="200" y="90">IB–CN<tspan x="200" dy="11">0.14%</tspan></text>
+          <text class="graph-edge-label" x="345" y="200">CN–AQ<tspan x="345" dy="11">1.89%+$0.10</tspan></text>
+          <text class="graph-edge-label" x="365" y="358">AQ–MB<tspan x="365" dy="11">0%</tspan></text>
+          <text class="graph-edge-label" x="435" y="150">CN–CU<tspan x="435" dy="11">0.30%</tspan></text>
+          <text class="graph-edge-label" x="545" y="300">CU–MB<tspan x="545" dy="11">0%</tspan></text>
+          <text class="graph-edge-label" x="590" y="205">ST–CU<tspan x="590" dy="11">0.05%</tspan></text>
+          <text class="graph-edge-label" x="720" y="150">AW–ST<tspan x="720" dy="11">$0.01</tspan></text>
+
+          <!-- vertices -->
+          <g class="graph-vertex"><circle cx="100" cy="100" r="26"/><text class="vlabel" x="100" y="106">IB</text></g>
+          <g class="graph-vertex cycle"><circle cx="300" cy="100" r="26"/><text class="vlabel" x="300" y="106">CN</text></g>
+          <g class="graph-vertex cycle"><circle cx="300" cy="300" r="26"/><text class="vlabel" x="300" y="306">AQ</text></g>
+          <g class="graph-vertex cycle"><circle cx="500" cy="380" r="26"/><text class="vlabel" x="500" y="386">MB</text></g>
+          <g class="graph-vertex cycle"><circle cx="500" cy="220" r="26"/><text class="vlabel" x="500" y="226">CU</text></g>
+          <g class="graph-vertex"><circle cx="680" cy="220" r="26"/><text class="vlabel" x="680" y="226">ST</text></g>
+          <g class="graph-vertex"><circle cx="680" cy="80" r="26"/><text class="vlabel" x="680" y="86">AW</text></g>
+
+          <text x="20" y="30" font-family="sans-serif" font-size="11" fill="#5b6472">Gold edges/vertices trace one cycle this graph contains &mdash; see Working Notebook Step 1 to name it and explain what it means.</text>
+        </svg>
+        <figcaption>Fernbrook's full settlement network, drawn as a labeled, weighted graph: 7 vertices (every node in Appendix A's table), 7 edges (every connection in Appendix A's table), each edge weighted by its fee. This is the complete network — it includes the CN–CU edge even though that edge is not part of either option's actual path this week.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details id="apxB">
+    <summary>Appendix B &mdash; The Card Bridge: Fee &amp; Dispute-Recovery Data</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D4).</p>
+      <table id="tblApxB">
+        <tr><th>Item</th><th>Value</th></tr>
+        <tr><td>Card network assessment fee (IB–CN edge)</td><td class="num">0.14% [S2]</td></tr>
+        <tr><td>Card-not-present interchange fee (CN–AQ edge)</td><td class="num">1.89% + $0.10 [S1]</td></tr>
+        <tr><td>Share of a disputed transaction Fernbrook ultimately loses under the card rail's chargeback / dispute-resolution process</td><td class="num">20% (MA1)</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apxC">
+    <summary>Appendix C &mdash; The Coin Rail: Fee &amp; Fraud-Exposure Data</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D4).</p>
+      <table id="tblApxC">
+        <tr><th>Item</th><th>Value</th></tr>
+        <tr><td>On-chain network fee (AW–ST edge)</td><td class="num">$0.01 [S5]</td></tr>
+        <tr><td>Off-ramp / custodial conversion fee (ST–CU edge)</td><td class="num">0.05% (MA — informed by [S6])</td></tr>
+        <tr><td>Share of a disputed transaction Fernbrook ultimately loses on the stablecoin rail (no recourse mechanism exists)</td><td class="num">100% — definitional, not sourced</td></tr>
+      </table>
+      <p class="side-note">Once a stablecoin transaction settles on-chain there is no dispute-resolution process to recover any portion of it — this 100% figure is definitional, not an estimate.</p>
+    </div>
+  </details>
+
+  <details id="apxD">
+    <summary>Appendix D &mdash; Transaction Profile &amp; Fraud-Incidence Assumption</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D4). These two figures apply to both rails equally — what differs between the rails is not how often a disputed transaction happens, but how much of it each rail actually recovers (Appendix B and C above).</p>
+      <table id="tblApxD">
+        <tr><th>Item</th><th>Value</th></tr>
+        <tr><td>Average value of one reorder-agent transaction</td><td class="num">$1.30 (MA3)</td></tr>
+        <tr><td>Probability that a given reorder-agent transaction becomes a fraud or dispute event</td><td class="num">0.90% (MA4)</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="apxMA">
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced from an external publisher</strong>. They are stated scenario assumptions chosen by the case author because no public report measures Fernbrook's own transaction profile, a merchant's exact dispute-recovery share under a specific chargeback configuration, or the per-transaction rate of a novel, not-yet-priced card-network-to-stablecoin settlement pilot. A Hero may challenge these numbers in discussion — that is a legitimate move, and the sensitivity column shows exactly where the challenge would matter.</blockquote>
+      <table id="tblApxMA">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Merchant-borne loss share of a disputed transaction on the Card Bridge</td><td class="num">20%</td><td>No source publishes an exact merchant-borne loss share for one specific dispute-resolution configuration. Set well below 100% to reflect that card-network liability shift and dispute tools genuinely recover most — but not all — of a disputed charge's value.</td><td>The recommendation is sensitive to this figure — work the comparison yourself with a different plausible loss share.</td></tr>
+        <tr><td>MA2</td><td>Card-network-to-stablecoin-custodian settlement pilot rate (CN–CU edge)</td><td class="num">0.30%</td><td>No public source discloses a per-transaction rate for this specific, real, publicly announced pilot. Set between the near-zero on-chain rate and the full card interchange rate.</td><td>Does not change which option wins on this case's own numbers — this edge is not part of either option's actual path.</td></tr>
+        <tr><td>MA3</td><td>Average reorder-agent transaction value</td><td class="num">$1.30</td><td>No source publishes Fernbrook's own transaction sizes (a fictional company). Set low and disclosed, consistent with real, published 2026 industry reporting (Appendix F) that AI-agent-initiated payments run frequent, small-value transactions.</td><td>One of the case's most load-bearing figures — the flat per-transaction fee on each rail becomes a much larger or smaller share of total cost depending on this value.</td></tr>
+        <tr><td>MA4</td><td>Probability a given reorder-agent transaction becomes a fraud/dispute event</td><td class="num">0.90%</td><td>No source measures a fraud/dispute incidence rate specific to AI-agent-initiated, card-not-present micro-transactions. Informed by the Nilson Report's worldwide blended card fraud rate [S3] and the Federal Reserve Bank of Kansas City's finding that card-not-present fraud rates run higher and are rising [S4].</td><td>The single assumption the recommendation is most sensitive to — it drives both rails' expected-loss figures directly.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix E &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-09. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <details id="apxF">
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <p class="apxnote">All sourced (non-assumption) figures in this case are cited here. Sources marked "supplemental" are not directly quoted for a value used in this case's arithmetic; they inform the basis of a Modeling Assumption above and are cited for transparency about what real research shaped that assumption.</p>
+      <table id="tblApxF">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Visa card-not-present interchange reimbursement rate, U.S., consumer credit</td><td class="num">1.89% + $0.10</td><td>Visa — <a href="https://usa.visa.com/dam/VCOM/download/merchants/visa-usa-interchange-reimbursement-fees.pdf" target="_blank" rel="noopener">Visa USA Interchange Reimbursement Fees</a></td><td>18 Apr 2026</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Visa network assessment fee, U.S., credit transactions</td><td class="num">0.14%</td><td>Chargebacks911 — <a href="https://chargebacks911.com/visa-interchange-fees/" target="_blank" rel="noopener">Visa Interchange: 2026 Processing Rates &amp; Fees, Explained</a></td><td>2026</td><td>MEDIUM</td></tr>
+        <tr><td>S3</td><td>Global card fraud loss rate, 2023 (supplemental)</td><td class="num">6.58¢ / $100</td><td>Nilson Report via GlobeNewswire — <a href="https://www.globenewswire.com/news-release/2025/01/06/3004931/0/en/Payment-Card-Fraud-Losses-Approach-34-Billion.html" target="_blank" rel="noopener">Payment Card Fraud Losses Approach $34 Billion</a></td><td>6 Jan 2025</td><td>MEDIUM</td></tr>
+        <tr><td>S4</td><td>Card-not-present fraud rates run higher than card-present, and are rising (supplemental)</td><td class="num">14.2 / 5.1 basis points, i.e. bps (CP)</td><td>Federal Reserve Bank of Kansas City — <a href="https://www.kansascityfed.org/research/payments-system-research-briefings/new-data-on-card-present-and-card-not-present-fraud-rates-in-the-united-states/" target="_blank" rel="noopener">New Data on Card-Present and Card-Not-Present Fraud Rates</a></td><td>25 Feb 2026</td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>Typical on-chain transaction fee, low-cost settlement network (Base)</td><td class="num">$0.002–$0.02</td><td>Base (Coinbase) — <a href="https://docs.base.org/base-chain/network-information/network-fees" target="_blank" rel="noopener">Network Fees — Base Documentation</a></td><td>accessed 2026-09-09</td><td>MEDIUM</td></tr>
+        <tr><td>S6</td><td>Circle's tiered USDC cash-out fee schedule (supplemental)</td><td class="num">0.03%–0.10%</td><td>Cointelegraph via TradingView — <a href="https://tr.tradingview.com/news/cointelegraph%3Afbf74367c094b%3A0-circle-raises-usdc-cash-out-fees-affecting-large-scale-redemptions" target="_blank" rel="noopener">Circle raises USDC cash-out fees</a></td><td>29 Oct 2025</td><td>MEDIUM</td></tr>
+        <tr><td>S7</td><td>AI payment agents favor stablecoin rails over card networks (supplemental narrative grounding)</td><td class="num">n/a</td><td>Payment Executive — <a href="https://www.paymentexecutive.com/post/agentic-commerce-2026-the-payments-revolution-where-ai-agents-actually-buy-stuff" target="_blank" rel="noopener">Agentic Commerce 2026</a></td><td>8 Jun 2026</td><td>MEDIUM</td></tr>
+      </table>
+      <p class="side-note">S1 and S2 are used directly as values in this case's arithmetic (Appendix A/B). S5 is used directly for the AW–ST edge. S3, S4, and S6 are real, dated, named-source figures that inform Modeling Assumptions MA2 and MA4's chosen values without being the values themselves. S7 establishes that this case's real-world dilemma is a live, current industry dynamic.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which rail to recommend; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Vertices, edges, and the cycle</h4>
+    <div class="goal">Count every vertex and every edge in Appendix A's graph, then identify the cycle traced in gold on the diagram above.</div>
+    <div class="fieldrow"><label for="nbVCount">Number of vertices in the graph</label>
+      <input type="number" id="nbVCount" step="1" placeholder="a whole number"> <span class="fb" id="fbVCount"></span></div>
+    <div class="fieldrow"><label for="nbECount">Number of edges in the graph</label>
+      <input type="number" id="nbECount" step="1" placeholder="a whole number"> <span class="fb" id="fbECount"></span></div>
+    <div class="fieldrow"><label for="nbCycle">Which of these is a cycle in the graph?</label>
+      <select id="nbCycle">
+        <option value="">choose one</option>
+        <option value="a">IB → CN → CU → IB</option>
+        <option value="b">CN → AQ → MB → CU → CN</option>
+        <option value="c">AW → ST → CU → AW</option>
+        <option value="d">IB → CN → AQ → IB</option>
+      </select> <span class="fb" id="fbCycle"></span></div>
+    <button onclick="checkStep1()">Check</button>
+    <p class="side-note">D1 also asks for a sentence on what that cycle means for Fernbrook's settlement options — this calculator only checks the vertex/edge/cycle arithmetic, not your written sentence.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: Shortest path from IB to CU</h4>
+    <div class="goal">Compute the total weighted percentage cost of both candidate paths between the Issuing Bank (IB) and the Custodian (CU): the direct path through the Card Network Hub, and the longer path through the Acquiring Processor and Merchant Bank Account.</div>
+    <div class="fieldrow"><label for="nbPath1">Path 1 total weighted cost, IB → CN → CU (%)</label>
+      <input type="number" id="nbPath1" step="0.01" placeholder="percent"> <span class="fb" id="fbPath1"></span></div>
+    <div class="fieldrow"><label for="nbPath2">Path 2 total weighted cost, IB → CN → AQ → MB → CU (%)</label>
+      <input type="number" id="nbPath2" step="0.01" placeholder="percent"> <span class="fb" id="fbPath2"></span></div>
+    <div class="fieldrow"><label for="nbShorter">Which path is mathematically the shortest?</label>
+      <select id="nbShorter"><option value="">choose one</option><option value="1">Path 1 (via CN directly to CU)</option><option value="2">Path 2 (via AQ and MB)</option></select> <span class="fb" id="fbShorter"></span></div>
+    <button onclick="checkStep2()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: Euler audit</h4>
+    <div class="goal">Count the degree of every vertex (how many edges touch it), then determine whether the graph has an Euler circuit, an Euler path, or neither.</div>
+    <div class="fieldrow"><label for="dIB">Degree of IB</label><input type="number" id="dIB" step="1"> <span class="fb" id="fbdIB"></span></div>
+    <div class="fieldrow"><label for="dCN">Degree of CN</label><input type="number" id="dCN" step="1"> <span class="fb" id="fbdCN"></span></div>
+    <div class="fieldrow"><label for="dAQ">Degree of AQ</label><input type="number" id="dAQ" step="1"> <span class="fb" id="fbdAQ"></span></div>
+    <div class="fieldrow"><label for="dCU">Degree of CU</label><input type="number" id="dCU" step="1"> <span class="fb" id="fbdCU"></span></div>
+    <div class="fieldrow"><label for="dST">Degree of ST</label><input type="number" id="dST" step="1"> <span class="fb" id="fbdST"></span></div>
+    <div class="fieldrow"><label for="dAW">Degree of AW</label><input type="number" id="dAW" step="1"> <span class="fb" id="fbdAW"></span></div>
+    <div class="fieldrow"><label for="dMB">Degree of MB</label><input type="number" id="dMB" step="1"> <span class="fb" id="fbdMB"></span></div>
+    <div class="fieldrow"><label for="nbEuler">Euler result</label>
+      <select id="nbEuler"><option value="">choose one</option><option value="circuit">Euler circuit</option><option value="path">Euler path</option><option value="neither">Neither</option></select> <span class="fb" id="fbEuler"></span></div>
+    <button onclick="checkStep3()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: Expected net revenue retained per $1,000 processed</h4>
+    <div class="goal">Using Appendix B, C, and D's figures, compute each rail's total weighted path fee (as a percent) plus its flat per-transaction fee cost (in dollars per $1,000 processed), its expected fraud/dispute loss (as a percent), and the net revenue retained per $1,000 processed.</div>
+    <p class="side-note" style="border-top:none;padding-top:0;margin-top:0">Reminder: at Appendix D's $1.30 average transaction value, $1,000 processed represents (1000 &divide; 1.30) transactions — the flat per-transaction fee scales with that count, not with the $1,000 directly.</p>
+    <h3 style="margin-top:8px">Option A &mdash; The Card Bridge</h3>
+    <div class="fieldrow"><label for="aFeePct">Total weighted fee (%, assessment + interchange)</label><input type="number" id="aFeePct" step="0.001"> <span class="fb" id="fbAFeePct"></span></div>
+    <div class="fieldrow"><label for="aFlat">Total flat-fee cost per $1,000 processed ($)</label><input type="number" id="aFlat" step="0.01"> <span class="fb" id="fbAFlat"></span></div>
+    <div class="fieldrow"><label for="aLoss">Expected fraud/dispute loss (%)</label><input type="number" id="aLoss" step="0.0001"> <span class="fb" id="fbALoss"></span></div>
+    <div class="fieldrow"><label for="aNet">Net revenue retained per $1,000 ($)</label><input type="number" id="aNet" step="0.01"> <span class="fb" id="fbANet"></span></div>
+    <h3>Option B &mdash; The Coin Rail</h3>
+    <div class="fieldrow"><label for="bFeePct">Total weighted fee (%, off-ramp only)</label><input type="number" id="bFeePct" step="0.001"> <span class="fb" id="fbBFeePct"></span></div>
+    <div class="fieldrow"><label for="bFlat">Total flat-fee cost per $1,000 processed ($)</label><input type="number" id="bFlat" step="0.01"> <span class="fb" id="fbBFlat"></span></div>
+    <div class="fieldrow"><label for="bLoss">Expected fraud/dispute loss (%)</label><input type="number" id="bLoss" step="0.0001"> <span class="fb" id="fbBLoss"></span></div>
+    <div class="fieldrow"><label for="bNet">Net revenue retained per $1,000 ($)</label><input type="number" id="bNet" step="0.01"> <span class="fb" id="fbBNet"></span></div>
+    <button onclick="checkStep4()">Check</button>
+    <p class="side-note">Still just checking your own arithmetic — it will not tell you which rail to recommend. That's your D5 pitch to make. If you've revealed and applied the Twist below, this step re-checks against the challenged fraud rate instead.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Reveal this only after you've finished working through the case &mdash; the Twist is meant to land after your analysis, not before.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-node"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've finished the case &mdash; reveal it</button>
+    <div id="twistNarrative">
+      <p>A colleague reads over Priya's shoulder and pushes back: <em>"Where did 0.90% come from? Nobody has ever measured a fraud/dispute rate for AI-agent-initiated micro-transactions — you built that number from a blended aggregate and a directional Fed finding, not a direct measurement."</em></p>
+      <p>Appendix D's fraud-incidence probability (MA4) is a stated Modeling Assumption informed by real, cited findings [S3]/[S4] — it is not a directly measured figure for this exact transaction type. If the real incidence rate for AI-agent-initiated, card-not-present micro-transactions is meaningfully higher than 0.90%, does Step 4's comparison still come out the same way?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the colleague's challenge: increase the fraud/dispute incidence probability (MA4) by 50% and recompute Step 4's expected fraud/dispute loss and net revenue figures.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 — Visa, <em>Visa USA Interchange Reimbursement Fees</em> (18 Apr 2026)</li>
+      <li>S2 — Chargebacks911, <em>Visa Interchange: 2026 Processing Rates &amp; Fees, Explained</em></li>
+      <li>S3 — Nilson Report via GlobeNewswire, <em>Payment Card Fraud Losses Approach $34 Billion</em> (6 Jan 2025)</li>
+      <li>S4 — Federal Reserve Bank of Kansas City, <em>New Data on Card-Present and Card-Not-Present Fraud Rates</em> (25 Feb 2026)</li>
+      <li>S5 — Base (Coinbase), <em>Network Fees — Base Documentation</em></li>
+      <li>S6 — Cointelegraph via TradingView, <em>Circle raises USDC cash-out fees</em> (29 Oct 2025)</li>
+      <li>S7 — Payment Executive, <em>Agentic Commerce 2026</em> (8 Jun 2026)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Fee Route &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   Given data, copied verbatim from cases/the-fee-route/case.json /
+   sensitivity_model.py (case.md sha256 as of this build:
+   71f8b4e3c73996754edb7c77f8c78df2ce2881c5998e3dea5bc0d97ee38301ef).
+   JS port of sensitivity_model.py's PARAMS/FLEX/evaluate() -- same
+   shape, so the Working Notebook and the Python sensitivity model
+   can never silently drift.
+   ================================================================ */
+const PARAMS = {
+  interchange_pct: 0.0189,   // Appendix A/B [S1] -- sourced, NOT flexed by default
+  assessment_pct: 0.0014,    // Appendix A/B [S2] -- sourced, NOT flexed by default
+  card_flat_fee: 0.10,       // Appendix A/B [S1]
+  loss_share_a: 0.20,        // Appendix B, Modeling Assumption MA1
+  coin_flat_fee: 0.01,       // Appendix A/C [S5] -- sourced, NOT flexed by default
+  offramp_pct: 0.0005,       // Appendix A/C, Modeling Assumption (informed by S6)
+  avg_txn_value: 1.30,       // Appendix D, Modeling Assumption MA3
+  fraud_prob: 0.0090         // Appendix D, Modeling Assumption MA4
+};
+const FLEX = ["loss_share_a", "avg_txn_value", "fraud_prob"];
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const txnCountPer1000 = 1000.0 / p.avg_txn_value;
+
+  const cardFeePct = p.interchange_pct + p.assessment_pct;
+  const cardFlatCost = txnCountPer1000 * p.card_flat_fee;
+  const cardLossPct = p.fraud_prob * p.loss_share_a;
+  const netA = 1000.0 * (1.0 - cardFeePct - cardLossPct) - cardFlatCost;
+
+  const coinFeePct = p.offramp_pct;
+  const coinFlatCost = txnCountPer1000 * p.coin_flat_fee;
+  const coinLossPct = p.fraud_prob * 1.0;
+  const netB = 1000.0 * (1.0 - coinFeePct - coinLossPct) - coinFlatCost;
+
+  return {
+    A: netA, B: netB,
+    cardFeePct, cardFlatCost, cardLossPct,
+    coinFeePct, coinFlatCost, coinLossPct
+  };
+}
+
+/* Weighted-path arithmetic for D2 (IB-CU shortest path) -- not part of
+   sensitivity_model.py's graded metric, but the same source-of-record edges. */
+const EDGE_IB_CN = 0.14, EDGE_CN_CU = 0.30, EDGE_CN_AQ = 1.89, EDGE_AQ_MB = 0.0, EDGE_MB_CU = 0.0;
+function shortestPathPcts(){
+  return {
+    path1: EDGE_IB_CN + EDGE_CN_CU,                        // IB-CN-CU
+    path2: EDGE_IB_CN + EDGE_CN_AQ + EDGE_AQ_MB + EDGE_MB_CU // IB-CN-AQ-MB-CU
+  };
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  fb('fbVCount', near(parseFloat(val('nbVCount')), 7, 0));
+  fb('fbECount', near(parseFloat(val('nbECount')), 7, 0));
+  fb('fbCycle', document.getElementById('nbCycle').value === 'b');
+}
+
+function checkStep2(){
+  const sp = shortestPathPcts();
+  fb('fbPath1', near(parseFloat(val('nbPath1')), sp.path1, 0.02));
+  fb('fbPath2', near(parseFloat(val('nbPath2')), sp.path2, 0.02));
+  fb('fbShorter', document.getElementById('nbShorter').value === '1');
+}
+
+function checkStep3(){
+  fb('fbdIB', near(parseFloat(val('dIB')), 1, 0));
+  fb('fbdCN', near(parseFloat(val('dCN')), 3, 0));
+  fb('fbdAQ', near(parseFloat(val('dAQ')), 2, 0));
+  fb('fbdCU', near(parseFloat(val('dCU')), 3, 0));
+  fb('fbdST', near(parseFloat(val('dST')), 2, 0));
+  fb('fbdAW', near(parseFloat(val('dAW')), 1, 0));
+  fb('fbdMB', near(parseFloat(val('dMB')), 2, 0));
+  fb('fbEuler', document.getElementById('nbEuler').value === 'neither');
+}
+
+function checkStep4(){
+  const twistEl = document.getElementById('applyTwist');
+  const params = (twistEl && twistEl.checked) ? { fraud_prob: PARAMS.fraud_prob * 1.5 } : {};
+  const r = evaluate(params);
+
+  fb('fbAFeePct', near(parseFloat(val('aFeePct')), r.cardFeePct*100, 0.02));
+  fb('fbAFlat', near(parseFloat(val('aFlat')), r.cardFlatCost, 0.5));
+  fb('fbALoss', near(parseFloat(val('aLoss')), r.cardLossPct*100, 0.01));
+  fb('fbANet', near(parseFloat(val('aNet')), r.A, 1));
+
+  fb('fbBFeePct', near(parseFloat(val('bFeePct')), r.coinFeePct*100, 0.02));
+  fb('fbBFlat', near(parseFloat(val('bFlat')), r.coinFlatCost, 0.5));
+  fb('fbBLoss', near(parseFloat(val('bLoss')), r.coinLossPct*100, 0.01));
+  fb('fbBNet', near(parseFloat(val('bNet')), r.B, 1));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-fee-route";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Labeled weighted-graph drawing + cycle identification"],
+  ["D2", "Shortest-path determination, IB to CU"],
+  ["D3", "Euler-audit determination (circuit / path / neither)"],
+  ["D4", "Expected-net-revenue-retained table, both rails"],
+  ["D5", "One-paragraph recommendation using graph-theory vocabulary"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every
+   url https:// to an allowlisted domain). All 8 openstax.org URLs
+   below were verified live for graph-theory vocabulary elsewhere in
+   this corpus (cases/reroute-wait, cases/the-trailer-return) -- a URL
+   fetched and confirmed for one case is a legitimate source for the
+   same term reused verbatim in another case (contract doc, section 3).
+   ================================================================ */
+const GLOSSARY = {
+  "Graph": {def: "A structure that represents objects as dots (vertices) connected by lines (edges) -- the mathematical structure the whole settlement network is built on.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/12-key-concepts"},
+  "Vertex": {def: "One object of a set of objects, drawn as a dot, that may be connected to other objects by edges. Plural: vertices.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/12-1-graph-basics"},
+  "Edge": {def: "A line segment connecting two vertices, representing a relationship or a connection between them -- in this case, a real settlement link carrying a fee.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/12-1-graph-basics"},
+  "Path": {def: "A walk through a graph, from vertex to vertex along edges, that never revisits the same vertex twice.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/12-4-navigating-graphs"},
+  "Weighted Graph": {def: "A graph in which every edge carries a number -- a weight -- representing a quantity like a fee, a distance, or a cost.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/12-key-concepts"},
+  "Cycle": {def: "A series of connected edges that begin and end at the same vertex but otherwise never repeat any vertex.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/12-2-graph-structures"},
+  "Euler Path": {def: "A route (also called an Euler trail) that visits every edge in a graph exactly once, but does not have to return to its starting vertex.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/12-6-euler-trails"},
+  "Shortest Path": {def: "The path between two vertices in a weighted graph whose edge weights add up to the smallest possible total.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/12-9-traveling-salesperson-problem"}
+};
+const HOWTO = [
+  ["How to find the shortest path between two vertices in a weighted graph", "Shortest Path"],
+  ["How to determine whether a graph has an Euler path or circuit", "Euler Path"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer (T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #story-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — a SECOND glossary layer for this case's real
+   payments/settlement vocabulary, kept separate from the math
+   GLOSSARY above (which T1-19 checks against). Same hover+hyperlink
+   mechanism, its own data object, its own render target
+   (#glossaryStory), and its own auto-linker. Sources are real, dated
+   2026-09-09 Wikipedia articles, each confirmed live and on-topic by
+   direct fetch during this build.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Interchange Fee": {desc: "A fee paid between banks for the acceptance of card-based transactions -- the CN–AQ edge on the Card Bridge.",
+    link: "https://en.wikipedia.org/wiki/Interchange_fee"},
+  "Chargeback": {desc: "A return of money to a payer of a transaction, especially a credit card transaction -- how a card-network dispute is resolved.",
+    link: "https://en.wikipedia.org/wiki/Chargeback"},
+  "Settlement": {desc: "The final step in the transfer of ownership involving the physical exchange of securities or payment -- where funds actually land after a transaction clears.",
+    link: "https://en.wikipedia.org/wiki/Settlement_(finance)"},
+  "Custodian": {desc: "A specialized financial institution responsible for providing securities services -- here, the bank that converts a stablecoin balance back into USD.",
+    link: "https://en.wikipedia.org/wiki/Custodian_bank"},
+  "Stablecoin": {desc: "A type of cryptocurrency that aims to maintain a stable value relative to a specified asset -- the on-chain balance the Coin Rail settles through.",
+    link: "https://en.wikipedia.org/wiki/Stablecoin"},
+  "Issuing Bank": {desc: "A bank that offers card-association branded payment cards directly to consumers -- the customer's own card-issuing bank, vertex IB.",
+    link: "https://en.wikipedia.org/wiki/Issuing_bank"},
+  "Acquiring Processor": {desc: "An acquiring bank (or acquirer) processes credit or debit card payments on behalf of a merchant -- Fernbrook's own card processor, vertex AQ.",
+    link: "https://en.wikipedia.org/wiki/Acquiring_bank"},
+  "On-Chain": {desc: "Recorded directly on a blockchain -- a shared, cryptographically-linked digital ledger -- rather than moved through a traditional bank's internal books.",
+    link: "https://en.wikipedia.org/wiki/Blockchain"},
+  "Card-Not-Present": {desc: "A payment made where the cardholder's physical card is never shown to the merchant for examination -- every online or app-triggered charge, including this case's reorder-agent purchases, is card-not-present by construction.",
+    link: "https://en.wikipedia.org/wiki/Card_not_present_transaction"},
+  "Basis Point": {desc: "One hundredth of one percentage point (0.01%) -- a small-unit way of stating fee and fraud rates precisely; 10 basis points equal 0.10%.",
+    link: "https://en.wikipedia.org/wiki/Basis_point"},
+  "Liability Shift": {desc: "A card-network rule about who eats the cost of a fraudulent charge -- shifting responsibility (the 'liability') for a disputed transaction's loss from the bank onto the merchant, or vice versa, depending on which side used the more secure authentication method.",
+    link: "https://en.wikipedia.org/wiki/EMV"},
+  "Assessment Fee": {desc: "A separate, smaller network fee charged alongside interchange -- interchange is paid to the card-issuing bank, while the assessment fee is paid to the card network itself (Visa/Mastercard) for running the network.",
+    link: "https://en.wikipedia.org/wiki/Interchange_fee"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+  document.querySelectorAll('.sterm-placeholder[data-sterm]').forEach(span => {
+    const term = span.dataset.sterm;
+    span.outerHTML = gtermHTMLStory(term, span.textContent);
+  });
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  // Recompute Step 4's feedback immediately if the Hero has already filled it in,
+  // so toggling the Twist checkbox reflects in the calculator without another click.
+  checkStep4();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

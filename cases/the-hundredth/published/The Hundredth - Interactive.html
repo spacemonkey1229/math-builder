@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Hundredth — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  blockquote{margin:10px 0;padding:6px 14px;border-left:4px solid var(--line);color:#555;font-style:italic}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+  /* BEGIN case-context AUTO-GENERATED CSS — edit case.json, not this block; see skills/case-publish/scripts/render_context.py */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  /* END case-context AUTO-GENERATED CSS */
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Hundredth</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Units &middot; Decimals &middot; Range &middot; Probability</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  <p class="lede">The review room is a converted equipment closet behind the pool deck, and it smells of chlorine and warm electronics.</p>
+<p>Two monitors sit side by side on a folding table. On the left, a swimmer's hand slides toward a yellow wall. On the right, a different angle of the same instant. The Chief Judge has watched both so many times that her eyes sting. Outside, the arena is still loud; somebody has started a chant in a language she doesn't speak.</p>
+<p>A protest form lies face-up beside the keyboard, the ink still shiny. The team leader who filed it stands near the door and says nothing at all, which is somehow louder than shouting would be. On the printout taped to the wall, the two results sit one above the other, and the gap between them is the smallest the scoring system can write.</p>
+<p>Everyone who has to live with this call is waiting on one thing: not a verdict about two athletes, but a ruling about which instrument gets the last word when the touchpad and the human eye could tell different stories.</p>
+<p>She taps the space bar, and the footage freezes on a single frame. Then she pulls the rulebook toward her and opens the folder with the two possible rulings.</p>
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+<div class="card" id="storyGlossaryCard">
+  <strong>Swimming Vocabulary</strong>
+  <p class="side-note" style="margin-top:6px">Hover any underlined term below (or in the prose
+    above) for a plain-English definition; click to open a real source on it. This is separate
+    from the math vocabulary in Appendix H &mdash; these are the swimming words the story
+    itself is told in.</p>
+  <div class="glossary-grid" id="storyGlossaryGrid"></div>
+</div>
+  <h2>Background</h2>
+  <p>The Chief Judge is the senior official ruling on a protest at a swimming final. Her authority covers one thing: deciding which kind of evidence orders the finish when the electronic result is challenged. She is accountable to every swimmer in every final, not only this one, because whatever rule she applies tonight is the rule the next close finish will be judged under.</p>
+<p><strong>This decision point is constructed.</strong> In the real 2008 Olympic 100 m butterfly final, Michael Phelps was timed in 50.58 and Milorad Čavić in 50.59 (SEE APPENDIX C). Serbia protested; the referee reviewed high-speed video and the result was upheld, and <strong>FINA's ruling stands</strong>. This case does not ask you to re-try that ruling. It asks you to reason about the evidence the officials faced and about the rule that should govern evidence like it.</p>
+<p>What the record does and does not say is set out in Appendix A. In short: the electronic result is documented, the rule text is documented (SEE APPENDIX B), but <strong>who first touched the wall is claimed differently by different named sources</strong>, and no source found publishes a measured pad delay (SEE APPENDIX F).</p>
+<p>The two rulings in front of the Chief Judge:</p>
+<ul><li><strong>Pad Ranks.</strong> The automatic equipment orders the finish, as the rule is written. The reported times differ, so the swimmer with the lower reported time is ranked ahead, applied identically to every race.</li><li><strong>Contact Ranks.</strong> Where the pad and the eye could disagree, high-speed video of first hand contact orders the finish, because first contact is what a race is meant to reward.</li></ul>
+<p>There is no "dead heat" ruling available. The reported times are not equal, and the rules award a shared placing only to equal times at one-hundredth of a second (SEE APPENDIX B). The question is which instrument orders the finish, not whether the finish is a tie.</p>
+<p>One idea runs through the numbers. A touchpad registers a touch a short time after the hand arrives. If that delay is the same for both swimmers, it cancels out when the two are compared. Only a <strong>difference</strong> in delay between the two lanes can make the pad's order differ from the order of first contact. How big that difference could plausibly be is <strong>not measured in any source found</strong>; this case asks you to state a range and defend it (SEE APPENDICES E AND F). Every figure here is cited (SEE APPENDIX G) or declared an assumption (SEE APPENDIX F). The vocabulary and "how to…" skills this case asks you to research are listed in Appendix H.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are the Chief Judge. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Pad Ranks</h4>
+      <p style="margin:0">The touchpad result orders the finish, as the rule is written.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Contact Ranks</h4>
+      <p style="margin:0">First hand contact on high-speed video orders the finish.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include: <strong>D1</strong> speed and distance per hundredth; <strong>D2</strong> a frame-rate band table; <strong>D3</strong> the range hiding inside &ldquo;0.01 s&rdquo;; <strong>D4</strong> a differential-lag table and your plausible range; <strong>D5</strong> a reliability comparison; <strong>D6</strong> what the model leaves out. The full wording of each is in the case document.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  <details open id="apx-a"><summary>Appendix A &mdash; What the Record Says, and Who Says It</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D4). Facts first, then claims. A claim is attributed to the person or organization that made it and is <strong>not</strong> a finding of this case.</p>
+<p><strong>Documented facts.</strong></p>
+<div style="overflow-x:auto"><table id="tblA1"><tr><th>Item</th><th>Value</th></tr>
+<tr><td>Event</td><td>Men's 100 metre butterfly final, 2008 Summer Olympics, 16 August 2008 [S2]</td></tr>
+<tr><td>Reported results</td><td>Phelps 50.58; Čavić 50.59; third place 51.12 [S1]</td></tr>
+<tr><td>Serbia's team protested</td><td>Reported by ABC News on the day [S3]</td></tr>
+<tr><td>FINA's decision</td><td>FINA said it was convinced Phelps reached the wall ahead of Čavić, and rejected the protest [S3]</td></tr>
+</table></div>
+<p><strong>Claims, each attributed to its source only.</strong></p>
+<div style="overflow-x:auto"><table id="tblA2"><tr><th>Who</th><th>What was said</th><th>Source</th></tr>
+<tr><td>Serbia's protest, as reported by ABC News</td><td>Čavić touched first but did not apply enough force to trigger the timing sensor</td><td>[S3]</td></tr>
+<tr><td>Ben Ekumbo, referee, as reported by NBC News</td><td>He reviewed the footage and found the Serbian swimmer touched second: "One was stroking and one was gliding"; the judgment came from the footage, not the human eye</td><td>[S4]</td></tr>
+<tr><td>Omega's Christophe Bertaud (also spelled "Berthaud" elsewhere), 2009 video interview, as reported by Swimming World</td><td>Čavić did touch the wall first, and Phelps's force on the pad stopped his clock one hundredth of a second sooner</td><td>[S5]</td></tr>
+</table></div>
+<p>These claims point in different directions on first contact, and this case does not choose between them. Bertaud's statement comes from a single source, and his name is spelled two ways across sources. No source found gives the frame rate of the footage the referee reviewed, and no source found publishes a pad delay for either swimmer. One reference work reports a pad activation force, but a different figure than other write-ups, so this case uses none (SEE APPENDIX G, EXCLUDED FIGURES).</p>
+</div></details>
+<details id="apx-b"><summary>Appendix B &mdash; The Rule Text</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D3). FINA's swimming rules, as published in the 2009-2013 edition (in force from 23 September 2009, the first edition after this race) [S6], with the same wording carried in the 2015-2017 edition [S7]:</p>
+<div style="overflow-x:auto"><table id="tblB1"><tr><th>Rule</th><th>What it says (paraphrase)</th></tr>
+<tr><td>SW 11.1</td><td>Times recorded by automatic equipment are used to determine the winner, the placings and each lane's time, and take precedence over timekeepers. If the equipment fails, or a swimmer failed to activate it, the timekeepers' recordings are official. [S6]</td></tr>
+<tr><td>SW 11.2</td><td>With automatic equipment, results are recorded only to one hundredth of a second. When thousandths are available, the third digit is not recorded or used to determine time or placement. Swimmers with the same time at one hundredth share the same placing. [S6]</td></tr>
+<tr><td>SW 13.1</td><td>Placings and times determined by automatic officiating equipment take precedence over timekeepers. [S6]</td></tr>
+<tr><td>SW 13.4.2</td><td>For combining heats (earlier rounds, not a final; this is not the rule that gives a shared placing, which is SW 11.2): swimmers with tied official times are tied in their relative order of finish. [S7]</td></tr>
+</table></div>
+<p><strong>Edition caveat.</strong> The edition in force on race day (2005-2009) could not be retrieved. This case therefore does not claim the 2008 wording; the 2009-2013 text above is the closest edition found. The rule text says the third digit is "not recorded or used"; it does not use the word "round".</p>
+</div></details>
+<details id="apx-c"><summary>Appendix C &mdash; How a Finish Works, and the Race Figures</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D1, D3).</p>
+<p><strong>How a finish works, in plain words.</strong></p>
+<ul><li><strong>Butterfly finish.</strong> Both hands reach forward and touch the wall at the end of the race. A swimmer can be <strong>stroking</strong> (still pulling with the arms right up to the wall) or <strong>gliding</strong> (arms already stretched out, coasting in).</li><li><strong>Touchpad ('the pad').</strong> A large plate fixed to the wall at the end of each lane, which is what a swimmer touches (the yellow wall in the Overview is the pad). Picture a thin plate that has to be pressed in a little before it closes an electrical contact and stops that lane's clock. A light graze might not close it; a firm press does. So the moment the pad registers comes slightly <strong>after</strong> the moment a hand first reaches the wall: the time for the plate to be pressed far enough. That delay is the <strong>pad lag</strong>. In this case's model, the lag in a lane depends on how the hand arrives: a hand still driving into the wall (stroking) presses firmly at once, while an outstretched hand coasting in (gliding) may rest on the plate and need longer to press it in. Why the two lanes' lags could differ is exactly the open question; no source measures it (SEE APPENDIX F).</li></ul>
+<figure><svg class="diagram" viewBox="0 0 420 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Side view: hand reaching a wall pad" style="max-width:460px;width:100%;border:1px solid #999;background:#fafafa;font-family:sans-serif">
+  <rect x="0" y="90" width="420" height="60" fill="#cfe3ff"/><text x="10" y="140" font-size="11" fill="#1a3a5c">water</text>
+  <rect x="330" y="10" width="70" height="140" fill="#bbb"/><text x="338" y="30" font-size="11">pool wall</text>
+  <rect x="316" y="40" width="14" height="90" fill="#f2c200" stroke="#7a5f00"/><text x="308" y="36" font-size="11" text-anchor="end">touchpad plate</text>
+  <ellipse cx="270" cy="100" rx="22" ry="8" fill="#d9a066"/><line x1="160" y1="100" x2="250" y2="100" stroke="#d9a066" stroke-width="8"/>
+  <text x="100" y="82" font-size="11">swimmer's hand, moving right</text>
+  <text x="20" y="20" font-size="11">Side view. Illustration only, not to scale.</text>
+</svg></figure>
+<ul><li><strong>Differential lag.</strong> The pad lags in both lanes. A lag that is the same in both lanes cancels when you compare the two. Only the <strong>difference</strong> between the two lanes' lags matters for the order.</li><li><strong>Automatic equipment vs timekeepers.</strong> The pads and the clock they stop are the automatic equipment. Timekeepers are officials with handheld stopwatches, who are the back-up.</li><li><strong>FINA</strong> is the international governing body that wrote the swimming rules. A <strong>protest</strong> is a formal written complaint to the referee, who decides it. The <strong>Chief Judge</strong> in this case is the senior official ruling on it.</li><li><strong>Placing, tie and dead heat.</strong> A placing is a finishing position (first, second). A dead heat is a tie, where two swimmers share a placing.</li><li><strong>Frame rate.</strong> A video is a series of still frames. At 60 frames per second a new still image is taken every 1/60 of a second; anything that happens between two frames cannot be seen exactly. To judge first contact, a judge steps through the footage frame by frame and looks for the first frame in which a hand is on the wall. That is why the gap between frames limits how exactly the moment can be placed, and why a judge cannot be exactly sure which frame to call (the extra band J).</li><li><strong>Thousandths.</strong> The clock can count finer than a hundredth of a second, for example 50.584. The rule says the last digit is not recorded or used, so the printed result is 50.58. (Whether a real clock drops that digit or rounds it is part of what D3 asks you to consider.) Heats are the earlier rounds of an event; this was a final, so SW 13.4.2 below is shown only for completeness.</li><li><strong>Team leader.</strong> The official who speaks for a country's swimmers and is allowed to file a protest.</li><li><strong>Referee and Chief Judge.</strong> The referee is the official who rules on protests in a real meet. In this constructed case the Chief Judge is the senior official holding that ruling role, and is a role, not a real person.</li></ul>
+<div style="overflow-x:auto"><table id="tblC1"><tr><th>Figure</th><th>Value</th></tr>
+<tr><td>Race distance</td><td>100 m [S1]</td></tr>
+<tr><td>Reported winning time (Phelps)</td><td>50.58 s [S1]</td></tr>
+<tr><td>Reported second-place time (Čavić)</td><td>50.59 s [S1]</td></tr>
+<tr><td>Reported third-place time</td><td>51.12 s [S1]</td></tr>
+</table></div>
+</div></details>
+<details id="apx-d"><summary>Appendix D &mdash; Review Footage Frame Rates</summary><div class="inner">
+<p>Referenced in Challenge 3 (D2). These are four example frame rates for comparing kinds of footage, listed as scenario inputs (SEE APPENDIX F, MA2). The frame rate of the footage actually reviewed in 2008 was not found.</p>
+<div style="overflow-x:auto"><table id="tblD1"><tr><th>Footage type</th><th>Frames per second</th></tr>
+<tr><td>Ordinary television</td><td>30</td></tr>
+<tr><td>Faster television / phone slow-motion</td><td>60</td></tr>
+<tr><td>High-speed camera</td><td>240</td></tr>
+<tr><td>Very high-speed camera</td><td>1000</td></tr>
+</table></div>
+</div></details>
+<details id="apx-e"><summary>Appendix E &mdash; The Differential-Lag Table and the Reliability Rule</summary><div class="inner">
+<p>Referenced in Challenge 3 (D4, D5).</p>
+<p><strong>Sign convention.</strong> Let the differential lag be Δ = (pad lag of Čavić) − (pad lag of Phelps), in seconds. Let d be the pad-time difference, Čavić minus Phelps. Let c be the first-contact margin, Phelps's contact time minus Čavić's: c &gt; 0 means Čavić touched first. Then c = Δ − d.</p>
+<figure><svg class="diagram" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Timeline: each lane's hand contact, then the pad registering after a lag" style="max-width:560px;width:100%;border:1px solid #999;background:#fafafa;font-family:sans-serif">
+  <text x="10" y="18" font-size="12" fill="#1a3a5c">Illustration only: made-up, not to scale, not this race's values</text>
+  <line x1="20" y1="170" x2="500" y2="170" stroke="#444" stroke-width="1.5"/>
+  <text x="440" y="190" font-size="11" fill="#444">time &#8594;</text>
+  <text x="20" y="62" font-size="12" fill="#7a4a00">Lane of swimmer C</text>
+  <circle cx="200" cy="75" r="6" fill="#d9822b"/><text x="150" y="98" font-size="11">hand touches</text>
+  <circle cx="330" cy="75" r="6" fill="none" stroke="#d9822b" stroke-width="2.5"/><text x="305" y="98" font-size="11">pad registers</text>
+  <line x1="206" y1="75" x2="324" y2="75" stroke="#d9822b" stroke-width="1.5" stroke-dasharray="4 3"/><text x="240" y="68" font-size="11">lag of C</text>
+  <text x="20" y="122" font-size="12" fill="#1a3a5c">Lane of swimmer P</text>
+  <circle cx="240" cy="135" r="6" fill="#2b6cb0"/><text x="190" y="158" font-size="11">hand touches</text>
+  <circle cx="300" cy="135" r="6" fill="none" stroke="#2b6cb0" stroke-width="2.5"/><text x="275" y="158" font-size="11">pad registers</text>
+  <line x1="246" y1="135" x2="294" y2="135" stroke="#2b6cb0" stroke-width="1.5" stroke-dasharray="4 3"/><text x="258" y="128" font-size="11">lag of P</text>
+</svg></figure>
+<p>In this made-up picture C's hand touches first (c &gt; 0) but C's lag is longer, so P's pad registers first (d &gt; 0): the pad and first contact disagree. That can only happen when the lag difference Δ is larger than d.</p>
+<p><strong>The plausible range of Δ is not measured.</strong> The grid below is a sweep for you to work through, not a claim that any value is measured or likely.</p>
+<div style="overflow-x:auto"><table id="tblE1"><tr><th>Δ (s)</th><th>c (s) = Δ − d, with d = 0.01 s</th><th>Who touched first?</th></tr>
+<tr><td>−0.010</td><td>(D4)</td><td>(D4)</td></tr>
+<tr><td>0.000</td><td>(D4)</td><td>(D4)</td></tr>
+<tr><td>0.005</td><td>(D4)</td><td>(D4)</td></tr>
+<tr><td>0.010</td><td>(D4)</td><td>(D4)</td></tr>
+<tr><td>0.015</td><td>(D4)</td><td>(D4)</td></tr>
+<tr><td>0.020</td><td>(D4)</td><td>(D4)</td></tr>
+<tr><td>0.030</td><td>(D4)</td><td>(D4)</td></tr>
+</table></div>
+<p><strong>The reliability rule (a model, used in D5).</strong> Call a finish "close" if the true first-contact margin c is equally likely to be anywhere from −W to +W seconds. An instrument with an <strong>indecision band</strong> of b seconds orders any finish with |c| &lt; b correctly only half the time, and orders the rest correctly. So its probability of ordering a close finish correctly is</p>
+<p>P = 1 − b ÷ (2 × W)</p>
+<ul><li>Option A (Pad Ranks): b = |Δ|.</li><li>Option B (Contact Ranks): b = (time between frames) + J, where J is the extra band a judge needs to call first contact from the footage.</li></ul>
+<p><strong>Percent difference</strong> means (larger P − smaller P) ÷ smaller P × 100.</p>
+<p><strong>A worked example with made-up numbers (not this race).</strong> Suppose W = 0.04 s and an instrument's band is b = 0.01 s. The finishes with true margin between −0.01 s and +0.01 s are 0.02 ÷ 0.08 = 25% of all close finishes. Inside that zone the instrument cannot tell the order, so it is right only half the time (it loses half of 25% = 12.5%). Outside the zone it is always right. So P = 1 − 0.125 = 0.875, which is also 1 − 0.01 ÷ (2 × 0.04). The pad's band is |Δ| because it can only misorder a finish whose true margin is smaller than the difference between the two lanes' delays; the footage's band is the gap between frames plus the extra band J because a moment that falls between two frames, or a hand-contact a judge cannot pin to one frame, cannot be placed any more exactly than that. In short: the pad can only misorder two hands whose true arrival times differ by less than the difference between the lanes' delays, and footage can only misorder two arrivals that fall within about one frame (plus the judge's reading band) of each other.</p>
+<p><strong>Scenario values for D5 (declared, not measured; SEE APPENDIX F):</strong> Δ = 0.010 s, J = 0.005 s, frame rate 240 frames per second, W = 0.05 s.</p>
+</div></details>
+<details id="apx-f"><summary>Appendix F &mdash; Modeling Assumptions</summary><div class="inner">
+<blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. The lag range is a <strong>plausible range, not measured</strong>. A Hero may challenge any of them in discussion, and that is a legitimate move. The answer is sensitive to these values.</blockquote>
+<div style="overflow-x:auto"><table id="tblF1"><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+<tr><td>MA1</td><td>The differential pad lag Δ between the two lanes</td><td>Swept from −0.010 s to 0.030 s (Appendix E); scenario value 0.010 s for D5</td><td><strong>Plausible range, not measured.</strong> No published lag figure for either swimmer was found, and no lag number is attributed to Omega or FINA. The two named claims in Appendix A point in different directions about who pushes or glides, and about force on the pad.</td><td>The answer is sensitive to this value.</td></tr>
+<tr><td>MA2</td><td>The frame rate of the footage under review</td><td>240 frames per second (scenario value); Appendix D lists four examples</td><td>The frame rate of the footage reviewed in 2008 was not found.</td><td>The answer is sensitive to this value.</td></tr>
+<tr><td>MA3</td><td>The judge's extra reading band J for calling first contact</td><td>0.005 s</td><td>No source gives a figure for how precisely a judge can call first contact from footage.</td><td>The answer is sensitive to this value.</td></tr>
+<tr><td>MA4</td><td>What counts as a "close finish": true margin equally likely anywhere within ±W</td><td>W = 0.05 s</td><td>A definition for this model, chosen to span a few centimetres of hand travel either way; not a measurement.</td><td>This sets the scale of P but a change of W moves both options the same way.</td></tr>
+<tr><td>MA5</td><td>Hand speed near the wall</td><td>The D1 average speed is used</td><td>The average speed over 100 m is a stand-in; a stroking hand moves faster and a gliding hand slower.</td><td>Affects centimetre conversions only, not the timing comparisons.</td></tr>
+</table></div>
+</div></details>
+<details id="apx-g"><summary>Appendix G &mdash; Sources</summary><div class="inner">
+<div style="overflow-x:auto"><table id="tblG1"><tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+<tr><td>S1</td><td>Reported times, men's 100 m butterfly final</td><td>50.58 / 50.59 / 51.12</td><td>Olympedia, <a href="https://www.olympedia.org/results/261586" target="_blank" rel="noopener">Men's 100 metres Butterfly, 2008</a></td><td>accessed 2026-10-03</td><td>HIGH</td></tr>
+<tr><td>S2</td><td>Date and the existence of a Serbian protest</td><td>16 Aug 2008</td><td>Wikipedia, <a href="https://en.wikipedia.org/wiki/Swimming_at_the_2008_Summer_Olympics_%E2%80%93_Men%27s_100_metre_butterfly" target="_blank" rel="noopener">Swimming at the 2008 Summer Olympics, Men's 100 metre butterfly</a></td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S3</td><td>FINA's decision; Serbia's alleged grounds</td><td>as attributed</td><td>ABC News, <a href="https://www.abc.net.au/news/2008-08-16/fina-throws-out-protest-against-phelps/478670" target="_blank" rel="noopener">FINA throws out protest against Phelps</a></td><td>2008-08-16</td><td>MEDIUM</td></tr>
+<tr><td>S4</td><td>Referee Ekumbo's statements</td><td>as attributed</td><td>NBC News, <a href="https://www.nbcnews.com/id/wbna26232965" target="_blank" rel="noopener">Video, timing systems confirm Phelps' 7th gold</a></td><td>2008-08</td><td>MEDIUM</td></tr>
+<tr><td>S5</td><td>Omega's Bertaud: Čavić touched first; Phelps's force on the pad stopped his clock sooner (single source)</td><td>as attributed</td><td>Swimming World, <a href="https://www.swimmingworldmagazine.com/news/mark-spitz-allegedly-claims-michael-phelps-did-not-win-2008-100-fly-olympic-gold/" target="_blank" rel="noopener">Mark Spitz allegedly claims Michael Phelps did not win 2008 100 fly Olympic gold</a></td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S6</td><td>SW 11.1, 11.2, 13.1 wording (2009-2013 edition)</td><td>as paraphrased</td><td>FINA, <a href="https://e3c1a240-348c-4e25-ba0f-d605cc91676d.usrfiles.com/ugd/e3c1a2_0b195d2a7fe747249f570c80124bbf08.pdf" target="_blank" rel="noopener">FINA Swimming Rules 2009-2013</a> (copy hosted by Bahamas Aquatics)</td><td>enforced 2009-09-23</td><td>MEDIUM</td></tr>
+<tr><td>S7</td><td>SW 13.4.2 and the same SW 11.2 wording (2015-2017 edition)</td><td>as paraphrased</td><td>FINA, <a href="https://www.plavalna-zveza.si/wp-content/uploads/2021/07/FINA_SW_RULES_20150907.pdf" target="_blank" rel="noopener">Swimming Rules 2015-2017</a> (copy hosted by the Slovenian federation)</td><td>2015-09-07</td><td>MEDIUM</td></tr>
+<tr><td>S8</td><td>Winner's average speed, derived: 100 m divided by 50.58 s</td><td>1.977 m/s</td><td>derived from S1</td><td>n/a</td><td>HIGH</td></tr>
+</table></div>
+<p><strong>Excluded figures.</strong> A touchpad activation force appears in secondary write-ups, with different values in different places and no primary source; it is not used. A claim that Serbia "accepted" the footage was not used, as the case could not confirm it from a named primary source. The 2005-2009 rule edition (in force on race day) could not be retrieved.</p>
+</div></details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-10-04. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+    <div class="stepbox">
+    <h4>Step 1 &mdash; Speed and distance per hundredth (D1)</h4>
+    <div class="goal">Using Appendix C, find the winner's average speed and how far a hand travels in one hundredth of a second at that speed.</div>
+    <div class="fieldrow"><label for="s1v">Average speed (m/s)</label><input type="number" id="s1v" step="any" placeholder="a decimal number"><span id="fb1a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1d">Distance in 0.01 s (cm)</label><input type="number" id="s1d" step="any" placeholder="a decimal number"><span id="fb1b" class="fb"></span></div>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Frame-rate bands (D2)</h4>
+    <div class="goal">For each frame rate in Appendix D, find the time between frames (seconds) and, for the 240 and 30 frames-per-second rows, the distance a hand travels between frames (cm).</div>
+    <div class="fieldrow"><label for="s2a">Time between frames, 30 fps (s)</label><input type="number" id="s2a" step="any" placeholder="a decimal number"><span id="fb2a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2b">Time between frames, 60 fps (s)</label><input type="number" id="s2b" step="any" placeholder="a decimal number"><span id="fb2b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2c">Time between frames, 240 fps (s)</label><input type="number" id="s2c" step="any" placeholder="a decimal number"><span id="fb2c" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2d">Time between frames, 1000 fps (s)</label><input type="number" id="s2d" step="any" placeholder="a decimal number"><span id="fb2d" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2e">Hand travel per frame, 30 fps (cm)</label><input type="number" id="s2e" step="any" placeholder="a decimal number"><span id="fb2e" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2f">Hand travel per frame, 240 fps (cm)</label><input type="number" id="s2f" step="any" placeholder="a decimal number"><span id="fb2f" class="fb"></span></div>
+    <button onclick="checkStep2()">Check</button>
+  </div>
+  <div class="stepbox">
+    <h4>Step 3 &mdash; The range hiding inside 0.01 s (D3)</h4>
+    <div class="goal">Using reported times of 50.58 and 50.59, find the smallest and largest true pad-time difference if the third digit is dropped, and the upper end if the time is rounded.</div>
+    <div class="fieldrow"><label for="s3a">Dropped digit: smallest difference (s)</label><input type="number" id="s3a" step="any" placeholder="a decimal number"><span id="fb3a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3b">Dropped digit: largest difference (s)</label><input type="number" id="s3b" step="any" placeholder="a decimal number"><span id="fb3b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3c">Rounded: upper end of the difference (s)</label><input type="number" id="s3c" step="any" placeholder="a decimal number"><span id="fb3c" class="fb"></span></div>
+    <button onclick="checkStep3()">Check</button>
+  </div>
+  <div class="stepbox">
+    <h4>Step 4 &mdash; The differential-lag table (D4)</h4>
+    <div class="goal">Using Appendix E's sign convention and a reported pad margin of 0.01 s, find the first-contact margin c for two rows of the table, and the lag above which the pad and first contact disagree.</div>
+    <div class="fieldrow"><label for="s4a">c when the lag is 0.015 s</label><input type="number" id="s4a" step="any" placeholder="a decimal number, negative if below zero"><span id="fb4a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s4b">c when the lag is 0.005 s</label><input type="number" id="s4b" step="any" placeholder="a decimal number, negative if below zero"><span id="fb4b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s4c">Lag above which they disagree (s)</label><input type="number" id="s4c" step="any" placeholder="a decimal number"><span id="fb4c" class="fb"></span></div>
+    <button onclick="checkStep4()">Check</button>
+  </div>
+  <div class="stepbox">
+    <h4>Step 5 &mdash; The reliability comparison (D5)</h4>
+    <div class="goal">Use Appendix E's rule with your own lag (it starts at the scenario value; change it to try your D4 range). Find each option's band and its probability of ordering a close finish correctly, then the percent difference. If the twist is applied below, the footage changes.</div>
+    <div class="fieldrow"><label for="s5d">Differential lag to use (s)</label><input type="number" id="s5d" step="any" placeholder="a decimal number" value="0.010"><span id="fb5z" class="fb"></span></div>
+    <div class="fieldrow"><label for="s5a">Option A band (s)</label><input type="number" id="s5a" step="any" placeholder="a decimal number"><span id="fb5a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s5b">Option B band (s)</label><input type="number" id="s5b" step="any" placeholder="a decimal number"><span id="fb5b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s5c">Probability, Option A</label><input type="number" id="s5c" step="any" placeholder="a decimal (a probability)"><span id="fb5c" class="fb"></span></div>
+    <div class="fieldrow"><label for="s5e">Probability, Option B</label><input type="number" id="s5e" step="any" placeholder="a decimal (a probability)"><span id="fb5e" class="fb"></span></div>
+    <div class="fieldrow"><label for="s5f">Percent difference (larger minus smaller, divided by smaller, times 100)</label><input type="number" id="s5f" step="any" placeholder="a decimal number"><span id="fb5f" class="fb"></span></div>
+    <button onclick="checkStep5()">Check</button>
+    <p class="side-note">These checks only confirm your arithmetic. Which ruling to choose, and what lag you believe, is still yours.</p>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p>A technician has just walked in. The fast camera's view of the wall was blocked by spray in this lane. The only angle that clearly shows both hands at the wall is the ordinary slow-motion feed: <strong>60 frames per second</strong>. The judge's reading band J is unchanged, and nobody may read between two frames. This is a constructed what-if for discussion; it is not a record of what footage existed in 2008.</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist to Step 5's check (Contact Ranks uses the 60 fps feed)</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+      <li>[S1] Olympedia &mdash; <a href="https://www.olympedia.org/results/261586" target="_blank" rel="noopener">Men's 100 metres Butterfly, 2008</a></li>
+      <li>[S2] Wikipedia &mdash; <a href="https://en.wikipedia.org/wiki/Swimming_at_the_2008_Summer_Olympics_%E2%80%93_Men%27s_100_metre_butterfly" target="_blank" rel="noopener">Swimming at the 2008 Summer Olympics, Men's 100 metre butterfly</a></li>
+      <li>[S3] ABC News &mdash; <a href="https://www.abc.net.au/news/2008-08-16/fina-throws-out-protest-against-phelps/478670" target="_blank" rel="noopener">FINA throws out protest against Phelps</a></li>
+      <li>[S4] NBC News &mdash; <a href="https://www.nbcnews.com/id/wbna26232965" target="_blank" rel="noopener">Video, timing systems confirm Phelps' 7th gold</a></li>
+      <li>[S5] Swimming World &mdash; <a href="https://www.swimmingworldmagazine.com/news/mark-spitz-allegedly-claims-michael-phelps-did-not-win-2008-100-fly-olympic-gold/" target="_blank" rel="noopener">Mark Spitz allegedly claims Michael Phelps did not win 2008 100 fly Olympic gold</a></li>
+      <li>[S6] FINA &mdash; <a href="https://e3c1a240-348c-4e25-ba0f-d605cc91676d.usrfiles.com/ugd/e3c1a2_0b195d2a7fe747249f570c80124bbf08.pdf" target="_blank" rel="noopener">FINA Swimming Rules 2009-2013</a></li>
+      <li>[S7] FINA &mdash; <a href="https://www.plavalna-zveza.si/wp-content/uploads/2021/07/FINA_SW_RULES_20150907.pdf" target="_blank" rel="noopener">Swimming Rules 2015-2017</a></li>
+      <li>[S8] Derived: 100 m divided by 50.58 s</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Hundredth &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/the-hundredth/sensitivity_model.py. Raw given data and assumptions only; no verdicts.
+const DISTANCE_M = 100, TIME_A = 50.58, TIME_B = 50.59, PAD_GAP = 0.01;
+const PARAMS = { delta_lag: 0.010, judge_band: 0.005, fps: 240, window: 0.05, twist_fps: 60 };
+const FLEX = ["delta_lag", "judge_band", "fps"];
+function _p(band, window){ return Math.max(0, 1 - band/(2*window)); }
+function _metrics(delta, j, fps, w){ return {A: _p(Math.abs(delta), w), B: _p(1/fps + j, w)}; }
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  return _metrics(p.delta_lag, p.judge_band, p.fps, p.window);
+}
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  return _metrics(p.delta_lag, p.judge_band, p.twist_fps, p.window);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkStep1(){
+  const v = DISTANCE_M / TIME_A;
+  fb('fb1a', near(parseFloat(val('s1v')), v, 0.005));
+  fb('fb1b', near(parseFloat(val('s1d')), v*PAD_GAP*100, 0.02));
+}
+function checkStep2(){
+  const v = DISTANCE_M / TIME_A;
+  fb('fb2a', near(parseFloat(val('s2a')), 1/30, 0.0002));
+  fb('fb2b', near(parseFloat(val('s2b')), 1/60, 0.0002));
+  fb('fb2c', near(parseFloat(val('s2c')), 1/240, 0.0002));
+  fb('fb2d', near(parseFloat(val('s2d')), 1/1000, 0.0002));
+  fb('fb2e', near(parseFloat(val('s2e')), v*100/30, 0.05));
+  fb('fb2f', near(parseFloat(val('s2f')), v*100/240, 0.02));
+}
+function checkStep3(){
+  // dropping the third digit: A in [50.580, 50.589], B in [50.590, 50.599]
+  fb('fb3a', near(parseFloat(val('s3a')), 50.590 - 50.589, 0.0002));
+  fb('fb3b', near(parseFloat(val('s3b')), 50.599 - 50.580, 0.0002));
+  // rounding to the nearest hundredth: each time within +/- 0.005 s, so the gap is under 0.01 + 2*0.005
+  fb('fb3c', near(parseFloat(val('s3c')), PAD_GAP + 2*0.005, 0.0002));
+}
+function checkStep4(){
+  fb('fb4a', near(parseFloat(val('s4a')), 0.015 - PAD_GAP, 0.0003));
+  fb('fb4b', near(parseFloat(val('s4b')), 0.005 - PAD_GAP, 0.0003));
+  fb('fb4c', near(parseFloat(val('s4c')), PAD_GAP, 0.0003));
+}
+function checkStep5(){
+  const d = parseFloat(val('s5d'));
+  const twist = !!window.__TWIST_APPLIED__;
+  const fps = twist ? PARAMS.twist_fps : PARAMS.fps;
+  const m = (twist ? evaluate_twist : evaluate)({delta_lag: d});
+  const bandA = Math.abs(d), bandB = 1/fps + PARAMS.judge_band;
+  fb('fb5a', near(parseFloat(val('s5a')), bandA, 0.0002));
+  fb('fb5b', near(parseFloat(val('s5b')), bandB, 0.0002));
+  fb('fb5c', near(parseFloat(val('s5c')), m.A, 0.002));
+  fb('fb5e', near(parseFloat(val('s5e')), m.B, 0.002));
+  const hi = Math.max(m.A, m.B), lo = Math.min(m.A, m.B);
+  fb('fb5f', near(parseFloat(val('s5f')), 100*(hi-lo)/lo, 0.25));
+  document.getElementById('fb5z').className = 'fb';
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "the-hundredth"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Speed and distance per hundredth"],
+  ["D2", "Frame-rate band table"],
+  ["D3", "The range hiding inside 0.01 s"],
+  ["D4", "Differential-lag table and your plausible range"],
+  ["D5", "Reliability comparison (scenario values and your own range)"],
+  ["D6", "What the model leaves out"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,process])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${process ? `<div class="meta" style="margin:2px 0 6px">${process}</div>` : ''}
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Unit": {def: "A defined quantity -- a centimeter, an hour, a second -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Percent": {def: "A ratio that compares a number to 100, literally per hundred.",
+    url: "https://www.mathsisfun.com/percentage.html"},
+  "Rounding": {def: "Replacing a number with a simpler, nearby value at a chosen place value.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-place-value-and-decimals/imp-rounding-decimals/v/rounding-decimals"},
+  "Estimating": {def: "Finding an approximate answer that is close enough to be useful, rather than an exact one.",
+    url: "https://www.mathsisfun.com/numbers/estimation.html"},
+  "Range": {def: "The difference between the largest and smallest values in a set; also used loosely for the span from a lowest to a highest possible value.",
+    url: "https://www.mathsisfun.com/data/range.html"},
+  "Probability": {def: "How likely an event is to happen, from 0 (impossible) to 1 (certain).",
+    url: "https://www.mathsisfun.com/data/probability.html"},
+  "Absolute Value": {def: "How far a number is from zero on the number line -- always zero or positive.",
+    url: "https://www.khanacademy.org/math/algebra-home/alg-absolute-value"},
+  "Variable": {def: "A letter or symbol that stands for a number you can change or do not yet know, such as the lag in this case.",
+    url: "https://www.mathsisfun.com/definitions/variable.html"}
+};
+const HOWTO = [
+  ["how to convert an amount with compound units", "Unit"],
+  ["how to divide decimal numbers", "Decimal"],
+  ["how to multiply decimal numbers", "Decimal"],
+  ["how to subtract decimal numbers", "Decimal"],
+  ["how to round a number to a specified place value", "Rounding"],
+  ["how to evaluate a variable expression (Substitution Property)", "Variable"],
+  ["how to evaluate an absolute value expression", "Absolute Value"],
+  ["how to determine the probability of a single event", "Probability"],
+  ["how to convert numbers to percents", "Percent"],
+  ["how to compare two or more values", "Ratio"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  window.__TWIST_APPLIED__ = document.getElementById('applyTwist').checked;
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+
+/* BEGIN case-context AUTO-GENERATED STORY_GLOSSARY — edit case.json.context_glossary[], not this block; see skills/case-publish/scripts/render_context.py */
+const STORY_GLOSSARY = {
+  "FINA": {desc: "The international federation that governs swimming and other water sports and wrote the swimming rules this case quotes. It has since been renamed World Aquatics.",
+    link: "https://en.wikipedia.org/wiki/World_Aquatics"},
+  "Butterfly": {desc: "A swimming stroke in which both arms sweep together over the water and the legs kick together. The race in this case is a 100 m butterfly.",
+    link: "https://en.wikipedia.org/wiki/Butterfly_stroke"},
+  "Dead heat": {desc: "A tie in a race: the performances are judged so close that no difference can be resolved, so the competitors share a placing.",
+    link: "https://en.wikipedia.org/wiki/Dead_heat"},
+  "Frame rate": {desc: "How many still images a video records or shows each second, measured in frames per second. Anything that happens between two frames cannot be seen exactly.",
+    link: "https://en.wikipedia.org/wiki/Frame_rate"}
+};
+/* END case-context AUTO-GENERATED STORY_GLOSSARY */
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#storyGlossaryCard')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryCard, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryTerms(["#overview", "#background", "#dilemma", "#challenges", "#appendices", "#notebook", "#twist"]);
+</script>
+</body>
+</html>

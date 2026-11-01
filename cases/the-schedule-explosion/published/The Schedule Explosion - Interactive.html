@@ -1,0 +1,1116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Schedule Explosion — Interactive</title>
+<!-- Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39/MCS-47).
+     case.md sha256 at build time: 9b8cbb04268b85384dc9c084026c6138819c82424dac2cbf0a7d49a6e0d4f219 -->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- math glossary hover + hyperlink terms — T1-19 relies on .gterm ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ---- story (real-world vocabulary) glossary — separate .sterm class,
+         separate STORY_GLOSSARY object with {desc,link} keys, so it can
+         never be counted by T1-19's math-only {def,url} regex. ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+
+  /* CASE-SPECIFIC — live factorial calculator */
+  .calcwrap{background:#fbf8ee;border:1px solid var(--gold);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .calcwrap h4{margin:0 0 4px;color:var(--navy-dk);font-family:var(--sans)}
+  .calcout{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px;font-family:var(--sans)}
+  .calcout .box{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .calcout .box .lab{font-size:.72rem;color:var(--sub);text-transform:uppercase;letter-spacing:.03em}
+  .calcout .box .num{font-size:1.1rem;font-weight:700;color:var(--navy);text-align:left}
+  .calcout .box.feasible{border-color:var(--ok)}
+  .calcout .box.infeasible{border-color:var(--bad)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-gpu" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 6v12"/><path d="M2 10h4"/><path d="M2 14h4"/></symbol>
+  <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Schedule Explosion</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Advanced Operations &middot; Factorial</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <figure>
+    <svg viewBox="0 0 640 160" role="img" aria-label="A bar chart schematic showing bars growing explosively taller from left to right as job count increases">
+      <line x1="30" y1="130" x2="610" y2="130" stroke="#dfe4ea" stroke-width="1"/>
+      <line x1="30" y1="20" x2="30" y2="130" stroke="#dfe4ea" stroke-width="1"/>
+      <rect x="60" y="126" width="34" height="4" fill="#1a3a5c"/>
+      <rect x="140" y="121" width="34" height="9" fill="#1a3a5c"/>
+      <rect x="220" y="110" width="34" height="20" fill="#1a3a5c"/>
+      <rect x="300" y="90" width="34" height="40" fill="#1a3a5c"/>
+      <rect x="380" y="55" width="34" height="75" fill="#c9a227"/>
+      <rect x="460" y="30" width="34" height="100" fill="#a3312a"/>
+      <text x="60" y="145" font-family="sans-serif" font-size="11" fill="#5b6472">n=4</text>
+      <text x="140" y="145" font-family="sans-serif" font-size="11" fill="#5b6472">n=8</text>
+      <text x="220" y="145" font-family="sans-serif" font-size="11" fill="#5b6472">n=10</text>
+      <text x="300" y="145" font-family="sans-serif" font-size="11" fill="#5b6472">n=12</text>
+      <text x="380" y="145" font-family="sans-serif" font-size="11" fill="#5b6472">n=15</text>
+      <text x="460" y="145" font-family="sans-serif" font-size="11" fill="#5b6472">n=18+</text>
+    </svg>
+    <figcaption>Schematic only &mdash; no case data plotted here. n! grows so fast that a linear bar chart quickly runs off the page; build the real numbers (and a real log-scale chart) yourself in the Working Notebook.</figcaption>
+  </figure>
+  <p class="lede">The dashboard is still refreshing when Dara Osei's phone buzzes on the desk beside her keyboard: <em>VP sync &mdash; <span class="sterm" data-sterm="Utilization">utilization</span> review &mdash; 10 min.</em> She doesn't pick it up. Behind her, the data-hall's cooling fans hold their usual low roar, the same sound she's fallen asleep to twice this month on the office couch. On her second monitor, a <span class="sterm" data-sterm="Command Line">terminal window</span> sits open mid-command, cursor blinking after <code>./run_scheduler --mode=</code>.</p>
+  <p>Two words are typed after the flag, then deleted, then typed again. <code>full_sweep</code>. <code>greedy</code>. <code>full_sweep</code>.</p>
+  <p>She has spent three weeks building the "perfect" version &mdash; a scheduler that checks every possible way to line up tonight's training jobs before picking the one true best ordering, instead of the fast, good-enough rule the team has shipped with for a year. Tonight's batch is small, a test run before the real rollout. It finished the exhaustive check in under a minute. She has the numbers open in the next tab, and they're good &mdash; genuinely better than what the old scheduler would have produced.</p>
+  <p>The VP's calendar invite has one line in the notes field: <em>"How much idle GPU time did we recover this quarter, and can we keep recovering it as the fleet grows?"</em></p>
+  <p>Dara has not yet run the exhaustive check against how many jobs a <em>real</em> night's batch will have once the new GPUs finish landing. She minimizes the terminal, opens a blank sheet, and starts typing a number into the first cell of a new column: job count.</p>
+  <p>Her cursor sits in the next cell, empty, waiting for the number that comes after it.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Dara Osei has led the scheduling team at Vantage Compute, a mid-size AI cloud provider, for two years. Vantage rents out access to a fleet &mdash; the full collection of GPU hardware it owns and rents out &mdash; of Nvidia <span class="sterm" data-sterm="GPU">GPUs</span> &mdash; Nvidia is the dominant supplier of the <span class="sterm" data-sterm="AI Accelerator">AI accelerators</span> that cloud providers like Vantage, and far larger ones, are racing to deploy; real 2026 announcements describe cloud partners adding GPUs by the million [S2] (SEE APPENDIX E). Every night, Vantage's scheduler has to decide the order in which that night's queued training jobs run through a single shared <span class="sterm" data-sterm="Pipeline">pipeline</span> stage &mdash; the model-and-<span class="sterm" data-sterm="Container">container</span> loading step every job passes through before it can start using the GPUs. Switching from one job to a very different one on that shared pipeline costs real idle time: nothing computes while the new job's environment loads (SEE APPENDIX A), and real published benchmarks of AI model-loading time on GPU nodes show this kind of loading step can easily run from just over a minute to several minutes depending on what is being loaded [S3].</p>
+  <p>For months, Vantage's production scheduler has run <strong>The Greedy Queue</strong>: whichever not-yet-run job would cost the least to switch into right now, run it next. It is fast and it always finishes. Dara's new project, <strong>The Full Sweep</strong>, asks a different question: for a given night's batch, is there some <em>other</em> ordering of the same jobs that wastes less total idle time &mdash; the genuinely best one, not just a good one? To answer that for certain, a scheduler has to check every possible <span class="sterm" data-sterm="Job-Shop Scheduling">ordering of that night's jobs</span> and compare their total idle time directly. The number of possible orderings of a batch of jobs is a real, well-known fact from computer science: it is the factorial of the job count, and job-scheduling problems built on exactly this fact are formally classified as computationally hard for exactly this reason [S1] (SEE APPENDIX E). Appendix B lists the job counts Dara needs to check, from tonight's small test batch up through the batch sizes Vantage's own fleet growth will produce within the year. The vocabulary and "how to&hellip;" procedure needed to work through those job counts are listed in (SEE APPENDIX F).</p>
+  <p>Dara's team's headcount for next quarter is tied to a target the VP set for reducing idle GPU time &mdash; and idle GPU time is also, in the most literal sense, unsold compute Vantage is paying for and not renting out. Whichever strategy she recommends tonight has to be the one that keeps working as Vantage's fleet, and its nightly batch sizes, keep growing.</p>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">GPU &amp; Scheduling Vocabulary</h3>
+    <p class="side-note">The math vocabulary Challenge 1 sends you to research lives in Appendix F below. These are the real cloud-computing and computer-science terms this case's own story uses &mdash; hover any one for a plain definition, or click through to a real source.</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Sources: Wikipedia ("Graphics processing unit," "Job shop scheduling," "Heuristic (computer science)," "Greedy algorithm," "Nearest neighbour algorithm," "Container (virtualization)," "Pipeline (computing)," "NP-hardness," "AI accelerator," "CPU time," "Command-line interface"). Links verified working 2026-09-09.</p>
+  </div>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Dara Osei. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Full Sweep</h4>
+      <p style="margin:0">Commit to always finding the true, provably optimal job ordering by exhaustively checking every possible ordering of that night's batch.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Greedy Queue</h4>
+      <p style="margin:0">Keep the fast <span class="sterm" data-sterm="Greedy Algorithm">nearest-neighbor rule</span> already in production, accepting a calculable, bounded amount of extra idle time in exchange for a schedule that finishes instantly at any job count.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which scheduler you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong>) a factorial table &mdash; for each job count n in Appendix B (4, 6, 8, 10, 12, 15, 18, 20), evaluate n!, showing your method in full for at least three values; <strong>D2</strong>) using Appendix C's assumed search speed, convert each D1 value into the total Full-Sweep search time and compare it to Vantage's fixed eight-hour nightly window (Appendix B), stating the largest job count that still finishes inside the window and the smallest that does not, arithmetic shown; <strong>D3</strong>) for Appendix A's six-job pilot batch &mdash; restate your D1 value for 6!, confirm it's small enough to actually check exhaustively, then carry out that exhaustive search to find The Full Sweep's true-optimal total idle time, and separately apply The Greedy Queue's nearest-neighbor rule (Appendix D) to the same six jobs, reporting both totals and the percent margin between them; <strong>D4</strong>) a written explanation, citing at least two specific job-count/search-time pairs from D2, of why Vantage's team cannot simply "wait for faster computers," stating in your own words what a factorial is and why it grows the way it does; <strong>D5</strong>) an original visual display (bar or line chart, logarithmic vertical scale) plotting job count against either n! or total Full-Sweep search time, across all your D1/D2 job counts.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Vantage's Six-Job Pilot Batch: Switchover-Cost Matrix</summary>
+    <div class="inner">
+      <p class="side-note">Referenced in Background and Challenge 3 (D3). These six jobs are Vantage's smallest realistic test batch, run nightly through the shared model-loading pipeline before the full fleet's batch runs, listed in the order they were submitted to the queue that night (LLM Fine-Tune first). Each cell is the idle time (in minutes) the pipeline loses switching from the row job directly into the column job, before the column job can start using the GPUs.</p>
+      <table id="apxA">
+        <tr><th>From \ To</th><th>LLM Fine-Tune</th><th>Vision Transformer</th><th>Diffusion Model</th><th>Speech Model</th><th>Recommender</th><th>Anomaly Detector</th></tr>
+        <tr><td><strong>LLM Fine-Tune</strong></td><td class="num">&mdash;</td><td class="num">18 [MA1]</td><td class="num">21 [MA1]</td><td class="num">29 [MA1]</td><td class="num">22 [MA1]</td><td class="num">24 [MA1]</td></tr>
+        <tr><td><strong>Vision Transformer</strong></td><td class="num">20 [MA1]</td><td class="num">&mdash;</td><td class="num">12 [MA1]</td><td class="num">13 [MA1]</td><td class="num">9 [MA1]</td><td class="num">27 [MA1]</td></tr>
+        <tr><td><strong>Diffusion Model</strong></td><td class="num">24 [MA1]</td><td class="num">12 [MA1]</td><td class="num">&mdash;</td><td class="num">18 [MA1]</td><td class="num">19 [MA1]</td><td class="num">16 [MA1]</td></tr>
+        <tr><td><strong>Speech Model</strong></td><td class="num">28 [MA1]</td><td class="num">26 [MA1]</td><td class="num">23 [MA1]</td><td class="num">&mdash;</td><td class="num">7 [MA1]</td><td class="num">8 [MA1]</td></tr>
+        <tr><td><strong>Recommender</strong></td><td class="num">23 [MA1]</td><td class="num">10 [MA1]</td><td class="num">18 [MA1]</td><td class="num">26 [MA1]</td><td class="num">&mdash;</td><td class="num">27 [MA1]</td></tr>
+        <tr><td><strong>Anomaly Detector</strong></td><td class="num">28 [MA1]</td><td class="num">7 [MA1]</td><td class="num">18 [MA1]</td><td class="num">11 [MA1]</td><td class="num">8 [MA1]</td><td class="num">&mdash;</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Vantage's Batch Sizes, Today and As The Fleet Grows</summary>
+    <div class="inner">
+      <p class="side-note">Referenced in Background and Challenge 3 (D1, D2). Vantage's nightly batch window is fixed at 8 hours [MA3] before the next day's jobs must begin loading. The job counts below span Vantage's current smallest test batch up through batch sizes its own fleet-growth plans point toward within the year (SEE APPENDIX E for the real, publicly announced GPU-fleet growth this scaling is grounded in).</p>
+      <table id="apxB">
+        <tr><th>Job count (n)</th><th>Context</th></tr>
+        <tr><td class="num">4</td><td>smallest illustrative case</td></tr>
+        <tr><td class="num">6</td><td>Vantage's actual six-job pilot batch (Appendix A)</td></tr>
+        <tr><td class="num">8</td><td>small test batch</td></tr>
+        <tr><td class="num">10</td><td>small test batch</td></tr>
+        <tr><td class="num">12</td><td>Vantage's current typical nightly batch size</td></tr>
+        <tr><td class="num">15</td><td>near-term projected batch size</td></tr>
+        <tr><td class="num">18</td><td>one-year projected batch size</td></tr>
+        <tr><td class="num">20</td><td>one-year projected batch size, upper estimate</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Vantage's Assumed Schedule-Search Speed</summary>
+    <div class="inner">
+      <p class="side-note">Referenced in Challenge 3 (D2). To find the true optimal ordering, The Full Sweep must evaluate the total idle time of every possible ordering of a batch and keep the best one. Vantage's own scheduling code has not yet been benchmarked at realistic job counts, so this case states an assumed evaluation speed rather than an unsourced "typical" number.</p>
+      <table id="apxC">
+        <tr><th></th><th>Value</th></tr>
+        <tr><td>Orderings The Full Sweep can fully evaluate per second</td><td class="num">10,000,000 [MA2]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; The Greedy Queue's Nearest-Neighbor Rule</summary>
+    <div class="inner">
+      <p class="side-note">Referenced in Background and Challenge 3 (D3). The Greedy Queue is Vantage's production scheduler. Its rule is fixed and simple: starting from the first job submitted to the queue that night (Appendix A's top row, LLM Fine-Tune), always run whichever not-yet-run job has the lowest switchover cost from the job that just finished &mdash; never look ahead, never reconsider a job once it has run. This is the standard <span class="sterm" data-sterm="Nearest-Neighbor Algorithm">nearest-neighbor</span> <span class="sterm" data-sterm="Heuristic">heuristic</span> used broadly in routing and scheduling problems [S4] (SEE APPENDIX E).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="side-note">These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+      <table id="apxMA">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th></tr>
+        <tr><td>MA1</td><td>Appendix A's switchover-cost matrix (idle minutes per job-to-job transition)</td><td>6-by-6 matrix, values 7&ndash;29 minutes</td></tr>
+        <tr><td>MA2</td><td>Appendix C's assumed schedule-search evaluation rate</td><td class="num">10,000,000 orderings/sec</td></tr>
+        <tr><td>MA3</td><td>Vantage's nightly batch window</td><td class="num">8 hours</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Real-World Grounding and Sources</summary>
+    <div class="inner">
+      <table id="apxE">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>The number of feasible orderings/solutions for a job-scheduling problem of n jobs is n!, and job-scheduling problems built on this fact are formally classified as computationally hard (<span class="sterm" data-sterm="NP-Hard">NP-hard</span>)</td><td>n! feasible solutions</td><td><a href="https://optimization.cbe.cornell.edu/index.php?title=Job_shop_scheduling" target="_blank" rel="noopener">Cornell University &mdash; Computational Optimization Open Textbook, "Job shop scheduling"</a></td><td>accessed 2026-09-09</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Real, publicly announced 2026 growth in deployed Nvidia GPU fleets among major cloud providers</td><td>2,000,000 additional GPUs (AWS, 2027-2028)</td><td><a href="https://investor.nvidia.com/news/press-release-details/2026/AWS-and-NVIDIA-to-Deliver-2-Million-Additional-GPUs-and-Next-Generation-Infrastructure-for-Agentic-and-Physical-AI/default.aspx" target="_blank" rel="noopener">NVIDIA Corporation &mdash; AWS and NVIDIA to Deliver 2 Million Additional GPUs</a></td><td>2026-08-26</td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>Real benchmarked range for AI model-loading/container-reload time on a GPU node</td><td>approx. 82&ndash;457 seconds</td><td><a href="https://aws.amazon.com/blogs/containers/fast-model-loading-for-ai-inference-on-amazon-eks/" target="_blank" rel="noopener">Amazon Web Services &mdash; Fast model loading for AI inference on Amazon EKS</a></td><td>accessed 2026-09-09</td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>The nearest-neighbor rule is a standard, widely used heuristic for routing and scheduling problems</td><td>standard named heuristic</td><td><a href="https://en.wikipedia.org/wiki/Nearest_neighbour_algorithm" target="_blank" rel="noopener">Wikipedia &mdash; Nearest neighbour algorithm</a></td><td>accessed 2026-09-09</td><td>MEDIUM</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-09. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="calcwrap">
+    <h4><svg class="icon" width="18" height="18" style="stroke:#8a6d0f;vertical-align:-3px"><use href="#icon-gpu"/></svg> Live Factorial &amp; Search-Time Calculator</h4>
+    <p class="side-note" style="border-top:none;padding-top:0">Type any job count and see n!, the Full-Sweep search time at Appendix C's assumed rate, and whether it fits inside Appendix B's 8-hour window &mdash; computed live, the same arithmetic D1/D2 ask you to do by hand.</p>
+    <div class="fieldrow"><label for="calcN">Job count (n)</label><input type="number" id="calcN" min="1" max="25" step="1" value="6"><button onclick="runLiveCalc()">Calculate</button></div>
+    <div class="calcout" id="calcOut"></div>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Factorial Table (D1)</h4>
+    <div class="goal">Evaluate n! for each job count Appendix B lists. Use the live calculator above to check your work as you go, then fill in every value below.</div>
+    <div class="fieldrow"><label for="d1_n4">4!</label><input type="number" id="d1_n4"></div>
+    <div class="fieldrow"><label for="d1_n6">6!</label><input type="number" id="d1_n6"></div>
+    <div class="fieldrow"><label for="d1_n8">8!</label><input type="number" id="d1_n8"></div>
+    <div class="fieldrow"><label for="d1_n10">10!</label><input type="number" id="d1_n10"></div>
+    <div class="fieldrow"><label for="d1_n12">12!</label><input type="number" id="d1_n12"></div>
+    <div class="fieldrow"><label for="d1_n15">15!</label><input type="number" id="d1_n15"></div>
+    <div class="fieldrow"><label for="d1_n18">18!</label><input type="number" id="d1_n18"></div>
+    <div class="fieldrow"><label for="d1_n20">20!</label><input type="number" id="d1_n20"></div>
+    <button onclick="checkFactorialTable()">Check</button><span class="fb" id="fb1"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Search Time &amp; Feasibility Crossing (D2)</h4>
+    <div class="goal">Using Appendix C's rate, convert n=12 and n=15's n! values into search time (seconds), then state the largest job count that still finishes inside Appendix B's 8-hour window and the smallest that does not.</div>
+    <div class="fieldrow"><label for="d2_t12">Search time at n=12 (seconds)</label><input type="number" id="d2_t12" step="0.01"></div>
+    <div class="fieldrow"><label for="d2_t15">Search time at n=15 (seconds)</label><input type="number" id="d2_t15" step="1"></div>
+    <div class="fieldrow"><label for="d2_largest">Largest feasible job count</label><input type="number" id="d2_largest" step="1"></div>
+    <div class="fieldrow"><label for="d2_smallest">Smallest infeasible job count</label><input type="number" id="d2_smallest" step="1"></div>
+    <button onclick="checkFeasibility()">Check</button><span class="fb" id="fb2"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Six-Job Head-to-Head (D3)</h4>
+    <div class="goal">Carry out the exhaustive search over all 6! orderings of Appendix A's six jobs to find The Full Sweep's true-optimal total idle time, and separately apply The Greedy Queue's nearest-neighbor rule (Appendix D) to the same six jobs. Report both totals and the percent margin between them.</div>
+    <div class="fieldrow"><label for="d3_a">The Full Sweep total idle time (minutes)</label><input type="number" id="d3_a" step="1"></div>
+    <div class="fieldrow"><label for="d3_b">The Greedy Queue total idle time (minutes)</label><input type="number" id="d3_b" step="1"></div>
+    <div class="fieldrow"><label for="d3_margin">Percent margin between the two (%)</label><input type="number" id="d3_margin" step="0.1"></div>
+    <button onclick="checkSixJob()">Check</button><span class="fb" id="fb3"></span>
+    <p class="side-note" id="sixJobOut"></p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4 &amp; D5 (not auto-checked)</h4>
+    <div class="goal">D4 (your written explanation of why "wait for faster computers" doesn't work, citing two D2 pairs) and D5 (your original log-scale chart of job count vs. n! or search time) are open-ended &mdash; there's no single right answer to check against. Use the live calculator above to generate the numbers your chart and explanation need, mark them done on the checklist below when finished, and bring your reasoning to discussion.</div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Reveal this only after you've finished working through the case &mdash; the Twist is meant to land after your analysis, not before.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-clock"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've finished the case &mdash; reveal it</button>
+    <div id="twistNarrative">
+      <p>Appendix B says Vantage's batches are already at 12 jobs and heading toward 18&ndash;20 within the year. Pull up your own D2 numbers. At exactly which job count does The Full Sweep stop finishing before the batch window closes &mdash; and what happens the first night it doesn't?</p>
+      <div class="card" id="twistCalcWrap" style="display:none;background:#2b323b;border-color:#444;color:#e8e3d5">
+        <h4 style="margin-top:0;color:#f2ede0">What if the computer were faster? (Socratic Question 3)</h4>
+        <p class="side-note" style="color:#b9c3d6">Drag the slider to see how much faster Vantage's evaluation rate (Appendix C) would need to be before The Full Sweep becomes feasible at each job count &mdash; computed live from the same D2 arithmetic, not a hardcoded answer.</p>
+        <div class="sliderow">
+          <label for="speedupSlider" style="color:#e8e3d5;min-width:140px">Speedup factor</label>
+          <input type="range" id="speedupSlider" min="0" max="4" step="1" value="0" oninput="onSpeedupChange()">
+          <span class="val" id="speedupVal" style="color:var(--gold)">1x</span>
+        </div>
+        <div class="calcout" id="speedupOut"></div>
+      </div>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Show the speedup calculator above</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 &mdash; Cornell University, Computational Optimization Open Textbook, "Job shop scheduling"</li>
+      <li>S2 &mdash; NVIDIA Corporation, AWS and NVIDIA to Deliver 2 Million Additional GPUs</li>
+      <li>S3 &mdash; Amazon Web Services, Fast model loading for AI inference on Amazon EKS</li>
+      <li>S4 &mdash; Wikipedia, Nearest neighbour algorithm</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Schedule Explosion &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from case.json (see
+   the file-top comment for the case.md sha256 this build matches).
+   JS port of sensitivity_model.py's PARAMS/evaluate() surface.
+   ================================================================ */
+const JOB_NAMES = ["LLM Fine-Tune", "Vision Transformer", "Diffusion Model",
+                    "Speech Model", "Recommender", "Anomaly Detector"];
+const PARAMS = {
+  switchover_matrix: [
+    [0, 18, 21, 29, 22, 24],
+    [20, 0, 12, 13, 9, 27],
+    [24, 12, 0, 18, 19, 16],
+    [28, 26, 23, 0, 7, 8],
+    [23, 10, 18, 26, 0, 27],
+    [28, 7, 18, 11, 8, 0]
+  ],
+  switchover_scale: 1.0,
+  eval_rate_per_sec: 10000000.0,
+  batch_window_hours: 8.0
+};
+const FLEX = ["switchover_scale"]; // the one scenario assumption wired into the six-job margin
+
+function factorial(n){ let f = 1; for(let i = 2; i <= n; i++) f *= i; return f; }
+function factorialTable(jobCounts){
+  const out = {};
+  jobCounts.forEach(n => out[n] = factorial(n));
+  return out;
+}
+function _scaledMatrix(p){
+  return p.switchover_matrix.map(row => row.map(v => v * p.switchover_scale));
+}
+function _permutations(arr){
+  if(arr.length <= 1) return [arr];
+  const out = [];
+  for(let i = 0; i < arr.length; i++){
+    const rest = arr.slice(0, i).concat(arr.slice(i + 1));
+    for(const p of _permutations(rest)) out.push([arr[i]].concat(p));
+  }
+  return out;
+}
+function exhaustiveOptimum(matrix){
+  const n = matrix.length;
+  const idx = Array.from({length: n}, (_, i) => i);
+  let best = null, bestOrder = null;
+  for(const perm of _permutations(idx)){
+    let cost = 0;
+    for(let i = 0; i < perm.length - 1; i++) cost += matrix[perm[i]][perm[i+1]];
+    if(best === null || cost < best){ best = cost; bestOrder = perm; }
+  }
+  return {cost: best, order: bestOrder};
+}
+function nearestNeighbor(matrix, start){
+  start = start || 0;
+  const n = matrix.length;
+  const unvisited = new Set(Array.from({length: n}, (_, i) => i));
+  unvisited.delete(start);
+  let cur = start, cost = 0;
+  const order = [start];
+  while(unvisited.size){
+    let best = null, bestCost = Infinity;
+    unvisited.forEach(j => { if(matrix[cur][j] < bestCost){ bestCost = matrix[cur][j]; best = j; } });
+    cost += bestCost;
+    cur = best;
+    order.push(cur);
+    unvisited.delete(cur);
+  }
+  return {cost, order};
+}
+/* evaluate(): {A,B} = NEGATIVE total idle minutes on the six-job pilot batch
+   (higher score = less waste = better), matching sensitivity_model.py's convention. */
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const matrix = _scaledMatrix(p);
+  const opt = exhaustiveOptimum(matrix);
+  const nn = nearestNeighbor(matrix, 0);
+  return {A: -opt.cost, B: -nn.cost, detail: {
+    A: {idleMinutes: opt.cost, order: opt.order.map(i => JOB_NAMES[i])},
+    B: {idleMinutes: nn.cost, order: nn.order.map(i => JOB_NAMES[i])}
+  }};
+}
+function searchTimeSeconds(params, jobCounts){
+  const p = Object.assign({}, PARAMS, params || {});
+  const ft = factorialTable(jobCounts);
+  const out = {};
+  jobCounts.forEach(n => out[n] = ft[n] / p.eval_rate_per_sec);
+  return out;
+}
+function feasibilityCrossing(params, jobCounts){
+  const p = Object.assign({}, PARAMS, params || {});
+  const windowS = p.batch_window_hours * 3600.0;
+  const times = searchTimeSeconds(p, jobCounts);
+  let largestFeasible = null, smallestInfeasible = null;
+  jobCounts.forEach(n => {
+    if(times[n] <= windowS) largestFeasible = (largestFeasible === null) ? n : Math.max(largestFeasible, n);
+    else smallestInfeasible = (smallestInfeasible === null) ? n : Math.min(smallestInfeasible, n);
+  });
+  return {largestFeasible, smallestInfeasible, windowSeconds: windowS, times};
+}
+function humanTime(seconds){
+  if(seconds < 1) return "negligible";
+  if(seconds < 60) return seconds.toFixed(2) + " sec";
+  if(seconds < 3600) return (seconds/60).toFixed(1) + " min";
+  if(seconds < 86400) return (seconds/3600).toFixed(1) + " hours";
+  const years = seconds / (3600*24*365);
+  if(years < 1) return (seconds/86400).toFixed(1) + " days";
+  return years >= 100 ? Math.round(years).toLocaleString() + " years" : years.toFixed(1) + " years";
+}
+const JOB_COUNTS = [4,6,8,10,12,15,18,20];
+
+const round = (x, d=2) => Math.round(x * Math.pow(10, d)) / Math.pow(10, d);
+const near = (a, b, tol) => Math.abs(a - b) <= tol;
+function fb(id, ok){
+  const el = document.getElementById(id);
+  el.className = 'fb ' + (ok ? 'ok' : 'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions + live calculator.
+   ================================================================ */
+function runLiveCalc(){
+  let n = parseInt(val('calcN'), 10);
+  if(isNaN(n) || n < 1) n = 1;
+  if(n > 25) n = 25; // 25! overflows a reliable double-precision display; plenty to show the explosion
+  const nFact = factorial(n);
+  const t = searchTimeSeconds(PARAMS, [n])[n];
+  const windowS = PARAMS.batch_window_hours * 3600.0;
+  const feasible = t <= windowS;
+  document.getElementById('calcOut').innerHTML = `
+    <div class="box"><div class="lab">n!</div><div class="num">${nFact.toLocaleString()}</div></div>
+    <div class="box"><div class="lab">Full-Sweep search time</div><div class="num">${humanTime(t)}</div></div>
+    <div class="box ${feasible ? 'feasible' : 'infeasible'}"><div class="lab">Fits the 8-hour window?</div><div class="num">${feasible ? 'YES' : 'NO'}</div></div>
+  `;
+}
+function checkFactorialTable(){
+  const truth = factorialTable(JOB_COUNTS);
+  const ids = {4:'d1_n4',6:'d1_n6',8:'d1_n8',10:'d1_n10',12:'d1_n12',15:'d1_n15',18:'d1_n18',20:'d1_n20'};
+  let ok = true;
+  JOB_COUNTS.forEach(n => { if(!near(parseFloat(val(ids[n])), truth[n], truth[n]*0.0001 + 0.5)) ok = false; });
+  fb('fb1', ok);
+}
+function checkFeasibility(){
+  const times = searchTimeSeconds(PARAMS, JOB_COUNTS);
+  const fc = feasibilityCrossing(PARAMS, JOB_COUNTS);
+  const ok = near(parseFloat(val('d2_t12')), times[12], 1)
+    && near(parseFloat(val('d2_t15')), times[15], 50)
+    && parseInt(val('d2_largest'), 10) === fc.largestFeasible
+    && parseInt(val('d2_smallest'), 10) === fc.smallestInfeasible;
+  fb('fb2', ok);
+}
+function checkSixJob(){
+  const res = evaluate(PARAMS);
+  const trueA = res.detail.A.idleMinutes, trueB = res.detail.B.idleMinutes;
+  const trueMargin = Math.abs(trueA - trueB) / Math.max(trueA, trueB) * 100;
+  const okA = near(parseFloat(val('d3_a')), trueA, 1);
+  const okB = near(parseFloat(val('d3_b')), trueB, 1);
+  const okM = near(parseFloat(val('d3_margin')), trueMargin, 0.5);
+  fb('fb3', okA && okB && okM);
+  document.getElementById('sixJobOut').textContent = (okA && okB && okM)
+    ? 'Your six-job exhaustive search and nearest-neighbor totals check out.'
+    : 'Re-check: did you examine all 6! = 720 orderings for The Full Sweep, and follow Appendix D\'s rule exactly (starting from LLM Fine-Tune) for The Greedy Queue?';
+}
+
+const speedupFactors = [1, 10, 100, 1000, 10000];
+function onSpeedupChange(){
+  const idx = parseInt(document.getElementById('speedupSlider').value, 10);
+  const factor = speedupFactors[idx];
+  document.getElementById('speedupVal').textContent = factor.toLocaleString() + 'x';
+  const p = Object.assign({}, PARAMS, {eval_rate_per_sec: PARAMS.eval_rate_per_sec * factor});
+  const checkCounts = [12, 15, 18, 20];
+  const times = searchTimeSeconds(p, checkCounts);
+  const windowS = PARAMS.batch_window_hours * 3600.0;
+  document.getElementById('speedupOut').innerHTML = checkCounts.map(n => {
+    const feasible = times[n] <= windowS;
+    return `<div class="box ${feasible ? 'feasible' : 'infeasible'}" style="background:#1f2530"><div class="lab" style="color:#b9c3d6">n=${n}</div><div class="num" style="color:${feasible ? '#7fd9a8' : '#e8918c'}">${humanTime(times[n])}</div></div>`;
+  }).join('');
+}
+function onTwistToggle(){
+  const wrap = document.getElementById('twistCalcWrap');
+  const show = document.getElementById('applyTwist').checked;
+  wrap.style.display = show ? 'block' : 'none';
+  if(show) onSpeedupChange();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-schedule-explosion";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+runLiveCalc();
+
+const DELIVERABLES = [
+  ["D1", "A factorial table for job counts 4, 6, 8, 10, 12, 15, 18, 20, with method shown for at least three values"],
+  ["D2", "Search-time conversion of each D1 value vs. the 8-hour window, with the feasibility crossing"],
+  ["D3", "Six-job exhaustive search vs. Greedy Queue nearest-neighbor comparison, with percent margin"],
+  ["D4", "Written explanation of why 'wait for faster computers' doesn't fix The Full Sweep, citing two D2 pairs"],
+  ["D5", "An original visual display (log-scale bar or line chart) of job count vs. n! or search time"]
+];
+
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain). "Factorial" and "Permutation"
+   reused verbatim from cases/codebreaker's own verified GLOSSARY
+   entries (mathsisfun.com, per templates/INTERACTIVE_HTML_CONTRACT.md
+   section 3: "a URL fetched and confirmed for one case is a legitimate
+   source for the same term reused verbatim in a different case").
+   "Combination" freshly fetched and confirmed live 2026-09-09. The
+   remaining terms reused verbatim from the shell's own starter
+   glossary (khanacademy.org, verified 2026-08-01).
+   ================================================================ */
+const GLOSSARY = {
+  "Factorial": {def: "The product of every whole number from 1 up to n, written n! -- e.g. 5! = 5x4x3x2x1 = 120.",
+    url: "https://www.mathsisfun.com/numbers/factorial.html"},
+  "Permutation": {def: "An arrangement of items where the order matters -- swapping two items gives a different permutation.",
+    url: "https://www.mathsisfun.com/definitions/permutation.html"},
+  "Combination": {def: "A selection of items from a set where the order does NOT matter -- unlike a permutation.",
+    url: "https://www.mathsisfun.com/combinatorics/combinations-permutations.html"},
+  "Percent": {def: "A ratio that compares a number to 100 -- literally \"per hundred.\"",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Ratio": {def: "A way of comparing two quantities by division, written a:b or a/b.",
+    url: "https://www.khanacademy.org/math/get-ready-for-6th-grade/x55793c7ff6b02d3d:get-ready-for-ratios-rates-and-percentages"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+};
+const HOWTO = [
+  ["How to evaluate a factorial expression", "Factorial"],
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-SPECIFIC — story (real-world) vocabulary glossary (MCS-47:
+   >=4 terms, real https:// links, NOT on T1-19's math-only allowlist
+   domains). Every term below was fetched and confirmed live 2026-09-09.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "GPU": {desc: "A specialized electronic circuit (Graphics Processing Unit) designed to accelerate the parallel calculations used in computer graphics and, today, AI model training.",
+    link: "https://en.wikipedia.org/wiki/Graphics_processing_unit"},
+  "Job-Shop Scheduling": {desc: "The problem of organizing when different jobs should run on shared machines so all the work finishes as quickly as possible.",
+    link: "https://en.wikipedia.org/wiki/Job_shop_scheduling"},
+  "Heuristic": {desc: "A technique for solving a problem more quickly than an exact method, by trading the guarantee of a perfect answer for a good-enough one found fast.",
+    link: "https://en.wikipedia.org/wiki/Heuristic_(computer_science)"},
+  "Greedy Algorithm": {desc: "A problem-solving approach that makes the best choice available at each step without reconsidering earlier decisions, even if that doesn't lead to the overall best solution.",
+    link: "https://en.wikipedia.org/wiki/Greedy_algorithm"},
+  "Nearest-Neighbor Algorithm": {desc: "A routing/scheduling heuristic that always moves next to whichever unvisited option is cheapest to reach from the current one.",
+    link: "https://en.wikipedia.org/wiki/Nearest_neighbour_algorithm"},
+  "Container": {desc: "A software package that bundles an application with everything it needs to run, kept separate from other programs on the same machine -- this is what \"loads\" during a job switch.",
+    link: "https://en.wikipedia.org/wiki/Container_(virtualization)"},
+  "Pipeline": {desc: "A set of processing stages connected in sequence, where each job passes through the same stage (like the model-loading step here) before moving on.",
+    link: "https://en.wikipedia.org/wiki/Pipeline_(computing)"},
+  "NP-Hard": {desc: "A classification for problems believed to have no fast, exact algorithm that scales well -- as the problem gets bigger, the time an exhaustive solution takes explodes rather than growing manageably.",
+    link: "https://en.wikipedia.org/wiki/NP-hardness"},
+  "AI Accelerator": {desc: "A computer chip built to run AI workloads quickly -- GPUs are commonly used as AI accelerators, though not every AI accelerator is a GPU.",
+    link: "https://en.wikipedia.org/wiki/AI_accelerator"},
+  "Utilization": {desc: "How much of a computer's processing capacity is actively being used at a given moment, as a percentage -- the opposite of sitting idle.",
+    link: "https://en.wikipedia.org/wiki/CPU_time"},
+  "Command Line": {desc: "A text-based way of controlling software: typing a line of text (a command, sometimes with flags like --mode=) tells the program exactly what to do.",
+    link: "https://en.wikipedia.org/wiki/Command-line_interface"},
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+/* Upgrade hand-placed <span class="sterm" data-sterm="Label">text</span> forced-occurrence
+   markers into real hover+hyperlink anchors, same shape gtermHTMLStory() renders. Must run
+   BEFORE autoLinkStoryTerms() so its seeding step sees a real <a class="sterm" data-sterm="...">
+   and doesn't double-link the same term elsewhere. */
+function upgradeStaticStoryPlaceholders(){
+  document.querySelectorAll('span.sterm[data-sterm]').forEach(span => {
+    const label = span.dataset.sterm;
+    if(!STORY_GLOSSARY[label]) return;
+    const wrap = document.createElement('span');
+    wrap.innerHTML = gtermHTMLStory(label, span.textContent);
+    span.replaceWith(wrap.firstChild);
+  });
+}
+upgradeStaticStoryPlaceholders();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept (math + story)
+   where it's actually used in the prose, not just in the standing
+   Appendix F / story-glossary lists.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #apx-glossary, #story-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkStoryTerms(['#overview', '#dilemma', '#challenges', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

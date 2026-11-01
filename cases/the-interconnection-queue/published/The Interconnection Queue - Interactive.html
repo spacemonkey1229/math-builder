@@ -1,0 +1,1252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Interconnection Queue — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html per templates/INTERACTIVE_HTML_CONTRACT.md
+  (A7, DOCTRINE_LEDGER MCS-37/MCS-39). Case data below is copied verbatim from
+  cases/the-interconnection-queue/case.json (case_md_sha256 as of this build:
+  0b0cd5510adf04b970a8e118edc28abdae659a03e730ce18a8f1e01bf3dc20a2). The Working
+  Notebook's JS PARAMS/evaluate() below is a direct port of
+  cases/the-interconnection-queue/sensitivity_model.py's PARAMS/evaluate(), using
+  an exact-fraction {n,d} representation (never a decimal) so every capacity
+  figure a student sees on this page stays in fraction/mixed-number form, matching
+  case.md's own stated convention ("never a decimal, and never a raw megawatt
+  figure alone").
+
+  HARD LINE (MCS-37): this file must never print the case's balance_test verdict
+  (stranded totals, margin, winner) as a static literal anywhere outside a
+  <script> tag. The Working Notebook computes it live from the case's own
+  Appendix A/B numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — The Interconnection Queue. Story-vocabulary
+     "sterm" gets its own full hover/tooltip treatment (reusing the
+     .gterm tooltip mechanics under a distinct class/color so T1-19's
+     math-glossary regex never counts it) since the shell itself
+     ships no CSS for "sterm" by default.
+     ============================================================ */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:240px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .trapgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;font-family:var(--sans)}
+  @media(max-width:720px){.trapgrid{grid-template-columns:1fr}}
+  .trapcol{border-radius:8px;padding:12px 14px;font-size:.88rem}
+  .trapcol.correct{background:#233024;border:1px solid #375;}
+  .trapcol.wrong{background:#332222;border:1px solid #642;}
+  .trapcol h5{margin:0 0 8px;font-size:.82rem;letter-spacing:.03em;text-transform:uppercase}
+  .trapcol.correct h5{color:#8fd6a8}
+  .trapcol.wrong h5{color:#e6a08a}
+  .trapcol .fig{font-size:1.3rem;font-weight:700;color:#fff}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>.
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- The Interconnection Queue: a substation/grid icon set -->
+  <symbol id="icon-grid" viewBox="0 0 24 24"><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/><path d="M4 10h16"/></symbol>
+  <symbol id="icon-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></symbol>
+  <symbol id="icon-queue" viewBox="0 0 24 24"><rect x="3" y="5" width="6" height="6"/><rect x="10" y="5" width="6" height="6" opacity=".6"/><rect x="17" y="5" width="4" height="6" opacity=".3"/><path d="M3 16h18"/><path d="M3 20h12"/></symbol>
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Interconnection Queue</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Fractions &middot; Addition and Subtraction of Fractions</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Renata Cruz has three tabs open and one phone call on hold. The first tab is the queue board, where a green cell just flipped: Aurora Ridge &mdash; a data-center developer's bid for a hard-won slot on the Fenwick Creek substation &mdash; has cleared its final engineering study. The second tab is her own capacity spreadsheet, the one she is not supposed to need a calculator for because every cell in it is already a fraction of the substation's real, physical headroom. The third is an email from her queue-processing supervisor, subject line &ldquo;DECISION BY 5:00 PM,&rdquo; timestamp eleven minutes old.</p>
+  <p>On hold is the developer's interconnection counsel, who has said some version of &ldquo;we're ready to sign today&rdquo; four times in six minutes.</p>
+  <p>Renata's sticky note, stuck to the monitor bezel for three weeks now, still just says: <em>what actually fits in what's left?</em> Two smaller bids &mdash; Cobalt Peak and Fenwick Yards &mdash; are still sitting lower in the queue, neither one big enough alone to need the whole slot, and nobody has run the numbers on whether the two of them together would use the leftover capacity better than Aurora Ridge does by itself.</p>
+  <p>She pulls her headset mic back down. &ldquo;Give me five minutes,&rdquo; she says, and mutes the line.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Renata Cruz is a senior interconnection queue analyst for Meridian Valley Power, a regional electric utility. Her job is to decide, substation by substation, which pending large-load interconnection requests &mdash; mostly AI data-center campuses now, some large enough alone to register as a transmission-planning event [S3] &mdash; get a firm capacity commitment and in what order, without ever promising more capacity than a substation actually has. Grid interconnection queues for large loads like this have become a widely reported national bottleneck as data-center demand has surged: nationally, requests now sit a median of several years before a utility can confirm they will not overload the local grid [S1], against a backdrop of gigawatts of capacity already waiting in queues across the country [S2] (see Appendix F). Regulators have pushed utilities toward evaluating <em>combinations</em> of requests together rather than strictly one at a time [S4], precisely because a smaller, better-fitting group of projects can sometimes use the same leftover capacity more completely than the next request in line (see Appendix F).</p>
+  <p>Meridian Valley Power studies new large-load capacity at the Fenwick Creek substation in standard capacity blocks &mdash; a fixed increment the utility's planning department uses so that every bid, reservation, and remaining-headroom figure can be compared on the same footing (see Appendix C; if the block's real-world megawatt size cannot be tied to a single published figure for this exact substation, the disclosed Modeling Assumption used instead is in Appendix D). <strong>All of the figures below are stated in blocks, as fractions or mixed numbers</strong>, because that is the actual unit the queue board, the engineering study, and the capacity spreadsheet all use &mdash; never a decimal, and never a raw megawatt figure alone.</p>
+  <p>The substation's total interconnection capacity currently open to new large-load requests, and the capacity already promised to an earlier-queued customer, are both fixed prior facts (see Appendix A). Subtracting one from the other &mdash; in block form, with unlike denominators &mdash; gives the capacity actually remaining for today's decision. Three bids are currently active against that remaining capacity (see Appendix B):</p>
+  <div class="grid2">
+    <div class="card">
+      <h4 style="margin:0 0 8px;color:var(--navy);font-family:var(--sans)">Aurora Ridge</h4>
+      <p style="margin:0">A single hyperscale AI training campus, first in the queue, engineering-cleared, and ready to sign today. Its request alone very nearly fills what remains, but not exactly &mdash; approving it now leaves an odd, leftover sliver of capacity that may or may not be large enough for anything else ever to use (see Appendix B).</p>
+    </div>
+    <div class="card">
+      <h4 style="margin:0 0 8px;color:var(--navy);font-family:var(--sans)">Cobalt Peak + Fenwick Yards</h4>
+      <p style="margin:0">Two smaller, still-pending bids further back in the queue. Neither is anywhere near large enough alone to be worth holding the slot for. Added together, though, they may or may not fit inside the same remaining capacity Aurora Ridge would use &mdash; and if they do, they may leave more or less of that capacity stranded than Aurora Ridge alone would (see Appendix B). Both bids would have to actually confirm before Meridian Valley Power's own queue deadline for this to work &mdash; neither is a sure thing the way Aurora Ridge is.</p>
+    </div>
+  </div>
+  <p>A fourth bid, Briar Hollow, is also active in the queue for context but is not large enough, nor positioned closely enough, to change today's decision (see Appendix B) &mdash; it is queue data Renata has to look at and set aside, not data that changes today's math.</p>
+  <p>Every capacity figure in this case &mdash; the substation's total and committed capacity, each bid's size, the leftover capacity under each option, and the head-to-head comparison between them &mdash; must be carried through entirely in fraction and mixed-number form, adding and subtracting with unlike denominators exactly as Meridian Valley Power's own capacity spreadsheet does, and never converted to a decimal along the way. The vocabulary and &ldquo;how to&hellip;&rdquo; procedures needed are listed in Appendix E. All background statistics and the capacity-block figure are cited in Appendix F.</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Renata Cruz. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Approve Aurora Ridge</h4>
+      <p style="margin:0">Approve Aurora Ridge's bid now, using it to fill nearly all of the substation's remaining capacity in one commitment. Engineering-cleared and ready to sign today, with zero confirmation risk.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Hold for the Combined Bid</h4>
+      <p style="margin:0">Hold Aurora Ridge's slot and instead approve the combined Cobalt Peak + Fenwick Yards bids, betting that both will confirm before the queue deadline.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix E. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which option you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">D1. A total-demand table (add all four active bids). D2. The remaining-capacity calculation (Appendix A total minus committed, minus Aurora Ridge). D3. The combined-bid calculation (Cobalt Peak + Fenwick Yards, and whether it fits the remaining capacity). D4. The head-to-head comparison (which option leaves less stranded capacity, and by how much). D5. An original visual display (a scaled capacity-bar diagram in block units) built directly from your D2 and D4 figures.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; Fenwick Creek Substation: Capacity of Record</summary>
+    <div class="inner">
+      <p class="side-note">Referenced in Background and Challenge 3 (D2). These two figures are Meridian Valley Power's own capacity-of-record entries for this substation &mdash; not an externally sourced figure &mdash; stated in blocks (see Appendix C for the block's size).</p>
+      <table>
+        <tr><th>Figure</th><th>Value (blocks)</th></tr>
+        <tr><td>Total interconnection capacity currently open to new large-load requests</td><td>4-5/8 blocks</td></tr>
+        <tr><td>Capacity already committed to an earlier-queued customer</td><td>1-1/4 blocks</td></tr>
+        <tr><td>Capacity remaining for today's decision</td><td><em>(you compute this in D2)</em></td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix B &mdash; Active Queue Bids</summary>
+    <div class="inner">
+      <p class="side-note">Referenced in Background and Challenge 3 (D1, D2, D3, D4). All four bid sizes are Meridian Valley Power's own queue-board entries for this substation &mdash; not an externally sourced figure &mdash; stated in blocks.</p>
+      <table>
+        <tr><th>Bid</th><th>Type</th><th>Requested capacity (blocks)</th><th>Status</th></tr>
+        <tr><td>Aurora Ridge</td><td>Hyperscale AI training campus</td><td>2-7/8 blocks</td><td>Engineering-cleared, ready to sign today</td></tr>
+        <tr><td>Cobalt Peak</td><td>Mid-size AI inference / colocation facility</td><td>1-1/4 blocks</td><td>Pending, would need to confirm before the queue deadline</td></tr>
+        <tr><td>Fenwick Yards</td><td>Smaller edge-AI / light-industrial facility</td><td>1-2/3 blocks</td><td>Pending, would need to confirm before the queue deadline</td></tr>
+        <tr><td>Briar Hollow</td><td>Edge-AI facility</td><td>1-5/6 blocks</td><td>Active in queue; positioned too far back to affect today's decision</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; The Capacity Block</summary>
+    <div class="inner">
+      <p class="side-note">Referenced in Background and Appendices A, B.</p>
+      <table>
+        <tr><th>Figure</th><th>Value</th></tr>
+        <tr><td>Size of one capacity block, in megawatts</td><td>24 MW (MA1)</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>This figure is <strong>not sourced</strong>. It is a stated scenario assumption chosen by the case author. A Hero may challenge this number in discussion &mdash; that is a legitimate move.</blockquote>
+      <table>
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Size, in megawatts, of one Fenwick Creek capacity allocation block</td><td>24 MW</td>
+        <td>No public source states a capacity-block size for this exact fictional substation. RMI's large-load interconnection guidance reports that loads exceeding approximately 20 MW require direct transmission-level connection [S5] &mdash; a real, published order-of-magnitude reference point for how utilities size a "large load" study increment. 24 MW is chosen near that real reference point, scaled up slightly so the substation's stated total (4-5/8 blocks) and committed (1-1/4 blocks) capacities land on whole-megawatt figures.</td>
+        <td>The block size does not change which option wins &mdash; Option A vs. Option B is decided by a same-units fraction comparison in blocks, and the block's MW size cancels out of that comparison. It only changes the real-world megawatt scale the pitch reports. A Hero who argues the real increment should be smaller or larger should recompute the MW figures, not the block-fraction comparison.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix E &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-09. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <details open id="story-glossary">
+    <summary>Grid Vocabulary &mdash; Interconnection &amp; Utility Terms</summary>
+    <div class="inner">
+      <p><strong>Story vocabulary.</strong> Terms from the electric-grid setting this case is built around, explained in plain English with a real source.</p>
+      <div class="glossary-grid" id="glossaryStory"></div>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Total-Demand Table</h4>
+    <p class="goal">Add up all four active bids from Appendix B (Aurora Ridge 2-7/8, Cobalt Peak 1-1/4, Fenwick Yards 1-2/3, Briar Hollow 1-5/6) using a common denominator, then simplify and convert to a mixed number.</p>
+    <div class="fieldrow">
+      <label for="d1num">Sum, as an improper fraction over 24 &mdash; numerator:</label>
+      <input type="number" id="d1num" placeholder="a whole number">
+      <span>/ 24</span>
+      <span class="fb" id="fb_d1a"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="d1simpNum">Simplified to lowest terms &mdash; numerator:</label>
+      <input type="number" id="d1simpNum" placeholder="numerator" style="width:80px">
+      <span>/</span>
+      <input type="number" id="d1simpDen" placeholder="denominator" style="width:80px">
+      <span class="fb" id="fb_d1b"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="d1whole">As a mixed number &mdash; whole part:</label>
+      <input type="number" id="d1whole" placeholder="a whole number">
+      <label for="d1remnum" style="min-width:0">and remaining fraction:</label>
+      <input type="number" id="d1remnum" placeholder="numerator" style="width:70px">
+      <span id="d1remDenLabel">/ 8</span>
+      <span class="fb" id="fb_d1c"></span>
+    </div>
+    <button onclick="checkD1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D2: Remaining Capacity and Option A's Stranded Sliver</h4>
+    <p class="goal">Subtract Appendix A's committed capacity from its total to find what remains, then subtract Aurora Ridge's request from that remaining capacity. Both subtractions share the same denominator (eighths) but the second one requires regrouping/borrowing a whole block.</p>
+    <div class="fieldrow">
+      <label for="d2remNum">Remaining capacity, over 8 &mdash; numerator:</label>
+      <input type="number" id="d2remNum" placeholder="a whole number">
+      <span>/ 8</span>
+      <span class="fb" id="fb_d2a"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="d2remWhole">Remaining, as a mixed number &mdash; whole part:</label>
+      <input type="number" id="d2remWhole" placeholder="a whole number">
+      <label for="d2remRem" style="min-width:0">and remaining fraction:</label>
+      <input type="number" id="d2remRem" placeholder="numerator" style="width:70px">
+      <span>/ 8</span>
+      <span class="fb" id="fb_d2b"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="d2strandNum">Option A stranded capacity, over 8 &mdash; numerator (before simplifying):</label>
+      <input type="number" id="d2strandNum" placeholder="a whole number">
+      <span>/ 8</span>
+      <span class="fb" id="fb_d2c"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="d2strandSimpNum">Simplified to lowest terms &mdash; numerator:</label>
+      <input type="number" id="d2strandSimpNum" placeholder="numerator" style="width:80px">
+      <span>/</span>
+      <input type="number" id="d2strandSimpDen" placeholder="denominator" style="width:80px">
+      <span class="fb" id="fb_d2d"></span>
+    </div>
+    <button onclick="checkD2()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D3: The Combined Bid</h4>
+    <p class="goal">Add Cobalt Peak's and Fenwick Yards's requests together (unlike denominators &mdash; quarters and thirds), then check whether the combined size fits inside your D2 remaining-capacity figure.</p>
+    <div class="fieldrow">
+      <label for="d3num">Combined size, over 12 &mdash; numerator:</label>
+      <input type="number" id="d3num" placeholder="a whole number">
+      <span>/ 12</span>
+      <span class="fb" id="fb_d3a"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="d3whole">As a mixed number &mdash; whole part:</label>
+      <input type="number" id="d3whole" placeholder="a whole number">
+      <label for="d3rem" style="min-width:0">and remaining fraction:</label>
+      <input type="number" id="d3rem" placeholder="numerator" style="width:70px">
+      <span>/ 12</span>
+      <span class="fb" id="fb_d3b"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="d3fits">Does the combined bid fit inside the remaining capacity (D2)?</label>
+      <select id="d3fits">
+        <option value="">choose one&hellip;</option>
+        <option value="yes">Yes, it fits</option>
+        <option value="no">No, it does not fit</option>
+      </select>
+      <span class="fb" id="fb_d3c"></span>
+    </div>
+    <button onclick="checkD3()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D4: Head-to-Head Comparison</h4>
+    <p class="goal">Subtract your D3 combined bid from your D2 remaining capacity (common denominator: twenty-fourths &mdash; another regrouping step) to find Option B's stranded capacity. Then compare it to Option A's D2 figure.</p>
+    <div class="fieldrow">
+      <label for="d4num">Option B stranded capacity, over 24 &mdash; numerator:</label>
+      <input type="number" id="d4num" placeholder="a whole number">
+      <span>/ 24</span>
+      <span class="fb" id="fb_d4a"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="d4which">Which option leaves LESS capacity stranded?</label>
+      <select id="d4which">
+        <option value="">choose one&hellip;</option>
+        <option value="A">Option A (Aurora Ridge)</option>
+        <option value="B">Option B (Cobalt Peak + Fenwick Yards)</option>
+      </select>
+      <span class="fb" id="fb_d4b"></span>
+    </div>
+    <div class="fieldrow">
+      <label for="d4diff">Difference between the two stranded amounts, over 24 &mdash; numerator:</label>
+      <input type="number" id="d4diff" placeholder="a whole number">
+      <span>/ 24</span>
+      <span class="fb" id="fb_d4c"></span>
+    </div>
+    <button onclick="checkD4()">Check</button>
+    <p class="toolnote">This calculator checks your arithmetic. It will not tell you which option to recommend &mdash; that's your pitch to make.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; D5: Visual Display</h4>
+    <p class="goal">Build a scaled capacity-bar diagram, in block units, showing side by side how much of the remaining capacity is used and how much is stranded under Option A versus Option B. Use your own D2 and D4 figures &mdash; the worked example below uses different, made-up numbers just to show you the technique.</p>
+    <figure>
+      <svg viewBox="0 0 520 170" width="100%" role="img" aria-label="Worked example of a scaled capacity bar, illustrative numbers only">
+        <text x="10" y="20" font-family="sans-serif" font-size="13" fill="#5b6472">Worked example (illustrative numbers, NOT this case's answer)</text>
+        <text x="10" y="50" font-family="sans-serif" font-size="12" fill="#1a3a5c">Sample remaining capacity, 4/8 block bar:</text>
+        <rect x="10" y="58" width="360" height="28" fill="#eef3f8" stroke="#1a3a5c"/>
+        <rect x="10" y="58" width="300" height="28" fill="#c9a227" stroke="#1a3a5c"/>
+        <rect x="310" y="58" width="60" height="28" fill="#fbeceb" stroke="#a3312a"/>
+        <text x="120" y="76" font-family="sans-serif" font-size="12" fill="#3a2f0c">committed to a bid 5/8</text>
+        <text x="316" y="76" font-family="sans-serif" font-size="11" fill="#a3312a">1/8 stranded</text>
+        <text x="10" y="115" font-family="sans-serif" font-size="12" fill="#1a3a5c">Sample alternate bid combination (less stranded):</text>
+        <rect x="10" y="123" width="360" height="28" fill="#eef3f8" stroke="#1a3a5c"/>
+        <rect x="10" y="123" width="330" height="28" fill="#e6f4ec" stroke="#1f7a4d"/>
+        <rect x="340" y="123" width="30" height="28" fill="#fbeceb" stroke="#a3312a"/>
+        <text x="120" y="141" font-family="sans-serif" font-size="12" fill="#1f7a4d">committed to bids 11/12</text>
+        <text x="346" y="141" font-family="sans-serif" font-size="11" fill="#a3312a">1/12 stranded</text>
+      </svg>
+      <figcaption>Each bar represents the substation's remaining capacity. Build your own version to scale, using your D2 remaining-capacity figure and D4 stranded figures for this case's actual numbers &mdash; the bars above use invented numbers only to demonstrate the layout.</figcaption>
+    </figure>
+    <div class="chk">
+      <input type="checkbox" id="d5built">
+      <label for="d5built">I've built my own D5 capacity-bar diagram, to scale, using my own D2/D4 figures</label>
+    </div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Reveal this only after you've finished working through the case &mdash; the Twist is meant to land after your analysis, not before.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-bolt"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've finished the case &mdash; reveal it</button>
+    <div id="twistNarrative">
+      <p>The real margin between Option A and Option B is exactly one twenty-fourth of a capacity block &mdash; the smallest fractional unit that appears anywhere in this case's own arithmetic. A student who makes a single regrouping error in either D2 or D4 (forgetting to borrow a whole block, or borrowing it incorrectly) will compute a stranded-capacity figure that is off by exactly the size of this margin or larger &mdash; and will not be able to tell, from their own wrong number, that anything went wrong. The wrong answer can look just as plausible as the right one.</p>
+      <p>Try the classic shortcut yourself: instead of regrouping (borrowing a whole block) before subtracting, just take the absolute difference between the two fraction parts and stop there. Run it on both D2 and D4 below and compare it against the real, regrouped answer &mdash; computed live, not printed here.</p>
+      <div class="fieldrow">
+        <button class="ghost" onclick="runTrapDemo()" style="background:#2b323b;color:#f2ede0;border-color:#c9a227">Run the no-borrow shortcut</button>
+      </div>
+      <div id="trapResults" style="display:none">
+        <h3 style="color:var(--gold);font-size:1rem;margin-top:18px">D2 &mdash; Remaining minus Aurora Ridge</h3>
+        <div class="trapgrid">
+          <div class="trapcol correct"><h5>Regrouped (correct)</h5><div class="fig" id="trapD2Correct">&mdash;</div></div>
+          <div class="trapcol wrong"><h5>No-borrow shortcut</h5><div class="fig" id="trapD2Wrong">&mdash;</div></div>
+        </div>
+        <p id="trapD2Verdict" style="font-style:normal;color:#e8e3d5"></p>
+        <h3 style="color:var(--gold);font-size:1rem;margin-top:18px">D4 &mdash; Remaining minus the Combined Bid</h3>
+        <div class="trapgrid">
+          <div class="trapcol correct"><h5>Regrouped (correct)</h5><div class="fig" id="trapD4Correct">&mdash;</div></div>
+          <div class="trapcol wrong"><h5>No-borrow shortcut</h5><div class="fig" id="trapD4Wrong">&mdash;</div></div>
+        </div>
+        <p id="trapD4Verdict" style="font-style:normal;color:#e8e3d5"></p>
+      </div>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">I understand the shortcut happened to match D2 by coincidence, not because it's a valid method</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] Lawrence Berkeley National Laboratory, "Queued Up," 2025 Edition, via Loopback Systems &mdash; <a href="https://loopback.systems/insights/lawrence-berkeley-2025-interconnection-queue-report-overview" target="_blank" rel="noopener">Lawrence Berkeley 2025 Interconnection Queue Report Overview</a> (median queue wait time)</li>
+      <li>[S2] Lawrence Berkeley National Laboratory, "Queued Up," 2025 Edition, via Loopback Systems &mdash; <a href="https://loopback.systems/insights/lawrence-berkeley-2025-interconnection-queue-report-overview" target="_blank" rel="noopener">Lawrence Berkeley 2025 Interconnection Queue Report Overview</a> (total queued capacity)</li>
+      <li>[S3] Ihab Osman, independent strategist (data center / mission-critical infrastructure), quoted in Data Center Knowledge &mdash; <a href="https://www.datacenterknowledge.com/energy-power-supply/doe-says-ai-data-centers-are-rewriting-america-s-transmission-map" target="_blank" rel="noopener">DOE: AI Data Centers Are Transforming America's Transmission Map</a> (500 MW transmission-planning threshold)</li>
+      <li>[S4] Federal Energy Regulatory Commission, Order No. 2023, via K&amp;L Gates &mdash; <a href="https://www.klgates.com/Order-No-2023-Interconnection-Reform-is-Finally-Here-9-7-2023" target="_blank" rel="noopener">Order No. 2023: Interconnection Reform is Finally Here</a> (cluster-study reform)</li>
+      <li>[S5] RMI &mdash; <a href="https://rmi.org/understanding-large-load-interconnection/" target="_blank" rel="noopener">Understanding Large Load Interconnection</a> (20 MW transmission-level threshold, grounding MA1)</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Interconnection Queue &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, ported from cases/the-interconnection-queue/
+   sensitivity_model.py (case.json sha256: 0b0cd5510adf04b970a8e118edc28
+   abdae659a03e730ce18a8f1e01bf3dc20a2). Every capacity figure is an exact
+   {n, d} fraction object -- NEVER a JS float -- so the arithmetic this
+   page performs matches case.md's own stated convention ("never a
+   decimal"). Raw Appendix A/B data only; evaluate() derives everything
+   else live, and nothing here stores a pre-computed verdict.
+   ================================================================ */
+function gcdInt(a, b){ a = Math.abs(a); b = Math.abs(b); while(b){ [a, b] = [b, a % b]; } return a || 1; }
+function Fr(n, d){
+  if(d < 0){ n = -n; d = -d; }
+  const g = gcdInt(n, d);
+  return { n: n / g, d: d / g };
+}
+function fadd(a, b){ return Fr(a.n * b.d + b.n * a.d, a.d * b.d); }
+function fsub(a, b){ return Fr(a.n * b.d - b.n * a.d, a.d * b.d); }
+function fneg(a){ return Fr(-a.n, a.d); }
+function fcmp(a, b){ return a.n * b.d - b.n * a.d; } // >0 means a>b, <0 means a<b, 0 means equal
+function fToString(f){ return f.n + "/" + f.d; }
+function fToMixedString(f){
+  const whole = Math.trunc(f.n / f.d);
+  const remN = f.n - whole * f.d;
+  if(remN === 0) return String(whole);
+  if(whole === 0) return f.n + "/" + f.d;
+  return whole + "-" + remN + "/" + f.d;
+}
+/* Returns {whole, rem, den} for a fraction re-expressed at a LARGER
+   denominator that is an exact multiple of its own reduced denominator
+   (used for the LCD-8/LCD-12/LCD-24 steps this case's own math walks
+   through -- e.g. 27/8 at den=24 becomes whole=3, rem=9, den=24). */
+function partsAtDen(f, den){
+  const mult = den / f.d;
+  const scaledN = f.n * mult;
+  const whole = Math.floor(scaledN / den);
+  const rem = scaledN - whole * den;
+  return { whole: whole, rem: rem, den: den };
+}
+
+const PARAMS = {
+  // --- Appendix A, Meridian Valley Power's own capacity-of-record (not external) ---
+  total_capacity_blocks: Fr(37, 8),      // 4-5/8
+  committed_capacity_blocks: Fr(5, 4),   // 1-1/4
+
+  // --- Appendix B, Meridian Valley Power's own queue-board entries (not external) ---
+  aurora_ridge_blocks: Fr(23, 8),        // 2-7/8  (Option A: approve now)
+  cobalt_peak_blocks: Fr(5, 4),          // 1-1/4  (Option B: combined bid, part 1)
+  fenwick_yards_blocks: Fr(5, 3),        // 1-2/3  (Option B: combined bid, part 2)
+  briar_hollow_blocks: Fr(11, 6),        // 1-5/6  (queue overflow; D1 only, not in A/B math)
+
+  // --- Appendix C/D, Modeling Assumption MA1 -- disclosed, non-load-bearing dial.
+  //     Confirmed algebraically NOT to change which option wins, since evaluate()
+  //     works entirely in block units and the MW scale cancels out of it entirely.
+  block_size_mw: 24
+};
+const FLEX = ["block_size_mw"]; // only MA1 is swept by Tier 2 probe 5
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const remaining = fsub(p.total_capacity_blocks, p.committed_capacity_blocks);
+  const strandedA = fsub(remaining, p.aurora_ridge_blocks);
+  const combinedB = fadd(p.cobalt_peak_blocks, p.fenwick_yards_blocks);
+  const strandedB = fsub(remaining, combinedB);
+  const totalDemandAll = fadd(fadd(fadd(p.aurora_ridge_blocks, p.cobalt_peak_blocks), p.fenwick_yards_blocks), p.briar_hollow_blocks);
+  return {
+    // Lower stranded capacity is better for Renata -- negated so higher score
+    // wins, matching sensitivity_model.py's own "higher is better" convention.
+    A: fneg(strandedA), B: fneg(strandedB),
+    remaining: remaining, strandedA: strandedA, strandedB: strandedB,
+    combinedB: combinedB, totalDemandAll: totalDemandAll
+  };
+}
+// The Twist here is structural (a regrouping-error trap), not a parameter
+// flex -- block_size_mw is confirmed not to move the block-unit comparison
+// at all, so evaluate_twist() is the same live arithmetic as evaluate().
+function evaluate_twist(params){ return evaluate(params); }
+
+/* The trap FACILITATOR.md names: subtracting fraction parts directly
+   without first regrouping (borrowing) a whole block. Computed live from
+   the same PARAMS/evaluate() figures above -- never a hardcoded literal. */
+function trapDiff(minuend, subtrahend, den){
+  const m = partsAtDen(minuend, den);
+  const s = partsAtDen(subtrahend, den);
+  const fracDiff = Math.abs(m.rem - s.rem);
+  return Fr(fracDiff, den);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkD1..checkD4).
+   Every expected value below is derived live from evaluate()/PARAMS
+   above via exact fraction arithmetic -- nothing is a hardcoded verdict.
+   ================================================================ */
+function checkD1(){
+  const r = evaluate({});
+  const scaled24 = partsAtDen(r.totalDemandAll, 24); // e.g. 183/24 before simplifying
+  const rawNumerator = r.totalDemandAll.n * (24 / r.totalDemandAll.d);
+  fb('fb_d1a', Number(val('d1num')) === rawNumerator);
+
+  const simp = r.totalDemandAll; // already reduced to lowest terms by Fr()
+  const okSimp = Number(val('d1simpNum')) === simp.n && Number(val('d1simpDen')) === simp.d;
+  fb('fb_d1b', okSimp);
+
+  const mixed = partsAtDen(simp, simp.d);
+  document.getElementById('d1remDenLabel').textContent = '/ ' + simp.d;
+  const okMixed = Number(val('d1whole')) === mixed.whole && Number(val('d1remnum')) === mixed.rem;
+  fb('fb_d1c', okMixed);
+}
+
+function checkD2(){
+  const r = evaluate({});
+  const remNum8 = r.remaining.n * (8 / r.remaining.d);
+  fb('fb_d2a', Number(val('d2remNum')) === remNum8);
+
+  const remMixed = partsAtDen(r.remaining, 8);
+  const okMixed = Number(val('d2remWhole')) === remMixed.whole && Number(val('d2remRem')) === remMixed.rem;
+  fb('fb_d2b', okMixed);
+
+  const strandNum8 = Math.round((r.strandedA.n * (8 / r.strandedA.d)) * 1000) / 1000;
+  fb('fb_d2c', near(Number(val('d2strandNum')), strandNum8, 0.001));
+
+  const okSimp = Number(val('d2strandSimpNum')) === r.strandedA.n && Number(val('d2strandSimpDen')) === r.strandedA.d;
+  fb('fb_d2d', okSimp);
+}
+
+function checkD3(){
+  const r = evaluate({});
+  const combNum12 = r.combinedB.n * (12 / r.combinedB.d);
+  fb('fb_d3a', Number(val('d3num')) === combNum12);
+
+  const combMixed = partsAtDen(r.combinedB, 12);
+  const okMixed = Number(val('d3whole')) === combMixed.whole && Number(val('d3rem')) === combMixed.rem;
+  fb('fb_d3b', okMixed);
+
+  const fits = fcmp(r.combinedB, r.remaining) < 0; // combinedB strictly less than remaining
+  fb('fb_d3c', document.getElementById('d3fits').value === (fits ? 'yes' : 'no'));
+}
+
+function checkD4(){
+  const r = evaluate({});
+  const strandBNum24 = r.strandedB.n * (24 / r.strandedB.d);
+  fb('fb_d4a', Number(val('d4num')) === strandBNum24);
+
+  const winnerIsB = fcmp(r.strandedB, r.strandedA) < 0;
+  fb('fb_d4b', document.getElementById('d4which').value === (winnerIsB ? 'B' : 'A'));
+
+  const diff = fsub(r.strandedA, r.strandedB); // A - B, since B strands less
+  const diffAbs = Fr(Math.abs(diff.n), diff.d);
+  const diffNum24 = diffAbs.n * (24 / diffAbs.d);
+  fb('fb_d4c', Number(val('d4diff')) === diffNum24);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-interconnection-queue";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Total-demand table -- add all four active bids in block form"],
+  ["D2", "Remaining-capacity calculation and Option A's stranded sliver"],
+  ["D3", "Combined-bid calculation -- Cobalt Peak + Fenwick Yards"],
+  ["D4", "Head-to-head comparison -- which option strands less capacity"],
+  ["D5", "Original visual display -- a scaled capacity-bar diagram"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   "Common Denominator", "Mixed Number", and "Improper Fraction" are
+   reused verbatim from cases/the-special-order's own verified GLOSSARY
+   (fetched and confirmed 2026-09-06 -- legitimate reuse of an already-
+   verified source per templates/INTERACTIVE_HTML_CONTRACT.md section 3).
+   "Numerator"/"Denominator" reuse mathsisfun.com the same way. "Unlike
+   Denominators" and "Regrouping" are NEW terms for this
+   case, fetched and confirmed live this session (2026-09-09).
+   ================================================================ */
+const GLOSSARY = {
+  "Common Denominator": {def: "A shared denominator two or more fractions are rewritten to use, so their numerators can be added or compared directly.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/x686c113694706d78:add-subtract-fractions/x686c113694706d78:common-denominators/v/adding-fractions-with-unlike-denominators"},
+  "Unlike Denominators": {def: "Two or more fractions whose denominators are different, meaning they must be rewritten with a common denominator before they can be added or subtracted.",
+    url: "https://www.mathsisfun.com/least-common-denominator.html"},
+  "Mixed Number": {def: "A whole number combined with a proper fraction, e.g. 2-7/8.",
+    url: "https://www.khanacademy.org/math/cc-fourth-grade-math/imp-fractions-3/imp-mixed-numbers/v/changing-an-improper-fraction-to-a-mixed-number"},
+  "Improper Fraction": {def: "A fraction whose numerator is greater than or equal to its denominator, e.g. 23/8.",
+    url: "https://www.khanacademy.org/math/cc-fourth-grade-math/imp-fractions-3/imp-mixed-numbers/v/changing-a-mixed-number-to-an-improper-fraction"},
+  "Regrouping": {def: "Rewriting one whole unit of a mixed number as an equivalent fraction so a larger fraction can be subtracted from it, e.g. 3-3/8 becomes 2-11/8 before subtracting 2-7/8.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-fractions-3/imp-adding-and-subtracting-mixed-number-with-unlike-denominators/v/subtracting-mixed-numbers-with-regrouping"},
+  "Numerator": {def: "The top number in a fraction -- how many equal parts are being counted.",
+    url: "https://www.mathsisfun.com/numerator-denominator.html"},
+  "Denominator": {def: "The bottom number in a fraction -- how many equal parts the whole is divided into.",
+    url: "https://www.mathsisfun.com/numerator-denominator.html"},
+  "Least Common Denominator": {def: "The smallest denominator two or more fractions with unlike denominators can all be rewritten to share.",
+    url: "https://www.mathsisfun.com/least-common-denominator.html"}
+};
+const HOWTO = [
+  ["How to add fractions", "Common Denominator"],
+  ["How to add with mixed numbers", "Mixed Number"],
+  ["How to subtract fractions", "Unlike Denominators"],
+  ["How to subtract with mixed numbers", "Regrouping"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — story vocabulary (MCS-47): grid/utility terms this
+   case's setting depends on, distinct {desc, link} shape and "sterm"
+   class so T1-19's math-glossary regex never counts these. All five
+   URLs fetched and confirmed live this session (2026-09-09).
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "interconnection queue": {desc: "The ordered list of pending requests to connect new generation or large loads to the electric grid, each of which must complete engineering studies before receiving a firm capacity commitment.",
+    link: "https://en.wikipedia.org/wiki/Grid_connection"},
+  "substation": {desc: "A facility that transforms and routes electricity between the high-voltage transmission grid and the lower-voltage lines that ultimately reach customers -- the physical location where a large load like a data center actually connects.",
+    link: "https://en.wikipedia.org/wiki/Electrical_substation"},
+  "MW": {desc: "Megawatt -- a unit of power equal to one million watts, the standard unit for measuring how much electricity a large load or generator draws or produces.",
+    link: "https://en.wikipedia.org/wiki/Megawatt"},
+  "FERC": {desc: "The Federal Energy Regulatory Commission -- the U.S. federal agency that regulates interstate electricity transmission, including the rules utilities must follow when studying and approving new interconnection requests.",
+    link: "https://en.wikipedia.org/wiki/Federal_Energy_Regulatory_Commission"},
+  "transmission-planning event": {desc: "A load or generator large enough that connecting it requires its own dedicated study of the high-voltage transmission grid, rather than being absorbed as a routine, minor addition.",
+    link: "https://en.wikipedia.org/wiki/Electric_power_transmission"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function runTrapDemo(){
+  const r = evaluate_twist({});
+  const d2Correct = r.strandedA; // exact, regrouped
+  const d2Wrong = trapDiff(r.remaining, PARAMS.aurora_ridge_blocks, 8);
+  const d4Correct = r.strandedB;
+  const d4Wrong = trapDiff(r.remaining, r.combinedB, 24);
+
+  document.getElementById('trapResults').style.display = 'block';
+  document.getElementById('trapD2Correct').textContent = fToString(d2Correct) + ' block';
+  document.getElementById('trapD2Wrong').textContent = fToString(d2Wrong) + ' block';
+  document.getElementById('trapD4Correct').textContent = fToString(d4Correct) + ' block';
+  document.getElementById('trapD4Wrong').textContent = fToString(d4Wrong) + ' block';
+
+  const d2Match = fcmp(d2Correct, d2Wrong) === 0;
+  document.getElementById('trapD2Verdict').textContent = d2Match
+    ? "The shortcut happens to land on the same number here -- pure coincidence, not proof the method works."
+    : "Even here the shortcut disagrees with the regrouped answer.";
+  const d4Match = fcmp(d4Correct, d4Wrong) === 0;
+  document.getElementById('trapD4Verdict').textContent = d4Match
+    ? "The shortcut still matches here too."
+    : "Here the shortcut gives a DIFFERENT number than the regrouped answer -- the coincidence at D2 does not generalize.";
+}
+
+function onTwistToggle(){
+  // Understanding checkbox only -- it does not alter the case's own
+  // arithmetic (Option A/B's real stranded figures never change). Re-run
+  // the live demo so the comparison stays visible once acknowledged.
+  if(document.getElementById('applyTwist').checked){
+    runTrapDemo();
+  }
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>
