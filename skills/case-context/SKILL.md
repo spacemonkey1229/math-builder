@@ -130,6 +130,29 @@ function renderStoryGlossary(){
 }
 renderStoryGlossary();
 
+// Defense-in-depth (added 2026-09-18, after a live UAT pass on "the-cold-hit" found 9 dead
+// glossary terms, and a library grep then found the same defect in 3 more published cases:
+// "the-schedule-explosion" (12), "the-referral-cut" (5), "the-minimum-payment-trap" (4)).
+// The canonical workflow is: write PLAIN prose text, never a hand-authored <span class="sterm">,
+// and let autoLinkStoryTerms() below do 100% of the wrapping. But when a case deviates and
+// hand-authors a <span class="sterm" data-sterm="X">text</span> directly in the prose anyway,
+// autoLinkStoryTerms() treats it as "already handled" and skips it -- except it was never run
+// through stermHTML(), so it has no .tip child and no href. It renders as underlined text that
+// does nothing on hover, silently contradicting the "hover any underlined term" promise in the
+// glossary card. This function heals that deviation instead of assuming it can't happen.
+function hydrateManualSterms(){
+  document.querySelectorAll('.sterm[data-sterm]').forEach(el => {
+    if(el.closest('#storyGlossaryCard')) return;
+    if(el.querySelector('.tip')) return;
+    const key = el.dataset.sterm;
+    if(!STORY_GLOSSARY[key]) return;
+    const wrapper = document.createElement('span');
+    wrapper.innerHTML = stermHTML(key, el.textContent);
+    el.replaceWith(wrapper.firstChild);
+  });
+}
+hydrateManualSterms();
+
 function autoLinkStoryTerms(containerSelectors){
   const linked = new Set();
   document.querySelectorAll('.sterm[data-sterm]').forEach(a => {

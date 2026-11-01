@@ -74,6 +74,8 @@ L ≈ multi-week. (Estimates are rough; re-size at phase start.)
 
 ### Phases and exit gates
 
+**Definition of done (applies to every phase item):** built, **tested** (automated: Tier 1/2 for cases, unit/integration for the app) and **UAT tested** (live browser, walking the real flow as each persona: Hero, guide, parent). A phase's exit gate is not met until all three are reported; anything not run is stated plainly.
+
 **Phase 0 — Fix and observe (now → ~2 weeks)**
 - Do: backlog #1–3, 3a, 5a. Event log; pilot-readiness fixes for the 3 pilot cases; instrument the case page so confusion is captured, not emailed.
 - Exit gate: pilot cases pass their readiness checklist (ROADMAP §2) and Tier 1/2 **and a live browser pass**; sweep list produced;

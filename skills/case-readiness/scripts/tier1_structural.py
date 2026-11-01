@@ -32,7 +32,10 @@ CHECK REGISTER  (name them by id in the QA report)
   T1-17  cohort-size bands declared                        MCS-25      [NEW]
   T1-18  interactive HTML present, fresh, leak-free         MCS-37      [NEW]
   T1-19  hover+hyperlink glossary, verified domains         MCS-39      [NEW]
-  T1-20  visual asset present, image sources cited          advisory    [NEW]
+  T1-20  visual asset present, image sources cited          GAP not BLOCKER [NEW, escalated from advisory 2026-09-18 —
+                                                                            an advisory-only check was silently ignored on
+                                                                            every case run so far; a GAP forces an explicit
+                                                                            recorded waiver instead of a free pass]
   T1-21  hover+hyperlink STORY-vocabulary glossary          MCS-47      [NEW, GAP not BLOCKER]
   T1-22  published HTML section parity with case.md         MCS-50      [NEW]
   T1-23  published HTML inline <script> parses (real JS)    MCS-50      [NEW]
@@ -910,16 +913,22 @@ def run(project, cid):
     else:
         R.polish('T1-19', "no published/ directory yet — MCS-39 has nothing to check")
 
-    # ---- T1-20 visual asset present, image sources cited (advisory) ---------
-    # Not a SPEC requirement -- no case has ever been blocked or gapped for being
-    # text-only, and this check never blocks or gaps either. But a case that is
-    # nothing but prose and tables is a weaker artifact than one that also shows
-    # the data: a chart, map, diagram, or photo often lands the dilemma faster
-    # than another paragraph. Where a visual IS present and pulls from an
-    # external domain, treat it like any other real-world figure under SPEC §5
-    # -- if it's read as depicting real data, it should trace to a sources[]
-    # entry with a link a reviewer can actually follow (MCS-21: no URL from
-    # memory), not just appear uncited.
+    # ---- T1-20 visual asset present, image sources cited (GAP, not advisory) -
+    # Escalated 2026-09-18. This started as an advisory-only note ("never blocks
+    # or gaps") on the theory that a text-only case is weaker but not wrong. In
+    # practice, "advisory" meant every case authored under this check shipped
+    # with zero charts/diagrams and nobody ever had to answer for it -- an
+    # advisory finding with no consequence is not a check, it's a comment. Per
+    # house doctrine (the critique pass is not optional; every BLOCKER/GAP must
+    # be resolved or waived, never silently skipped), a case with genuinely no
+    # visual asset in published/ HTML now records a GAP: it does not block
+    # TIER1_PASS by itself, but per the readiness ladder a GAP needs an explicit,
+    # recorded human waiver before the case can be treated as fully clean --
+    # exactly like T1-21's carve-out below. Where a visual IS present and pulls
+    # from an external domain, treat it like any other real-world figure under
+    # SPEC §5 -- if it's read as depicting real data, it should trace to a
+    # sources[] entry with a link a reviewer can actually follow (MCS-21: no URL
+    # from memory), not just appear uncited.
     if os.path.isdir(pub):
         html_files = [fn for fn in os.listdir(pub) if fn.lower().endswith('.html')]
         cited_domains = set()
@@ -952,17 +961,20 @@ def run(project, cid):
                     if dom and dom not in cited_domains:
                         uncited.append(src)
         if uncited:
-            R.polish('T1-20', f"{len(uncited)} image(s) in published HTML pull from a domain not "
+            R.gap('T1-20', f"{len(uncited)} image(s) in published HTML pull from a domain not "
                               f"present in sources[] (e.g. {uncited[:3]}) — if any depicts real "
                               f"data (a photo, a chart, a map), cite it in sources[] like any other "
-                              f"real-world figure (SPEC §5), with a link a reviewer can follow.")
+                              f"real-world figure (SPEC §5), with a link a reviewer can follow. "
+                              f"Needs a recorded waiver to ship uncited.")
         if not found_any:
-            R.polish('T1-20', "no image, chart, diagram, or map found in published/ HTML — not "
-                              "required, but a visual (a map of the region, a photo of the "
-                              "scenario, a chart of the cited data) often makes a case land faster "
-                              "than another paragraph of prose. Consider whether one would help "
-                              "here; if added and it encodes real data, cite its source with a link.")
-        R.ok('T1-20')
+            R.gap('T1-20', "no image, chart, diagram, or map found in published/ HTML. A case "
+                              "with a mechanism, process, comparison, or spatial relationship "
+                              "worth showing should show it, not just describe it in prose — add "
+                              "one before publish. If this case genuinely has nothing visual to "
+                              "show, record an explicit waiver rather than leaving this GAP open "
+                              "silently.")
+        if not uncited and found_any:
+            R.ok('T1-20')
     else:
         R.polish('T1-20', "no published/ directory yet — T1-20 has nothing to check")
 
