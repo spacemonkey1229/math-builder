@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Culling Volume — Interactive</title>
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:140px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  .sterm{position:relative;color:#5b3f14;text-decoration:none;border-bottom:1.5px dotted #8a6d2b;cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted #8a6d2b;
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+  .barrow{display:flex;align-items:center;gap:10px;margin:8px 0;font-family:var(--sans);font-size:.82rem}
+  .barrow .lbl{width:180px;flex:0 0 auto}
+  .barrow .bar{height:18px;background:var(--navy);border-radius:4px}
+  .barrow .bar.b{background:var(--gold)}
+  .barrow .val{margin-left:8px;color:var(--sub)}
+
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Culling Volume</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS-core</span>
+      <span class="pill">Geometry &mdash; Surface Area &amp; Volume</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Marisol Tan has the frame-budget spreadsheet open on one monitor and a wireframe view of the open world &mdash; the scene drawn as bare outline edges only, nothing filled in &mdash; on the other. Friday's review meeting has one job for her team: cut milliseconds off the frame, or the next content patch &mdash; a district full of new streets, pipework, and signage &mdash; doesn't ship. Her culling system, the code that decides which of the world's thousands of background props even get considered for drawing each frame, is at the top of the offenders list.</p>
+  <p>She drags a lamppost mesh into the profiler and watches its bounding shape balloon around it &mdash; a single sphere, fat enough to swallow the pole, the fixture, and about a swimming pool's worth of empty air besides. Every one of the thin, tall props scattered across the map gets the same treatment: one cheap number, one enormous sphere, and an object that stays "possibly visible" to the engine long after the camera has actually looked away.</p>
+  <p>The fix sitting in her branch replaces that sphere with a tighter-fitting capsule for exactly this class of object &mdash; poles, pipes, posts, anything long and thin. It fits close. It also costs more math, every single one of thousands of times a frame. Marisol pulls up both numbers side by side, cursor hovering between the two candidate builds, the review meeting nineteen minutes away.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Marisol Tan is a rendering/engine programmer responsible for occlusion culling on an open-world game currently mid-way through a content patch. A game's picture is drawn by two different processors working together: the CPU (the general-purpose processor that runs the game's logic, including the culling test itself) decides what to draw, and the GPU &mdash; the graphics processing unit, a processor built specifically for the massively parallel math of turning 3-D geometry into an on-screen picture &mdash; actually draws it. Culling is the process that decides, every frame, which of the world's objects are worth asking the GPU to draw at all &mdash; an object judged "not possibly visible" this frame is skipped entirely, saving real time (SEE APPENDIX A). Real game engines run this test using a simplified stand-in shape for each object rather than its actual mesh, because testing thousands of full meshes every frame is far too slow (SEE APPENDIX A).</p>
+  <p>Right now, every prop in the world &mdash; no matter its shape &mdash; is tested against the camera using a single bounding sphere, sized just large enough to fully contain the object. For a compact prop this fits reasonably well. For a long, thin prop &mdash; a lamppost, a length of pipe, a sign post &mdash; a sphere sized to reach the object's farthest tip is enormous relative to the object's real volume, which means the object keeps testing as "possibly visible" long after it has actually left the camera's view. Every object still marked "possibly visible" costs the GPU a draw call &mdash; one request, with all its texture and shader information attached, to actually render that object's geometry &mdash; plus the shading work (the per-pixel color/lighting math) that draw call triggers; wasting both on something the player can no longer see is exactly what a tighter-fitting bounding shape avoids (SEE APPENDIX B). The fix under review swaps the bounding shape for exactly this class of long, thin prop from a sphere to a capsule &mdash; a cylinder capped with two hemispheres &mdash; which hugs a long thin object far more tightly, at the cost of a more expensive per-object math check every single frame (SEE APPENDIX A, APPENDIX B).</p>
+  <p>Three representative prop types carry this decision: a lamppost, a length of industrial pipe, and a sign post with a pyramidal cap, each built from real or realistically-bounded dimensions (SEE APPENDIX B). The world places many copies of each across the map every frame (SEE APPENDIX C), and both the culling-test cost and the cost of wasted, needlessly-considered-visible volume are priced in Appendix D. Marisol has to recommend one bounding-shape policy for this entire class of prop before the review starts. Real engines &mdash; Unreal Engine among them &mdash; document using exactly this kind of simplified bounding geometry, sphere or otherwise, to decide visibility every frame (SEE APPENDIX E). Every sourced or assumed figure in this case is documented in (SEE APPENDIX E), and the vocabulary and "how to&hellip;" procedures needed to build and compare both options are listed in (SEE APPENDIX F).</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Marisol Tan. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Keep the Sphere</h4>
+      <p style="margin:0">Keep a single bounding sphere for every long, thin prop &mdash; one cheap distance check, a lot of wasted volume.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Switch to the Capsule</h4>
+      <p style="margin:0">Switch long, thin props to a bounding capsule &mdash; a tighter fit, at a higher per-object compute cost.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which policy you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px"><strong>D1</strong> real volume &amp; surface area for all 3 props, decomposed into component solids; <strong>D2</strong> bounding sphere volume + wasted volume per prop and scene-wide; <strong>D3</strong> bounding capsule volume + wasted volume per prop and scene-wide; <strong>D4</strong> total per-frame cost in ms for both options, with the margin; <strong>D5</strong> a written recommendation naming the most sensitive cost figure.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apx-a">
+    <summary>Appendix A &mdash; What Occlusion Culling Actually Tests</summary>
+    <div class="inner">
+      <p>Every frame, a real-time renderer has to decide which of a scene's objects are worth asking the GPU to draw. Testing every object's exact, detailed mesh against the camera every frame would itself cost more time than it saves &mdash; so real engines test a simplified stand-in shape instead: a sphere, a box, a capsule, or some other simple solid that is quick to check mathematically. Unreal Engine's own documentation describes exactly this approach: an actor's bounds are built from simplified shapes rather than the real mesh, precisely because the simplified check is what makes culling fast enough to run every single frame across an entire world's worth of objects (Appendix E, S3).</p>
+      <p>Two properties of a stand-in shape matter for this case: how <em>cheap</em> the shape is to test (fewer/simpler arithmetic operations means a faster check), and how <em>tightly</em> the shape fits the real object (a loose fit means the object is treated as "possibly visible" for longer than it actually is, which costs real rendering time on an object the player cannot see).</p>
+    </div>
+  </details>
+
+  <details open id="apx-b">
+    <summary>Appendix B &mdash; Three Representative Props</summary>
+    <div class="inner">
+      <p>Three long, thin prop types stand in for this entire class of object. Each is built from a cylinder plus either a cone or a square pyramid.</p>
+      <div class="chartwrap">
+        <svg id="propChart" viewBox="0 0 640 260" role="img" aria-label="Silhouettes of the three representative props to scale"></svg>
+        <div class="cap">The three props drawn to the same vertical scale &mdash; note how much taller each is than it is wide.</div>
+      </div>
+      <table id="apxB">
+        <thead><tr><th>Prop</th><th>Component 1</th><th>Component 2</th><th>Total height</th></tr></thead>
+        <tbody>
+          <tr><td>Lamppost</td><td>Cylinder pole: radius 0.075 m, height 6.1 m (MA1)</td><td>Cone light-fixture cap: radius 0.15 m, height 0.3 m (MA2)</td><td class="num">6.4 m</td></tr>
+          <tr><td>Industrial pipe</td><td>Cylinder: radius 0.0841 m, height 4.0 m (MA3)</td><td>&mdash; (single cylinder)</td><td class="num">4.0 m</td></tr>
+          <tr><td>Sign post</td><td>Cylinder post: radius 0.05 m, height 2.5 m (MA4)</td><td>Square pyramid cap: base side 0.2 m, height 0.15 m (MA5)</td><td class="num">2.65 m</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Bounding sphere construction (Option A):</strong> radius = half the prop's total height (a sphere large enough to reach the object's farthest tip from its center).</p>
+      <p><strong>Bounding capsule construction (Option B):</strong> a cylindrical body spanning the prop's full total height, at a radius equal to the prop's own widest cross-section, capped by two hemispheres of that same radius &mdash; this guarantees the capsule fully contains the prop, with the hemispherical caps as pure extra headroom beyond the prop's own extent.</p>
+      <p class="side-note">The lamppost pole's height (6.1 m) is chosen within a real, cited range for standard street light poles (Appendix E, S1). The industrial pipe's radius (0.0841 m = 6.625 in outside diameter &divide; 2) is a real, cited standard pipe dimension (Appendix E, S2) &mdash; 6-inch nominal pipe size, Schedule 40. All other dimensions (MA1&ndash;MA5) are stated Modeling Assumptions.</p>
+    </div>
+  </details>
+
+  <details id="apx-c">
+    <summary>Appendix C &mdash; Scene Prop Counts</summary>
+    <div class="inner">
+      <table>
+        <thead><tr><th>Prop</th><th>Count tested per frame</th></tr></thead>
+        <tbody>
+          <tr><td>Lamppost</td><td class="num">600</td></tr>
+          <tr><td>Industrial pipe</td><td class="num">600</td></tr>
+          <tr><td>Sign post</td><td class="num">600</td></tr>
+          <tr class="hi"><td><strong>Total</strong></td><td class="num"><strong>1,800</strong></td></tr>
+        </tbody>
+      </table>
+      <p class="side-note">MA6 &mdash; stated Modeling Assumption. No public source publishes any specific game's actual per-frame prop density.</p>
+    </div>
+  </details>
+
+  <details id="apx-d">
+    <summary>Appendix D &mdash; Cost Inputs</summary>
+    <div class="inner">
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Per-object culling-test cost, bounding sphere (Option A)</td><td class="num">0.0005 ms (MA7)</td></tr>
+          <tr><td>Per-object culling-test cost, bounding capsule (Option B)</td><td class="num">0.0015 ms (MA8)</td></tr>
+          <tr><td>Rendering/overdraw cost per liter of wasted bounding volume</td><td class="num">0.00000002 ms/L = <strong>0.02 ms per 1,000,000 L</strong> (MA9)</td></tr>
+        </tbody>
+      </table>
+      <p class="side-note">A bounding shape that wastes more volume keeps its object marked "possibly visible" over a larger space and for more time than the object's own real shape would justify &mdash; which costs real GPU time (extra draw calls, extra shading) on an object the player cannot actually see. MA9 converts that wasted volume into an approximate millisecond cost so it can be added to the culling-test cost on the same footing.</p>
+      <p class="side-note"><strong>Decimal-point warning:</strong> 0.00000002 has seven leading zeros &mdash; easy to mis-place by hand. Work in <strong>millions of liters</strong> instead: convert your wasted-volume total to millions of liters (&divide; 1,000,000), then multiply by 0.02 ms. Worked example with a placeholder number (not one of this case's own totals): 50,000,000 L = 50 million L; 50 &times; 0.02 ms = <strong>1.0 ms</strong>, not 1,000 ms and not 0.001 ms. Sanity-check that your own D4 answer lands in the single-digit-milliseconds range.</p>
+    </div>
+  </details>
+
+  <details id="apx-ma">
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <p>These figures are <strong>not sourced from an external publisher</strong>. They are stated scenario assumptions. A Hero may challenge these numbers in discussion &mdash; that is a legitimate move.</p>
+      <table>
+        <thead><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Sensitivity</th></tr></thead>
+        <tbody>
+          <tr><td>MA1</td><td>Lamppost pole height</td><td class="num">6.1 m</td><td>Sets the lamppost's bounding sphere radius directly.</td></tr>
+          <tr><td>MA2</td><td>Lamppost fixture cap dimensions</td><td class="num">r 0.15 m, h 0.3 m</td><td>Minor.</td></tr>
+          <tr><td>MA3</td><td>Industrial pipe length</td><td class="num">4.0 m</td><td>Scales this prop's volume; doesn't change the winner alone.</td></tr>
+          <tr><td>MA4</td><td>Sign post height</td><td class="num">2.5 m</td><td>Minor.</td></tr>
+          <tr><td>MA5</td><td>Sign post pyramidal cap dimensions</td><td class="num">base 0.2 m, h 0.15 m</td><td>Minor.</td></tr>
+          <tr><td>MA6</td><td>Scene prop counts</td><td class="num">600 each</td><td>Scales both options together.</td></tr>
+          <tr class="hi"><td>MA7</td><td>Sphere test cost</td><td class="num">0.0005 ms</td><td>Most sensitive dial.</td></tr>
+          <tr class="hi"><td>MA8</td><td>Capsule test cost</td><td class="num">0.0015 ms</td><td>Most sensitive dial.</td></tr>
+          <tr class="hi"><td>MA9</td><td>Render cost per liter wasted</td><td class="num">0.00000002 ms/L</td><td>Single most sensitive dial in the case.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Game-Engine Rendering Vocabulary</h3>
+    <p>This case uses real computer-graphics and game-engine terms. Hover any term below for a plain-English definition; click it to open a real source.</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Links verified working 2026-09-18.</p>
+  </div>
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-18. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <details id="apx-sources">
+    <summary>Sources</summary>
+    <div class="inner">
+      <ul class="src-list">
+        <li>[S1] LED Lighting Supply &mdash; Street Light Poles. Standard pole height range 15&ndash;30 ft.</li>
+        <li>[S2] Engineering ToolBox, citing ASME/ANSI B36.10/19 &mdash; 6-inch NPS Schedule 40 pipe OD 6.625 in.</li>
+        <li>[S3] Epic Games &mdash; Visibility and Occlusion Culling in Unreal Engine. Real engine bounds = sphere + box.</li>
+        <li>[S4] Unity Technologies &mdash; Occlusion culling manual page (supplemental context).</li>
+      </ul>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; Real volume of the lamppost (D1)</h4>
+    <div class="goal">Compute the lamppost's real volume: cylinder pole (r=0.075m, h=6.1m) + cone cap (r=0.15m, h=0.3m).</div>
+    <div class="fieldrow"><label for="s1vol">Your computed real volume (m&sup3;)</label><input type="number" id="s1vol" step="any" placeholder="a decimal"><span class="fb" id="fb1"></span></div>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; Bounding sphere volume &amp; wasted volume, lamppost (D2)</h4>
+    <div class="goal">Sphere radius = half the lamppost's total height (6.4m &divide; 2 = 3.2m). Compute the sphere's volume, then its wasted volume (sphere &minus; real, in liters, using your Step 1 answer).</div>
+    <div class="fieldrow"><label for="s2sph">Sphere volume (m&sup3;)</label><input type="number" id="s2sph" step="any"><span class="fb" id="fb2a"></span></div>
+    <div class="fieldrow"><label for="s2waste">Wasted volume (liters)</label><input type="number" id="s2waste" step="any"><span class="fb" id="fb2b"></span></div>
+    <button onclick="checkStep2()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Bounding capsule volume &amp; wasted volume, lamppost (D3)</h4>
+    <div class="goal">Capsule: cylinder body at the lamppost's full height (6.4m) and its own widest radius (0.15m), plus two hemispheres of that radius (= one full sphere). Compute the capsule's volume, then its wasted volume in liters.</div>
+    <div class="fieldrow"><label for="s3cap">Capsule volume (m&sup3;)</label><input type="number" id="s3cap" step="any"><span class="fb" id="fb3a"></span></div>
+    <div class="fieldrow"><label for="s3waste">Wasted volume (liters)</label><input type="number" id="s3waste" step="any"><span class="fb" id="fb3b"></span></div>
+    <button onclick="checkStep3()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Total per-frame cost, both options (D4)</h4>
+    <div class="goal">Using Appendix C's 1,800 total tested props and Appendix D's cost figures, compute each option's total cost in ms (CPU cost + wasted-volume render cost, using the full scene-wide wasted-volume totals from your own D2/D3 work across all three props).</div>
+    <div class="fieldrow"><label for="s4a">Option A total cost (ms)</label><input type="number" id="s4a" step="any"><span class="fb" id="fb4a"></span></div>
+    <div class="fieldrow"><label for="s4b">Option B total cost (ms)</label><input type="number" id="s4b" step="any"><span class="fb" id="fb4b"></span></div>
+    <button onclick="checkStep4()">Check</button>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#ha-logo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      <p>MA9 &mdash; the number that converts "liters of wasted bounding volume" into a millisecond rendering cost &mdash; has no public source behind it at all. It is this case's own constructed modeling device. Ask the room: "If that number were cut in half, does the recommendation change?"</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Show both options' total cost at half the render-cost conversion, computed live</label>
+      </div>
+      <div id="twistOut" style="margin-top:10px;font-family:var(--sans)"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] LED Lighting Supply &mdash; Street Light Poles.</li>
+      <li>[S2] Engineering ToolBox, citing ASME/ANSI B36.10/19.</li>
+      <li>[S3] Epic Games &mdash; Visibility and Occlusion Culling in Unreal Engine.</li>
+      <li>[S4] Unity Technologies &mdash; Occlusion culling manual page.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Culling Volume &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from
+   cases/the-culling-volume/case.json.
+   ================================================================ */
+const PROPS = {
+  lamppost: {pole_r:0.075, pole_h:6.1, cone_r:0.15, cone_h:0.3},
+  pipe: {r:0.0841375, h:4.0},
+  signpost: {post_r:0.05, post_h:2.5, pyr_s:0.2, pyr_h:0.15}
+};
+const COUNT_EACH = 600;
+const SPHERE_COST = 0.0005;
+const CAPSULE_COST = 0.0015;
+const RENDER_COST_PER_L = 0.00000002;
+
+function cylVol(r,h){ return Math.PI*r*r*h; }
+function coneVol(r,h){ return (1/3)*Math.PI*r*r*h; }
+function pyrVol(s,h){ return (1/3)*s*s*h; }
+function sphereVol(r){ return (4/3)*Math.PI*Math.pow(r,3); }
+
+function propStats(key){
+  const p = PROPS[key];
+  let vol, height, maxr;
+  if(key==='lamppost'){
+    vol = cylVol(p.pole_r,p.pole_h) + coneVol(p.cone_r,p.cone_h);
+    height = p.pole_h + p.cone_h;
+    maxr = Math.max(p.pole_r, p.cone_r);
+  } else if(key==='pipe'){
+    vol = cylVol(p.r,p.h); height = p.h; maxr = p.r;
+  } else {
+    vol = cylVol(p.post_r,p.post_h) + pyrVol(p.pyr_s,p.pyr_h);
+    height = p.post_h + p.pyr_h;
+    maxr = Math.max(p.post_r, p.pyr_s/Math.sqrt(2));
+  }
+  return {vol, height, maxr};
+}
+function wastedLiters(key){
+  const {vol,height,maxr} = propStats(key);
+  const sphereR = height/2;
+  const sphV = sphereVol(sphereR);
+  const capV = cylVol(maxr,height) + sphereVol(maxr);
+  return {sphere:(sphV-vol)*1000, capsule:(capV-vol)*1000, sphV, capV, vol, height, maxr, sphereR};
+}
+function totalsAt(renderCost){
+  let wa=0, wb=0;
+  ['lamppost','pipe','signpost'].forEach(k=>{
+    const w = wastedLiters(k);
+    wa += w.sphere*COUNT_EACH; wb += w.capsule*COUNT_EACH;
+  });
+  const n = COUNT_EACH*3;
+  const cpuA = n*SPHERE_COST, cpuB = n*CAPSULE_COST;
+  const renderA = wa*renderCost, renderB = wb*renderCost;
+  return {A: cpuA+renderA, B: cpuB+renderB, wa, wb, cpuA, cpuB, renderA, renderB};
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [title,'Heroes Academy Math Builder case study','','Sources:',...srcLis,'',location.href].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else { fallbackCopy(); }
+}
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = safeStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = safeStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = safeStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Appendix B prop silhouette chart.
+   ================================================================ */
+function renderPropChart(){
+  const svg = document.getElementById('propChart');
+  if(!svg) return;
+  const W=640,H=260,baseY=230;
+  const scale = 28; // px per meter
+  const keys = ['lamppost','pipe','signpost'];
+  const labels = {lamppost:'Lamppost',pipe:'Pipe',signpost:'Sign post'};
+  let els = `<line x1="20" y1="${baseY}" x2="${W-20}" y2="${baseY}" stroke="#dfe4ea" stroke-width="2"/>`;
+  const xs = [110,320,530];
+  keys.forEach((k,i)=>{
+    const {height,maxr} = propStats(k);
+    const x = xs[i];
+    const h = height*scale;
+    const w = Math.max(6, maxr*scale*2);
+    els += `<rect x="${x-w/2}" y="${baseY-h}" width="${w}" height="${h}" fill="#1a3a5c" opacity="0.85" rx="3"/>`;
+    els += `<text x="${x}" y="${baseY+18}" font-size="12" text-anchor="middle" fill="#5b6472" font-family="sans-serif">${labels[k]}</text>`;
+    els += `<text x="${x}" y="${baseY-h-6}" font-size="11" text-anchor="middle" fill="#1a3a5c" font-family="sans-serif">${height.toFixed(2)} m</text>`;
+  });
+  svg.innerHTML = els;
+}
+renderPropChart();
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  const claimed = parseFloat(val('s1vol'));
+  const {vol} = propStats('lamppost');
+  fb('fb1', !isNaN(claimed) && near(claimed, vol, 0.01));
+}
+function checkStep2(){
+  const claimedSph = parseFloat(val('s2sph'));
+  const claimedWaste = parseFloat(val('s2waste'));
+  const w = wastedLiters('lamppost');
+  fb('fb2a', !isNaN(claimedSph) && near(claimedSph, w.sphV, 0.5));
+  fb('fb2b', !isNaN(claimedWaste) && near(claimedWaste, w.sphere, 500));
+}
+function checkStep3(){
+  const claimedCap = parseFloat(val('s3cap'));
+  const claimedWaste = parseFloat(val('s3waste'));
+  const w = wastedLiters('lamppost');
+  fb('fb3a', !isNaN(claimedCap) && near(claimedCap, w.capV, 0.02));
+  fb('fb3b', !isNaN(claimedWaste) && near(claimedWaste, w.capsule, 5));
+}
+function checkStep4(){
+  const claimedA = parseFloat(val('s4a'));
+  const claimedB = parseFloat(val('s4b'));
+  const t = totalsAt(RENDER_COST_PER_L);
+  fb('fb4a', !isNaN(claimedA) && near(claimedA, t.A, 0.15));
+  fb('fb4b', !isNaN(claimedB) && near(claimedB, t.B, 0.15));
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const _memStore = new Map();
+const safeStorage = {
+  getItem(k){ try { return localStorage.getItem(k); } catch(e){ return _memStore.has(k) ? _memStore.get(k) : null; } },
+  setItem(k,v){ try { localStorage.setItem(k,v); } catch(e){ _memStore.set(k, String(v)); } },
+};
+const CASE_ID = "the-culling-volume";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) safeStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = safeStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1","Real volume & surface area of all 3 props","Decompose into cylinder+cone/pyramid"],
+  ["D2","Bounding sphere volume + wasted volume, per prop and scene total",""],
+  ["D3","Bounding capsule volume + wasted volume, per prop and scene total",""],
+  ["D4","Total per-frame cost (ms), both options, with margin",""],
+  ["D5","Written recommendation naming the most sensitive cost figure",""]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,process])=>{
+    const checked = safeStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = safeStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${process ? `<div class="meta" style="margin:2px 0 6px">${process}</div>` : ''}
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>safeStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = safeStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  safeStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ safeStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39).
+   ================================================================ */
+const GLOSSARY = {
+  "Volume": {def: "The amount of three-dimensional space a shape encloses.",
+    url: "https://www.khanacademy.org/math/geometry-home/geometry-volume-surface-area"},
+  "Surface Area": {def: "The total area of every outside face of a 3-D shape, added together.",
+    url: "https://www.khanacademy.org/math/geometry-home/geometry-volume-surface-area"},
+  "Cylinder": {def: "A 3-D shape with two parallel circular bases connected by a curved surface.",
+    url: "https://www.mathsisfun.com/geometry/cylinder.html"},
+  "Cone": {def: "A 3-D shape with a circular base that narrows smoothly to a single point (the apex).",
+    url: "https://www.mathsisfun.com/geometry/cone.html"},
+  "Pyramid": {def: "A 3-D shape with a polygon base and triangular faces that meet at a single point (the apex).",
+    url: "https://www.mathsisfun.com/geometry/pyramids.html"},
+  "Sphere": {def: "A perfectly round 3-D shape where every point on the surface is the same distance from the center.",
+    url: "https://www.mathsisfun.com/geometry/sphere.html"},
+  "Radius": {def: "The distance from the center of a circle or sphere to its edge.",
+    url: "https://www.mathsisfun.com/definitions/radius.html"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+};
+const HOWTO = [
+  ["How to find the surface area of a pyramid", "Pyramid"],
+  ["How to find the surface area of a cylinder", "Cylinder"],
+  ["How to find the volume of a pyramid", "Pyramid"],
+  ["How to find the volume of a cylinder", "Cylinder"],
+  ["How to find the volume of a cone", "Cone"],
+  ["How to find the volume of a sphere", "Sphere"]
+];
+
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — story/domain-vocabulary glossary (MCS-47).
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Occlusion Culling": {desc: "The technique of skipping rendering work for objects that are hidden from the camera's view by other objects, to save time each frame.",
+    link: "https://en.wikipedia.org/wiki/Hidden-surface_determination"},
+  "Bounding Volume": {desc: "A simple geometric shape (like a sphere, box, or capsule) that fully contains a more complex object, used as a fast stand-in for expensive visibility or collision tests.",
+    link: "https://en.wikipedia.org/wiki/Bounding_volume"},
+  "Overdraw": {desc: "When a renderer draws the same pixel more than once in a single frame, wasting GPU time on work the final image never uses.",
+    link: "https://en.wikipedia.org/wiki/Overdraw"},
+  "Capsule": {desc: "A 3-D shape made of a cylinder capped by two hemispheres, commonly used in games as a tight-fitting bounding volume for long, thin objects.",
+    link: "https://en.wikipedia.org/wiki/Capsule_(geometry)"},
+  "Frame Budget": {desc: "The total amount of time (in milliseconds) a game has to compute and draw everything for one frame while still hitting its target frame rate.",
+    link: "https://en.wikipedia.org/wiki/Frame_rate"},
+  "Profiler": {desc: "A software tool that measures exactly how much computer time each part of a program is spending, used to find performance bottlenecks.",
+    link: "https://en.wikipedia.org/wiki/Profiling_(computer_programming)"},
+  "Mesh": {desc: "A 3-D model's actual geometry: the collection of connected points, edges, and triangular faces that make up its visible shape.",
+    link: "https://en.wikipedia.org/wiki/Polygon_mesh"},
+  "GPU": {desc: "Graphics Processing Unit -- a computer processor built specifically for the massively parallel math of turning 3-D geometry into an on-screen picture, working alongside the general-purpose CPU.",
+    link: "https://en.wikipedia.org/wiki/Graphics_processing_unit"},
+  "Shading": {desc: "The per-pixel color and lighting math a renderer performs to turn a shape into a finished-looking image.",
+    link: "https://en.wikipedia.org/wiki/Shading"},
+  "Wireframe": {desc: "A view of a 3-D scene showing only the bare outline edges of its shapes, with no solid surfaces filled in.",
+    link: "https://en.wikipedia.org/wiki/Wire-frame_model"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const box = document.getElementById('twistOut');
+  const apply = document.getElementById('applyTwist').checked;
+  if(!apply){ box.innerHTML=''; return; }
+  const halfT = totalsAt(RENDER_COST_PER_L/2);
+  box.innerHTML = `<div class="row" style="display:flex;justify-content:space-between;border-bottom:1px solid #444;padding:6px 0">
+      <span>Option A total cost (at half MA9)</span><strong>${round(halfT.A,3)} ms</strong></div>
+    <div class="row" style="display:flex;justify-content:space-between;padding:6px 0">
+      <span>Option B total cost (at half MA9)</span><strong>${round(halfT.B,3)} ms</strong></div>
+    <p style="margin-top:10px">Did the winner change?</p>`;
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

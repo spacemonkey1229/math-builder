@@ -22,9 +22,9 @@ Fiona scrolls down the page, past the fine print, to the numbers that actually m
 
 Nate and Fiona Handleson just moved back to Idaho after several years overseas, where they used a European carrier that no longer works in the United States. They own two iPhones already, so they only need a new plan — not new phones.
 
-Nate commutes weekly to Bend, Oregon, and travels occasionally to Las Vegas, Denver, and overseas; reliable coverage on the road, especially in winter mountain driving, matters to Fiona. Nate also needs to use his phone as a mobile hotspot on trips. For now they need service for **2 lines** (their own two phones), but Charity, their oldest child, is close to the age where she'll want a phone of her own — the family expects to add a **3rd line within the next year**, and possibly a 4th not long after (SEE APPENDIX C).
+Nate commutes weekly to Bend, Oregon, and travels occasionally to Las Vegas, Denver, and overseas; reliable coverage on the road (whether his phone keeps a signal, especially in winter mountain driving) matters to Fiona. Nate also needs to use his phone as a mobile hotspot on trips, which means sharing his phone's internet connection with his laptop. For now they need service for **2 lines** (their own two phones; a line is one phone's service on the plan), but Charity, their oldest child, is close to the age where she'll want a phone of her own — the family expects to add a **3rd line within the next year**, and possibly a 4th not long after (SEE APPENDIX C).
 
-Two carriers have been recommended: **Carrier V** and **Carrier T**. Both price their plans the same way — a flat rate for the first two lines, then a fixed price for each additional line beyond that (SEE APPENDIX A). Idaho's state plan tax is a flat rate applied to the total before any line is activated (SEE APPENDIX B).
+Two carriers (phone companies) have been recommended: **Carrier V** and **Carrier T**. Both price their plans the same way — one flat monthly price that covers the first two lines *together* (not per line), then a fixed price for each additional line beyond that (SEE APPENDIX A). For this case, plan tax is a flat percentage added on top of the plan price, charged once on the whole monthly bill (SEE APPENDIX B). The carriers, prices, and tax rate in this case are invented for practice; real carriers, taxes, and fees vary by state and plan.
 
 Nate and Fiona want the plan that fits their budget now — but not at the cost of getting stuck with the more expensive option once Charity's line is added.
 
@@ -75,13 +75,15 @@ Do you:
 | Each additional line beyond 2 | $15.00 | $25.00 |
 | Hotspot data | 15 GB per line | Unlimited |
 
+**How to read this table.** "First 2 lines (flat rate)" is one price for both lines *together*. Each line after the second adds its own price on top. Practice example with invented numbers (not Carrier V or T): a plan charging $60 for the first two lines together and $10 per additional line, with a 5% tax, costs $60 + $10 = $70 before tax for 3 lines; the tax is $70 × 0.05 = $3.50, so the monthly bill is $73.50.
+
 Both carriers' coverage maps show strong service along Nate's regular Bend, Las Vegas, and Denver routes; Carrier V's map additionally shows stronger coverage in the mountain pass Nate drives through in winter.
 
 ---
 
 ## Appendix B: Modeling Assumptions
 
-**Assumption 1 — Plan tax.** Idaho's state plan tax is a flat **8%**, applied to the pre-tax total in Appendix A's pricing before any discount or credit.
+**Assumption 1 — Plan tax.** For this case, use a flat **8%** plan tax (a simplified, invented rate; real wireless taxes and fees vary by state and carrier), applied to the pre-tax total (the plan price before tax is added) in Appendix A's pricing, before any discount or credit. It is charged once on the combined bill, not separately on each line.
 
 **Assumption 2 — Additional-line pricing holds.** Both carriers' per-line rate for lines beyond 2 (Appendix A) is assumed to stay the same when the 3rd and 4th lines are actually added — carriers do not publish a guarantee of this, but Nate and Fiona are budgeting on today's published rate, same as anyone would.
 
@@ -102,7 +104,7 @@ Want to go beyond the required math? These are real, freely available resources 
 - [Linear Equation — Wikipedia](https://en.wikipedia.org/wiki/Linear_equation) — a reference on how linear equations work, including the slope-intercept form used in Challenge 3's D1.
 - [System of Linear Equations — Wikipedia](https://en.wikipedia.org/wiki/System_of_linear_equations) — explains what it means to solve two equations together, the method Challenge 3's D3 (break-even) relies on.
 - [Percentage — Wikipedia](https://en.wikipedia.org/wiki/Percentage) — a refresher on what a percentage is and how to apply one, useful for the tax calculation in Appendix B.
-- [Idaho State Tax Commission — Sales and Use Tax](https://tax.idaho.gov/taxes/sales-use/) — Idaho's own tax agency page on how sales and use tax works in the state, for context on the plan tax referenced in Appendix B.
+- [Idaho State Tax Commission — Sales and Use Tax](https://tax.idaho.gov/taxes/sales-use/) — Idaho's own tax agency page on how sales and use tax works in the state, for context on how real sales tax works. The 8% in Appendix B is a simplified number for this case, not Idaho's actual rate on phone plans.
 
 ## Appendix E: "How To…" Math Questions To Research
 

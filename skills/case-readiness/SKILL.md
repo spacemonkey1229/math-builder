@@ -357,6 +357,16 @@ the metric it optimised. Reaching the intended answer by the wrong route is a FA
 Cold Solve packet's whole point in the sibling project: can fresh readers convict the right person
 *for the right reasons*, and get past the planted trap.
 
+**The full worked solution is a durable artifact, not a transient chat output (added 2026-09-18,
+after a human had to ask a live agent to re-derive D1-D5's math from scratch because the recorded
+QA_REPORT.md held only a one-line "reached a defensible position" summary — the actual arithmetic
+the fresh solver produced had already been thrown away).** Record the solver's full response —
+every formula, every intermediate number, the named metric, the strongest counter-argument, the
+sensitivity finding — verbatim into `QA_REPORT.md` under `### Tier 2 detail — P1 full solve`, not
+just the one-line finding in the summary table. This is what makes "how do you actually solve
+this case" answerable by reading the report, instead of re-running a fresh solver or asking
+whoever ran the QA to remember what the transcript said.
+
 ### P2 · Both-sides solve
 
 Build the strongest quantitative case for *each* option, independently, from the packet alone.
@@ -366,6 +376,10 @@ answers: which side collapses first, and at exactly which question?
 
 **If one side collapses, the recorded margin is a paper number and the SPEC §2 balance test has
 not really been passed** — regardless of what `margin_pct` says.
+
+**Same durable-artifact rule as P1**: record each side's full best-case argument (the actual
+numbers used, not just which side "won") verbatim into `QA_REPORT.md` under
+`### Tier 2 detail — P2 full solve`.
 
 ### P3 · Trap check
 
@@ -611,6 +625,15 @@ BLOCKER / GAP / POLISH lists, verbatim from the script.
 | P5 sensitivity | PASS/FAIL/NOT RUN | which dial flips the verdict |
 | P6 data decay | PASS/FAIL | dead links, drifted figures, refresh dates |
 | P7 accessibility | PASS/FAIL | missing visuals for sketch/graph deliverables; unexplained real-world concepts named by a zero-context cold-read |
+
+### Tier 2 detail — P1 full solve
+The fresh solver's complete response, verbatim: every formula and intermediate number per
+deliverable, the named metric, the strongest counter-argument, the sensitivity finding. This
+section is what answers "how does a student actually solve D1...Dn" without re-running a probe.
+
+### Tier 2 detail — P2 full solve
+Both sides' complete best-case arguments, verbatim, with the actual numbers each side used —
+not just which side won.
 
 ### Tier 3 — human dry-run
 NOT RUN / filed at cases/<id>/runs/RUN_<date>.md / <n> artifact-attributed findings

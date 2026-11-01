@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Approval Gate — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  See templates/INTERACTIVE_HTML_CONTRACT.md for the shape contract this file follows.
+  HARD LINE (MCS-37): this file must never print the case's balance verdict (which
+  option wins, the margin) as a static literal anywhere outside a <script> tag. The
+  Working Notebook computes both options' escalation counts and total expected monthly
+  cost live from the case's own numbers; it never hands over the recommendation.
+  case.md sha256 as of this build: e570404dc3245484dbcd0fe30c8f4f5ede34d5285a8c6a0bf0d769003fc56847
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+  .tt-pqr{text-align:center;font-weight:700;font-family:var(--sans)}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* story (enterprise-AI-agent) glossary -- separate class/shape from .gterm on purpose */
+  .sterm{position:relative;color:#5b3f14;text-decoration:none;border-bottom:1.5px dotted #8a6d2b;cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:#3a2f0c;color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#3a2f0c}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted #8a6d2b;
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* CASE-SPECIFIC — gate/circuit banner figure */
+  .gate-figure svg{max-width:640px}
+  .gate-note{font-family:var(--sans);font-size:.78rem;color:var(--sub)}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  <!-- CASE-SPECIFIC: a simple gate/switch glyph for the Twist reveal button -->
+  <symbol id="icon-gate" viewBox="0 0 24 24"><path d="M4 20V6a2 2 0 0 1 2-2h6l8 8-8 8H6a2 2 0 0 1-2-2z"/><path d="M9 9l4 3-4 3"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: The Approval Gate</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Discrete Math &middot; Formal Logic</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+
+  <figure class="gate-figure">
+    <svg viewBox="0 0 700 190" role="img" aria-labelledby="bannerTitle" aria-label="illustration" class="case-illustration">
+      <title id="bannerTitle">Two configuration files side by side on a screen, one staged for deployment, a cursor hovering over a Publish button</title>
+      <rect x="0" y="0" width="700" height="190" fill="#eef3f8"/>
+      <rect x="34" y="26" width="270" height="138" rx="10" fill="#20262e"/>
+      <rect x="48" y="40" width="120" height="110" rx="6" fill="#fff"/>
+      <rect x="176" y="40" width="120" height="110" rx="6" fill="#fff"/>
+      <g font-family="sans-serif" font-size="9" fill="#5b6472">
+        <text x="58" y="58" font-weight="700" fill="#1a3a5c">gate_A.cfg</text>
+        <text x="58" y="74">escalate if</text>
+        <text x="58" y="86">&not;p &or; &not;q &or; r</text>
+        <text x="186" y="58" font-weight="700" fill="#1a3a5c">gate_B.cfg</text>
+        <text x="186" y="74">escalate if</text>
+        <text x="186" y="86">&not;p &and; &not;q &and; r</text>
+      </g>
+      <g transform="translate(150,120)" font-family="sans-serif" font-size="8.5" fill="#8a6d2b">
+        <text x="0" y="0" text-anchor="middle">staged for deployment &darr;</text>
+      </g>
+      <g transform="translate(360,55)">
+        <rect x="0" y="0" width="86" height="30" rx="6" fill="#c9a227"/>
+        <text x="43" y="20" font-family="sans-serif" font-size="11" font-weight="700" text-anchor="middle" fill="#3a2f0c">Publish</text>
+      </g>
+      <text x="470" y="75" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">One gate. One config.</text>
+      <text x="470" y="97" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">One number to defend</text>
+      <text x="470" y="119" font-family="Georgia,serif" font-size="15" fill="#1a3a5c">when Legal asks why.</text>
+    </svg>
+    <figcaption>An original illustration for this case: two rewrites of the same escalation logic, one already staged for deployment, and a decision that has to go out before the day is over (SEE APPENDIX A).</figcaption>
+  </figure>
+
+  <p class="lede">Priya Nandakumar has two screens open and one Slack thread she keeps re-reading. On the left monitor: the configuration console for Foothill Outfitters' refund-handling agent, the automated system that decides — thousands of times a month — whether a customer's refund request gets approved on the spot or kicked to a human. On the right: a spreadsheet of every refund request the agent mishandled last quarter, sorted by dollar amount.</p>
+  <p>The Slack thread is from the VP of Customer Operations: <em>"Support queue is drowning in escalations. Legal signed off on a simpler rule — ship it before the board deck goes out."</em> Attached is a one-line rewrite of the agent's escalation logic, pitched as "the same policy, just cleaner." Priya has read it four times. Something about it doesn't sit right, but restating why requires more than a gut feeling — it requires actually building out every case the rule can hit and checking, row by row, whether the rewrite really does what the old rule did.</p>
+  <p>The office is quiet except for the low whir of a laptop fan working too hard and a half-eaten protein bar wedged against the keyboard. Two configuration files sit open side by side, one already staged for deployment. Priya's cursor hovers over the console's "Publish" button, one config away from changing how every refund request at Foothill Outfitters gets decided starting tomorrow morning.</p>
+  <p>One gate. One config. One number to defend when Legal asks why.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Priya Nandakumar is the AI Operations Lead at Foothill Outfitters, a mid-size online outdoor-apparel retailer. Priya owns the approval-gate logic inside the company's customer-service AI agent — software built on the same kind of agentic workflow platform used across the retail and enterprise-software industry (real, named systems in this category include Salesforce Agentforce, ServiceNow AI Agents, and Microsoft Copilot Studio's multistage approval flows) — that decides in real time whether an incoming refund request is auto-approved or escalated to a human reviewer (SEE APPENDIX A).</p>
+  <p>The agent's decision is built from three yes/no conditions checked on every refund request, defined precisely in (SEE APPENDIX A): whether the requested amount is under a set dollar threshold, whether the requesting customer's account tenure is over a set length of time, and whether the request is a repeat request from the same customer within a recent window. Compliance's original rule — never disputed, and not up for debate in this case — auto-approves a request only when all three safety conditions hold at once. The disagreement is entirely about how to correctly write down every other case: the two designs on the table encode that "everything else" condition differently (SEE APPENDIX B), and the two designs do not send the same requests to the same place.</p>
+  <p>Both designs must operate inside the same fixed monthly volume of refund requests the agent actually sees, broken down by which of the three conditions each request satisfies (SEE APPENDIX C). Every escalation costs the company a human reviewer's time; every request auto-approved that should not have been carries a real, documented risk of loss (SEE APPENDIX D). Priya has to pick one design, defend the total cost math behind it, and publish the config before the day is out.</p>
+  <p>The two options are named on Priya's whiteboard: <strong>The Compound Gate</strong>, which escalates a request whenever any one of the three safety conditions fails, or <strong>The Streamlined Gate</strong> — the VP's proposed rewrite — which escalates a request only when all three unsafe conditions hold at once. The vocabulary and "how to&hellip;" procedures needed to build and compare these designs are listed in (SEE APPENDIX E), and every sourced or assumed figure in this case is documented in (SEE APPENDIX F).</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Priya Nandakumar. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; The Compound Gate</h4>
+      <p style="margin:0">Escalate whenever any one of the three safety conditions fails (&not;p &or; &not;q &or; r), the correct De Morgan's-Laws negation of Compliance's approve rule.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; The Streamlined Gate</h4>
+      <p style="margin:0">Escalate only when all three unsafe conditions hold at once (&not;p &and; &not;q &and; r), the VP's proposed rewrite, pitched as "the same policy, just cleaner."</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix E. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which gate design you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: <strong>D1</strong> a complete truth table for Option A's escalation rule and a complete truth table for Option B's escalation rule, each showing all eight true/false combinations of p (amount under threshold), q (tenure over threshold), and r (repeat request), with a final column giving each rule's Approve/Escalate output for every row; <strong>D2</strong> a formal conditional ("if&hellip;then") statement of Compliance's shared approval rule ("if a request is auto-approved, then&hellip;"), plus its converse, inverse, and contrapositive, each written out in full with a one-sentence plain-English interpretation of what it would mean operationally for Foothill Outfitters; <strong>D3</strong> a symbolic De Morgan's-Laws derivation of the true logical negation of the shared approval condition (p &and; q &and; &not;r), shown step by step, with a written verdict &mdash; citing the specific mismatched row or rows from your D1 truth tables &mdash; on whether Option B's escalation rule is or is not logically equivalent to Option A's; <strong>D4</strong> a monthly-volume table applying Appendix C's request-category counts to each design's truth table (D1) to compute how many requests each design auto-approves versus escalates, followed by a total-expected-monthly-cost calculation for each design &mdash; escalation cost plus expected false-approval loss cost, using Appendix D's figures &mdash; shown step by step for both options; and <strong>D5</strong> a one-paragraph written recommendation, using correct logical notation (&and;, &or;, &not;, &rarr;) throughout, that names which gate design has the lower total expected monthly cost and explicitly addresses why assuming Option B was "the same rule written differently," without building the truth table to check, would have been misleading.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apxA">
+    <summary>Appendix A &mdash; The Approval Gate: Conditions and Thresholds</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D1, D2, D3). Every refund request the agent sees is checked against exactly three conditions.</p>
+      <table id="tblApxA">
+        <tr><th>Condition</th><th>Definition</th><th>Threshold used in this case</th></tr>
+        <tr><td class="tt-pqr">p</td><td>The requested refund amount is under Foothill Outfitters' auto-approval dollar threshold</td><td>Under $60 (MA2)</td></tr>
+        <tr><td class="tt-pqr">q</td><td>The requesting customer's account tenure is over Foothill Outfitters' trust threshold</td><td>Over 1 year (MA2)</td></tr>
+        <tr><td class="tt-pqr">r</td><td>This is a repeat refund request from the same customer within the lookback window</td><td>2nd or more refund request within a trailing 90-day window (MA2)</td></tr>
+      </table>
+      <p class="side-note"><strong>What "trailing 90-day window" means:</strong> not a fixed calendar quarter. The window is measured backward from the date of today's request — the 90 days immediately before it — and moves forward one day at a time as new requests come in, the same way a "rolling 90-day average" would.</p>
+      <p class="side-note"><strong>Compliance's rule, not in dispute:</strong> auto-approve a request only when p &and; q &and; &not;r &mdash; the amount is under threshold, the customer is trusted, and this is not a repeat request. What every other combination of p, q, and r should do &mdash; the "everything else" case &mdash; is exactly what Options A and B (Appendix B) disagree about.</p>
+    </div>
+  </details>
+
+  <details id="apxB">
+    <summary>Appendix B &mdash; Two Proposed Gate Logic Designs</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Dilemma. Both designs share Appendix A's three conditions and Compliance's shared approve rule (p &and; q &and; &not;r). They differ only in how "everything else" is written down as an escalation rule.</p>
+      <table id="tblApxB">
+        <tr><th>Design</th><th>Escalation rule (Escalate when TRUE)</th><th>Proposed by</th></tr>
+        <tr><td>Option A &mdash; The Compound Gate</td><td>&not;p &or; &not;q &or; r</td><td>Priya's own design, applying De Morgan's Laws directly to the negation of Compliance's approve rule</td></tr>
+        <tr><td>Option B &mdash; The Streamlined Gate</td><td>&not;p &and; &not;q &and; r</td><td>The VP of Customer Operations, pitched as "the same policy, just cleaner"</td></tr>
+      </table>
+      <p class="side-note">Real enterprise agentic-workflow platforms structure exactly this kind of automated gate as a set of explicit, human-authored logical conditions rather than a black-box judgment call &mdash; for example, Microsoft's own Copilot Studio documentation for its multistage approval feature instructs builders to write approval logic as an explicit list of conditions joined by AND/OR, worded as "Reject &hellip; if ANY of the following conditions are true" [S1] &mdash; the same disjunction-of-failure-conditions structure Option A's escalation rule uses. Salesforce's own architecture guidance for agentic workflows likewise states that "agentic workflows operating at high density should incorporate explicit human approval or escalation gates for actions with irreversible consequences, such as financial transactions" [S3], consistent with Foothill Outfitters treating an automated refund decision as exactly this kind of gated action.</p>
+    </div>
+  </details>
+
+  <details id="apxC">
+    <summary>Appendix C &mdash; Monthly Refund Request Volume by Category</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D4). Foothill Outfitters' refund-handling agent logs every request it receives against the three conditions in Appendix A. One month's request volume, broken into all eight possible true/false combinations of p, q, and r:</p>
+      <table id="tblApxC">
+        <tr><th>p (amount under threshold)</th><th>q (tenure over threshold)</th><th>r (repeat request)</th><th>Requests this month</th></tr>
+        <tr><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td class="num">40 (MA1)</td></tr>
+        <tr><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td class="num">2,000 (MA1)</td></tr>
+        <tr><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td class="num">30 (MA1)</td></tr>
+        <tr><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td class="num">430 (MA1)</td></tr>
+        <tr><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td class="num">25 (MA1)</td></tr>
+        <tr><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td class="num">850 (MA1)</td></tr>
+        <tr><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td class="num">15 (MA1)</td></tr>
+        <tr><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td class="num">210 (MA1)</td></tr>
+        <tr><td colspan="3"><strong>Total</strong></td><td class="num"><strong>3,600 (MA1)</strong></td></tr>
+      </table>
+      <p class="side-note"><strong>RESEARCH FLAG RESOLVED:</strong> no public company publishes the exact monthly volume or condition breakdown of its own refund-handling agent &mdash; this is proprietary, day-to-day operational data specific to one company's customer-service pipeline, and it does not exist anywhere as a citable external dataset. Every count above is a stated, disclosed Modeling Assumption (MA1).</p>
+    </div>
+  </details>
+
+  <details id="apxD">
+    <summary>Appendix D &mdash; Cost Inputs</summary>
+    <div class="inner">
+      <p class="apxnote">Referenced in Background and Challenge 3 (D4).</p>
+      <table id="tblApxD">
+        <tr><th>Item</th><th>Value</th></tr>
+        <tr><td>Cost per escalated review (a human reviewer's time to manually decide one refund request)</td><td class="num">$9.00 (MA3)</td></tr>
+        <tr><td>Rate at which an undetected, incorrectly auto-approved risky refund request turns out to be fraudulent or otherwise a real loss</td><td class="num">15.14% [S2]</td></tr>
+        <tr><td>Average dollar value at risk per incorrectly auto-approved, risky refund request</td><td class="num">$66.00 (MA4)</td></tr>
+      </table>
+      <p class="side-note"><strong>What "expected false-approval loss cost" means here:</strong> not every risky refund request that gets auto-approved by mistake turns out to be a real loss &mdash; most are perfectly legitimate customers who simply didn't meet one threshold. Multiplying the return-fraud rate by the average dollar value at risk turns "how many risky requests got waved through" into a real dollar figure for the <em>expected</em> loss, the same way an insurer prices a policy without knowing which individual claim will occur.</p>
+      <p class="side-note"><strong>Why an industry-wide rate is used here:</strong> [S2]'s 15.14% figure measures fraud across all retail merchandise returns generally, not specifically "refund requests a company's own AI agent auto-approved by mistake." No company publishes a fraud rate that narrow. This case applies the broader, real, sourced industry rate to Foothill Outfitters' own risky-request category as the best available proxy &mdash; a reasonable stand-in, not a perfect match, and a legitimate point for a Hero to challenge in discussion.</p>
+    </div>
+  </details>
+
+  <details id="apxMA">
+    <summary>Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote>These figures are <strong>not sourced from an external publisher</strong>. They are stated scenario assumptions chosen by the case author because Foothill Outfitters' own request volume, condition breakdown, and gate thresholds are internal operational data no public company publishes. A Hero may challenge these numbers in discussion &mdash; that is a legitimate move, and the sensitivity column shows exactly where the challenge would matter.</blockquote>
+      <table id="tblApxMA">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Monthly refund request volume, by all eight p/q/r categories</td><td>See Appendix C for the full 8-row breakdown; total 3,600 per month</td><td>No source publishes any specific company's internal AI-agent request logs, broken down by condition. Chosen to reflect a realistic pattern for a mid-size retailer: the large majority of requests are fully safe (all three conditions favorable), with smaller counts spread across the seven riskier categories, and the rarest category being requests that fail every condition at once.</td><td>Several of these category counts are load-bearing &mdash; a defensible challenge to the largest "safe" bucket or to any risky-category count could change the total cost gap between the two designs.</td></tr>
+        <tr><td>MA2</td><td>Dollar amount threshold, tenure threshold, and repeat-request definition</td><td>See Appendix A</td><td>These are Foothill Outfitters' own internal policy thresholds &mdash; no public source publishes the exact dollar figure, tenure length, or lookback window any specific company sets for its own auto-approval gate, though Microsoft's own Copilot Studio documentation confirms that real platforms structure approval logic around exactly this kind of explicit numeric threshold and condition set [S1].</td><td>Changing any one threshold reshuffles which requests fall into which of Appendix C's eight categories. This case holds the thresholds fixed and varies only the category counts and cost inputs when testing sensitivity.</td></tr>
+        <tr><td>MA3</td><td>Cost per escalated review</td><td class="num">$9.00</td><td>No single published source states the exact dollar cost of one manually reviewed refund request. Informed by real, cited ecommerce/retail customer-service cost-per-contact research [S4] spanning roughly $2.70&ndash;$15.56 per contact depending on channel and company size &mdash; including a Gartner-cited $13.50 average for "assisted" (human-handled) contacts generally and Ringly.io's own $6&ndash;$12 benchmark assessment for smaller ecommerce/retail stores specifically; set toward the middle-upper part of the smaller-retailer range.</td><td>This figure scales Option A's entire cost total directly (Option A escalates far more requests than Option B).</td></tr>
+        <tr><td>MA4</td><td>Average dollar value at risk per incorrectly auto-approved, risky refund request</td><td class="num">$66.00</td><td>No source publishes Foothill Outfitters' own average refund amount. Set as a company-specific figure near Appendix A's own $60 dollar threshold, since risky requests cluster close to (and sometimes just past) the auto-approval line.</td><td>This figure, multiplied by the sourced fraud rate [S2], sets the per-incident loss size used in Challenge 3 (D4) &mdash; the single most sensitive dial in this case.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix E &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-09. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <details id="apxF">
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <p class="apxnote">All sourced (non-assumption) figures in this case are cited here.</p>
+      <table id="tblApxF">
+        <tr><th>#</th><th>Claim</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>Real enterprise agentic-workflow platforms structure automated approval/escalation logic as explicit numeric-threshold conditions joined by AND/OR</td><td><a href="https://learn.microsoft.com/en-us/microsoft-copilot-studio/flows-advanced-approvals" target="_blank" rel="noopener">Microsoft Learn &mdash; Multistage and AI approvals in agent flows, Microsoft Copilot Studio</a></td><td>2025-09-04, updated 2026-06-30</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Percentage of all retail merchandise returns that were fraudulent, industry-wide, 2024 (15.14%)</td><td><a href="https://apprissretail.com/news/appriss-retail-annual-research-fraudulent-returns-and-claims-cost-retailers-103b-in-2024/" target="_blank" rel="noopener">Appriss Retail (with Deloitte) &mdash; Annual Research: Fraudulent Returns and Claims Cost Retailers $103B in 2024</a></td><td>published 2024-12-30</td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>Guidance that agentic workflows should incorporate explicit human approval/escalation gates for actions with irreversible consequences</td><td><a href="https://architect.salesforce.com/docs/architect/decision-guides/guide/determining-agentic-vs-traditional-workflow-automation" target="_blank" rel="noopener">Salesforce Architects &mdash; Determining Agentic and Traditional Workflow Automation</a></td><td>no publication date shown on page</td><td>MEDIUM</td></tr>
+        <tr><td>S4</td><td>Average dollar cost of a human-handled ("assisted") customer-service contact, ecommerce/retail cost-per-contact ranges</td><td><a href="https://www.ringly.io/blog/ecommerce-customer-service-cost-per-contact" target="_blank" rel="noopener">Ringly.io &mdash; Ecommerce Customer Service Cost Per Contact: 2026 Benchmarks</a></td><td>accessed 2026-09-09</td><td>MEDIUM</td></tr>
+      </table>
+      <p class="side-note">Microsoft and Salesforce are both companies that make enterprise workflow and AI-agent software &mdash; the kind of platform Foothill Outfitters' refund-handling agent is built on. Appriss Retail is a retail-analytics firm that, together with the accounting and consulting firm Deloitte, publishes an annual industry-wide study of retail returns. Ringly.io is a customer-support software vendor whose blog aggregates cost-per-contact figures from several named third-party research firms. S1 and S2 are used directly in this case's arithmetic and structure; S3 and S4 are supplemental.</p>
+    </div>
+  </details>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Enterprise AI-Agent Vocabulary</h3>
+    <p>This case uses real enterprise-software and AI-agent terms. Hover any term below for a plain-English definition; click it to open a real source.</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Links verified working 2026-09-09.</p>
+  </div>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Complete Option A's truth table (&not;p &or; &not;q &or; r &rarr; Escalate)</h4>
+    <div class="goal">For each of the eight p/q/r rows, decide whether Option A's escalation rule (Escalate when &not;p &or; &not;q &or; r is TRUE) produces Approve or Escalate for that row, then hit Check.</div>
+    <table id="tblNbA">
+      <tr><th>p</th><th>q</th><th>r</th><th>Option A output</th></tr>
+      <tr><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td><select id="nbA0"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbA0"></span></td></tr>
+      <tr><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td><select id="nbA1"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbA1"></span></td></tr>
+      <tr><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td><select id="nbA2"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbA2"></span></td></tr>
+      <tr><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td><select id="nbA3"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbA3"></span></td></tr>
+      <tr><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td><select id="nbA4"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbA4"></span></td></tr>
+      <tr><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td><select id="nbA5"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbA5"></span></td></tr>
+      <tr><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td><select id="nbA6"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbA6"></span></td></tr>
+      <tr><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td><select id="nbA7"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbA7"></span></td></tr>
+    </table>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D1: Complete Option B's truth table (&not;p &and; &not;q &and; r &rarr; Escalate)</h4>
+    <div class="goal">Same eight rows, this time against Option B's escalation rule (Escalate when &not;p &and; &not;q &and; r is TRUE).</div>
+    <table id="tblNbB">
+      <tr><th>p</th><th>q</th><th>r</th><th>Option B output</th></tr>
+      <tr><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td><select id="nbB0"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbB0"></span></td></tr>
+      <tr><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td><select id="nbB1"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbB1"></span></td></tr>
+      <tr><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td><select id="nbB2"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbB2"></span></td></tr>
+      <tr><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td><select id="nbB3"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbB3"></span></td></tr>
+      <tr><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td class="tt-pqr">T</td><td><select id="nbB4"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbB4"></span></td></tr>
+      <tr><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td class="tt-pqr">F</td><td><select id="nbB5"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbB5"></span></td></tr>
+      <tr><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td class="tt-pqr">T</td><td><select id="nbB6"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbB6"></span></td></tr>
+      <tr><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td class="tt-pqr">F</td><td><select id="nbB7"><option value="">choose one</option><option value="approve">Approve</option><option value="escalate">Escalate</option></select> <span class="fb" id="fbB7"></span></td></tr>
+    </table>
+    <button onclick="checkStep2()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D2: Conditional, converse, inverse, contrapositive</h4>
+    <div class="goal">Compliance's shared rule as a conditional: "If a request is auto-approved, then p &and; q &and; &not;r." For each variant below, pick the symbolic form that matches its definition.</div>
+    <div class="fieldrow"><label for="nbConverse">Converse (switch hypothesis and conclusion)</label>
+      <select id="nbConverse"><option value="">choose one</option>
+        <option value="a">If p &and; q &and; &not;r, then the request is auto-approved.</option>
+        <option value="b">If the request is not auto-approved, then &not;p &or; &not;q &or; r.</option>
+        <option value="c">If &not;p &or; &not;q &or; r, then the request is not auto-approved.</option>
+      </select> <span class="fb" id="fbConverse"></span></div>
+    <div class="fieldrow"><label for="nbInverse">Inverse (negate both, keep order)</label>
+      <select id="nbInverse"><option value="">choose one</option>
+        <option value="a">If p &and; q &and; &not;r, then the request is auto-approved.</option>
+        <option value="b">If the request is not auto-approved, then &not;p &or; &not;q &or; r.</option>
+        <option value="c">If &not;p &or; &not;q &or; r, then the request is not auto-approved.</option>
+      </select> <span class="fb" id="fbInverse"></span></div>
+    <div class="fieldrow"><label for="nbContra">Contrapositive (switch AND negate both)</label>
+      <select id="nbContra"><option value="">choose one</option>
+        <option value="a">If p &and; q &and; &not;r, then the request is auto-approved.</option>
+        <option value="b">If the request is not auto-approved, then &not;p &or; &not;q &or; r.</option>
+        <option value="c">If &not;p &or; &not;q &or; r, then the request is not auto-approved.</option>
+      </select> <span class="fb" id="fbContra"></span></div>
+    <button onclick="checkStep3()">Check</button>
+    <p class="side-note">This checks the symbolic form only. Your D2 write-up still needs a one-sentence plain-English interpretation of what each variant would mean operationally for Foothill Outfitters &mdash; that part is yours to write.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D3: De Morgan's negation and the equivalence verdict</h4>
+    <div class="goal">Using your two D1 truth tables, count how many of the eight rows Option A and Option B disagree on (one says Approve, the other says Escalate), then decide whether the two rules are logically equivalent.</div>
+    <div class="fieldrow"><label for="nbMismatch">Number of mismatched rows (out of 8)</label>
+      <input type="number" id="nbMismatch" step="1" placeholder="a whole number"> <span class="fb" id="fbMismatch"></span></div>
+    <div class="fieldrow"><label for="nbEquiv">Are Option A's and Option B's escalation rules logically equivalent?</label>
+      <select id="nbEquiv"><option value="">choose one</option><option value="yes">Yes, logically equivalent</option><option value="no">No, not logically equivalent</option></select> <span class="fb" id="fbEquiv"></span></div>
+    <button onclick="checkStep4()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; D4: Monthly volume and total expected cost</h4>
+    <div class="goal">Apply Appendix C's category counts to each design's truth table to get each option's escalation count, then compute each option's total expected monthly cost (escalation cost plus expected false-approval loss cost, using Appendix D's figures).</div>
+    <div class="fieldrow"><label for="nbEscA">Option A escalation count (requests/month)</label>
+      <input type="number" id="nbEscA" step="1" placeholder="a whole number"> <span class="fb" id="fbEscA"></span></div>
+    <div class="fieldrow"><label for="nbEscB">Option B escalation count (requests/month)</label>
+      <input type="number" id="nbEscB" step="1" placeholder="a whole number"> <span class="fb" id="fbEscB"></span></div>
+    <div class="fieldrow"><label for="nbCostA">Option A total expected monthly cost ($)</label>
+      <input type="number" id="nbCostA" step="0.01" placeholder="in dollars"> <span class="fb" id="fbCostA"></span></div>
+    <div class="fieldrow"><label for="nbCostB">Option B total expected monthly cost ($)</label>
+      <input type="number" id="nbCostB" step="0.01" placeholder="in dollars"> <span class="fb" id="fbCostB"></span></div>
+    <button onclick="checkStep5()">Check</button>
+    <p class="side-note">Still just checking your own arithmetic. If you've revealed and applied the Twist below, this step re-checks against the challenged number instead.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Reveal this only after you've finished working through the case &mdash; the Twist is meant to land after your analysis, not before.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-gate"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've finished the case &mdash; reveal it</button>
+    <div id="twistNarrative">
+      <p>Legal emails Priya back before the Publish button gets clicked: <em>"Where does the $66 average value at risk come from? I don't see it in any report you attached."</em></p>
+      <p>Nobody &mdash; not Foothill Outfitters, not this case &mdash; has ever measured a real average dollar value at risk for exactly "an incorrectly auto-approved, risky refund request" at this company. Appendix D's $66 figure (MA4) is a stated Modeling Assumption set near Appendix A's own $60 threshold, not a directly measured figure. If the real average value at risk is meaningfully lower than $66, does Step 5's cost comparison still come out the same way?</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply Legal's challenge: cut the average value at risk (MA4) in half and recompute Step 5's Option B total expected monthly cost.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] Microsoft Learn &mdash; <a href="https://learn.microsoft.com/en-us/microsoft-copilot-studio/flows-advanced-approvals" target="_blank" rel="noopener">Multistage and AI approvals in agent flows, Microsoft Copilot Studio</a> (dated 2025-09-04, updated 2026-06-30, HIGH confidence)</li>
+      <li>[S2] Appriss Retail (with Deloitte) &mdash; <a href="https://apprissretail.com/news/appriss-retail-annual-research-fraudulent-returns-and-claims-cost-retailers-103b-in-2024/" target="_blank" rel="noopener">Annual Research: Fraudulent Returns and Claims Cost Retailers $103B in 2024</a> (published 2024-12-30, HIGH confidence)</li>
+      <li>[S3] Salesforce Architects &mdash; <a href="https://architect.salesforce.com/docs/architect/decision-guides/guide/determining-agentic-vs-traditional-workflow-automation" target="_blank" rel="noopener">Determining Agentic and Traditional Workflow Automation</a> (accessed 2026-09-09, MEDIUM confidence &mdash; supplemental, undated)</li>
+      <li>[S4] Ringly.io &mdash; <a href="https://www.ringly.io/blog/ecommerce-customer-service-cost-per-contact" target="_blank" rel="noopener">Ecommerce Customer Service Cost Per Contact: 2026 Benchmarks</a> (accessed 2026-09-09, MEDIUM confidence &mdash; supplemental)</li>
+      <li>MA1, MA2, MA3, MA4 are stated Modeling Assumptions, not sourced figures &mdash; see the Modeling Assumptions appendix above for the full basis.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Approval Gate &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   Given data, copied verbatim from cases/the-approval-gate/case.json
+   (case.md sha256 as of this build: e570404dc3245484dbcd0fe30c8f4f5ede34d5285a8c6a0bf0d769003fc56847)
+   JS port of cases/the-approval-gate/sensitivity_model.py -- same PARAMS/FLEX/evaluate()
+   shape (natural, positive-cost form here rather than the Python file's negated
+   "higher wins" convention), so the Working Notebook and the Python sensitivity model
+   can never silently drift on the underlying arithmetic.
+   ================================================================ */
+const PARAMS = {
+  n_ttt: 40.0,                 // Appendix C, Modeling Assumption MA1
+  n_ttf: 2000.0,                // Appendix C, Modeling Assumption MA1
+  n_tft: 30.0,                  // Appendix C, Modeling Assumption MA1
+  n_tff: 430.0,                 // Appendix C, Modeling Assumption MA1
+  n_ftt: 25.0,                  // Appendix C, Modeling Assumption MA1
+  n_ftf: 850.0,                 // Appendix C, Modeling Assumption MA1
+  n_fft: 15.0,                  // Appendix C, Modeling Assumption MA1
+  n_fff: 210.0,                 // Appendix C, Modeling Assumption MA1
+  cost_per_escalation: 9.0,     // Appendix D, Modeling Assumption MA3
+  fraud_rate: 0.1514,           // Appendix D [S2] -- sourced, HIGH confidence, NOT flexed by default
+  avg_value_at_risk: 66.0       // Appendix D, Modeling Assumption MA4
+};
+const FLEX = ["n_ttt", "n_ttf", "n_tft", "n_tff", "n_ftt", "n_ftf", "n_fft", "n_fff",
+              "cost_per_escalation", "avg_value_at_risk"];
+
+// Option A's escalation rule: escalate when NOT(p AND q AND NOT r), i.e. ¬p ∨ ¬q ∨ r.
+function ruleAEscalates(p, q, r){ return !(p && q && !r); }
+// Option B's escalation rule: escalate when ¬p ∧ ¬q ∧ r.
+function ruleBEscalates(p, q, r){ return (!p && !q && r); }
+
+const TT_ROWS = [
+  [true,true,true],[true,true,false],[true,false,true],[true,false,false],
+  [false,true,true],[false,true,false],[false,false,true],[false,false,false]
+];
+
+function evaluate(params){
+  const pr = Object.assign({}, PARAMS, params || {});
+  const total = pr.n_ttt + pr.n_ttf + pr.n_tft + pr.n_tff + pr.n_ftt + pr.n_ftf + pr.n_fft + pr.n_fff;
+  const escalateA = total - pr.n_ttf;           // every category except p=T,q=T,r=F
+  const escalateB = pr.n_fft;                    // only p=F,q=F,r=T
+  const approvedB = total - pr.n_fft;
+  const incorrectlyApprovedB = approvedB - pr.n_ttf;
+  const lossPerIncident = pr.fraud_rate * pr.avg_value_at_risk;
+  const costA = escalateA * pr.cost_per_escalation;
+  const costB = escalateB * pr.cost_per_escalation + incorrectlyApprovedB * lossPerIncident;
+  return { total, escalateA, escalateB, approvedB, incorrectlyApprovedB, lossPerIncident, costA, costB };
+}
+function evaluate_twist(params){
+  return evaluate(Object.assign({ avg_value_at_risk: PARAMS.avg_value_at_risk * 0.5 }, params || {}));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function checkStep1(){
+  let allOk = true;
+  TT_ROWS.forEach((row, i) => {
+    const [p,q,r] = row;
+    const correct = ruleAEscalates(p,q,r) ? 'escalate' : 'approve';
+    const chosen = document.getElementById('nbA'+i).value;
+    const ok = chosen === correct;
+    if(!ok) allOk = false;
+    fb('fbA'+i, ok);
+  });
+  return allOk;
+}
+function checkStep2(){
+  let allOk = true;
+  TT_ROWS.forEach((row, i) => {
+    const [p,q,r] = row;
+    const correct = ruleBEscalates(p,q,r) ? 'escalate' : 'approve';
+    const chosen = document.getElementById('nbB'+i).value;
+    const ok = chosen === correct;
+    if(!ok) allOk = false;
+    fb('fbB'+i, ok);
+  });
+  return allOk;
+}
+function checkStep3(){
+  // Converse: "if p∧q∧¬r then approved" = option 'a'.
+  // Inverse: "if not approved then ¬p∨¬q∨r" = option 'b'.
+  // Contrapositive: "if ¬p∨¬q∨r then not approved" = option 'c'.
+  fb('fbConverse', document.getElementById('nbConverse').value === 'a');
+  fb('fbInverse', document.getElementById('nbInverse').value === 'b');
+  fb('fbContra', document.getElementById('nbContra').value === 'c');
+}
+function checkStep4(){
+  const mismatches = TT_ROWS.filter(([p,q,r]) => ruleAEscalates(p,q,r) !== ruleBEscalates(p,q,r)).length;
+  fb('fbMismatch', near(parseFloat(val('nbMismatch')), mismatches, 0.5));
+  const equivChoice = document.getElementById('nbEquiv').value;
+  fb('fbEquiv', equivChoice === (mismatches === 0 ? 'yes' : 'no'));
+}
+function checkStep5(){
+  const twistEl = document.getElementById('applyTwist');
+  const r = (twistEl && twistEl.checked) ? evaluate_twist({}) : evaluate({});
+  fb('fbEscA', near(parseFloat(val('nbEscA')), r.escalateA, 1));
+  fb('fbEscB', near(parseFloat(val('nbEscB')), r.escalateB, 1));
+  fb('fbCostA', near(parseFloat(val('nbCostA')), r.costA, 1));
+  fb('fbCostB', near(parseFloat(val('nbCostB')), r.costB, 1));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-approval-gate";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Complete truth tables for Option A's and Option B's escalation rules, all eight rows, with Approve/Escalate output"],
+  ["D2", "Compliance's rule as a conditional, plus its converse, inverse, and contrapositive, each with a plain-English interpretation"],
+  ["D3", "De Morgan's-Laws derivation of the true negation of p ∧ q ∧ ¬r, with a verdict on logical equivalence citing mismatched rows"],
+  ["D4", "Monthly-volume table and total-expected-monthly-cost calculation for each design, shown step by step"],
+  ["D5", "One-paragraph written recommendation in correct logical notation, addressing the AND/OR equivalence trap"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every
+   url https:// to an allowlisted domain). All links below were
+   fetched and confirmed live 2026-09-09:
+   mathsisfun.com/definitions/and.html, /or.html, /truth-table.html,
+   mathsisfun.com/sets/if-then.html,
+   openstax.org/books/contemporary-mathematics (2-2, 2-5),
+   cuemath.com/data/de-morgans-law/.
+   ================================================================ */
+const GLOSSARY = {
+  "Logical Statement": {def: "A sentence that is either true or false, but not both -- the basic building block of formal logic.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/2-2-compound-statements"},
+  "Conjunction": {def: "A compound statement joining two statements with AND (symbol ∧); it is true only when BOTH parts are true.",
+    url: "https://www.mathsisfun.com/definitions/and.html"},
+  "Disjunction": {def: "A compound statement joining two statements with OR (symbol ∨); it is true when AT LEAST ONE part is true.",
+    url: "https://www.mathsisfun.com/definitions/or.html"},
+  "Negation": {def: "The opposite of a statement's truth value, symbol ¬ -- if a statement is true, its negation is false, and vice versa.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/2-2-compound-statements"},
+  "Conditional Statement": {def: "An \"if...then\" statement (symbol →): \"if p, then q\" is false only when p is true and q is false.",
+    url: "https://www.mathsisfun.com/sets/if-then.html"},
+  "Truth Table": {def: "A table listing every possible True/False combination of a statement's variables, and the resulting True/False value of the whole compound statement for each row.",
+    url: "https://www.mathsisfun.com/definitions/truth-table.html"},
+  "Compound Statement": {def: "A statement built by joining two or more simpler statements with a connective like AND, OR, or NOT.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/2-2-compound-statements"},
+  "Logical Equivalence": {def: "Two compound statements are logically equivalent if their truth tables produce the exact same output for every possible row of inputs.",
+    url: "https://openstax.org/books/contemporary-mathematics/pages/2-5-equivalent-statements"},
+  "De Morgan's Law": {def: "The rule for negating a compound statement: ¬(p ∧ q) = ¬p ∨ ¬q, and ¬(p ∨ q) = ¬p ∧ ¬q -- negating flips AND to OR (and OR to AND).",
+    url: "https://www.cuemath.com/data/de-morgans-law/"}
+};
+const HOWTO = [
+  ["How to construct a truth table for a compound statement", "Truth Table"],
+  ["How to determine the converse, inverse, and contrapositive of a conditional statement", "Logical Equivalence"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer.
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-SPECIFIC — story/domain-vocabulary glossary (MCS-47), separate
+   from the math GLOSSARY above. Links verified live 2026-09-09.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Agentic Workflow": {desc: "An automated process where a software agent pursues a goal and takes actions -- like approving or escalating a request -- with some level of autonomy and minimal step-by-step human direction.",
+    link: "https://en.wikipedia.org/wiki/Agentic_AI"},
+  "Escalation": {desc: "In customer service, transferring a request to a person with more seniority or a more specialized skill set -- here, kicking a refund request to a human reviewer instead of auto-deciding it.",
+    link: "https://www.intercom.com/blog/what-is-customer-service-escalation/"},
+  "Orchestration Platform": {desc: "Software that automates the configuration, coordination, and management of a multi-step process -- the kind of platform Foothill Outfitters' refund agent runs on.",
+    link: "https://en.wikipedia.org/wiki/Orchestration_(computing)"},
+  "Compliance": {desc: "The practice of conforming to a rule, policy, or law -- here, the department that signs off on which refund-approval rules are acceptable for Foothill Outfitters to run.",
+    link: "https://en.wikipedia.org/wiki/Regulatory_compliance"},
+  "Approval Gate": {desc: "A checkpoint built into an automated workflow where a request must pass explicit conditions before it proceeds -- otherwise it is rejected or sent elsewhere for review.",
+    link: "https://learn.microsoft.com/en-us/microsoft-copilot-studio/flows-advanced-approvals"},
+  "Return Fraud": {desc: "Defrauding a retailer through the returns/refund process -- for example, claiming a refund for an item under false pretenses.",
+    link: "https://en.wikipedia.org/wiki/Return_fraud"},
+  "AI Operations Lead": {desc: "The role responsible for the day-to-day configuration, monitoring, and reliability of a company's production AI systems -- Priya's job at Foothill Outfitters.",
+    link: "https://en.wikipedia.org/wiki/Agentic_AI"},
+  "Board Deck": {desc: "A slide presentation prepared for a company's board of directors, summarizing results, decisions, and plans ahead of a board meeting -- what the VP means by \"ship it before the board deck goes out.\"",
+    link: "https://en.wikipedia.org/wiki/Board_of_directors"},
+  "Assisted": {desc: "In customer service, a contact handled by a live human agent -- as opposed to a self-service contact (a chatbot, FAQ page, or automated system) the customer resolves without an agent's help.",
+    link: "https://www.nice.com/glossary/contact-center-self-service-options"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's
+   actually used, not just in the Appendix E list.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, svg, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  // Recomputation happens the next time Step 5's Check button runs (see checkStep5
+  // above, which reads #applyTwist directly) -- same pattern as
+  // cases/the-overlap-send's own onTwistToggle().
+  const goal = document.querySelector('#notebook .stepbox:nth-of-type(5) .goal');
+  const applied = document.getElementById('applyTwist').checked;
+  if(goal){
+    goal.textContent = applied
+      ? "Challenge applied: recompute Option B's total expected monthly cost using Legal's halved average value at risk, then hit Check again."
+      : "Apply Appendix C's category counts to each design's truth table to get each option's escalation count, then compute each option's total expected monthly cost (escalation cost plus expected false-approval loss cost, using Appendix D's figures).";
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

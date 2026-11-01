@@ -729,7 +729,7 @@ function printTable(tableId, title){
 
 function exportSubmissionPacket(){
   const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
-  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pick = safeStorage.getItem(CASE_ID+'_pick');
   const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
 
   const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
@@ -744,8 +744,8 @@ function exportSubmissionPacket(){
   }).filter(Boolean).join('');
 
   const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
-    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
-    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    const done = safeStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = safeStorage.getItem(CASE_ID+'_note_'+id) || '';
     return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
       + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
   }).join('');
@@ -810,16 +810,21 @@ function checkStep3(){
    don't collide (Cold Chain's original file used a bare 'coldchain_pick'
    key; every case built from this shell must set CASE_ID below).
    ================================================================ */
+const _memStore = new Map();
+const safeStorage = {
+  getItem(k){ try { return localStorage.getItem(k); } catch(e){ return _memStore.has(k) ? _memStore.get(k) : null; } },
+  setItem(k,v){ try { localStorage.setItem(k,v); } catch(e){ _memStore.set(k, String(v)); } },
+};
 const CASE_ID = "the-two-offers"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
 function updatePick(){
   const picked = document.querySelector('input[name=pick]:checked');
   document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
   document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
   document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
-  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+  if(picked) safeStorage.setItem(CASE_ID+'_pick', picked.value);
 }
 function restorePick(){
-  const saved = localStorage.getItem(CASE_ID+'_pick');
+  const saved = safeStorage.getItem(CASE_ID+'_pick');
   if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
 }
 document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
@@ -843,25 +848,25 @@ const DELIVERABLES = [
 function renderChecklist(){
   const el = document.getElementById('dchecklist');
   el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
-    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
-    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    const checked = safeStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = safeStorage.getItem(CASE_ID+'_note_'+id) || '';
     return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
       <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
       <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
   }).join('');
 }
 function progressHTML(){
-  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const done = DELIVERABLES.filter(([id])=>safeStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
   const pct = Math.round(100*done/DELIVERABLES.length);
   return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
     <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
 }
 function toggleChk(id){
-  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
-  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  const cur = safeStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  safeStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
   renderChecklist();
 }
-function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+function saveNote(id, v){ safeStorage.setItem(CASE_ID+'_note_'+id, v); }
 renderChecklist();
 
 /* ================================================================

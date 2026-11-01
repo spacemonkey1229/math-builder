@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Vein-to-Vein Window — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  case.json qa.case_md_sha256 at build time = 33cf976fe7a7d194463dd80e470a157e62a81b999ad8999a4b95524d3c0ff556
+  (confirm this file has not drifted from the source of record). This file's <script> below is a
+  JS port of cases/the-vein-to-vein-window/sensitivity_model.py's PARAMS/evaluate()/evaluate_twist()
+  -- same names, same arithmetic -- so the printed page, this live calculator, and Tier 2 probe 5
+  can never quietly diverge.
+
+  HARD LINE (MCS-37): nowhere outside a <script> tag's computation does this file print
+  P(A viable), P(B viable), or margin_pct as a static literal. The Working Notebook computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ---- story/domain-vocabulary hover + hyperlink terms -- a SEPARATE
+         layer from .gterm (math vocabulary). Same tooltip mechanism,
+         different accent color (ok-green instead of gold) so the two
+         layers are visually distinguishable at a glance. ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* CASE-SPECIFIC — viability chart annotations */
+  .vchart .axis{stroke:var(--sub);stroke-width:1.4}
+  .vchart .step{stroke:var(--navy);stroke-width:3;fill:none}
+  .vchart .cutoffline{stroke:var(--bad);stroke-width:1.6;stroke-dasharray:5 4}
+  .vchart .openpt{fill:#fff;stroke:var(--navy);stroke-width:3}
+  .vchart .closedpt{fill:var(--navy);stroke:none}
+  .vchart .lbl{font-family:var(--sans);font-size:12px;fill:var(--sub)}
+  .vchart .lbl.strong{fill:var(--navy);font-weight:700}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-vial" viewBox="0 0 24 24"><path d="M9 2h6"/><path d="M10 2v7l-5 9a3 3 0 0 0 2.6 4.5h8.8A3 3 0 0 0 19 18l-5-9V2"/><path d="M7.5 15h9"/></symbol>
+  <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Adventure</div>
+        <h1>Case Study: The Vein-to-Vein Window</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T4</span>
+      <span class="pill">HS-entry</span>
+      <span class="pill">Limits &amp; Continuity</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Dana Whitfield's pager goes off at 6:52 a.m. with a single line: <em>cells released, courier confirmed.</em> Somewhere across town, a bag of a patient's own re-engineered immune cells has just come out of a liquid-nitrogen freezer for the last time. Everything before this moment &mdash; the collection, the weeks in a manufacturing lab, the quality testing &mdash; is already done and cannot be redone. Everything after this moment happens on a clock that started the second that freezer door opened, a clock Dana did not set and cannot pause.</p>
+  <p>Dana runs cell-therapy logistics for the hospital's transplant unit, and this patient has been waiting for this exact bag for over a month, having already tried and failed two other treatments. There is no backup dose in a drawer somewhere. If this one is not delivered while it is still good, there is no quick do-over &mdash; just a much longer, much worse conversation with a very sick patient.</p>
+  <p>Two routes exist to get this bag from the freezer to the patient's vein, and the unit has used both before. One keeps the whole process in-house, fast and comfortably clear of the label's cutoff. The other saves real money and staff time by sending the bag to a shared central pharmacy first &mdash; a route that has always worked, right up until the one day it didn't quite make it in time.</p>
+  <p>Dana's supervisor is waiting on a one-line answer before the courier van leaves the loading dock: which route does today's dose take.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p><strong>CAR T-cell therapy</strong> (chimeric antigen receptor T-cell therapy) is a real, FDA-approved category of cancer treatment in which a patient's own immune cells are collected, genetically re-engineered in a manufacturing lab &mdash; given new instructions that let them recognize and attach to a marker found on that patient's specific cancer cells, the way a lock is cut to fit one particular key &mdash; to hunt a specific cancer, frozen, shipped back, thawed, and infused back into the same patient. Because the cells come from the patient's own body, there is no substitute dose sitting in inventory &mdash; if a given bag cannot be used, replacing it means re-collecting cells from the patient and restarting a multi-week manufacturing process from zero (SEE APPENDIX A).</p>
+
+  <div class="card" id="storyGlossaryCard">
+    <strong>Cell-Therapy &amp; Hospital-Logistics Vocabulary</strong>
+    <p class="side-note" style="margin-top:6px">Hover any underlined term below (or in the prose above/below) for a plain-English definition; click to open a real source on it. This is separate from the math vocabulary in Appendix G &mdash; these are the real-world words the story itself is told in.</p>
+    <div class="glossary-grid" id="storyGlossaryGrid"></div>
+  </div>
+
+  <p>The entire span from a patient's cell collection to the moment those cells are re-infused is called the <strong>vein-to-vein time</strong>, and it is a real, published, closely-tracked metric in cell-therapy logistics &mdash; a real-world median of 27 days for the commercial CAR T-cell therapy Yescarta (axicabtagene ciloleucel) is a commonly cited figure [S1] (SEE APPENDIX A). By the morning this case takes place, that entire multi-week process is already finished. What is left is the <strong>last mile</strong>: the short, tightly time-boxed window between the moment the frozen bag is thawed and the moment the infusion into the patient actually begins.</p>
+  <p>That window has a hard boundary. Every FDA-approved drug ships with <strong>prescribing information</strong> &mdash; a long, formal document the manufacturer writes and the FDA reviews and approves, stating exactly how the product must be stored, handled, and used. The manufacturer's own FDA-approved prescribing information for this product states exactly how long the thawed product may be held at room temperature before it is no longer within the product's tested and approved stability data (SEE APPENDIX B) &mdash; for Yescarta, up to 3 hours [S2]. Once that boundary is crossed, hospital protocol requires the dose to be discarded &mdash; not because the cells are known to have failed at that exact instant, but because no one has data on what happens past that point, and a therapy this scarce is never administered outside its tested and approved window.</p>
+  <p>Dana's unit has two named, already-used routes for getting a thawed dose from the pharmacy to the patient's bedside. <strong>On-Site Rapid Thaw</strong> keeps the unit's one specially certified cell-therapy pharmacist and thawing unit inside the transplant floor itself, so there is no transport step at all &mdash; it is the faster, more reliable route, and also the more expensive one, since it requires that single specialized staff member on standby around the clock, able to attend only one dose at a time (SEE APPENDIX C). <strong>Central Pharmacy Courier</strong> thaws the dose at the hospital system's shared central pharmacy instead &mdash; the one main pharmacy, typically a floor or building away, that prepares and dispatches every other medication for the whole hospital, not just cell therapy &mdash; and sends it to the bedside by the same courier route used for every other medication &mdash; cheaper, and it frees up the specialized pharmacist for other patients, but it adds a transport and hand-off step that On-Site Rapid Thaw never faces, pushing its total elapsed time much closer to the label's hard cutoff (SEE APPENDIX C). Both routes carry a real, disclosed chance of an unplanned delay &mdash; an elevator wait, a callback because the paperwork double-checking that this exact bag belongs to this exact patient doesn't quite match up (a routine safety check, since infusing the wrong patient's cells would be its own emergency), a traffic slowdown on the courier's route &mdash; and Appendix C states how each route's total elapsed time behaves under each delay scenario (SEE APPENDIX C AND APPENDIX E).</p>
+  <p class="side-note">The vocabulary and the &ldquo;how to&hellip;&rdquo; skills this case will ask you to research are listed in the final appendix &mdash; that is where Challenge 1 sends you (SEE APPENDIX G). All figures in this case are sourced or disclosed as stated assumptions (SEE APPENDIX F).</p>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Dana Whitfield. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; On-Site Rapid Thaw</h4>
+      <p style="margin:0">Send today's dose by On-Site Rapid Thaw &mdash; thaw and infuse on the transplant floor itself, keeping the total elapsed time comfortably inside the label's cutoff, at the higher cost of a dedicated standby pharmacist.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Central Pharmacy Courier</h4>
+      <p style="margin:0">Send today's dose by Central Pharmacy Courier &mdash; thaw at the shared central pharmacy and transport it by courier to the bedside, at meaningfully lower cost, even though the total elapsed time runs much closer to that same cutoff.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the &ldquo;how to&hellip;&rdquo; questions from Appendix G. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ &ldquo;excellent&rdquo; words pitching a firm stance on which route you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include the following:
+      <ul style="margin:8px 0 0 18px">
+        <li><strong>D1 &mdash; One-sided limits of the protocol viability function at the hard cutoff.</strong> Appendix B defines a viability function <code>V(t)</code>, where <code>t</code> is the total elapsed minutes from the start of thaw to the start of infusion: <code>V(t) = 1</code> for every <code>t</code> less than the cutoff, and <code>V(t) = 0</code> for every <code>t</code> at or past the cutoff. Evaluate, algebraically and from the definition of <code>V(t)</code>, both one-sided limits of <code>V(t)</code> as <code>t</code> approaches the cutoff, and state clearly whether the two-sided limit of <code>V(t)</code> at the cutoff exists.</li>
+        <li><strong>D2 &mdash; The continuity test at the hard cutoff.</strong> Apply the formal, three-part continuity test at the cutoff to <code>V(t)</code>: (i) Is <code>V</code> defined at the cutoff? (ii) Does the limit of <code>V(t)</code> exist there (using D1's result)? (iii) Do the function's value and the limit agree? Conclude, showing each of the three parts, whether <code>V(t)</code> is continuous at the cutoff, name the type of discontinuity if it is not, and explain in your own words why this particular hard cutoff is a genuine discontinuity rather than a smooth, gradual fade in viability.</li>
+        <li><strong>D3 &mdash; A worked contrast: an algebraic limit with a removable discontinuity.</strong> Appendix D gives a second, unrelated function, <code>S(x)</code>, built purely to teach a contrast. Evaluate <code>lim(x&rarr;0) S(x)</code> algebraically by factoring the numerator and canceling the common factor, note that <code>S(0)</code> itself is undefined, and explain why this is a removable discontinuity in contrast to D2's hard cutoff.</li>
+        <li><strong>D4 &mdash; Comparing the two routes' probability of a viable dose (the primary metric).</strong> Using Appendix C's stated nominal elapsed time and delay-scenario probabilities for each route, compute the total elapsed time <code>t</code> under each of the three delay scenarios for both routes. For each route and each scenario, use D1's <code>V(t)</code> to determine whether that scenario keeps the dose viable. Sum the probabilities of the viable scenarios for each route to compute that route's overall probability that today's dose remains viable at re-administration, and state the margin between the two routes' probabilities as a percentage.</li>
+        <li><strong>D5 &mdash; Writing the cutoff argument into the pitch.</strong> Using the terms Limit, One-Sided Limit, Continuity, and Discontinuity correctly, write the part of your Challenge 2 pitch that explains &mdash; in plain language a non-math reader could follow &mdash; why &ldquo;a delay that only runs a little past the cutoff&rdquo; is not &ldquo;a little bit less viable.&rdquo; Name, specifically, why treating the cutoff as a soft average instead of a hard discontinuity is a mathematical mistake, not just an overly cautious one.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 &ldquo;excellent&rdquo; words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open>
+    <summary>Appendix A &mdash; The Vein-to-Vein Window</summary>
+    <div class="inner">
+      <p class="side-note">Background on why this last mile matters so much by the time it happens.</p>
+      <table id="apxA"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Real published median vein-to-vein time, Yescarta (axicabtagene ciloleucel), real-world U.S. commercial setting</td><td>27 days [S1]</td></tr>
+      <tr><td>Real published median manufacturing turnaround time, Yescarta (leukapheresis to product release), as of the January 2024 FDA-approved process change</td><td>14 days [S3]</td></tr>
+      </table>
+      <p class="side-note"><strong>Leukapheresis</strong> is the medical procedure that collects a patient's white blood cells (which include the T-cells CAR T-cell therapy re-engineers) by drawing blood, filtering out those cells with a machine, and returning the rest of the blood to the patient &mdash; it is how &ldquo;cell collection&rdquo; in Appendix A actually happens, and it is the starting line both real-world time figures above are measured from.<br>
+      An <strong>autologous</strong> therapy is one made from a patient's own cells, as opposed to a donor's &mdash; this is what makes a CAR T-cell dose irreplaceable on short notice: there is no donor bank to draw a replacement from, only the same patient, who would need to be re-collected from and would need to wait through the whole manufacturing process again.<br>
+      Referenced from Background. Establishes the stakes; does not enter any D1&ndash;D5 calculation.</p>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Appendix B &mdash; The Hard Cutoff: Post-Thaw Stability</summary>
+    <div class="inner">
+      <p class="side-note">The single real, sourced number this case's discontinuity is built on.</p>
+      <table id="apxB"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Maximum time Yescarta (axicabtagene ciloleucel) may be held at room temperature after thaw, per its FDA-approved prescribing information</td><td>3 hours [S2]</td></tr>
+      <tr><td>That same cutoff, converted to minutes (used as <code>t</code>'s unit throughout D1&ndash;D4)</td><td>180 minutes (3 hours &times; 60 minutes/hour &mdash; arithmetic, derived from [S2], not independently sourced)</td></tr>
+      </table>
+      <p><strong>Viability function</strong>, formally, for this case:</p>
+      <pre style="background:#f7f9fb;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-family:var(--sans);font-size:.86rem;overflow-x:auto">V(t) = 1   for 0 &le; t &lt; cutoff       (within the label's tested stability window)
+V(t) = 0   for t &ge; cutoff           (outside the tested window; discard per protocol)</pre>
+
+      <figure>
+        <svg class="vchart" viewBox="0 0 600 260" role="img" aria-label="Graph of the piecewise viability function V of t, showing a jump discontinuity at the 180-minute cutoff">
+          <!-- axes -->
+          <line class="axis" x1="50" y1="210" x2="570" y2="210"/>
+          <line class="axis" x1="50" y1="210" x2="50" y2="20"/>
+          <!-- y ticks -->
+          <line class="axis" x1="46" y1="210" x2="50" y2="210"/>
+          <line class="axis" x1="46" y1="122" x2="50" y2="122"/>
+          <text class="lbl" x="36" y="214">0</text>
+          <text class="lbl" x="30" y="126">1</text>
+          <text class="lbl strong" x="10" y="115" transform="rotate(-90 10 115)">V(t)</text>
+          <!-- x ticks: 0,60,120,180,240,300 minutes mapped across x=50..570 -->
+          <line class="axis" x1="50" y1="210" x2="50" y2="215"/>
+          <line class="axis" x1="154" y1="210" x2="154" y2="215"/>
+          <line class="axis" x1="258" y1="210" x2="258" y2="215"/>
+          <line class="axis" x1="362" y1="210" x2="362" y2="215"/>
+          <line class="axis" x1="466" y1="210" x2="466" y2="215"/>
+          <line class="axis" x1="570" y1="210" x2="570" y2="215"/>
+          <text class="lbl" x="44" y="230">0</text>
+          <text class="lbl" x="140" y="230">60</text>
+          <text class="lbl" x="244" y="230">120</text>
+          <text class="lbl" x="348" y="230">180</text>
+          <text class="lbl" x="452" y="230">240</text>
+          <text class="lbl" x="556" y="230">300</text>
+          <text class="lbl strong" x="230" y="250">Elapsed time t (minutes)</text>
+          <!-- cutoff dashed line at t=180 -> x=362 -->
+          <line class="cutoffline" x1="362" y1="210" x2="362" y2="30"/>
+          <text class="lbl strong" x="368" y="34">cutoff = 180 min (3 hr) [S2]</text>
+          <!-- step function: V=1 for t in [0,180), V=0 for t in [180,300] -->
+          <path class="step" d="M50,122 L362,122"/>
+          <path class="step" d="M362,210 L570,210"/>
+          <circle class="openpt" cx="362" cy="122" r="5.5"/>
+          <circle class="closedpt" cx="362" cy="210" r="5.5"/>
+          <text class="lbl" x="360" y="108" text-anchor="middle">viable (V=1)</text>
+          <text class="lbl" x="466" y="205" text-anchor="middle">discard (V=0)</text>
+        </svg>
+        <figcaption>Figure B.1 &mdash; <code>V(t)</code> jumps from 1 to 0 at the 180-minute cutoff. The open circle at (180, 1) shows the left-hand limit approaching 1; the filled circle at (180, 0) shows the function's actual value there. Nothing in this figure computes D1&ndash;D4 for you &mdash; it is the same piecewise definition from the table above, drawn.</figcaption>
+      </figure>
+
+      <p class="side-note">Referenced from Background and Challenge 3. Forces D1's one-sided limits and D2's continuity test.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; Two Last-Mile Routes</summary>
+    <div class="inner">
+      <p class="side-note">The scenario data D4's probability comparison is built from. These figures are hospital-internal operational estimates, not published data &mdash; see Appendix E for the disclosed assumptions behind each one.</p>
+      <table id="apxC"><tr><th>Quantity</th><th>On-Site Rapid Thaw (Option A)</th><th>Central Pharmacy Courier (Option B)</th></tr>
+      <tr><td>Nominal (no-delay) total elapsed time, thaw start to infusion start</td><td>45 minutes [MA1]</td><td>150 minutes [MA2]</td></tr>
+      <tr><td>Minor delay scenario &mdash; extra minutes added</td><td>+20 minutes [MA3]</td><td>+20 minutes [MA3] (same figure, shared assumption)</td></tr>
+      <tr><td>Major delay scenario &mdash; extra minutes added</td><td>+50 minutes [MA3]</td><td>+50 minutes [MA3] (same figure, shared assumption)</td></tr>
+      <tr><td>Probability of no delay / minor delay / major delay</td><td>71% / 20% / 9% [MA4]</td><td>71% / 20% / 9% [MA4] (same distribution, shared assumption)</td></tr>
+      <tr><td>Estimated incremental staffing cost of this route over Central Pharmacy Courier, per dose</td><td>+$500 [MA5]</td><td>$0 (baseline; On-Site's figure is the incremental amount above this)</td></tr>
+      </table>
+      <p class="side-note">Referenced from Background and Challenge 3. Forces D4's probability-of-viability computation, and gives Challenge 2's pitch a real number to weigh against the probability gap on the other side.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; A Worked Contrast: Two Kinds of Discontinuity</summary>
+    <div class="inner">
+      <p class="side-note">A standalone teaching construct, disclosed here as exactly that &mdash; not a real hospital figure. It exists purely so D3 has a clean algebraic limit to contrast against D2's real, unremovable hard cutoff.</p>
+      <table id="apxD"><tr><th>Quantity</th><th>Value</th></tr>
+      <tr><td>Hypothetical staffing-cost-savings model: dollars saved in pharmacist overtime for every <code>x</code> minutes shaved off a routine double-check step, for <code>x &ne; 0</code></td><td><code>S(x) = (x&sup2; + 5x) / x</code></td></tr>
+      </table>
+      <p class="side-note">Referenced from Challenge 3. Forces D3's algebraic limit evaluation.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="side-note">These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+      <table id="apxE"><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+      <tr><td>MA1</td><td>On-Site Rapid Thaw's nominal elapsed time</td><td>45 minutes</td><td>No public data exists on any specific hospital's internal thaw-to-infusion timing; a value is fixed here, built from realistic same-floor process steps (thaw, identity verification, zero transport), so both routes can be compared on the same basis.</td><td>The case's answer is sensitive to how far below the cutoff this value sits.</td></tr>
+      <tr><td>MA2</td><td>Central Pharmacy Courier's nominal elapsed time</td><td>150 minutes</td><td>Same reasoning as MA1, applied to the route that adds a transport and hand-off step.</td><td>The case's answer is sensitive to how close to the cutoff this value sits.</td></tr>
+      <tr><td>MA3</td><td>Minor and major delay-scenario extra minutes</td><td>+20 minutes (minor); +50 minutes (major)</td><td>No public rate exists for hospital-internal courier or workflow delays; a shared two-tier delay model is fixed here so the same risk applies fairly to both routes.</td><td>The case's answer is sensitive to how large the major-delay figure is relative to each route's remaining margin before the cutoff.</td></tr>
+      <tr><td>MA4</td><td>Delay-scenario probability distribution</td><td>71% no delay / 20% minor delay / 9% major delay</td><td>Same reasoning as MA3 &mdash; no public institution-specific delay-rate data exists; a single shared distribution is fixed so the comparison isolates the routes' elapsed-time difference.</td><td>The case's answer is sensitive to the probability assigned to the scenario that pushes a route's elapsed time past the cutoff.</td></tr>
+      <tr><td>MA5</td><td>Estimated incremental staffing cost of On-Site Rapid Thaw over Central Pharmacy Courier, per dose</td><td>$500</td><td>No public, per-dose figure exists. Real hospitals do pay staff shift-differential pay and on-call pay extra for working overnight, weekend, or always-on-call shifts &mdash; a genuine, documented practice &mdash; but no institution publishes a per-dose breakdown. Disclosed, order-of-magnitude modeling estimate, not a citation.</td><td>The case's answer is sensitive to whether this figure is larger or smaller than a Hero believes a 9-percentage-point viability gap is worth in dollar terms.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Sources</summary>
+    <div class="inner">
+      <table id="apxF"><tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+      <tr><td>S1</td><td>Real-world median vein-to-vein time, Yescarta (axicabtagene ciloleucel), U.S. commercial setting, from a CIBMTR analysis</td><td>27 days</td><td>Kite Pharma / Gilead Sciences &mdash; <a href="https://www.kitepharma.com/news/press-releases/2022/12/time-to-car-t-cell-therapy-may-impact-outcomes-for-patients-with-relapsedrefractory-large-b-cell-lymphoma-in-new-cibmtr-analysis" target="_blank" rel="noopener">Time to CAR T-cell Therapy May Impact Outcomes for Patients With Relapsed/Refractory Large B-cell Lymphoma in New CIBMTR Analysis</a></td><td>published 2022-12-11, accessed 2026-09-09</td><td>MEDIUM</td></tr>
+      <tr><td>S2</td><td>Maximum room-temperature holding time for Yescarta after thaw, per FDA-approved prescribing information</td><td>3 hours</td><td>U.S. Food and Drug Administration &mdash; <a href="https://www.accessdata.fda.gov/spl/data/7ec02549-737e-4a56-9dac-5dbbc63cc2b7/7ec02549-737e-4a56-9dac-5dbbc63cc2b7.xml" target="_blank" rel="noopener">YESCARTA (axicabtagene ciloleucel) full prescribing information</a></td><td>accessed 2026-09-09</td><td>HIGH</td></tr>
+      <tr><td>S3</td><td>Median manufacturing turnaround time for Yescarta (leukapheresis to product release), following a January 2024 FDA-approved manufacturing process change</td><td>14 days (reduced from a prior 16-day median)</td><td>Kite Pharma &mdash; <a href="https://www.kitepharma.com/news/press-releases/2024/1/kite-receives-us-fda-approval-of-manufacturing-process-change-resulting-in-reduced-median-turnaround-time-for-yescarta-car-tcell-therapy" target="_blank" rel="noopener">Kite Receives U.S. FDA Approval of Manufacturing Process Change Resulting in Reduced Median Turnaround Time for Yescarta CAR T-cell Therapy</a></td><td>published 2024-01-30, accessed 2026-09-09</td><td>MEDIUM</td></tr>
+      </table>
+      <p class="side-note">S2 is load-bearing (it sets the case's hard cutoff) and is graded HIGH: it is the actual FDA-approved prescribing information, a primary regulatory document. S1 and S3 are company press releases &mdash; factual and specific, but not independently republished by a third party &mdash; hence MEDIUM; both are background-only and do not enter any D1&ndash;D5 calculation.</p>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix G &mdash; &ldquo;How To&hellip;&rdquo; Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-09-09. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which route to choose; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &middot; One-Sided Limits at the Cutoff (D1)</h4>
+    <div class="goal">From <code>V(t)</code>'s piecewise definition (Appendix B), evaluate the limit of <code>V(t)</code> as <code>t</code> approaches the cutoff from below and from above, then state whether the two-sided limit exists.</div>
+    <div class="fieldrow"><label>lim (t &rarr; cutoff&#8315;) V(t) =</label><input type="number" id="d1_left" step="any"><span id="fb_d1a"></span></div>
+    <div class="fieldrow"><label>lim (t &rarr; cutoff&#8314;) V(t) =</label><input type="number" id="d1_right" step="any"><span id="fb_d1b"></span></div>
+    <div class="fieldrow"><label>Does the two-sided limit exist?</label>
+      <select id="d1_exists"><option value="">choose&hellip;</option><option value="yes">Yes</option><option value="no">No</option></select><span id="fb_d1c"></span></div>
+    <button onclick="checkD1()">Check Step 1</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &middot; The Continuity Test at the Cutoff (D2)</h4>
+    <div class="goal">Apply the three-part continuity test to <code>V(t)</code> at the cutoff using D1's result, then name the type of discontinuity if it fails.</div>
+    <div class="fieldrow"><label>V(cutoff) =</label><input type="number" id="d2_value" step="any"><span id="fb_d2a"></span></div>
+    <div class="fieldrow"><label>Does lim(t&rarr;cutoff) V(t) exist?</label>
+      <select id="d2_limexists"><option value="">choose&hellip;</option><option value="yes">Yes</option><option value="no">No</option></select><span id="fb_d2b"></span></div>
+    <div class="fieldrow"><label>Is V(t) continuous at the cutoff?</label>
+      <select id="d2_continuous"><option value="">choose&hellip;</option><option value="yes">Yes</option><option value="no">No</option></select><span id="fb_d2c"></span></div>
+    <div class="fieldrow"><label>Type of discontinuity (one word)</label><input type="text" id="d2_type"><span id="fb_d2d"></span></div>
+    <button onclick="checkD2()">Check Step 2</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &middot; The Removable-Discontinuity Contrast (D3)</h4>
+    <div class="goal">Factor and cancel to evaluate <code>lim(x&rarr;0) S(x)</code> for <code>S(x) = (x&sup2;+5x)/x</code> (Appendix D), then check whether <code>S(0)</code> itself is defined.</div>
+    <div class="fieldrow"><label>lim (x &rarr; 0) S(x) =</label><input type="number" id="d3_lim" step="any"><span id="fb_d3a"></span></div>
+    <div class="fieldrow"><label>Is S(0) defined?</label>
+      <select id="d3_defined"><option value="">choose&hellip;</option><option value="yes">Yes</option><option value="no">No</option></select><span id="fb_d3b"></span></div>
+    <button onclick="checkD3()">Check Step 3</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &middot; Comparing the Two Routes' Viability Probability (D4)</h4>
+    <div class="goal">Using Appendix C's nominal times and delay minutes, compute each route's total elapsed time under all three scenarios, then use <code>V(t)</code> to sum the probability of the scenarios that stay viable for each route. Finally, state the margin between the two routes as a percentage (winner vs. loser, as a percent of the loser).</div>
+    <p class="side-note">On-Site Rapid Thaw is Route A; Central Pharmacy Courier is Route B.</p>
+    <div class="fieldrow"><label>Route A &mdash; t (no delay, minutes)</label><input type="number" id="d4_a0" step="any"></div>
+    <div class="fieldrow"><label>Route A &mdash; t (minor delay, minutes)</label><input type="number" id="d4_a1" step="any"></div>
+    <div class="fieldrow"><label>Route A &mdash; t (major delay, minutes)</label><input type="number" id="d4_a2" step="any"><span id="fb_d4a"></span></div>
+    <div class="fieldrow"><label>Route B &mdash; t (no delay, minutes)</label><input type="number" id="d4_b0" step="any"></div>
+    <div class="fieldrow"><label>Route B &mdash; t (minor delay, minutes)</label><input type="number" id="d4_b1" step="any"></div>
+    <div class="fieldrow"><label>Route B &mdash; t (major delay, minutes)</label><input type="number" id="d4_b2" step="any"><span id="fb_d4b"></span></div>
+    <div class="fieldrow"><label>P(Route A viable), %</label><input type="number" id="d4_pa" step="any"></div>
+    <div class="fieldrow"><label>P(Route B viable), %</label><input type="number" id="d4_pb" step="any"><span id="fb_d4c"></span></div>
+    <div class="fieldrow"><label>Margin between the routes, %</label><input type="number" id="d4_margin" step="any"><span id="fb_d4d"></span></div>
+    <button onclick="checkD4()">Check Step 4</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &middot; Writing the Cutoff Argument (D5)</h4>
+    <div class="goal">D5 is a writing deliverable, not a number &mdash; use it to self-check your Challenge 2 pitch language before you post it.</div>
+    <div class="chk"><input type="checkbox" id="d5_c1"><label for="d5_c1">I correctly used the term <strong>Limit</strong> to describe what <code>V(t)</code> approaches near the cutoff.</label></div>
+    <div class="chk"><input type="checkbox" id="d5_c2"><label for="d5_c2">I correctly used <strong>One-Sided Limit</strong> to name the left- and right-approach values separately.</label></div>
+    <div class="chk"><input type="checkbox" id="d5_c3"><label for="d5_c3">I correctly used <strong>Continuity</strong> / <strong>Discontinuity</strong> to explain why the cutoff is a hard boundary, not a soft average.</label></div>
+    <div class="chk"><input type="checkbox" id="d5_c4"><label for="d5_c4">A non-math reader could follow my explanation of why &ldquo;a little past the cutoff&rdquo; is not &ldquo;a little less viable.&rdquo;</label></div>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Reveal this only after you've finished working through the case &mdash; the Twist is meant to land after your analysis, not before.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-vial"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've finished the case &mdash; reveal it</button>
+    <div id="twistNarrative">
+      <p>A second patient's dose is arriving today too, on a different but overlapping timeline. Background already established that On-Site Rapid Thaw depends on the unit's <em>one</em> specially certified cell-therapy pharmacist, able to attend only one dose at a time. If both doses need that same pharmacist inside their respective windows, only one of them can actually get On-Site Rapid Thaw &mdash; the other is routed through Central Pharmacy Courier, whether or not that second patient's own circumstances make the viability gap matter more.</p>
+      <p>This does not change <code>V(t)</code> or either route's own probability of a viable dose for a single dose considered alone &mdash; those numbers are unmoved. What it changes is whether an unconditional policy of &ldquo;always choose On-Site, no matter the cost&rdquo; is something the unit can actually deliver once more than one dose is in flight at once, which is the normal state of a working transplant unit, not an edge case.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the Twist: recompute Step 4 as a scheduling/capacity check, not a change to either route's own numbers.</label>
+      </div>
+      <p id="twistNote" style="display:none">Confirmed: <code>evaluate_twist()</code> returns the exact same P(A) and P(B) as <code>evaluate()</code> &mdash; the Twist is a capacity-contention fact about which dose gets which route, not a change to either route's own timing or delay-probability model.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>[S1] Kite Pharma / Gilead Sciences &mdash; Time to CAR T-cell Therapy May Impact Outcomes for Patients With Relapsed/Refractory Large B-cell Lymphoma in New CIBMTR Analysis</li>
+      <li>[S2] U.S. Food and Drug Administration &mdash; YESCARTA (axicabtagene ciloleucel) full prescribing information</li>
+      <li>[S3] Kite Pharma &mdash; Kite Receives U.S. FDA Approval of Manufacturing Process Change Resulting in Reduced Median Turnaround Time for Yescarta CAR T-cell Therapy</li>
+      <li>Full citations: Appendix F.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Vein-to-Vein Window &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/the-vein-to-vein-window/
+   case.json / sensitivity_model.py. JS port of PARAMS/evaluate()/evaluate_twist() --
+   same names, same arithmetic as sensitivity_model.py -- so the printed page, this
+   live calculator, and Tier 2 probe 5 can never quietly diverge.
+   ================================================================ */
+const CUTOFF_MINUTES = 180.0; // Appendix B, [S2]: 3 hours x 60 -- cited, not flexed by P5
+
+const PARAMS = {
+  a_nominal_minutes: 45.0,     // MA1 -- Appendix C
+  b_nominal_minutes: 150.0,    // MA2 -- Appendix C
+  minor_delay_minutes: 20.0,   // MA3 -- Appendix C
+  major_delay_minutes: 50.0,   // MA3 -- Appendix C
+  p_no_delay: 0.71,            // MA4 -- Appendix C
+  p_minor_delay: 0.20,         // MA4 -- Appendix C
+  p_major_delay: 0.09,         // MA4 -- Appendix C
+};
+const FLEX = ["a_nominal_minutes", "b_nominal_minutes", "minor_delay_minutes", "major_delay_minutes"];
+
+function viableAt(t, cutoff){
+  cutoff = (cutoff === undefined) ? CUTOFF_MINUTES : cutoff;
+  return t < cutoff ? 1.0 : 0.0;
+}
+function routeProbability(nominalMinutes, p){
+  const tNoDelay = nominalMinutes;
+  const tMinor = nominalMinutes + p.minor_delay_minutes;
+  const tMajor = nominalMinutes + p.major_delay_minutes;
+  let prob = 0.0;
+  prob += p.p_no_delay * viableAt(tNoDelay);
+  prob += p.p_minor_delay * viableAt(tMinor);
+  prob += p.p_major_delay * viableAt(tMajor);
+  return prob;
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const a = routeProbability(p.a_nominal_minutes, p);
+  const b = routeProbability(p.b_nominal_minutes, p);
+  return {A: a, B: b}; // already "higher is better" -- a viability probability
+}
+function evaluate_twist(params){
+  // The Twist is a scheduling/capacity-contention fact about WHICH dose gets which
+  // route, not a change to either route's own V(t) or probability model -- returns
+  // the unchanged base evaluate() result, matching sensitivity_model.py exactly.
+  return evaluate(params);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+function selVal(id){ return document.getElementById(id).value; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions. Each derives its
+   expected value live from CUTOFF_MINUTES/PARAMS/evaluate() above --
+   nothing here is a pre-computed literal answer to the case's own
+   D4 probability comparison (that is genuinely computed by evaluate()
+   at check-time). D1/D2/D3's expected values follow directly and
+   only from the piecewise definition of V(t) and S(x) themselves --
+   analytic facts, not the case's disclosed scenario data.
+   ================================================================ */
+function checkD1(){
+  const okLeft = near(val('d1_left'), 1, 1e-9);
+  const okRight = near(val('d1_right'), 0, 1e-9);
+  const okExists = selVal('d1_exists') === 'no';
+  fb('fb_d1a', okLeft); fb('fb_d1b', okRight); fb('fb_d1c', okExists);
+}
+function checkD2(){
+  const okValue = near(val('d2_value'), 0, 1e-9);
+  const okLimExists = selVal('d2_limexists') === 'no';
+  const okContinuous = selVal('d2_continuous') === 'no';
+  const okType = /jump/i.test((document.getElementById('d2_type').value||'').trim());
+  fb('fb_d2a', okValue); fb('fb_d2b', okLimExists); fb('fb_d2c', okContinuous); fb('fb_d2d', okType);
+}
+function checkD3(){
+  const okLim = near(val('d3_lim'), 5, 1e-9);
+  const okDefined = selVal('d3_defined') === 'no';
+  fb('fb_d3a', okLim); fb('fb_d3b', okDefined);
+}
+function checkD4(){
+  const a0 = PARAMS.a_nominal_minutes;
+  const a1 = a0 + PARAMS.minor_delay_minutes;
+  const a2 = a0 + PARAMS.major_delay_minutes;
+  const b0 = PARAMS.b_nominal_minutes;
+  const b1 = b0 + PARAMS.minor_delay_minutes;
+  const b2 = b0 + PARAMS.major_delay_minutes;
+  const okA = near(val('d4_a0'), a0, 0.5) && near(val('d4_a1'), a1, 0.5) && near(val('d4_a2'), a2, 0.5);
+  const okB = near(val('d4_b0'), b0, 0.5) && near(val('d4_b1'), b1, 0.5) && near(val('d4_b2'), b2, 0.5);
+
+  const r = evaluate({});
+  const pa = r.A * 100, pb = r.B * 100;
+  const okPct = near(val('d4_pa'), pa, 0.5) && near(val('d4_pb'), pb, 0.5);
+
+  const hi = Math.max(r.A, r.B), lo = Math.min(r.A, r.B);
+  const margin = lo > 0 ? (100.0 * (hi - lo) / lo) : 0;
+  const okMargin = near(val('d4_margin'), margin, 0.5);
+
+  fb('fb_d4a', okA); fb('fb_d4b', okB); fb('fb_d4c', okPct); fb('fb_d4d', okMargin);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-vein-to-vein-window";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ['ch1','Challenge 1 -- posted a "how to..." resource link'],
+  ['ch2','Challenge 2 -- 250+ word pitch, with visual'],
+  ['D1','D1 -- one-sided limits of V(t) at the cutoff'],
+  ['D2','D2 -- the continuity test at the cutoff'],
+  ['D3','D3 -- the removable-discontinuity contrast'],
+  ['D4','D4 -- comparing the two routes\' viability probability'],
+  ['D5','D5 -- writing the cutoff argument into the pitch'],
+  ['ch4','Challenge 4 -- appendix of your work/process'],
+  ['ch5','Challenge 5 -- discussion participation (2x, or 500-word makeup)']
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every
+   url https:// to an allowlisted domain: khanacademy.org,
+   mathsisfun.com, cuemath.com, purplemath.com, ck12.org, nctm.org,
+   openstax.org). All 8 URLs below were fetched and confirmed live
+   2026-09-09 in this session (mathsisfun.com pages fetched directly;
+   khanacademy.org pages confirmed via search-indexed titles, since
+   Khan's own pages render client-side JS that a direct fetch cannot
+   see through). KEEP THIS EXACT OBJECT SHAPE -- double-quoted label
+   keys, unquoted def/url property names, https:// urls -- T1-19's
+   regex depends on it.
+   ================================================================ */
+const GLOSSARY = {
+  "Limit": {def: "The value a function gets closer and closer to as its input approaches some point, whether or not the function actually reaches that value there.",
+    url: "https://www.mathsisfun.com/calculus/limits.html"},
+  "One-Sided Limit": {def: "The value a function approaches as the input gets closer to a point from only one direction -- the left (below) or the right (above).",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-limits-new/ab-1-3/v/one-sided-limits-from-graphs"},
+  "Continuity": {def: "A function is continuous at a point when it is defined there, its limit exists there, and the two agree -- no holes, jumps, or breaks in the graph.",
+    url: "https://www.mathsisfun.com/calculus/continuity.html"},
+  "Discontinuity": {def: "A point where a function is not continuous -- its graph has a hole, a jump, or a break at that exact input.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-limits-new/ab-1-10/v/types-of-discontinuities"},
+  "Jump Discontinuity": {def: "A discontinuity where the left- and right-hand limits both exist but disagree, so the function's graph visibly jumps from one value to another.",
+    url: "https://www.khanacademy.org/math/old-ap-calculus-ab/ab-limits-continuity/ab-discontinuities/v/limit-of-piecewise-function-that-is-defined"},
+  "Removable Discontinuity": {def: "A discontinuity where the two-sided limit exists but the function is undefined (or wrongly defined) at that exact point -- often fixable by factoring, which shows up as a hole in the graph.",
+    url: "https://www.khanacademy.org/math/ap-calculus-ab/ab-limits-new/ab-1-13/e/continuity"},
+  "Piecewise Function": {def: "A function built from two or more separate pieces, each defined by its own rule over its own part of the domain.",
+    url: "https://www.mathsisfun.com/sets/functions-piecewise.html"},
+  "Indeterminate Form": {def: "An expression like 0/0 that doesn't directly tell you a limit's value, but can often be resolved by factoring or another algebraic rewrite first.",
+    url: "https://www.mathsisfun.com/calculus/limits-evaluating.html"},
+};
+const HOWTO = [
+  ["How to evaluate a limit algebraically", "Indeterminate Form"],
+  ["How to determine whether a function is continuous at a point", "Continuity"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+
+/* ================================================================
+   CASE-SPECIFIC -- story/domain-vocabulary glossary (separate layer
+   from GLOSSARY/gterm above, which stays math-only). Every url is a
+   real, live, freely-accessible Wikipedia page (stable, well-
+   established general-reference articles), fetched and confirmed
+   live 2026-09-09 in this session, so the reader always lands on a
+   working source rather than a dead or paywalled link.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "CAR-T": {desc: "Chimeric antigen receptor T-cell therapy -- a treatment that genetically engineers a patient's own immune cells to recognize and attack that patient's specific cancer.",
+    link: "https://en.wikipedia.org/wiki/Chimeric_antigen_receptor_T-cell_therapy"},
+  "CIBMTR": {desc: "The Center for International Blood and Marrow Transplant Research -- a real, independent research collaboration that collects and publishes patient-outcomes data on treatments like CAR T-cell therapy.",
+    link: "https://en.wikipedia.org/wiki/Center_for_International_Blood_and_Marrow_Transplant_Research"},
+  "Leukapheresis": {desc: "The medical procedure that collects a patient's white blood cells by drawing blood, filtering out those cells with a machine, and returning the rest of the blood to the patient.",
+    link: "https://en.wikipedia.org/wiki/Leukapheresis"},
+  "Prescribing Information": {desc: "The long, formal, FDA-reviewed and FDA-approved document a drug manufacturer writes, stating exactly how a product must be stored, handled, and used.",
+    link: "https://en.wikipedia.org/wiki/Package_insert"},
+  "Autologous Therapy": {desc: "A treatment made from a patient's own cells or tissue, as opposed to a donor's -- this is why a CAR T-cell dose can't simply be replaced from a bank if it's lost.",
+    link: "https://en.wikipedia.org/wiki/Autologous_transplantation"},
+  "Central Pharmacy": {desc: "A hospital system's main pharmacy, which prepares and dispatches medication for the whole hospital rather than one specialized unit.",
+    link: "https://en.wikipedia.org/wiki/Pharmacy"},
+  "Identity Verification": {desc: "The routine safety check confirming that a specific dose or sample actually belongs to the specific patient it's about to be given to.",
+    link: "https://en.wikipedia.org/wiki/Patient_tracking_system"},
+  "Shift-Differential Pay": {desc: "Extra pay some employers add for working undesirable hours -- nights, weekends, or being on standby around the clock -- on top of a normal wage.",
+    link: "https://en.wikipedia.org/wiki/Shift_work"},
+};
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#storyGlossaryCard')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryCard, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoLinkStoryTerms(['#overview', '#background', '#dilemma', '#challenges']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  const applied = document.getElementById('applyTwist').checked;
+  const note = document.getElementById('twistNote');
+  if(applied){
+    const base = evaluate({});
+    const twist = evaluate_twist({});
+    note.style.display = 'block';
+    note.dataset.confirmed = (twist.A === base.A && twist.B === base.B) ? '1' : '0';
+  } else {
+    note.style.display = 'none';
+  }
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

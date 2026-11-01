@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Eight-Second Tour — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  figure{margin:14px 0}figcaption{font-size:.82rem;color:#555;margin-top:6px}
+  #storyGlossaryCard{margin-top:12px}.glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+  /* BEGIN case-context AUTO-GENERATED CSS — edit case.json, not this block; see skills/case-publish/scripts/render_context.py */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  /* END case-context AUTO-GENERATED CSS */
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Eight-Second Tour</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-Stretch / HS-Entry</span>
+      <span class="pill">Ratios &middot; Percent &middot; Cube Law &middot; Break-Even &middot; Linear Equations</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  <p class="lede">The night before the last stage of the Tour, the team hotel smells of massage oil and cold coffee, and the sports director is the only one still awake with a notebook open.</p>
+<p>Three weeks of racing have come down to a single ride on a single afternoon: Versailles to the Champs-Élysées, against the clock, one rider at a time. The team's rider trails the race leader, and everything now depends on how he sits on the bike.</p>
+<p>On the desk are two sketches of the same rider. In one he is up on the hoods (the brake-lever housings on the handlebars), the way nearly everyone in the race sits. In the other he is folded forward over a pair of narrow handlebar extensions, elbows tucked, chin low, a posture borrowed from triathlon that most of the Tour's riders have never tried in a race this important. The folded rider cuts through the wind better. He also, everyone on the team agrees, cannot push as hard.</p>
+<p>Nobody on the team can say by how much either claim is true.</p>
+<p>Down the corridor the rider is trying to sleep. The wind tunnel is a country away, and tomorrow does not wait for it. The director turns to a clean page, uncaps the pen, and writes two words at the top, one for each sketch.</p>
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  <p><strong>The role.</strong> A <strong>sports director</strong> (in French cycling, a <em>directeur sportif</em>) runs a professional team from the follow car (the team car that drives behind the riders): race tactics, equipment, and the choices a rider cannot make for himself in the middle of a ride. This case puts you in that seat on the evening before stage 21 of the 1989 Tour de France, an individual <strong>time trial</strong>: riders start alone, one after another, and the fastest elapsed time wins. The stage ran 24.5 km from Versailles to the Champs-Élysées on 23 July 1989 [S1]. Your rider, Greg LeMond, entered the stage 50 seconds behind the race leader, Laurent Fignon, in the overall standings [S1]. The Tour is a three-week race of daily stages; each rider's stage times are added into a running total and the lowest total wins, so "50 seconds behind" means 50 seconds back in that total.</p>
+<p><strong>A hindsight scenario, stated plainly.</strong> The real stage is history: LeMond finished in 26:57 and Fignon in 27:55, and LeMond won the Tour by 8 seconds, the closest margin ever [S1]. The director on the evening before the stage could not have known Fignon's time. This case uses it anyway, as a stand-in for the time you would <em>expect</em> your rival to ride. What the director <em>could</em> know is how the two riders had matched up in the Tour's three earlier individual time trials (SEE APPENDIX A), and the case uses that record as a baseline: <strong>in the conventional position, LeMond rides at least as fast as Fignon, by a speed ratio b that you take from the earlier time trials, anywhere between the smallest and largest ratio they show.</strong> Treat that record with care: the distances and terrain differ, form differs from day to day, and Wikipedia says LeMond used triathlon bars (the same extensions as aero bars) in stage 5 (it does not say what he used in the prologue or stage 15), so none of the three can be called a pure conventional-position ride. LeMond's own stage 21 time is not used as a baseline. To win the Tour, LeMond must finish at least 50 seconds faster than 27:55 on stage 21.</p>
+<p><strong>In plain terms:</strong> under <strong>Full Power</strong> LeMond rides the conventional position and gains on Fignon only what his baseline b gives him. Under <strong>Aero Bars</strong> his speed changes further, by an amount that depends on x and y (below): the two effects multiply, so LeMond's total speed ratio over Fignon is b times the aero position's own speed ratio. A made-up illustration (not this case's numbers): if b were 1.02 and the aero position's own speed ratio were 1.03, LeMond would be 1.02 × 1.03 = 1.0506 times as fast as Fignon, about 5.1% faster. The total ratio LeMond needs on stage 21 is Fignon's 27:55 divided by the finish time that beats the Tour: 27:55 divided by (27:55 minus 50 seconds), both in seconds. Fignon's 27:55 is treated as fixed (it is the stand-in for the time you expect). <strong>Full Power</strong> names a posture, not extra effort. Both options are compared on predicted speed, and the 50-second bar is then the test of whether the faster option is fast enough. LeMond's own real 26:57 is not part of the decision; it appears only in D1 and D5 as a check on the model. This is a constructed decision, not a record of what anyone on the real team knew or said, and the case invents no quotes.</p>
+<p><strong>The two options.</strong> <strong>Aero Bars</strong> means riding the stage in the aerodynamic (aero-bar) position: lower air drag, but less power the rider can sustain, meaning the watts he can keep up for the whole ride. <strong>Full Power</strong> means riding the conventional position at full power: the posture every rider in the race knows, with nothing given up. On the real day LeMond used aero bars, an aerodynamic helmet and a rear disc wheel; Fignon used ordinary handlebars, no helmet and two disc wheels [S1]. (A disc wheel is a solid, flat wheel that slips through air more easily than a spoked one; aero bars are extensions that let a rider rest on the forearms and tuck forward.) The helmet and wheels are outside this case's model, which compares only the handlebar position (SEE APPENDIX A). Reports about Fignon's physical condition that day are contested and are kept out of the math.</p>
+<p><strong>The physics you will use.</strong> At race speed most of a rider's power is spent pushing air aside, and that power grows with the <strong>cube</strong> of speed. Aero Bars cuts drag by some fraction <strong>x</strong> (the cut in drag area, CdA) but costs some fraction <strong>y</strong> of the rider's sustainable power. Drag area is the rider-and-bike's effective air-catching size (how slippery the shape is, the drag coefficient, times how big it looks head-on, the frontal area). Why would a tucked rider lose power? One of the studies below says only that a lower torso angle reduces drag but "limits the physiological functioning of the cyclist" [S4]; how much is exactly what nobody measured. A full model adds a smaller rolling-resistance term (tyre-on-road friction). The formulas and parameters are in Appendix B, and they are scenario parameters, not measurements of LeMond: they do not reproduce his real speed, and D5 asks you to see how far off they are. For that reason this case uses <strong>ratios only</strong> and never claims LeMond produced any particular power. Equally, nothing here claims how many seconds the handlebar position gained him.</p>
+<p><strong>What the literature gives, and what it does not.</strong> Two peer-reviewed studies bear on the question (SEE APPENDIX C). Neither compares aero bars against a conventional position, and their numbers come from different comparisons. So x = 10-15% and y = 3-14% are a <strong>sensitivity range, not a measurement</strong>, and the 3% lower bound is this case's own assumption (SEE APPENDIX D). The honest tension is how much power loss the position can tolerate, not a coin flip.</p>
+<p><strong>What you must decide.</strong> Your decision is which position gives LeMond the faster ride tomorrow, and how confident you can honestly be about it. Primary metric: each option's predicted average speed over the 24.5 km under the scenario model. The 50-second target is then a second test of how far each option gets you, and the case does not assume either option reaches it. Every figure here is either cited (SEE APPENDIX E) or a stated assumption (SEE APPENDIX D). The vocabulary and "how to…" skills for Challenge 1 are in Appendix F.</p>
+<div class="card" id="storyGlossaryCard"><strong>Cycling Vocabulary</strong><p class="side-note" style="margin-top:6px">Hover any underlined term below (or in the prose above) for a plain-English definition; click to open a real source on it. This is separate from the math vocabulary in Appendix F &mdash; these are the cycling words the story itself is told in.</p><div class="glossary-grid" id="storyGlossaryGrid"></div></div>
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are the sports director of Greg LeMond's team. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Aero Bars</h4>
+      <p style="margin:0">Commit LeMond to the aero position, with lower drag and less sustainable power.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Full Power</h4>
+      <p style="margin:0">Ride LeMond in the conventional position at full power.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix F. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include: <strong>D1</strong> a times-and-speeds table with the baseline range; <strong>D2</strong> the needed power factor at each end of the baseline; <strong>D3</strong> a break-even table (aero-only and full model); <strong>D4</strong> an original break-even chart, line, shares and decision rule; <strong>D5</strong> model limits. The full wording of each deliverable is in the case document.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  <details open id="apx-a"><summary>Appendix A &mdash; The Stage and the Real Times</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D1, D5). The earlier time trials are given as the sources list them: a winner's time with each rider's gap, or the rider's own time. Times are in whole seconds. To use the table: where a rider's entry is "winner + a gap", add the gap to the winner's time to get that rider's own time; a rider's average speed is distance divided by time; and the ratio for a time trial is LeMond's speed divided by Fignon's. You will have one ratio per time trial, and b can be any value between the smallest and largest of the three earlier ones.</p>
+<table id="tbl1"><tr><th>Fact</th><th>Value</th><th>Source</th></tr>
+<tr><td>Stage</td><td>21, individual time trial, Versailles to the Champs-Élysées</td><td>[S1]</td></tr>
+<tr><td>Date</td><td>23 July 1989</td><td>[S1]</td></tr>
+<tr><td>Distance</td><td>24.5 km</td><td>[S1]</td></tr>
+<tr><td>LeMond's real time (stage 21)</td><td>26:57</td><td>[S1]</td></tr>
+<tr><td>Fignon's real time (stage 21)</td><td>27:55</td><td>[S1]</td></tr>
+<tr><td>Fignon's lead entering the stage</td><td>50 seconds</td><td>[S1]</td></tr>
+<tr><td>Final winning margin</td><td>8 seconds</td><td>[S1]</td></tr>
+<tr><td>LeMond's equipment (real)</td><td>aero bars, aero helmet, rear disc wheel</td><td>[S1]</td></tr>
+<tr><td>Fignon's equipment (real)</td><td>ordinary handlebars, no helmet, two disc wheels</td><td>[S1]</td></tr>
+</table>
+<p><strong>The Tour's earlier individual time trials</strong> [S5][S6]</p>
+<table id="tbl2"><tr><th>Time trial</th><th>Date</th><th>Distance</th><th>Winner's time</th><th>LeMond</th><th>Fignon</th></tr>
+<tr><td>Prologue (a short opening time trial), Luxembourg</td><td>1 July 1989</td><td>7.8 km</td><td>Breukink 9:54</td><td>winner + 6 s</td><td>winner + 6 s</td></tr>
+<tr><td>Stage 5, Dinard to Rennes</td><td>6 July 1989</td><td>73 km</td><td>LeMond 1:38:12</td><td>1:38:12</td><td>winner + 56 s</td></tr>
+<tr><td>Stage 15, Gap to Orcières-Merlette (mountain)</td><td>16 July 1989</td><td>39 km</td><td>Rooks 1:10:42</td><td>winner + 57 s</td><td>winner + 1:44</td></tr>
+</table>
+<p>Wikipedia notes that LeMond (with two other riders) used triathlon bars in stage 5; it does not give the equipment for the prologue or stage 15 [S5].</p>
+<figure><img src="lemond_1989_stage21_start.jpg" alt="Greg LeMond leaving the start of the stage 21 time trial, 23 July 1989" style="max-width:100%;height:auto;border-radius:6px;display:block;margin:0 auto"><figcaption>Greg LeMond at the start of the stage 21 time trial, Versailles, 23 July 1989. The photo shows the start, not the finish or the ride. Photo: Benjamin Werner (Flickr user bw94), CC BY 2.0, via Wikimedia Commons [S2].</figcaption></figure>
+</div></details>
+<details id="apx-b"><summary>Appendix B &mdash; The Power Model (scenario parameters)</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D2, D3, D5). These are <strong>scenario parameters, not measurements of LeMond</strong> (SEE APPENDIX D).</p>
+<p>Power to hold a steady speed v (in metres per second) on flat ground with no wind:</p>
+<ul><li><strong>Aero-only (cube-law) form:</strong> P(aero) = ½ × ρ × CdA × v³</li><li><strong>Full model:</strong> P(total) = ½ × ρ × CdA × v³ + Crr × m × g × v, where the second term is rolling resistance</li></ul>
+<table id="tbl3"><tr><th>Symbol</th><th>Meaning</th><th>Value used</th></tr>
+<tr><td>ρ</td><td>air density</td><td>1.225 kg/m³</td></tr>
+<tr><td>CdA</td><td>drag area, conventional position</td><td>0.32 m²</td></tr>
+<tr><td>Crr</td><td>rolling-resistance coefficient</td><td>0.004</td></tr>
+<tr><td>m</td><td>rider plus bike mass</td><td>78 kg</td></tr>
+<tr><td>g</td><td>gravitational acceleration</td><td>9.81 m/s²</td></tr>
+</table>
+<p><strong>Aero Bars versus Full Power, in symbols.</strong> In the aero position the drag area becomes CdA × (1 − x) and the sustainable power becomes (1 − y) times the conventional power. In the aero-only form, at a fixed speed the power needed scales with drag area, so the aero position runs at a speed ratio of ((1 − y) / (1 − x)) raised to the power 1/3, compared with the conventional position. In the full model, rolling resistance does not shrink when drag area does, so you will find the break-even by comparing total power at the two speeds.</p>
+<p><strong>Figure B1 — what a labeled chart looks like (an example, not a deliverable).</strong> Aero-only power from the formula above, plotted for speeds from 20 to 40 km/h with the Appendix B drag area. The points are marked every 5 km/h. Note how the curve steepens: power does not grow in step with speed. Your own chart in D4 plots different quantities (the break-even points from D3), so use this only as a model for labeling axes and marking points.</p>
+<figure><svg id="exampleChart" aria-label="Example chart: aero power against speed, 20 to 40 km/h" viewBox="0 0 520 300" xmlns="http://www.w3.org/2000/svg" style="max-width:520px;width:100%;border:1px solid #999;background:#fafafa;font-family:sans-serif">
+  <line x1="55" y1="250.0" x2="60" y2="250.0" stroke="#333"/><line x1="60" y1="250.0" x2="500" y2="250.0" stroke="#ddd"/><text x="50" y="254.0" font-size="11" text-anchor="end">0</text><line x1="55" y1="173.3" x2="60" y2="173.3" stroke="#333"/><line x1="60" y1="173.3" x2="500" y2="173.3" stroke="#ddd"/><text x="50" y="177.3" font-size="11" text-anchor="end">100</text><line x1="55" y1="96.7" x2="60" y2="96.7" stroke="#333"/><line x1="60" y1="96.7" x2="500" y2="96.7" stroke="#ddd"/><text x="50" y="100.7" font-size="11" text-anchor="end">200</text><line x1="55" y1="20.0" x2="60" y2="20.0" stroke="#333"/><line x1="60" y1="20.0" x2="500" y2="20.0" stroke="#ddd"/><text x="50" y="24.0" font-size="11" text-anchor="end">300</text>
+  <line x1="60" y1="250" x2="500" y2="250" stroke="#333"/><line x1="60" y1="20" x2="60" y2="250" stroke="#333"/>
+  <line x1="60.0" y1="250" x2="60.0" y2="255" stroke="#333"/><text x="60.0" y="269" font-size="11" text-anchor="middle">20</text><line x1="170.0" y1="250" x2="170.0" y2="255" stroke="#333"/><text x="170.0" y="269" font-size="11" text-anchor="middle">25</text><line x1="280.0" y1="250" x2="280.0" y2="255" stroke="#333"/><text x="280.0" y="269" font-size="11" text-anchor="middle">30</text><line x1="390.0" y1="250" x2="390.0" y2="255" stroke="#333"/><text x="390.0" y="269" font-size="11" text-anchor="middle">35</text><line x1="500.0" y1="250" x2="500.0" y2="255" stroke="#333"/><text x="500.0" y="269" font-size="11" text-anchor="middle">40</text>
+  <polyline points="60.0,224.2 82.0,220.2 104.0,215.7 126.0,210.8 148.0,205.5 170.0,199.7 192.0,193.4 214.0,186.6 236.0,179.3 258.0,171.4 280.0,163.0 302.0,154.1 324.0,144.5 346.0,134.3 368.0,123.4 390.0,111.9 412.0,99.7 434.0,86.9 456.0,73.3 478.0,58.9 500.0,43.9" fill="none" stroke="#1a3a5c" stroke-width="2"/>
+  <circle cx="60.0" cy="224.2" r="3.5" fill="#1a3a5c"/><circle cx="170.0" cy="199.7" r="3.5" fill="#1a3a5c"/><circle cx="280.0" cy="163.0" r="3.5" fill="#1a3a5c"/><circle cx="390.0" cy="111.9" r="3.5" fill="#1a3a5c"/><circle cx="500.0" cy="43.9" r="3.5" fill="#1a3a5c"/>
+  <text x="280" y="290" font-size="12" text-anchor="middle">speed (km/h)</text>
+  <text x="14" y="135" font-size="12" text-anchor="middle" transform="rotate(-90 14 135)">aero power (W)</text>
+</svg></figure>
+<p><strong>Unit reminder:</strong> 1 km/h = 1/3.6 m/s.</p>
+</div></details>
+<details id="apx-c"><summary>Appendix C &mdash; What the Literature Does and Does Not Give</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D5).</p>
+<table id="tbl4"><tr><th>Study</th><th>What it reports</th><th>What it does not give</th></tr>
+<tr><td>García-López et al. 2008, <em>Journal of Sports Sciences</em> 26(3):277-286, wind tunnel (a lab that blows controlled air past a rider and bike to measure drag), five professional cyclists [S3]</td><td>Changes in the cyclists' position decreased aerodynamic drag by 14%. Drag only.</td><td>Any power loss. Its 14% comes from changing position, not from a comparison of aero bars with a conventional position.</td></tr>
+<tr><td>Fintelman et al. 2014, <em>Journal of Biomechanics</em> 47(8):1894-1898, models built from 19 time-trial cyclists at torso angles of 0-24° (how far the back is tilted down from upright) [S4]</td><td>Aerodynamic losses outweigh power losses at cycling speeds above 46 km/h. Below 30 km/h a more upright position is better.</td><td>A power-loss figure for aero bars versus a conventional position.</td></tr>
+</table>
+<p>LeMond averaged 54.545 km/h over the stage [S1], well above Fintelman's 46 km/h crossover, so the literature leans toward the aero position at race speed. That does not tell you <strong>how much</strong> power loss the position tolerates, which is the question the numbers must answer. The two studies measured different things, so their numbers cannot be combined into one comparison. Popular "15-25%" drag-reduction figures for aero bars circulate widely, but they are not peer reviewed and are not used here.</p>
+</div></details>
+<details id="apx-d"><summary>Appendix D &mdash; Modeling Assumptions</summary><div class="inner">
+<blockquote>These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion — that is a legitimate move.</blockquote>
+<table id="tbl5"><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+<tr><td>MA1</td><td>Hindsight stand-in and baseline: the rival's expected stage 21 time is Fignon's real 27:55, and LeMond's conventional-position speed is Fignon's speed times a baseline ratio b taken from the earlier time trials (the range in D1)</td><td>27:55; b between the smallest and largest earlier ratio</td><td>A director could not have known Fignon's time, but could know the earlier time trials. Their distances, terrain, form and (for stage 5) equipment differ, so b is an indicative range, not a measurement of either rider's conventional position.</td><td>The 50-second test is sensitive to this value.</td></tr>
+<tr><td>MA2</td><td>Fractional cut in drag area (x) from the aero position</td><td>Range 10-15%</td><td>A peer-reviewed 14% drag change [S3] was measured for position changes among time-trial positions, not aero bars versus a conventional position, so it anchors the range but does not measure it.</td><td>The answer is sensitive to this value.</td></tr>
+<tr><td>MA3</td><td>Fractional loss in sustainable power (y) in the aero position</td><td>Range 3-14%</td><td>No source found that measures this for aero bars against a conventional position. The 3% lower bound is this case's own assumption.</td><td>The answer is sensitive to this value.</td></tr>
+<tr><td>MA4</td><td>Power-model parameters (ρ, CdA, Crr, m)</td><td>Appendix B</td><td>Typical scenario values for a rider and bike on flat ground; not LeMond's. They do not reproduce his real speed.</td><td>The break-even tolerances depend on the rolling-resistance share these parameters set.</td></tr>
+<tr><td>MA5</td><td>Flat course, no wind, steady speed, no drafting (riding in another rider's slipstream)</td><td>as stated</td><td>Simplification for tractable arithmetic. Wikipedia describes the weather on stage 21 as hot, dry and still [S6].</td><td>The real course and weather are ignored.</td></tr>
+<tr><td>MA6</td><td>Only handlebar position changes; helmet and wheels are held equal</td><td>as stated</td><td>Isolates the question the director faces in this case.</td><td>The real equipment differences listed in Appendix A are ignored.</td></tr>
+</table>
+</div></details>
+<details id="apx-e"><summary>Appendix E &mdash; Sources</summary><div class="inner">
+<table id="tbl6"><tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+<tr><td>S1</td><td>Stage 21 facts: date, distance, real times, 50 s deficit, 8 s margin, equipment, 54.545 km/h average</td><td>as tabulated in Appendix A</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/1989_Tour_de_France" target="_blank" rel="noopener">1989 Tour de France</a> (secondary; ProCyclingStats is not openly licensed)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S2</td><td>Photograph of LeMond at the stage 21 start</td><td>CC BY 2.0, Benjamin Werner (Flickr user bw94)</td><td>Wikimedia Commons — <a href="https://commons.wikimedia.org/wiki/File:Greg_LeMond_1989_Tour_de_France_stage_21_TT.jpg" target="_blank" rel="noopener">File:Greg LeMond 1989 Tour de France stage 21 TT.jpg</a>; original <a href="https://www.flickr.com/photos/bw94/2927911618/" target="_blank" rel="noopener">Flickr</a></td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S3</td><td>Position changes decreased aerodynamic drag by 14% in five professional cyclists (wind tunnel)</td><td>14%</td><td>García-López J. et al., <em>Reference values and improvement of aerodynamic drag in professional cyclists</em>, J Sports Sci 2008;26(3):277-286 — <a href="https://pubmed.ncbi.nlm.nih.gov/17943597/" target="_blank" rel="noopener">PubMed 17943597</a> (abstract read)</td><td>2008</td><td>HIGH</td></tr>
+<tr><td>S4</td><td>Aerodynamic losses outweigh power losses above 46 km/h</td><td>46 km/h</td><td>Fintelman D.M. et al., <em>Optimal cycling time trial position models: aerodynamics versus power output and metabolic energy</em>, J Biomech 2014;47(8):1894-8 — <a href="https://pubmed.ncbi.nlm.nih.gov/24726654/" target="_blank" rel="noopener">PubMed 24726654</a> (abstract read)</td><td>2014</td><td>HIGH</td></tr>
+<tr><td>S5</td><td>Prologue and stage 5 results (7.8 km; 73 km), and that LeMond, Yates and Hampsten used triathlon bars in stage 5</td><td>as tabulated in Appendix A</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/1989_Tour_de_France,_Prologue_to_Stage_10" target="_blank" rel="noopener">1989 Tour de France, Prologue to Stage 10</a> (secondary; ProCyclingStats is not openly licensed)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S6</td><td>Stage 15 mountain time trial result (39 km), stage 21 details and weather</td><td>as tabulated in Appendix A</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/1989_Tour_de_France,_Stage_11_to_Stage_21" target="_blank" rel="noopener">1989 Tour de France, Stage 11 to Stage 21</a> (secondary)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+</table>
+</div></details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix F &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-10-04. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+  <div class="stepbox">
+    <h4>Step 1 &mdash; The baseline and the total ratio (D1)</h4>
+    <div class="goal">Find LeMond/Fignon speed ratios from Appendix A, then enter the low and high ends of the baseline range b and the total speed ratio LeMond needs over Fignon's 27:55 pace (four decimal places).</div>
+    <div class="fieldrow"><label for="s1lo">Baseline b, low end</label><input type="number" id="s1lo" step="any" placeholder="decimal"><span id="fb1a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1hi">Baseline b, high end</label><input type="number" id="s1hi" step="any" placeholder="decimal"><span id="fb1b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1tot">Total speed ratio needed over Fignon</label><input type="number" id="s1tot" step="any" placeholder="decimal"><span id="fb1c" class="fb"></span></div>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; The needed power factor (D2)</h4>
+    <div class="goal">Using the cube law, find the factor by which power must rise for the aero position to supply what the baseline leaves, at the low end and at the high end of the baseline range.</div>
+    <div class="fieldrow"><label for="s2lo">Power factor, low-end baseline</label><input type="number" id="s2lo" step="any" placeholder="decimal"><span id="fb2a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2hi">Power factor, high-end baseline</label><input type="number" id="s2hi" step="any" placeholder="decimal"><span id="fb2b" class="fb"></span></div>
+    <button onclick="checkStep2()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; Break-even power loss (D3)</h4>
+    <div class="goal">Enter the largest power loss y, in percent, that still reaches the bar. Aero-only form at a 10% drag-area cut, for each end of the baseline; then the full model at a 10% cut for the low-end baseline.</div>
+    <div class="fieldrow"><label for="s3a">Aero-only, 10% cut, low-end baseline (%)</label><input type="number" id="s3a" step="any" placeholder="decimal"><span id="fb3a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3b">Aero-only, 10% cut, high-end baseline (%)</label><input type="number" id="s3b" step="any" placeholder="decimal"><span id="fb3b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3c">Full model, 10% cut, low-end baseline (%)</label><input type="number" id="s3c" step="any" placeholder="decimal"><span id="fb3c" class="fb"></span></div>
+    <button onclick="checkStep3()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Your own pair (D4)</h4>
+    <div class="goal">Enter the drag-area cut x and power loss y (in percent) you believe, then the aero position's speed ratio over the conventional position for that pair (four decimal places).</div>
+    <div class="fieldrow"><label for="s4x">Your x (%)</label><input type="number" id="s4x" step="any" placeholder="decimal"></div>
+    <div class="fieldrow"><label for="s4y">Your y (%)</label><input type="number" id="s4y" step="any" placeholder="decimal"></div>
+    <div class="fieldrow"><label for="s4r">Aero speed ratio over conventional</label><input type="number" id="s4r" step="any" placeholder="decimal"><span id="fb4a" class="fb"></span></div>
+    <button onclick="checkStep4()">Check</button>
+    <p class="side-note">These checks only confirm your arithmetic. Which option to choose, which decision rule to use, and whether the assumptions deserve your trust, is still yours.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 5 &mdash; Model limits (D5)</h4>
+    <div class="goal">Use the full model at LeMond's real 26:57 average speed and enter the power it implies, in watts, to the nearest whole watt.</div>
+    <div class="fieldrow"><label for="s5w">Implied power (W)</label><input type="number" id="s5w" step="any" placeholder="watts"><span id="fb5a" class="fb"></span></div>
+    <button onclick="checkStep5()">Check</button>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p>Your team physiologist comes in with a number: a lab estimate for the aero position. It is not a measurement from the race. It is a hypothetical, built for tonight.</p>
+      <p>Drag area down by twelve and a half percent. Sustainable power down by fourteen. Both numbers are inside the ranges in your own Appendix D.</p>
+      <p>Treat them as the only estimate of the aero position you have tonight: they replace your own x and y. Run it again. Are you changing your recommendation, or not?</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist to Step 4's check (x and y replaced by the twist's values)</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+            <li>[S1] Wikipedia &mdash; <a href="1989 Tour de France" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/1989_Tour_de_France</a></li>
+      <li>[S2] Wikimedia Commons &mdash; <a href="File:Greg LeMond 1989 Tour de France stage 21 TT.jpg (Benjamin Werner, CC BY 2.0)" target="_blank" rel="noopener">https://commons.wikimedia.org/wiki/File:Greg_LeMond_1989_Tour_de_France_stage_21_TT.jpg</a></li>
+      <li>[S3] PubMed &mdash; <a href="Garc&iacute;a-L&oacute;pez et al. 2008, J Sports Sci" target="_blank" rel="noopener">https://pubmed.ncbi.nlm.nih.gov/17943597/</a></li>
+      <li>[S4] PubMed &mdash; <a href="Fintelman et al. 2014, J Biomech" target="_blank" rel="noopener">https://pubmed.ncbi.nlm.nih.gov/24726654/</a></li>
+      <li>[S5] Wikipedia &mdash; <a href="1989 Tour de France, Prologue to Stage 10" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/1989_Tour_de_France,_Prologue_to_Stage_10</a></li>
+      <li>[S6] Wikipedia &mdash; <a href="1989 Tour de France, Stage 11 to Stage 21" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/1989_Tour_de_France,_Stage_11_to_Stage_21</a></li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Eight-Second Tour &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/the-eight-second-tour/sensitivity_model.py. Given data and stated assumptions only.
+const DIST_KM = 24.5, RIVAL_S = 1675, DEFICIT_S = 50;
+const RHO = 1.225, CDA0 = 0.32, MASS = 78, CRR = 0.004, G = 9.81;
+const B_LOW = 1.0, B_HIGH = 4346/4299;
+const PARAMS = { cda_cut: 0.125, power_loss: 0.085, twist_cda_cut: 0.125, twist_power_loss: 0.14, baseline_ratio: (B_LOW + B_HIGH)/2 };
+const FLEX = ["cda_cut", "power_loss"];
+const needed = () => RIVAL_S/(RIVAL_S-DEFICIT_S);
+const speedRatio = (x,y) => Math.pow((1-y)/(1-x), 1/3);
+const power = (v,cda) => 0.5*RHO*cda*Math.pow(v,3) + CRR*MASS*G*v;
+function cubeBreakEven(x,b){ return 1 - Math.pow(needed()/b,3)*(1-x); }
+function fullBreakEven(x,b){
+  const v0 = DIST_KM*1000/RIVAL_S*b, v1 = DIST_KM*1000/RIVAL_S*needed();
+  return 1 - power(v1, CDA0*(1-x))/power(v0, CDA0);
+}
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  const v0 = DIST_KM/(RIVAL_S/3600)*p.baseline_ratio;
+  return {A: v0*speedRatio(p.cda_cut, p.power_loss), B: v0};
+}
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  const v0 = DIST_KM/(RIVAL_S/3600)*p.baseline_ratio;
+  return {A: v0*speedRatio(p.twist_cda_cut, p.twist_power_loss), B: v0};
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkStep1(){
+  fb('fb1a', near(parseFloat(val('s1lo')), B_LOW, 0.0003));
+  fb('fb1b', near(parseFloat(val('s1hi')), B_HIGH, 0.0003));
+  fb('fb1c', near(parseFloat(val('s1tot')), needed(), 0.0003));
+}
+function checkStep2(){
+  fb('fb2a', near(parseFloat(val('s2lo')), Math.pow(needed()/B_LOW,3), 0.001));
+  fb('fb2b', near(parseFloat(val('s2hi')), Math.pow(needed()/B_HIGH,3), 0.001));
+}
+function checkStep3(){
+  fb('fb3a', near(parseFloat(val('s3a')), 100*cubeBreakEven(0.10, B_LOW), 0.06));
+  fb('fb3b', near(parseFloat(val('s3b')), 100*cubeBreakEven(0.10, B_HIGH), 0.06));
+  fb('fb3c', near(parseFloat(val('s3c')), 100*fullBreakEven(0.10, B_LOW), 0.06));
+}
+function checkStep4(){
+  let x = parseFloat(val('s4x'))/100, y = parseFloat(val('s4y'))/100;
+  if(window.__TWIST_APPLIED__){ x = PARAMS.twist_cda_cut; y = PARAMS.twist_power_loss; }
+  fb('fb4a', near(parseFloat(val('s4r')), speedRatio(x,y), 0.0006));
+}
+function checkStep5(){
+  const v = DIST_KM*1000/1617;
+  fb('fb5a', near(parseFloat(val('s5w')), power(v, CDA0), 1.5));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "the-eight-second-tour"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Times-and-speeds table and baseline range"],
+  ["D2", "Needed power factor at each end of the baseline"],
+  ["D3", "Break-even table (aero-only and full model)"],
+  ["D4", "Break-even chart, line, shares and decision rule"],
+  ["D5", "Model limits in numbers and words"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,process])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${process ? `<div class="meta" style="margin:2px 0 6px">${process}</div>` : ''}
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Time": {def: "How long something takes. Here, race times such as 26:57 (minutes:seconds) that must be converted to seconds before dividing distance by time.",
+    url: "https://www.mathsisfun.com/time.html"},
+  "Percent": {def: "A ratio that compares a number to 100, literally per hundred.",
+    url: "https://www.mathsisfun.com/percentage.html"},
+  "Ratio": {def: "A comparison of two quantities by division. Here, one rider's speed divided by another's.",
+    url: "https://www.mathsisfun.com/numbers/ratio.html"},
+  "Exponent": {def: "A small raised number saying how many times to multiply a number by itself. Cubing a speed ratio means using the exponent 3.",
+    url: "https://www.mathsisfun.com/exponent.html"},
+  "Variable": {def: "A letter standing for a number that can change, such as x for the drag-area cut or y for the power loss.",
+    url: "https://www.mathsisfun.com/definitions/variable.html"},
+  "Equation": {def: "A statement that two expressions are equal, such as the break-even condition you solve for y.",
+    url: "https://www.mathsisfun.com/definitions/equation.html"},
+  "Scatter Plot": {def: "A graph that shows each item as one dot, placed by two measurements, so you can see how they move together.",
+    url: "https://www.mathsisfun.com/data/scatter-xy-plots.html"},
+  "Slope": {def: "How steep a line is: how much it rises for each step across. For the break-even line, points of tolerable power loss per point of drag cut.",
+    url: "https://www.mathsisfun.com/geometry/slope.html"},
+  "Linear Equation": {def: "An equation whose graph is a straight line, such as y = mx + b.",
+    url: "https://www.mathsisfun.com/algebra/linear-equations.html"}
+};
+const HOWTO = [
+  ["how to convert between units of time", "Time"],
+  ["how to convert numbers to percents", "Percent"],
+  ["how to convert percents to numbers", "Percent"],
+  ["how to evaluate an exponential expression", "Exponent"],
+  ["how to evaluate a variable expression (substitution property)", "Variable"],
+  ["how to solve a multi-step equation with a variable on one side", "Equation"],
+  ["how to create a scatter plot given a set of data", "Scatter Plot"],
+  ["how to identify the slope of a line given a set of data, or a graph of a line of a set of data, or its linear equation", "Slope"],
+  ["how to write a linear equation given a set of data", "Linear Equation"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  window.__TWIST_APPLIED__ = document.getElementById('applyTwist').checked;
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+
+/* BEGIN case-context AUTO-GENERATED STORY_GLOSSARY — edit case.json.context_glossary[], not this block; see skills/case-publish/scripts/render_context.py */
+const STORY_GLOSSARY = {
+  "sports director": {desc: "The person who runs a pro cycling team from the follow car, choosing tactics and equipment. In French, a directeur sportif.",
+    link: "https://en.wikipedia.org/wiki/Directeur_sportif"},
+  "time trial": {desc: "A race where each rider starts alone and is timed against the clock, with no drafting off other riders.",
+    link: "https://en.wikipedia.org/wiki/Individual_time_trial"},
+  "aero bars": {desc: "Narrow handlebar extensions that let a rider tuck forward with elbows in, cutting air drag at the cost of a less powerful posture.",
+    link: "https://en.wikipedia.org/wiki/Aero_bars"},
+  "drag area": {desc: "How much air resistance a rider-and-bike presents, as drag coefficient times frontal area; a smaller drag area means less wind to push through.",
+    link: "https://en.wikipedia.org/wiki/Drag_area"},
+  "rolling resistance": {desc: "The small force from tyres deforming on the road; unlike air drag, it grows only in proportion to speed.",
+    link: "https://en.wikipedia.org/wiki/Rolling_resistance"},
+  "wind tunnel": {desc: "A facility that blows controlled air past a rider or bike to measure drag.",
+    link: "https://en.wikipedia.org/wiki/Wind_tunnel"}
+};
+/* END case-context AUTO-GENERATED STORY_GLOSSARY */
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(!a.closest('#storyGlossaryCard')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryCard, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryTerms(["#overview", "#background", "#dilemma", "#challenges", "#appendices", "#notebook", "#twist"]);
+</script>
+</body>
+</html>

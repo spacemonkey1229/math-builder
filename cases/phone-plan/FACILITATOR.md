@@ -50,7 +50,7 @@ find where the lines cross. Re-ask: "Do we agree on that process?"
 
 **"Do we need to make assumptions? Which ones are critical?"**
 
-Surface Appendix B's two real conventions: the flat 8% tax, and the assumption that today's
+Surface Appendix B's two real conventions: the flat 8% tax (an invented, simplified rate; the case says so), and the assumption that today's
 additional-line rate holds when the 3rd/4th line is actually added a year from now — a real,
 disclosed uncertainty neither carrier guarantees in writing.
 
@@ -66,7 +66,7 @@ disagree with everyone else's equation.
 Deliver slowly, with pauses:
 
 "Fiona stops by the Carrier V store just to compare notes. The rep tells her: sign up this month
-and get a one-time $150 device-upgrade credit. Carrier T isn't offering anything like it right now."
+and get a one-time $150 device-upgrade credit (a one-time discount toward buying a new phone). Charity will need a phone of her own within the year, so for this case treat the full $150 as real money the family would use, dollar for dollar. Carrier T isn't offering anything like it right now."
 
 **Facilitator-only: what the numbers actually do (`case.json.derived`).** At the family's current
 2-line need, Carrier T saves $10.80 a month over Carrier V — $129.60 over a full year. Carrier V's
@@ -78,6 +78,23 @@ $129.60, not $150 vs. $50) — say so if a Hero notices how tight it is.
 Do not tell a Hero which time horizon is the "right" one to optimize for — a family that might
 switch carriers again in eight months should weigh this differently than one settling in for years.
 That framing question is the point of the twist, not a script to hand over unprompted.
+
+**Interactive Step 4 follows the Hero's own line count (changed 2026-10-19, outside-user feedback).**
+Step 4 reuses the line count chosen in Step 2 and the same tax-included totals, so nothing is
+recalculated from scratch, and the step text says so. The closeness above is specific to **2
+lines** (the family's current need). At 3 lines the carriers cost the same, so Carrier T saves
+nothing and the credit wins outright; at 4 lines Carrier T costs *more*, so the Hero enters a
+negative savings figure. A Hero who works Step 4 at 3 or 4 lines has therefore met a different,
+easier question — worth naming in discussion ("the twist only bites while the family is still at
+2 lines; why?"). The discussion twist as delivered above is unchanged.
+
+**Non-price factors to be ready for (added 2026-10-19 from the P3 re-run).** The packet also gives two
+qualitative differences the five Socratic questions don't raise unprompted: Carrier T's unlimited hotspot
+vs. Carrier V's 15 GB per line (Nate needs a hotspot, but the case gives no usage figure), and Carrier V's
+stronger winter mountain-pass coverage (Fiona's stated priority, with no signal-strength number). At 3 lines the
+price is an exact tie, so a room that reaches it will lean on these. Ask: "What would you need to know to
+weigh a hotspot cap against a coverage claim — and does the case tell you?" Also listen for a Hero who tax-adds
+per line, or builds the equation on total lines (15n + 80) rather than lines beyond 2.
 
 ## Immediate recommit
 

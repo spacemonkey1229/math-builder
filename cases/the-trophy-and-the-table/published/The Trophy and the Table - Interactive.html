@@ -1,0 +1,1315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Trophy and the Table — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Heroes Academy</div>
+        <h1>Case Study: The Trophy and the Table</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-Stretch / HS-Entry</span>
+      <span class="pill">Scatter Plots &middot; Line of Best Fit &middot; Residuals &middot; Break-Even</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  <p class="lede">The trophy is still standing in the lobby when the board member arrives, and the glass case around it is covered in the fingerprints of people who wanted to touch it. It is the first major trophy the club has won in a very long time. Nobody has had the heart to wipe the glass.</p>
+<p>Upstairs, the other piece of paper is already on the boardroom table. It is the final league table, printed on plain office paper, and the club's name sits far lower on it than anyone in the building is comfortable with. Somebody has circled a row in pencil. Somebody else has set a coffee cup on one corner to keep the page flat.</p>
+<p>The board member takes the chair by the window and listens to the room divide, the way rooms do. One director says a trophy is the whole reason a football club exists. Another taps the table and says the table never lies. A third says that nobody present can actually say what the table is telling them, and asks the club's analyst to put the model on the screen.</p>
+<p>The analyst's slide is a cloud of dots with a straight line running through it. Almost every dot hugs the line. One dot floats far below it, all by itself, and it is the club's own.</p>
+<p>The chair slides a ballot sheet across the polished wood. It has two boxes and a single pen beside it. The board member picks up the pen.</p>
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  <p>This case puts you in a boardroom at a real club at a real moment, with one deliberate change: the decision point is <strong>constructed</strong>. The club is Tottenham Hotspur, a member of England's Premier League, the top division of English club football. The room is the club's board in the last days of May 2025. Which choice the club actually made is not part of this case; your guide will raise it at the close. The case uses only public record, does not guess at anyone's motives, and is <strong>not a verdict on any person</strong>: you are judging what a statistical model can and cannot tell a board, not whether a manager is good or bad.</p>
+<p>The manager is Ange Postecoglou. In the 2024/25 season his team finished 17th of 20 in the Premier League, one place above the three clubs that are sent down to the second division (SEE APPENDIX A). Days earlier, the same team won the Europa League, a major European club trophy (SEE APPENDIX A, which explains the competition and the other football terms used here for readers who have never followed the sport). The board decides by secret ballot: each director marks one of two boxes, the majority wins, and you hold one vote. A board member must decide whether the league finish or the trophy should settle the manager's future.</p>
+<p>The board's analyst has built a simple model on the final league table (SEE APPENDIX B): a straight line that predicts a club's points from its <strong>goal difference</strong>, the goals it scored minus the goals it conceded. The analyst's method is explained in Appendix F. Free public data for anyone who wants to go further is listed in Appendix C.</p>
+<p>Your two options have memorable labels. <strong>Keep the Winner</strong> means the manager who won the Europa League trophy stays, and the 17th-place finish is not treated as a reason to change. <strong>Change After 17th</strong> means the manager is replaced after the 17th-place league finish, betting that the reset cost of a new manager is smaller than the shortfall it avoids, because the model says the club's points were far below what its goals should have earned.</p>
+<p>To compare them, the board uses one number, <strong>expected Premier League points in the 2025/26 season</strong> under each option. Both options start from the same point: the club's <strong>predicted points</strong> from the model you build in Challenge 3, not the 38 actually earned, because the question is what happens next season. A club's <strong>shortfall</strong> in this case always means one thing: the positive number of points by which its actual total fell below the model's predicted total. Under Keep the Winner, the board forecasts the club's next-season shortfall from past data: across ten seasons of league tables, a club that finished r points below its season's line finished about 0.11 × r points below its line the following season (SEE APPENDIX E, where you can read this off a chart). Under Change After 17th, the case scores the club in the best light for a new manager: it assumes the new manager removes the forecast shortfall entirely (the club lands on its line), because the model cannot tell you how much of the shortfall was ever the manager's doing, and D5 asks you to say what that assumption costs. In exchange, the club pays a <strong>reset cost</strong>: the points a new manager costs while the squad adjusts to new tactics (SEE APPENDIX D for a concrete picture of how that happens). No public source gives that cost, so the case does not pick it for you: you choose and defend your own range for it (SEE APPENDIX D). Everything else is sourced in (SEE APPENDIX G). The vocabulary and "how to…" skills this case asks you to research are listed in Appendix H.</p>
+<p>Injury reports from fan sites are not used as fact anywhere in this case. The league's own report on the club's injuries is cited in Appendix A [S4].</p>
+<div class="card" id="storyGlossaryCard"><strong>Football Vocabulary</strong><p class="side-note" style="margin-top:6px">Hover any underlined term for a plain-English definition; click to open a real source. These are the football words the story is told in; the math vocabulary is in Appendix H.</p><div class="glossary-grid" id="storyGlossaryGrid"></div></div>
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are a member of the club's board. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Keep the Winner</h4>
+      <p style="margin:0">Keep the manager who won the Europa League trophy; the 17th-place finish is not treated as a reason to change.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Change After 17th</h4>
+      <p style="margin:0">Replace the manager after the 17th-place league finish, betting that the reset cost is smaller than the shortfall it avoids.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Include: <strong>D1</strong> a scatter plot, line of best fit and its equation; <strong>D2</strong> a residual table for all 20 clubs; <strong>D3</strong> an outlier check with the club's row removed; <strong>D4</strong> a break-even comparison with your own reset-cost range; <strong>D5 (graded)</strong> what the model leaves out. The full wording of each deliverable is in the case document.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  <details open id="apx-a"><summary>Appendix A &mdash; The Public Record</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D5). Everything in this appendix is public record, cited to a named source. Nothing here is a claim about anyone's motives.</p>
+<p><strong>The season.</strong> In 2024/25 the club finished 17th in the Premier League with 38 points, from 11 wins, 5 draws and 22 losses, scoring 64 goals and conceding 65, for a goal difference of −1 [S2]. That was the club's lowest top-flight finish in 48 years [S2]. The three clubs that finished below it, Leicester City, Ipswich Town and Southampton, were relegated [S1].</p>
+<p><strong>A few football terms, for readers new to it.</strong> The <em>manager</em> is the head coach: the person who picks the team, sets the tactics and runs training, and who is hired and can be dismissed by the club's <em>board</em>, the group of directors that governs the club. In the league a win earns 3 points, a draw 1 and a loss 0 (check it against any row of Appendix B: 11 wins and 5 draws is 38 points). A <em>centre-back</em> is a central defender, one of the players whose main job is protecting the goal, and a <em>midfielder</em> is a player who works between the defenders and the attackers. <strong>Relegation:</strong> at the end of each season the bottom three of the league's 20 clubs drop to the second division, and three clubs from that division move up to replace them. Finishing 17th means finishing one place above that line [S8].</p>
+<p><strong>The Europa League, in one paragraph for readers who have never followed it.</strong> The UEFA Europa League is the second-tier European club competition, ranking below the Champions League, the top European club competition, which clubs are keen to qualify for. Clubs from many countries qualify through their domestic league finishes, and its games are played in midweek during the same months as the domestic league season, so a club plays both at once. Think of it as a separate tournament running alongside the regular season: winning it does not add a single point to a club's league record. Its winner earns a place in the next season's Champions League [S3]. The club beat Manchester United 1–0 in the Europa League final on 21 May 2025 at the San Mamés stadium in Bilbao, Spain [S2].</p>
+<p><strong>The league's own report on injuries.</strong> On 29 December 2024 the Premier League's website reported that all four of the club's senior centre-backs, the central defenders, were injured at the same time, and that a midfielder and two teenagers had been used in defence as a result [S4]. With the usual central defenders unavailable, other players had to cover their jobs. This is a documented fact about one period of the season. It does not say how many points the injuries cost, and this case does not use injury counts from fan or hobby sites as fact. How much a club values a European trophy against a league finish is for the board to argue; this case gives no figure for it.</p>
+</div></details>
+<details id="apx-b"><summary>Appendix B &mdash; Final 2024/25 Premier League Table</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D1, D2, D3). <strong>Official final table</strong>, as transcribed on the Wikipedia page for the season [S1]; no figure on this page is derived or computed by the case author. W, D, L = wins, draws, losses; GF, GA = goals for, goals against; GD = goal difference (GF − GA); Pts = league points. No club had points deducted. Some columns are not needed for every challenge.</p>
+<table id="tblB"><tr><th>Pos</th><th>Club</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr>
+<tr><td>1</td><td>Liverpool</td><td>25</td><td>9</td><td>4</td><td>86</td><td>41</td><td>+45</td><td>84</td></tr>
+<tr><td>2</td><td>Arsenal</td><td>20</td><td>14</td><td>4</td><td>69</td><td>34</td><td>+35</td><td>74</td></tr>
+<tr><td>3</td><td>Manchester City</td><td>21</td><td>8</td><td>9</td><td>72</td><td>44</td><td>+28</td><td>71</td></tr>
+<tr><td>4</td><td>Chelsea</td><td>20</td><td>9</td><td>9</td><td>64</td><td>43</td><td>+21</td><td>69</td></tr>
+<tr><td>5</td><td>Newcastle United</td><td>20</td><td>6</td><td>12</td><td>68</td><td>47</td><td>+21</td><td>66</td></tr>
+<tr><td>6</td><td>Aston Villa</td><td>19</td><td>9</td><td>10</td><td>58</td><td>51</td><td>+7</td><td>66</td></tr>
+<tr><td>7</td><td>Nottingham Forest</td><td>19</td><td>8</td><td>11</td><td>58</td><td>46</td><td>+12</td><td>65</td></tr>
+<tr><td>8</td><td>Brighton &amp; Hove Albion</td><td>16</td><td>13</td><td>9</td><td>66</td><td>59</td><td>+7</td><td>61</td></tr>
+<tr><td>9</td><td>AFC Bournemouth</td><td>15</td><td>11</td><td>12</td><td>58</td><td>46</td><td>+12</td><td>56</td></tr>
+<tr><td>10</td><td>Brentford</td><td>16</td><td>8</td><td>14</td><td>66</td><td>57</td><td>+9</td><td>56</td></tr>
+<tr><td>11</td><td>Fulham</td><td>15</td><td>9</td><td>14</td><td>54</td><td>54</td><td>0</td><td>54</td></tr>
+<tr><td>12</td><td>Crystal Palace</td><td>13</td><td>14</td><td>11</td><td>51</td><td>51</td><td>0</td><td>53</td></tr>
+<tr><td>13</td><td>Everton</td><td>11</td><td>15</td><td>12</td><td>42</td><td>44</td><td>−2</td><td>48</td></tr>
+<tr><td>14</td><td>West Ham United</td><td>11</td><td>10</td><td>17</td><td>46</td><td>62</td><td>−16</td><td>43</td></tr>
+<tr><td>15</td><td>Manchester United</td><td>11</td><td>9</td><td>18</td><td>44</td><td>54</td><td>−10</td><td>42</td></tr>
+<tr><td>16</td><td>Wolverhampton Wanderers</td><td>12</td><td>6</td><td>20</td><td>54</td><td>69</td><td>−15</td><td>42</td></tr>
+<tr><td>17</td><td><strong>Tottenham Hotspur</strong></td><td>11</td><td>5</td><td>22</td><td>64</td><td>65</td><td>−1</td><td>38</td></tr>
+<tr><td>18</td><td>Leicester City</td><td>6</td><td>7</td><td>25</td><td>33</td><td>80</td><td>−47</td><td>25</td></tr>
+<tr><td>19</td><td>Ipswich Town</td><td>4</td><td>10</td><td>24</td><td>36</td><td>82</td><td>−46</td><td>22</td></tr>
+<tr><td>20</td><td>Southampton</td><td>2</td><td>6</td><td>30</td><td>26</td><td>86</td><td>−60</td><td>12</td></tr>
+</table>
+</div></details>
+<details id="apx-c"><summary>Appendix C &mdash; Where to Get More Data (Links Only)</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D5). This packet does <strong>not</strong> include any file from these sites, and you should not pass files from them to anyone else. Download what you want yourself, as an individual, and read each site's own terms first.</p>
+<ul><li><strong>Football-Data.co.uk</strong> publishes free match-by-match results for every Premier League season back to 1993/94. Its data page states the data is for private individuals and not for commercial use or use by automated bots, scrapers or AI training, so you download the files yourself, by hand, for your own use [S5]. Season files for the Premier League are listed on its England page: <a href="https://www.football-data.co.uk/englandm.php" target="_blank" rel="noopener">football-data.co.uk/englandm.php</a>.</li><li><strong>Optional extension only, not required for any deliverable:</strong> StatsBomb publishes free open event data and asks that anything you publish from it name StatsBomb as the source and use its logo [S6]. Understat shows expected-goals tables and states no terms of use on the page [S7]. Check each site's terms yourself before you use either.</li></ul>
+</div></details>
+<details id="apx-d"><summary>Appendix D &mdash; Modeling Assumptions</summary><div class="inner">
+<blockquote>Referenced in Background and Challenge 3 (D4). MA1 is a figure the case author <strong>derived</strong> from public tables (Appendix E). MA2, MA3 and MA4 are <strong>not sourced</strong>: they are stated scenario assumptions chosen by the case author, because no public study measures them for one club in one season. A Hero may challenge any of them in discussion; that is a legitimate move, and the answer is sensitive to the first two.</blockquote>
+<table id="tblD"><tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th></tr>
+<tr><td>MA1</td><td>Forecast of next season's shortfall for a club whose goal difference stays the same: <strong>0.11 × this season's shortfall</strong> (slope 0.11; range about 0 to 0.27)</td><td>0.11</td><td><strong>Derived, not invented:</strong> a fitted slope read off ten Premier League seasons of final tables (Appendix E). Each season has only 20 clubs, so the slope is uncertain; the range shows how much. It is an average over typical clubs and says nothing about why any one club finished where it did.</td></tr>
+<tr><td>MA2</td><td>The reset cost, in league points, of replacing the manager for one season: the points lost while players learn new tactics and routines (picture below)</td><td><strong>You choose.</strong> The case asks you to consider the range 0 to 4 points (no cost at all, up to a little more than one lost match) and to defend your own range inside or outside it</td><td><strong>Unsourced scenario assumption.</strong> No public figure applies to this decision, so the case does not fix one; Challenge 3 (D4) asks you to find the break-even and judge whether it is plausible.</td></tr>
+<tr><td>MA3</td><td>The club's goal difference next season, under either option</td><td>The same as in 2024/25</td><td>Both options start from one baseline so that the comparison isolates the two choices. It leaves out transfers, injuries and the extra midweek matches that Champions League football brings.</td></tr>
+<tr><td>MA3b</td><td>How the options are scored</td><td>Both options start from the model's predicted points for the club (not from the club's actual points). Expected points under Keep the Winner = predicted points − (MA1 × the size of the shortfall, taken as a positive number of points). Expected points under Change After 17th = predicted points − your chosen reset cost (MA2). The percent margin, for any reset cost you test, is the difference between the two, divided by the smaller of them</td><td>Stated so that every student scores the options the same way.</td></tr>
+<tr><td>MA4</td><td>Residuals are talked about in "residual spreads" (Appendix F), as if the other clubs' misses were ordinary, bell-shaped variation</td><td>Stated as a convenience</td><td>With only 20 clubs the bell shape cannot be checked; D5 asks you to say what that costs.</td></tr>
+</table>
+<p><strong>What a reset cost looks like on the pitch.</strong> A new manager brings new tactics, new training routines and sometimes new signings, and players need weeks to learn them. In that time a few matches that the old set-up would have won may end as draws, and a few that would have been draws may end as losses. Because a win is worth 3 points, a draw 1 and a loss 0, <strong>one win that becomes a draw costs 2 points, and one draw that becomes a loss costs 1 point.</strong> So 1 point is one draw turning into a loss, 2 points is one win turning into a draw, and 4 points is a couple of matches slipping that way. The cost could also be zero, or even negative if a fresh voice lifts the squad and wins back points; you may argue for a range that goes below 0. Whether a new manager would really cost the club that much, or nothing, or even help, is exactly what no source can tell you. A board facing a number like this would not pretend to know it: it would test a range, ask where the answer flips, and judge whether the flip point is believable. That is what D4 asks you to do.</p>
+<p><strong>The two scoring rules, in a picture.</strong> Both options start from one line: the model's predicted points. Keep the Winner subtracts the forecast next-season shortfall (MA1 × this season's shortfall). Change After 17th subtracts only the reset cost you chose (MA2), because it assumes a new manager removes the forecast shortfall; that is the best case for replacing him, not a fact. Whichever subtracts less leaves the club with more expected points, so Change After 17th wins only if the reset cost is smaller than the forecast next-season shortfall. The picture is drawn without a scale and shows no figure from this case.</p>
+<figure><svg viewBox="0 0 380 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Both options start from one horizontal line, the model's predicted points. Option A, Keep the Winner, drops down by the forecast next-season shortfall, MA1 times this season's shortfall. Option B, Change After 17th, drops down by the reset cost you choose, MA2. Whichever drop is smaller leaves more expected points. Drawn without a scale, no case figures." style="max-width:560px;width:100%;border:1px solid #999;background:#fafafa;font-family:sans-serif">
+  <line x1="20" y1="40" x2="360" y2="40" stroke="#333" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="20" y="30" font-size="12" fill="#333">Both options start here: the model's predicted points</text>
+  <rect x="70" y="40" width="60" height="50" fill="#b03030"/>
+  <text x="100" y="108" font-size="11" text-anchor="middle" fill="#333">Keep the Winner</text>
+  <text x="100" y="122" font-size="10" text-anchor="middle" fill="#333">minus forecast next-season</text>
+  <text x="100" y="134" font-size="10" text-anchor="middle" fill="#333">shortfall (MA1 x shortfall)</text>
+  <rect x="250" y="40" width="60" height="30" fill="#1a3a5c"/>
+  <text x="280" y="108" font-size="11" text-anchor="middle" fill="#333">Change After 17th</text>
+  <text x="280" y="122" font-size="10" text-anchor="middle" fill="#333">minus the reset cost</text>
+  <text x="280" y="134" font-size="10" text-anchor="middle" fill="#333">you choose (MA2)</text>
+  <text x="190" y="175" font-size="10" text-anchor="middle" fill="#555">Shorter bar = more expected points. Bar lengths here are invented and not to scale.</text>
+</svg><figcaption>Drawn without a scale; shows no figure from this case.</figcaption></figure>
+</div></details>
+<details id="apx-e0"><summary>Appendix E &mdash; What a Miss Forecasts for Next Season (Derived)</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D4, D5). <strong>Every figure on this page is DERIVED by the case author</strong>, not published by any source. Method: for each of ten seasons (2015/16 to 2024/25), the case author took the 20-club final table from its Wikipedia season page ([S14], [S15], [S16], [S17], [S18], [S19], [S20], [S21], [S22], [S23]), used each club's points from its results (3 per win, 1 per draw, so the two clubs' 2023/24 points deductions (penalties for breaking the league's financial rules) are left out), fitted that season's own line of points on goal difference, and computed every club's residual. Then, for every club that played in two consecutive seasons (153 club-pairs, 17 per season pair), the case author fitted a line of <strong>next season's residual on this season's residual</strong>. The slope of that line is the forecast: a club that missed its line by r points this season missed by about slope × r points the next season. <strong>Read it off the chart:</strong> take one club, say a club that finished 11 points below its season's line. Put a dot for it on the picture below, with that miss across and the same club's miss the following season going up. Do that for every club-pair. If a club's next-season miss simply copied this season's, the dots would climb along a line of slope 1. If this season's miss told you nothing about next season's, the dots would form a shapeless cloud with a flat line. The red line is the fitted slope: nearly flat.</p>
+<table id="tblE0"><tr><th>Season pair</th><th>Club-pairs</th><th>Slope: next season's miss per point of this season's miss</th></tr>
+<tr><td>2015/16 to 2016/17</td><td>17</td><td>0.13</td></tr>
+<tr><td>2016/17 to 2017/18</td><td>17</td><td>0.14</td></tr>
+<tr><td>2017/18 to 2018/19</td><td>17</td><td>0.22</td></tr>
+<tr><td>2018/19 to 2019/20</td><td>17</td><td>−0.04</td></tr>
+<tr><td>2019/20 to 2020/21</td><td>17</td><td>0.09</td></tr>
+<tr><td>2020/21 to 2021/22</td><td>17</td><td>−0.13</td></tr>
+<tr><td>2021/22 to 2022/23</td><td>17</td><td>0.29</td></tr>
+<tr><td>2022/23 to 2023/24</td><td>17</td><td>0.38</td></tr>
+<tr><td>2023/24 to 2024/25</td><td>17</td><td>−0.15</td></tr>
+<tr><td><strong>All nine pairs pooled</strong></td><td><strong>153</strong></td><td><strong>0.11</strong></td></tr>
+</table><p><strong>Reading it.</strong> The pooled slope is about 0.11 (one ninth), with a 95% range of about −0.05 to 0.27 (a negative slope would mean misses tend to flip sign, which is hard to believe for a forecast, so read the range as roughly 0 to 0.27). The individual season pairs swing from −0.15 to 0.38, which is what small samples of 17 clubs look like. <strong>Caveats the case author wants you to weigh:</strong> (1) each season has only 20 clubs, so the estimate is noisy; (2) it averages over typical clubs, most of whose misses were under 8 points; (3) it forecasts next season's miss whatever the reason, and does not say whether a manager caused any of it; (4) the points-from-results choice and the one-season lag are the case author's choices. You can check one season pair yourself from the ten Wikipedia season pages in Appendix G.</p><figure><svg viewBox="0 0 380 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scatter plot of 153 club-pairs from ten Premier League seasons. Horizontal axis: a club's miss from its season line one season. Vertical axis: the same club's miss the next season. The dots form a shapeless cloud and the fitted line is almost flat, rising only slightly. Derived by the case author from Wikipedia season tables." style="max-width:560px;width:100%;border:1px solid #999;background:#fafafa;font-family:sans-serif">
+<line x1="60" y1="200" x2="340" y2="200" stroke="#333"/><line x1="60" y1="20" x2="60" y2="200" stroke="#333"/>
+<line x1="200.0" y1="20" x2="200.0" y2="200" stroke="#ccc"/><line x1="60" y1="110.0" x2="340" y2="110.0" stroke="#ccc"/>
+<circle cx="204.4" cy="101.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="240.6" cy="106.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="151.4" cy="67.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="183.8" cy="130.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="136.6" cy="127.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="274.9" cy="106.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="199.1" cy="106.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="155.0" cy="112.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="246.0" cy="106.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="197.0" cy="123.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="273.9" cy="106.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="168.9" cy="131.1" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="216.2" cy="88.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="167.2" cy="134.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="198.7" cy="83.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="203.9" cy="125.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="211.0" cy="94.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="213.5" cy="127.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="206.2" cy="100.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="175.7" cy="88.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="266.9" cy="91.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="168.0" cy="120.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="173.1" cy="79.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="205.2" cy="124.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="205.8" cy="139.1" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="195.9" cy="112.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="204.8" cy="84.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="178.8" cy="134.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="205.2" cy="103.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="233.7" cy="120.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="161.8" cy="100.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="241.4" cy="103.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="175.6" cy="142.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="224.9" cy="97.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="172.8" cy="96.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="201.6" cy="117.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="215.2" cy="106.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="233.1" cy="102.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="228.7" cy="92.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="183.1" cy="127.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="248.2" cy="135.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="228.8" cy="125.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="177.2" cy="129.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="154.7" cy="107.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="196.9" cy="119.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="239.3" cy="79.2" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="172.4" cy="135.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="161.2" cy="118.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="215.0" cy="112.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="210.3" cy="104.1" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="219.1" cy="107.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="221.0" cy="116.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="188.0" cy="124.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="204.8" cy="129.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="211.7" cy="77.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="227.3" cy="83.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="172.3" cy="99.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="159.8" cy="89.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="170.4" cy="142.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="204.1" cy="21.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="184.7" cy="173.1" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="247.9" cy="133.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="159.8" cy="90.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="186.1" cy="82.2" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="196.0" cy="119.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="209.2" cy="119.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="204.2" cy="141.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="225.4" cy="109.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="189.9" cy="121.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="182.9" cy="130.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="178.2" cy="155.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="250.4" cy="108.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="241.0" cy="109.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="216.5" cy="69.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="232.6" cy="71.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="148.8" cy="101.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="337.4" cy="112.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="101.9" cy="107.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="163.0" cy="95.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="230.5" cy="96.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="214.0" cy="122.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="243.3" cy="89.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="185.0" cy="141.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="150.3" cy="95.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="200.6" cy="96.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="181.5" cy="58.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="168.3" cy="146.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="130.0" cy="112.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="202.3" cy="149.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="200.4" cy="124.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="262.8" cy="148.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="259.4" cy="114.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="208.9" cy="76.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="214.1" cy="122.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="195.4" cy="100.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="203.9" cy="110.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="222.3" cy="79.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="221.1" cy="74.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="231.6" cy="105.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="151.0" cy="97.1" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="222.1" cy="119.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="221.1" cy="103.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="280.3" cy="92.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="143.2" cy="80.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="195.7" cy="124.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="181.1" cy="116.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="178.2" cy="126.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="140.3" cy="121.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="192.8" cy="122.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="252.1" cy="126.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="180.2" cy="155.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="214.2" cy="128.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="198.7" cy="120.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="247.2" cy="37.2" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="256.0" cy="130.2" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="206.4" cy="135.1" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="220.0" cy="93.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="186.0" cy="135.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="210.3" cy="80.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="227.5" cy="121.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="245.6" cy="77.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="177.6" cy="113.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="267.0" cy="92.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="189.8" cy="157.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="173.7" cy="101.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="182.4" cy="128.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="180.5" cy="99.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="183.3" cy="122.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="172.0" cy="102.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="183.5" cy="110.2" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="313.3" cy="66.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="168.6" cy="149.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="236.3" cy="142.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="225.9" cy="81.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="160.6" cy="66.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="246.1" cy="96.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="182.2" cy="119.4" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="251.4" cy="59.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="194.8" cy="87.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="227.1" cy="134.5" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="126.8" cy="123.2" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="213.0" cy="95.1" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="171.3" cy="106.3" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="216.3" cy="127.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="180.7" cy="100.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="212.4" cy="100.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="199.7" cy="110.1" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="267.5" cy="130.7" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="138.3" cy="111.9" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="149.0" cy="83.8" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="244.7" cy="187.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="267.5" cy="102.6" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<circle cx="220.4" cy="112.0" r="2.6" fill="#1a3a5c" fill-opacity="0.55"/>
+<line x1="60.0" y1="120.0" x2="340.0" y2="100.3" stroke="#b03030" stroke-width="2"/>
+<text x="200" y="228" font-size="11" text-anchor="middle" fill="#333">a club's miss this season (points; left = below its line)</text>
+<text x="14" y="110" font-size="11" text-anchor="middle" fill="#333" transform="rotate(-90 14 110)">same club's miss next season</text>
+<text x="200" y="244" font-size="10" text-anchor="middle" fill="#555">153 club-pairs, 2015/16 to 2024/25. Red line = the fitted slope. Derived by the case author.</text>
+</svg><figcaption>Derived by the case author from the ten Wikipedia season tables in Appendix G. Each dot is one club-pair.</figcaption></figure>
+</div></details>
+<details id="apx-e"><summary>Appendix F &mdash; Method Notes</summary><div class="inner">
+<p>Referenced in Background and Challenge 3 (D2, D3, D4).</p>
+<p><strong>Residual.</strong> For a club, residual = actual points − predicted points, where predicted points come from your line. A negative residual means the club finished with fewer points than the line says its goal difference should have earned.</p>
+<p><strong>Residual spread.</strong> Square each club's residual, add up the squares, divide by (the number of clubs − 2), and take the square root. The result is in points. A club's miss, divided by this spread, tells you how many residual spreads it sits from the line. When you refit with a club left out in D3, the number of clubs is 19, and the same recipe divides by 17.</p>
+<p><strong>What a residual is not.</strong> A residual is a distance from a line fitted to a single season of 20 clubs. It is not a measurement of anyone's skill.</p>
+<p><strong>An invented example, to show the shape of the idea.</strong> The picture below uses made-up dots, with no numbers, from a different subject. It is not this case's data and shows nothing about any club. Dots above the line have positive residuals, dots below have negative residuals, and each short vertical segment is one residual.</p>
+<figure><svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrative scatter plot with a line of best fit and short vertical segments from each dot to the line, showing residuals. Invented example, not case data." style="max-width:520px;width:100%;border:1px solid #999;background:#fafafa;font-family:sans-serif">
+  <line x1="40" y1="170" x2="300" y2="170" stroke="#333" stroke-width="1.5"/>
+  <line x1="40" y1="170" x2="40" y2="15" stroke="#333" stroke-width="1.5"/>
+  <text x="170" y="196" font-size="11" text-anchor="middle" fill="#333">hours practiced (invented)</text>
+  <text x="14" y="95" font-size="11" text-anchor="middle" fill="#333" transform="rotate(-90 14 95)">test score (invented)</text>
+  <line x1="55" y1="150" x2="290" y2="40" stroke="#1a3a5c" stroke-width="2"/>
+  <line x1="85" y1="130" x2="85" y2="112" stroke="#b03030" stroke-width="2"/>
+  <line x1="130" y1="108" x2="130" y2="127" stroke="#b03030" stroke-width="2"/>
+  <line x1="180" y1="85" x2="180" y2="70" stroke="#b03030" stroke-width="2"/>
+  <line x1="225" y1="64" x2="225" y2="82" stroke="#b03030" stroke-width="2"/>
+  <line x1="270" y1="43" x2="270" y2="30" stroke="#b03030" stroke-width="2"/>
+  <circle cx="85" cy="112" r="5" fill="#1a3a5c"/>
+  <circle cx="130" cy="127" r="5" fill="#1a3a5c"/>
+  <circle cx="180" cy="70" r="5" fill="#1a3a5c"/>
+  <circle cx="225" cy="82" r="5" fill="#1a3a5c"/>
+  <circle cx="270" cy="30" r="5" fill="#1a3a5c"/>
+  <text x="215" y="150" font-size="10" fill="#b03030">red segment = one residual</text>
+  <text x="95" y="60" font-size="10" fill="#1a3a5c">line of best fit</text>
+</svg><figcaption>Invented illustration: made-up dots from a different subject, with no numbers. It is not this case's data.</figcaption></figure>
+</div></details>
+<details id="apx-f"><summary>Appendix G &mdash; Sources</summary><div class="inner">
+<table id="tblF"><tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+<tr><td>S1</td><td>Final 2024/25 Premier League table (positions, W/D/L, GF/GA, GD, Pts); bottom three relegated; no deductions</td><td>Appendix B</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2024%E2%80%9325_Premier_League" target="_blank" rel="noopener">2024–25 Premier League</a> (transcription of the official table)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S2</td><td>The club's 2024/25 record, 17th place, lowest finish in 48 years; Europa League final 21 May 2025, San Mamés, Bilbao, 1–0 vs Manchester United</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2024%E2%80%9325_Tottenham_Hotspur_F.C._season" target="_blank" rel="noopener">2024–25 Tottenham Hotspur F.C. season</a></td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S3</td><td>The Europa League's standing and that its winner qualifies for the next Champions League</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/UEFA_Europa_League" target="_blank" rel="noopener">UEFA Europa League</a></td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S4</td><td>All four senior centre-backs injured at once; midfielder and teenagers used in defence</td><td>29 December 2024</td><td>Premier League — <a href="https://www.premierleague.com/en/news/4208927" target="_blank" rel="noopener">Spurs face injury crisis with all four senior centre-backs injured</a></td><td>2024-12-29</td><td>HIGH</td></tr>
+<tr><td>S5</td><td>Football-Data.co.uk free data is for private individuals, not commercial, bot, scraper or AI-training use</td><td>as stated</td><td>Football-Data.co.uk — <a href="https://www.football-data.co.uk/data.php" target="_blank" rel="noopener">Data page</a></td><td>accessed 2026-10-03</td><td>HIGH</td></tr>
+<tr><td>S6</td><td>StatsBomb open data requires crediting StatsBomb and using its logo on published work</td><td>as stated</td><td>StatsBomb — <a href="https://github.com/statsbomb/open-data" target="_blank" rel="noopener">open-data repository README</a></td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S7</td><td>Understat publishes Premier League expected-goals tables and states no terms of use on the page</td><td>as stated</td><td>Understat — <a href="https://understat.com/league/EPL" target="_blank" rel="noopener">EPL page</a></td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S8</td><td>Promotion and relegation: how clubs move between divisions</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/Promotion_and_relegation" target="_blank" rel="noopener">Promotion and relegation</a></td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S14</td><td>Final league table for the 2015–16 Premier League season (W/D/L, goals for and against), used to derive Appendix E</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2015%E2%80%9316_Premier_League" target="_blank" rel="noopener">2015–16 Premier League</a> (text available under CC BY-SA)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S15</td><td>Final league table for the 2016–17 Premier League season (W/D/L, goals for and against), used to derive Appendix E</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2016%E2%80%9317_Premier_League" target="_blank" rel="noopener">2016–17 Premier League</a> (text available under CC BY-SA)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S16</td><td>Final league table for the 2017–18 Premier League season (W/D/L, goals for and against), used to derive Appendix E</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2017%E2%80%9318_Premier_League" target="_blank" rel="noopener">2017–18 Premier League</a> (text available under CC BY-SA)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S17</td><td>Final league table for the 2018–19 Premier League season (W/D/L, goals for and against), used to derive Appendix E</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2018%E2%80%9319_Premier_League" target="_blank" rel="noopener">2018–19 Premier League</a> (text available under CC BY-SA)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S18</td><td>Final league table for the 2019–20 Premier League season (W/D/L, goals for and against), used to derive Appendix E</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2019%E2%80%9320_Premier_League" target="_blank" rel="noopener">2019–20 Premier League</a> (text available under CC BY-SA)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S19</td><td>Final league table for the 2020–21 Premier League season (W/D/L, goals for and against), used to derive Appendix E</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2020%E2%80%9321_Premier_League" target="_blank" rel="noopener">2020–21 Premier League</a> (text available under CC BY-SA)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S20</td><td>Final league table for the 2021–22 Premier League season (W/D/L, goals for and against), used to derive Appendix E</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2021%E2%80%9322_Premier_League" target="_blank" rel="noopener">2021–22 Premier League</a> (text available under CC BY-SA)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S21</td><td>Final league table for the 2022–23 Premier League season (W/D/L, goals for and against), used to derive Appendix E</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2022%E2%80%9323_Premier_League" target="_blank" rel="noopener">2022–23 Premier League</a> (text available under CC BY-SA)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S22</td><td>Final league table for the 2023–24 Premier League season (W/D/L, goals for and against), used to derive Appendix E</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2023%E2%80%9324_Premier_League" target="_blank" rel="noopener">2023–24 Premier League</a> (text available under CC BY-SA)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+<tr><td>S23</td><td>Final league table for the 2024–25 Premier League season (W/D/L, goals for and against), used to derive Appendix E</td><td>as stated</td><td>Wikipedia — <a href="https://en.wikipedia.org/wiki/2024%E2%80%9325_Premier_League" target="_blank" rel="noopener">2024–25 Premier League</a> (text available under CC BY-SA)</td><td>accessed 2026-10-03</td><td>MEDIUM</td></tr>
+</table>
+</div></details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-10-03. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+  <div class="stepbox">
+    <h4>Step 1 &mdash; The line of best fit (D1)</h4>
+    <div class="goal">Fit a line to all 20 clubs (goal difference on the horizontal axis, points on the vertical axis) and enter its slope and intercept.</div>
+    <div class="fieldrow"><label for="s1slope">Slope (points per goal)</label><input type="number" id="s1slope" step="any" placeholder="a decimal number"><span id="fb1a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s1int">Intercept (points)</label><input type="number" id="s1int" step="any" placeholder="a decimal number"><span id="fb1b" class="fb"></span></div>
+    <button onclick="checkStep1()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; The club's residual and the residual spread (D2)</h4>
+    <div class="goal">Using the 20-club line, find the club's residual (actual minus predicted points) and the residual spread of all 20 clubs (Appendix F's recipe, dividing by the number of clubs minus 2).</div>
+    <div class="fieldrow"><label for="s2res">Club's residual (points)</label><input type="number" id="s2res" step="any" placeholder="a decimal number, negative if below the line"><span id="fb2a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s2sd">Residual spread, 20 clubs (points)</label><input type="number" id="s2sd" step="any" placeholder="a decimal number"><span id="fb2b" class="fb"></span></div>
+    <button onclick="checkStep2()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; The outlier check (D3)</h4>
+    <div class="goal">Refit the line with the club's row removed. Find the club's residual against the new line, the other 19 clubs' residual spread, and how many spreads below the line the club sits.</div>
+    <div class="fieldrow"><label for="s3res">Club's residual against the 19-club line (points)</label><input type="number" id="s3res" step="any" placeholder="a decimal number"><span id="fb3a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3sd">Residual spread, other 19 clubs (points)</label><input type="number" id="s3sd" step="any" placeholder="a decimal number"><span id="fb3b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s3z">Residual spreads below the line (a positive number)</label><input type="number" id="s3z" step="any" placeholder="a decimal number"><span id="fb3c" class="fb"></span></div>
+    <button onclick="checkStep3()">Check</button>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; Forecast shortfall and the break-even (D4)</h4>
+    <div class="goal">Using the 19-club line as the model of record and Appendix E's slope, forecast the club's next-season shortfall under Keep the Winner, find its expected points, and find the break-even reset cost. Your own reset-cost range and verdicts are for your write-up, not this box.</div>
+    <div class="fieldrow"><label for="s4a">Forecast next-season shortfall, Keep the Winner (points)</label><input type="number" id="s4a" step="any" placeholder="a decimal number"><span id="fb4a" class="fb"></span></div>
+    <div class="fieldrow"><label for="s4b">Expected points, Keep the Winner</label><input type="number" id="s4b" step="any" placeholder="a decimal number"><span id="fb4b" class="fb"></span></div>
+    <div class="fieldrow"><label for="s4be">Break-even reset cost (points)</label><input type="number" id="s4be" step="any" placeholder="a decimal number"><span id="fb4c" class="fb"></span></div>
+    <button onclick="checkStep4()">Check</button>
+    <p class="side-note">These checks only confirm your arithmetic. Which option to choose, and which reset cost you believe, is still yours.</p>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p>The analyst adds one fact. In the ten seasons behind Appendix E, no club ever finished as far below its own season's line as this club did; the largest earlier miss was smaller. The slope was fitted on typical clubs, not on a miss this size. Suppose, for the next five minutes, that for a miss this size the slope is <strong>the top of Appendix E's range, 0.27</strong>, not 0.11. Change After 17th still pays only its reset cost. This is a what-if, not a measured fact.</p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist to Step 4's check (use slope 0.27 instead of 0.11)</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+      <li>[S1] Wikipedia &mdash; <a href="https://en.wikipedia.org/wiki/2024%E2%80%9325_Premier_League" target="_blank" rel="noopener">2024&ndash;25 Premier League</a></li>
+      <li>[S2] Wikipedia &mdash; <a href="https://en.wikipedia.org/wiki/2024%E2%80%9325_Tottenham_Hotspur_F.C._season" target="_blank" rel="noopener">2024&ndash;25 Tottenham Hotspur F.C. season</a></li>
+      <li>[S3] Wikipedia &mdash; <a href="https://en.wikipedia.org/wiki/UEFA_Europa_League" target="_blank" rel="noopener">UEFA Europa League</a></li>
+      <li>[S4] Premier League &mdash; <a href="https://www.premierleague.com/en/news/4208927" target="_blank" rel="noopener">Spurs face injury crisis with all four senior centre-backs injured</a></li>
+      <li>[S5] Football-Data.co.uk &mdash; <a href="https://www.football-data.co.uk/data.php" target="_blank" rel="noopener">Data page</a></li>
+      <li>[S6] StatsBomb &mdash; <a href="https://github.com/statsbomb/open-data" target="_blank" rel="noopener">open-data repository</a></li>
+      <li>[S7] Understat &mdash; <a href="https://understat.com/league/EPL" target="_blank" rel="noopener">EPL page</a></li>
+      <li>[S8] Wikipedia &mdash; <a href="https://en.wikipedia.org/wiki/Promotion_and_relegation" target="_blank" rel="noopener">Promotion and relegation</a></li>
+      <li>[S14]&ndash;[S23] Wikipedia season pages, 2015&ndash;16 to 2024&ndash;25 Premier League (CC BY-SA), used for the derived Appendix E; listed with links in Appendix G.</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Trophy and the Table &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Ported from cases/the-trophy-and-the-table/sensitivity_model.py. Raw given data and assumptions only.
+const TABLE = [
+  ["Liverpool",45,84],["Arsenal",35,74],["Manchester City",28,71],["Chelsea",21,69],["Newcastle United",21,66],
+  ["Aston Villa",7,66],["Nottingham Forest",12,65],["Brighton & Hove Albion",7,61],["AFC Bournemouth",12,56],
+  ["Brentford",9,56],["Fulham",0,54],["Crystal Palace",0,53],["Everton",-2,48],["West Ham United",-16,43],
+  ["Manchester United",-10,42],["Wolverhampton Wanderers",-15,42],["Tottenham Hotspur",-1,38],
+  ["Leicester City",-47,25],["Ipswich Town",-46,22],["Southampton",-60,12]
+];
+const CLUB = "Tottenham Hotspur";
+const PARAMS = { a: 0.11, d: 2.0, a_twist: 0.27 };
+const FLEX = ["a", "d"];
+function fitLine(rows){
+  const n = rows.length;
+  const mx = rows.reduce((s,r)=>s+r[1],0)/n, my = rows.reduce((s,r)=>s+r[2],0)/n;
+  let sxx=0, sxy=0; rows.forEach(r=>{ sxx += (r[1]-mx)*(r[1]-mx); sxy += (r[1]-mx)*(r[2]-my); });
+  const slope = sxy/sxx, intercept = my - slope*mx;
+  let sse = 0; rows.forEach(r=>{ const e = r[2]-(intercept+slope*r[1]); sse += e*e; });
+  return {slope, intercept, sd: Math.sqrt(sse/(n-2))};
+}
+const FULL = fitLine(TABLE);
+const OTHERS = TABLE.filter(r => r[0] !== CLUB);
+const LOO = fitLine(OTHERS);
+const CLUB_ROW = TABLE.filter(r => r[0] === CLUB)[0];
+const FULL_PRED = FULL.intercept + FULL.slope*CLUB_ROW[1];
+const LOO_PRED = LOO.intercept + LOO.slope*CLUB_ROW[1];
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  const shortfall = Math.abs(CLUB_ROW[2] - LOO_PRED);
+  return {A: LOO_PRED - p.a*shortfall, B: LOO_PRED - p.d};
+}
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params||{});
+  const shortfall = Math.abs(CLUB_ROW[2] - LOO_PRED);
+  return {A: LOO_PRED - p.a_twist*shortfall, B: LOO_PRED - p.d};
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkStep1(){
+  fb('fb1a', near(parseFloat(val('s1slope')), FULL.slope, 0.003));
+  fb('fb1b', near(parseFloat(val('s1int')), FULL.intercept, 0.03));
+}
+function checkStep2(){
+  fb('fb2a', near(parseFloat(val('s2res')), CLUB_ROW[2]-FULL_PRED, 0.06));
+  fb('fb2b', near(parseFloat(val('s2sd')), FULL.sd, 0.03));
+}
+function checkStep3(){
+  const res = CLUB_ROW[2]-LOO_PRED;
+  fb('fb3a', near(parseFloat(val('s3res')), res, 0.06));
+  fb('fb3b', near(parseFloat(val('s3sd')), LOO.sd, 0.03));
+  fb('fb3c', near(parseFloat(val('s3z')), Math.abs(res)/LOO.sd, 0.03));
+}
+function checkStep4(){
+  const slope = window.__TWIST_APPLIED__ ? PARAMS.a_twist : PARAMS.a;
+  const shortfall = Math.abs(CLUB_ROW[2]-LOO_PRED);
+  fb('fb4a', near(parseFloat(val('s4a')), slope*shortfall, 0.06));
+  fb('fb4b', near(parseFloat(val('s4b')), LOO_PRED - slope*shortfall, 0.06));
+  fb('fb4c', near(parseFloat(val('s4be')), slope*shortfall, 0.06));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "the-trophy-and-the-table"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Scatter plot, line of best fit, equation"],
+  ["D2", "Residual table for all 20 clubs"],
+  ["D3", "Outlier check (club's row removed)"],
+  ["D4", "Break-even comparison and your reset-cost range"],
+  ["D5", "What the model leaves out (graded)"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,process])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${process ? `<div class="meta" style="margin:2px 0 6px">${process}</div>` : ''}
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Scatter Plot": {def: "A graph that shows each item as one dot, placed by two measurements (here, goal difference across and points up), so you can see how the two move together.",
+    url: "https://www.mathsisfun.com/data/scatter-xy-plots.html"},
+  "Correlation": {def: "How strongly and in which direction two sets of numbers move together. Strong correlation does not by itself show that one causes the other.",
+    url: "https://www.mathsisfun.com/data/correlation.html"},
+  "Line Of Best Fit": {def: "The straight line that comes closest to all the dots on a scatter plot, found by making the squared gaps from the dots to the line as small as possible.",
+    url: "https://www.mathsisfun.com/data/least-squares-regression.html"},
+  "Slope": {def: "How steep a line is: how much it rises (or falls) for each step across. On this case's line, points gained per extra goal of goal difference.",
+    url: "https://www.mathsisfun.com/geometry/slope.html"},
+  "Mean": {def: "The average: add up every value, then divide by how many values there are.",
+    url: "https://www.mathsisfun.com/mean.html"},
+  "Outlier": {def: "A value that lies far outside most of the others in a data set.",
+    url: "https://www.mathsisfun.com/definitions/outlier.html"},
+  "Variability": {def: "How spread out a set of numbers is. The residual spread in Appendix F is one way to measure it.",
+    url: "https://www.mathsisfun.com/data/standard-deviation.html"},
+  "Percent": {def: "A ratio that compares a number to 100, literally per hundred.",
+    url: "https://www.mathsisfun.com/percentage.html"}
+};
+const HOWTO = [
+  ["how to create a scatter plot given a set of data", "Scatter Plot"],
+  ["how to identify correlation given a scatter plot or set of data", "Correlation"],
+  ["how to draw a line of best fit given a set of data", "Line Of Best Fit"],
+  ["how to identify the slope of a line given a set of data, or a graph of a line of a set of data, or its linear equation", "Slope"],
+  ["how to find the mean of a set of data", "Mean"],
+  ["how to find the percent of a number", "Percent"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  window.__TWIST_APPLIED__ = document.getElementById('applyTwist').checked;
+}
+
+const STORY_GLOSSARY = {
+  "Europa League": {desc: "A European club soccer tournament that sits one step below the Champions League. Clubs from many countries qualify by how they finish in their home leagues, and the winner earns a place in the next Champions League.",
+    link: "https://en.wikipedia.org/wiki/UEFA_Europa_League"},
+  "Champions League": {desc: "The top European club soccer tournament, contested by leading clubs from many countries and one of the competitions clubs most want to qualify for.",
+    link: "https://en.wikipedia.org/wiki/UEFA_Champions_League"},
+  "manager": {desc: "In British football, the head coach: the person with overall responsibility for running the team, including picking the squad and setting tactics.",
+    link: "https://en.wikipedia.org/wiki/Manager_(association_football)"},
+  "centre-back": {desc: "A central defender, whose main job is to defend the area in front of the goal and stop the other team from scoring.",
+    link: "https://en.wikipedia.org/wiki/Defender_(association_football)"},
+  "relegated": {desc: "Sent down to a lower division. In the Premier League the bottom three of 20 clubs drop to the second division at the end of a season.",
+    link: "https://en.wikipedia.org/wiki/Promotion_and_relegation"},
+  "goal difference": {desc: "Goals a club scored in league games minus goals it conceded. A club that scores 64 and concedes 65 has a goal difference of minus 1.",
+    link: "https://en.wikipedia.org/wiki/Goal_difference"}
+};
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a real source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryGrid');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryCard, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode(node){
+      if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT; }});
+    const nodes = []; let n; while((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+      const text = node.nodeValue; master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span'); span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild); lastEnd = m.index + m[0].length;
+      }
+      if(frag){ if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd))); node.parentNode.replaceChild(frag, node); }
+    });
+  });
+}
+autoLinkStoryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

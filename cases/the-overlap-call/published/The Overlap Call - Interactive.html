@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: The Overlap Call — Interactive</title>
+<!--
+  Built from templates/interactive_shell.html (A7, DOCTRINE_LEDGER MCS-37/MCS-39).
+  See templates/INTERACTIVE_HTML_CONTRACT.md for the shape contract this file follows.
+  case.md sha256 as of this build: fb8741c7e97a5c07639221b7af88b9b72e9e074f7fbfc9c0df82f0fc02c33428
+  HARD LINE (MCS-37): this file must never print the case's balance verdict (which plan
+  wins, the margin, the twist's numeric resolution) as a static literal anywhere outside a
+  <script> tag. The Working Notebook computes both plans' per-kit yields live from the
+  case's own raw contact-id data; it never hands over the recommendation.
+-->
+<style>
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+  .idlist{font-family:var(--sans);font-size:.78rem;line-height:1.6;word-break:break-word}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+  .apxnote{font-family:var(--sans);font-size:.82rem;color:var(--sub)}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:280px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  textarea.freetext{width:100%;min-height:90px;font-family:var(--sans);font-size:.88rem;border:1px solid #bcc4cf;border-radius:6px;padding:8px 10px}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+
+  /* ---- math glossary hover + hyperlink terms (T1-19) ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ---- story (real-world contact-tracing/epidemiology vocabulary) glossary -- separate class/color from .gterm ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--gold-lt)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* CSV export -- present on every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+
+  /* CASE-SPECIFIC — Venn diagram circles */
+  .vennlabel{font-family:sans-serif;font-size:13px;fill:#20262e;font-weight:700}
+  .vennsub{font-family:sans-serif;font-size:11px;fill:#5b6472}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <symbol id="icon-kit" viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M9 7V4h6v3"/><path d="M12 11v6M9 14h6"/></symbol>
+</defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026-27 &middot; Adventure</div>
+        <h1>Case Study: The Overlap Call</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T2</span>
+      <span class="pill">MS</span>
+      <span class="pill">Sets &middot; Union/Intersection &middot; Venn Diagrams &middot; Graphs</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lede">Priya Ostrowski's browser has more tabs open than she wants to count, and her test-kit box is a lot lighter than the flagged-contact list on her second monitor.</p>
+  <p>The spreadsheet in front of her &mdash; county contact-tracing intake, refreshed every hour &mdash; lists every name flagged from this week's two confirmed cases. Far more names than kits. She has done this math in her head so many times this month that she doesn't need the calculator app anymore, and she still hates the answer.</p>
+  <p>Her phone buzzes, face-down, against the edge of the desk. She doesn't turn it over yet. It's her supervisor &mdash; it's been her supervisor more than once today &mdash; asking, gently but not that gently, why last week's surge allocation ran out early, and what she's going to do differently this week so it doesn't happen again.</p>
+  <p>A handful of names on the list appear on <em>both</em> index patients' contact sheets. The rest appear on only one or the other. She has stared at that fact for a while now, turning it over. Test everyone exposed to at least one of the two people who tested positive &mdash; the widest possible net? Or test only the ones exposed to <em>both</em> &mdash; far fewer calls, but a group she can argue, on paper, carries the highest concentration of shared risk?</p>
+  <p>The widest net would use up every kit she has left, and then some. The shared-risk group would not.</p>
+  <p>Priya opens the tab with the intake list on one monitor and the tab with her supervisor's unread message on the other, and reaches for the phone.</p>
+</section>
+
+<section id="background">
+  <h2>Background</h2>
+  <p>Priya Ostrowski is the contact-tracing lead for her county's communicable disease unit. Her job, in the plainest terms her supervisor uses in performance reviews, is to turn a positive test into a short list of who else might be exposed, and to make that list into confirmed test results before the exposure window closes. She is accountable for two numbers every week: how many test kits she used, and how many of those tests came back positive. Both numbers go in a report with her name on it.</p>
+  <p>Her weekly test-kit allotment does not scale with how many contacts get flagged &mdash; it is fixed, set by the county lab's processing capacity. This week, as in most weeks lately, her allotment is well short of the number of flagged contacts (SEE APPENDIX B). She has to choose <em>who</em> gets tested, not <em>whether</em> to test.</p>
+  <p>This week's two flagged index patients each carry their own list of recent contacts &mdash; the people they interacted with closely enough, and long enough, to count as a real exposure. Contact lists like this are, in the underlying structure they form, nothing more than a network: patients and contacts are people (vertices), and a recorded exposure between two people is a connection (edge) between them (SEE APPENDIX A). Priya's actual two lists this week are drawn from a real, published social-connection network, used here as a stand-in for a real contact-tracing network &mdash; see the Modeling Assumption in Appendix C for exactly why, and exactly what that does and doesn't change about the math.</p>
+  <p>The two options in front of her are:</p>
+  <p><strong>Widest Net</strong> &mdash; test every person who appears on <em>either</em> index patient's contact list (the union of the two lists).</p>
+  <p><strong>Shared Risk</strong> &mdash; test only the people who appear on <em>both</em> index patients' contact lists (the intersection of the two lists).</p>
+  <p>Widest Net always finds more total secondary cases in raw count, simply because it tests more people &mdash; that comparison settles nothing. What actually matters to Priya's supervisor, and to next week's allotment, is <strong>confirmed secondary cases found per test kit used</strong>: which group of tests gets more real, useful information out of the two kits she can actually spend today.</p>
+  <p>Before she can compare the two options at all, Priya has to actually build both lists as sets, find where they overlap, and rule out one contact who might not belong on either list &mdash; the raw data (SEE APPENDIX A) shows one person connected to an implausibly large share of both index patients' circles, which is worth a second look before it drives a real testing decision (SEE APPENDIX A, Data Note).</p>
+  <p>The two index patients' full contact lists, the raw source they are drawn from, and the county's weekly kit allotment are in Appendix A and Appendix B. The disclosure of exactly how this week's real contact network was constructed, and the case's stated Modeling Assumptions, are in Appendix C. The vocabulary and "how to&hellip;" skills this case will ask you to research are listed in Appendix D. Every real figure in this case is sourced in Appendix E.</p>
+  <p>She has to decide today.</p>
+
+  <div class="card" id="story-glossary">
+    <h3 style="margin-top:0">Contact-Tracing &amp; Epidemiology Vocabulary</h3>
+    <p class="side-note" style="border-top:none;padding-top:0;margin-top:0">The math vocabulary Challenge 1 sends you to research lives in Appendix D below. These are the real public-health terms this case's own story uses &mdash; hover any one for a plain definition, or click through to a real source.</p>
+    <div class="glossary-grid" id="glossaryStory"></div>
+    <p class="gloss-source">Sources: Wikipedia (&ldquo;Contact tracing,&rdquo; &ldquo;Index case,&rdquo; &ldquo;Attack rate,&rdquo; &ldquo;COVID-19 testing,&rdquo; &ldquo;Confidence interval,&rdquo; &ldquo;Meta-analysis&rdquo;), arXiv, PMC (NIH), CDC, MMWR. Links current as of this build.</p>
+  </div>
+</section>
+
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Priya Ostrowski. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Test the Union (Widest Net)</h4>
+      <p style="margin:0">Test everyone exposed to <em>either</em> index patient &mdash; the widest possible net.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Test the Intersection (Shared Risk)</h4>
+      <p style="margin:0">Test only the people exposed to <em>both</em> index patients &mdash; the smaller, higher-shared-risk group.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from the case study launch. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250 or more "excellent" words pitching a firm stance to your audience on which you would choose and why. Your pitch must include:
+      <ul>
+        <li>a.) Use of the "how to&hellip;" resource you researched in Challenge 1.</li>
+        <li>b.) At least one original visual display of the data.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">Include the following:
+      <ul>
+        <li><strong>D1</strong> &mdash; Both index patients' contact lists, written out as two labeled sets using proper set notation (curly braces, each contact named or numbered once), built directly from the raw network data in Appendix A. Label which people in each set are the index patient's own direct contacts (a subset of the county's full flagged-contact list).</li>
+        <li><strong>D2</strong> &mdash; A single Venn diagram showing both sets, every contact placed in the correct region (only in Set A, only in Set B, or in both), with the empty region labeled if either circle has no contacts unique to it, and a one-sentence statement of whether either circle is itself an empty set.</li>
+        <li><strong>D3</strong> &mdash; The union and the intersection of the two contact sets, written out explicitly (list every member of each, not just the count), with |A &cup; B| and |A &cap; B| clearly labeled.</li>
+        <li><strong>D4</strong> &mdash; A written decision about the outlier contact flagged in Appendix A: is this person a real shared exposure, or a likely data error that should be dropped from both sets before you calculate anything else? Show the reasoning, not just the verdict.</li>
+        <li><strong>D5</strong> &mdash; A comparison table of confirmed secondary cases per test kit used, for the Widest Net plan and the Shared Risk plan, using the county's weekly kit allotment (Appendix B) and a disclosed secondary-case rate (Appendix B). Follow Appendix B's counting convention (round the expected case count to the nearest whole person before dividing) for both plans. Show your arithmetic for both ratios, not just the final numbers.</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking, work, calculations and processes you used to complete the challenges (pictures, screenshots, notes, etc.). Your work in the appendix does not count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the Case Study discussion. If you are absent the day of a discussion post 500 "excellent" words on the questions above.</li>
+  </ol>
+
+  <figure id="vennExample">
+    <svg viewBox="0 0 420 260" width="420" height="260" role="img" aria-labelledby="vennExampleTitle vennExampleDesc">
+      <title id="vennExampleTitle">Example Venn diagram, two sets</title>
+      <desc id="vennExampleDesc">A worked example showing how to place members in a Venn diagram's three regions: only in Set A, only in Set B, and in both. This uses small made-up numbers, not this case's real data.</desc>
+      <rect x="4" y="4" width="412" height="232" fill="#fff" stroke="#dfe4ea" rx="8"/>
+      <circle cx="175" cy="120" r="90" fill="#1a3a5c" fill-opacity="0.14" stroke="#1a3a5c" stroke-width="2"/>
+      <circle cx="255" cy="120" r="90" fill="#c9a227" fill-opacity="0.18" stroke="#c9a227" stroke-width="2"/>
+      <text x="120" y="45" class="vennlabel">Set A</text>
+      <text x="300" y="45" class="vennlabel" text-anchor="end">Set B</text>
+      <text x="145" y="125" class="vennlabel" text-anchor="middle">3</text>
+      <text x="145" y="142" class="vennsub" text-anchor="middle">only in A</text>
+      <text x="285" y="125" class="vennlabel" text-anchor="middle">2</text>
+      <text x="285" y="142" class="vennsub" text-anchor="middle">only in B</text>
+      <text x="215" y="125" class="vennlabel" text-anchor="middle">1</text>
+      <text x="215" y="142" class="vennsub" text-anchor="middle">in both (A &cap; B)</text>
+    </svg>
+    <figcaption><strong>How to read this:</strong> every member of Set A or Set B is placed in exactly one region &mdash; the left-only lens (in A but not B), the right-only lens (in B but not A), or the overlapping middle (in both). Nothing outside either circle belongs to neither set. <em>This example uses small made-up numbers (3/2/1) purely to show the layout &mdash; your D2 Venn diagram must use the real contact ids from Appendix A, not these numbers.</em> If either circle had no unique members, you'd write &empty; in that lens and say so in one sentence, per D2's instructions.</figcaption>
+  </figure>
+
+  <figure id="barExample">
+    <svg viewBox="0 0 420 220" width="420" height="220" role="img" aria-labelledby="barExampleTitle barExampleDesc">
+      <title id="barExampleTitle">Example bar chart, comparing two group sizes</title>
+      <desc id="barExampleDesc">A worked example showing how a bar chart can compare the size of a union group against the size of an intersection group. This uses small made-up numbers, not this case's real data.</desc>
+      <rect x="4" y="4" width="412" height="212" fill="#fff" stroke="#dfe4ea" rx="8"/>
+      <line x1="60" y1="180" x2="380" y2="180" stroke="#5b6472" stroke-width="1.5"/>
+      <line x1="60" y1="30" x2="60" y2="180" stroke="#5b6472" stroke-width="1.5"/>
+      <rect x="110" y="60" width="70" height="120" fill="#1a3a5c" fill-opacity="0.75"/>
+      <rect x="260" y="150" width="70" height="30" fill="#c9a227" fill-opacity="0.85"/>
+      <text x="145" y="50" class="vennlabel" text-anchor="middle">6</text>
+      <text x="145" y="198" class="vennsub" text-anchor="middle">Union group (made up)</text>
+      <text x="295" y="140" class="vennlabel" text-anchor="middle">1</text>
+      <text x="295" y="198" class="vennsub" text-anchor="middle">Intersection group (made up)</text>
+      <text x="20" y="34" class="vennsub" transform="rotate(0)">people</text>
+    </svg>
+    <figcaption><strong>How to read this:</strong> a bar chart is a second way &mdash; alongside a Venn diagram &mdash; to visually compare two group sizes side by side, such as the number of people in a union versus an intersection, or the number of test kits two plans would use. <em>This example uses small made-up numbers (6 and 1) purely to show the technique &mdash; Challenge 2 asks for your own original visual built from this case's real numbers (Appendix A and Appendix B), not these ones.</em> A bar chart like this is one option for your Challenge 2 visual; it is not a required deliverable on its own.</figcaption>
+  </figure>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<section id="appendices">
+  <h2>Appendices</h2>
+
+  <details open id="apxA">
+    <summary>Appendix A &mdash; The Two Index Patients' Contact Circles</summary>
+    <div class="inner">
+      <p class="apxnote">Priya's county contact-tracing system does not use a real, individually identifiable public contact-tracing dataset &mdash; one does not exist publicly, and building one would violate the privacy of real patients. Instead, this case uses a real, published, anonymized <span class="gterm-placeholder" data-term="Graph">social connection network</span> as a structural stand-in: two real people's actual friend circles, with the same union/intersection structure a real contact-tracing case would have. Appendix C states exactly why this substitution is used and what it changes.</p>
+      <p class="apxnote"><strong>Live source (explore it yourself):</strong> Stanford SNAP, <strong>ego-Facebook dataset</strong> &mdash; <a href="https://snap.stanford.edu/data/ego-Facebook.html" target="_blank" rel="noopener">snap.stanford.edu/data/ego-Facebook.html</a> [S1]. This dataset publishes real, anonymized Facebook friend lists ("ego networks") for a set of volunteer users, each broken into labeled "circles" of friends. You can browse the raw circle files yourself at the link above, or download the full raw archive at <a href="https://snap.stanford.edu/data/facebook.tar.gz" target="_blank" rel="noopener">snap.stanford.edu/data/facebook.tar.gz</a> [S2].</p>
+      <table id="tblApxA">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Ego-network dataset used</td><td>Ego-node <strong>698</strong> ("Index Patient 1") and ego-node <strong>686</strong> ("Index Patient 2") [S2]. Chosen because their circle sizes (66 and 170) are large enough to make "more names than kits" a real problem, small enough to reproduce and count in full by hand, and because this pair is one of only two among the dataset's 10 ego-networks with a real, non-trivial overlap between their contact circles.</td></tr>
+        <tr><td>Index Patient 1's contact circle (full list of node ids) &mdash; Set A, 66 <span class="gterm-placeholder" data-term="Vertex">vertices</span></td><td class="idlist" id="listSetA"></td></tr>
+        <tr><td>Index Patient 2's contact circle (full list of node ids) &mdash; Set B, 170 vertices</td><td class="idlist" id="listSetB"></td></tr>
+        <tr><td>Size of Index Patient 1's contact circle</td><td class="num">66 [S2]</td></tr>
+        <tr><td>Size of Index Patient 2's contact circle</td><td class="num">170 [S2]</td></tr>
+      </table>
+      <blockquote>
+        <strong>Data Note &mdash; check this before you calculate anything.</strong> One contact id in the raw circle files above appears in an implausibly large share of <em>both</em> index patients' circles: node <strong>828</strong>. Within Index Patient 1's circle, node 828 is directly connected (a recorded <span class="gterm-placeholder" data-term="Edge">edge</span>) to 19 of the other 65 members &mdash; 29.2%, versus that circle's own average member-to-member connection rate of about 12.6%. Within Index Patient 2's circle, node 828 is directly connected to 77 of the other 169 members &mdash; 45.6%, versus that circle's average of about 11.5% [S2, derived from the raw edge files]. That is roughly 2.3&times; and 4.0&times; each circle's own typical rate &mdash; no other shared contact comes close to that on <em>both</em> circles at once. A real contact-tracing system would flag a number like that for review before treating it as a genuine double exposure. Decide, and show your reasoning (this is Deliverable D4).
+      </blockquote>
+      <p class="side-note">Source: Stanford Network Analysis Project (SNAP), ego-Facebook dataset, J. McAuley and J. Leskovec, "Learning to Discover Social Circles in Ego Networks," NIPS 2012, <a href="https://papers.nips.cc/paper/4532-learning-to-discover-social-circles-in-ego-networks" target="_blank" rel="noopener">papers.nips.cc/paper/4532</a> [S6]. Dataset accessed 2026-09-12.</p>
+    </div>
+  </details>
+
+  <details id="apxB">
+    <summary>Appendix B &mdash; Weekly Test Kit Allotment and Secondary-Case Rate</summary>
+    <div class="inner">
+      <table id="tblApxB">
+        <tr><th>Quantity</th><th>Value</th></tr>
+        <tr><td>Priya's weekly test-kit allotment</td><td class="num">45 kits/week [MA1 &mdash; see Appendix C]</td></tr>
+        <tr><td>Total flagged contacts this week (from both index patients combined, before removing duplicates)</td><td class="num">derived from Appendix A: 66 + 170 = 236</td></tr>
+        <tr><td>Secondary-case (positivity) rate applied to tested union-only contacts</td><td class="num">16.6% (95% CI 14.0%&ndash;19.3%) &mdash; pooled household close-contact secondary attack rate [S3]</td></tr>
+        <tr><td>Secondary-case (positivity) rate applied to tested intersection (dual-exposure) contacts</td><td class="num">16.6% &mdash; same sourced rate as above, applied to the dual-exposure group [MA2 &mdash; see Appendix C]</td></tr>
+      </table>
+      <p class="side-note">No published rate specific to a "dual index-patient exposure" contact was found (two independent search attempts, including a direct check for a compounded/multiple-exposure secondary attack rate in the epidemiology literature). That absence is itself a real finding &mdash; the case does not invent a higher number for the intersection group. See Appendix C, MA2.</p>
+      <blockquote><strong>Counting convention &mdash; read this before you compute D5.</strong> A "confirmed secondary case" is a whole person, not a fraction of one. For each plan, first multiply the number of kits that plan actually uses by the secondary-case rate to get an <em>expected</em> case count (this will usually come out as a decimal), then <strong>round that expected count to the nearest whole number</strong> before dividing by the kits used to get the per-kit ratio. Example: 45 kits &times; 16.6% = 7.47 expected cases &rarr; rounds to <strong>7</strong> confirmed cases &rarr; 7 &divide; 45 is the ratio. Apply this same two-step process (multiply, round, then divide) to both plans, using each plan's own kit count and pool size.</blockquote>
+    </div>
+  </details>
+
+  <details id="apxC">
+    <summary>Appendix C &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <blockquote><strong>Assumption &mdash; Real network, proxy framing.</strong> This case uses two real people's real friend circles from the Stanford SNAP ego-Facebook dataset as a structural stand-in for two index patients' contact-tracing lists. The underlying union/intersection math &mdash; which people are exposed to one source, both sources, or neither &mdash; is identical whether the network represents friendships or disease contacts. No individually identifiable public-health contact-tracing dataset is used, because none exists publicly, and none should. Treat the <em>names/ids</em> in Appendix A as real data and the <em>disease-exposure framing</em> around them as a disclosed modeling proxy, not a real outbreak.</blockquote>
+      <p class="apxnote">These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move.</p>
+      <table id="tblApxC">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Priya's weekly test-kit allotment</td><td class="num">45 kits/week</td><td>No public figure exists for a county unit's weekly test-kit supply specifically. A real, dated CDC report on U.S. contact-tracing programs [S5] found a median caseload of 29 contacts assigned per contact tracer per month &mdash; a related but different quantity (staffing workload, not kit supply). 45/week is set at a plausible, comparable order of magnitude for a small county unit's weekly kit budget, not derived arithmetically from that figure.</td><td>The margin between the two plans is sensitive to this number &mdash; see Appendix A's Data Note and Deliverable D4. A different allotment changes how many of each set get tested and can change which plan uses its kits more efficiently.</td></tr>
+        <tr><td>MA2</td><td>Secondary-case rate for dual-exposure (intersection) contacts</td><td class="num">16.6% &mdash; same as the sourced single-exposure rate [S3]</td><td>Two search attempts (a direct search for a "dual index-patient exposure" secondary attack rate, and a review of a real study that does report household-vs-non-household rates from one cohort [S4]) found no published rate specific to a dual/compounded-exposure contact. Reusing the single-exposure rate is the honest choice available with real sourced data &mdash; it is very likely an understatement of the intersection group's true risk, not an overstatement.</td><td>Because this assumption applies the same rate to both groups, it makes the two plans' per-kit yields close by construction &mdash; the case's real comparison rests on how each plan spends its kits (full coverage of a small group vs. partial coverage of a much larger one), not on a rate advantage this case does not claim to have found.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details open id="apx-glossary">
+    <summary>Appendix D &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links current as of this build. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+
+  <details id="apxF">
+    <summary>Appendix E &mdash; Sources</summary>
+    <div class="inner">
+      <table id="tblApxE">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Conf.</th></tr>
+        <tr><td>S1</td><td>ego-Facebook dataset description (nodes, edges, ego networks)</td><td>4,039 nodes; 88,234 edges; 10 ego networks</td><td><a href="https://snap.stanford.edu/data/ego-Facebook.html" target="_blank" rel="noopener">Stanford SNAP &mdash; ego-Facebook dataset page</a></td><td>accessed 2026-09-12</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Index Patients 1 &amp; 2's real contact-circle data, union, intersection, outlier's connection shares</td><td>Ego 698: 66; Ego 686: 170; &cap;=27; &cup;=209; node 828 at 29.2%/45.6%</td><td><a href="https://snap.stanford.edu/data/facebook.tar.gz" target="_blank" rel="noopener">Stanford SNAP &mdash; raw ego-Facebook data archive</a></td><td>accessed 2026-09-12</td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>Secondary attack rate for a close-contact exposure</td><td>16.6% (95% CI 14.0%&ndash;19.3%), 54 studies, 77,758 participants</td><td><a href="https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2774102" target="_blank" rel="noopener">Madewell et al., JAMA Network Open 2020</a></td><td>published 2020-12-14</td><td>HIGH</td></tr>
+        <tr><td>S4</td><td>Real-world example that exposure type/intensity changes secondary attack rate (supplemental)</td><td>Household 11.8% (n=10,592) vs. non-household 1.9% (n=48,481)</td><td><a href="https://wwwnc.cdc.gov/eid/article/26/10/20-1315_article" target="_blank" rel="noopener">Park et al., Emerging Infectious Diseases 26(10)</a></td><td>published 2020-10</td><td>MEDIUM</td></tr>
+        <tr><td>S5</td><td>Real-world contact-tracer/case-investigator caseload (basis for MA1)</td><td>Median 29 contacts/tracer, 31 cases/investigator, per month</td><td><a href="https://www.cdc.gov/mmwr/volumes/70/wr/mm7003a3.htm" target="_blank" rel="noopener">CDC, MMWR 70(3)</a></td><td>published 2021-01-22</td><td>HIGH</td></tr>
+        <tr><td>S6</td><td>ego-Facebook dataset methodology paper</td><td>&mdash;</td><td><a href="https://papers.nips.cc/paper/4532-learning-to-discover-social-circles-in-ego-networks" target="_blank" rel="noopener">McAuley &amp; Leskovec, NIPS 2012</a></td><td>published 2012</td><td>HIGH</td></tr>
+      </table>
+    </div>
+  </details>
+</section>
+
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which plan to recommend; that part is still yours.</p>
+
+  <div class="stepbox">
+    <h4>Step 1 &mdash; D1: Set sizes from the raw data</h4>
+    <div class="goal">Using Appendix A's two raw node-id lists (Set A = Index Patient 1's circle, Set B = Index Patient 2's circle), count each set's size. This is the foundation for writing D1's two labeled sets in proper set notation.</div>
+    <div class="fieldrow"><label for="s1sizeA">|A| &mdash; size of Set A</label><input type="number" id="s1sizeA" step="1"><span class="fb" id="fb1a"></span></div>
+    <div class="fieldrow"><label for="s1sizeB">|B| &mdash; size of Set B</label><input type="number" id="s1sizeB" step="1"><span class="fb" id="fb1b"></span></div>
+    <button onclick="checkStep1()">Check</button>
+    <p class="side-note">D1 also asks you to write out both full sets in curly-brace notation and label each as a subset of the county's full flagged-contact list &mdash; this calculator only checks the two sizes above.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 2 &mdash; D3: Union and intersection, from the raw data</h4>
+    <div class="goal">Compute |A &cup; B| and |A &cap; B| directly from Appendix A's raw lists &mdash; every id counted once for the union, only the shared ids for the intersection. Use the RAW (un-dropped) sets here; D4's outlier decision comes next.</div>
+    <div class="fieldrow"><label for="s2union">|A &cup; B| &mdash; raw union size</label><input type="number" id="s2union" step="1"><span class="fb" id="fb2a"></span></div>
+    <div class="fieldrow"><label for="s2inter">|A &cap; B| &mdash; raw intersection size</label><input type="number" id="s2inter" step="1"><span class="fb" id="fb2b"></span></div>
+    <button onclick="checkStep2()">Check</button>
+    <p class="side-note">D3 also asks you to list every member of each &mdash; not just the count. This calculator only checks the counts.</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 3 &mdash; D4: The outlier decision</h4>
+    <div class="goal">Node 828 shows up in both circles at a far higher rate than typical (Appendix A, Data Note). Make your call, and write your reasoning &mdash; this box isn't checked against an answer key, because there isn't one.</div>
+    <div class="fieldrow">
+      <label for="s3outlier">Your D4 decision</label>
+      <select id="s3outlier" onchange="onOutlierChoice()">
+        <option value="">-- choose one --</option>
+        <option value="drop">Drop node 828 from both sets (likely data error)</option>
+        <option value="keep">Keep node 828 in both sets (real shared exposure)</option>
+      </select>
+    </div>
+    <textarea class="freetext" id="s3reasoning" placeholder="Write your reasoning here (saved in your browser as you type)&hellip;" oninput="saveD4Reasoning(this.value)"></textarea>
+    <p class="side-note">Your choice here feeds Step 4 below &mdash; whichever way you decide, the calculator will use YOUR choice, not tell you which one is "right."</p>
+  </div>
+
+  <div class="stepbox">
+    <h4>Step 4 &mdash; D5: Confirmed secondary cases per test kit used</h4>
+    <div class="goal">Widest Net tests up to the full weekly kit allotment (Appendix B) out of the union group. Shared Risk fully tests the intersection group (using fewer kits if the intersection is smaller than the allotment). For each plan: expected confirmed cases = round(kits used &times; secondary-case rate); yield = expected cases &divide; kits used. Uses your Step 3 outlier decision.</div>
+    <div class="fieldrow"><label for="s4kitsA">Widest Net: kits used</label><input type="number" id="s4kitsA" step="1"><span class="fb" id="fb4a"></span></div>
+    <div class="fieldrow"><label for="s4casesA">Widest Net: expected confirmed cases</label><input type="number" id="s4casesA" step="1"><span class="fb" id="fb4b"></span></div>
+    <div class="fieldrow"><label for="s4yieldA">Widest Net: yield (cases per kit, as a %)</label><input type="number" id="s4yieldA" step="0.01"><span class="fb" id="fb4c"></span></div>
+    <div class="fieldrow"><label for="s4kitsB">Shared Risk: kits used</label><input type="number" id="s4kitsB" step="1"><span class="fb" id="fb4d"></span></div>
+    <div class="fieldrow"><label for="s4casesB">Shared Risk: expected confirmed cases</label><input type="number" id="s4casesB" step="1"><span class="fb" id="fb4e"></span></div>
+    <div class="fieldrow"><label for="s4yieldB">Shared Risk: yield (cases per kit, as a %)</label><input type="number" id="s4yieldB" step="0.01"><span class="fb" id="fb4f"></span></div>
+    <button onclick="checkStep4()">Check</button>
+    <p class="side-note">Still just checking your own arithmetic &mdash; it will not tell you which plan to recommend. That's your own D5 write-up and Challenge 2 pitch to make. If you've revealed and applied the Twist below, this step re-checks against the twist's scenario instead.</p>
+  </div>
+</section>
+
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Reveal this only after you've finished working through the case &mdash; the Twist is meant to land after your analysis, not before.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-kit"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've finished the case &mdash; reveal it</button>
+    <div id="twistNarrative">
+      <p><em>"Priya's phone buzzes again. This time it's the county lab."</em> A processing-equipment failure just cut usable test-kit supply for the rest of the week &mdash; from 45 kits down to 27. Same two lists, same rate. Fewer tests.</p>
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist: cut the kit allotment from 45 to 27 (on top of your Step 3 outlier decision) and recompute Step 4's yields.</label>
+      </div>
+      <p style="margin-top:12px">Sixty seconds. Does this change your plan &mdash; or not? What just changed in your model: was your set wrong, or was your answer riding on an assumption you didn't know was load-bearing?</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      <li>S1 &mdash; Stanford SNAP, <em>ego-Facebook dataset page</em></li>
+      <li>S2 &mdash; Stanford SNAP, <em>raw ego-Facebook data archive</em></li>
+      <li>S3 &mdash; Madewell et al., <em>JAMA Network Open</em> (2020-12-14)</li>
+      <li>S4 &mdash; Park et al., <em>Emerging Infectious Diseases 26(10)</em> (2020-10)</li>
+      <li>S5 &mdash; CDC, <em>MMWR 70(3)</em> (2021-01-22)</li>
+      <li>S6 &mdash; McAuley &amp; Leskovec, <em>NIPS 2012</em></li>
+      <li>Full list of 6 sources (S1&ndash;S6) in Appendix E above.</li>
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  The Overlap Call &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   Given data, copied verbatim from cases/the-overlap-call/case.md
+   Appendix A (case.md sha256 as of this build:
+   a463ad0c29d0ab12f0c4d79d3f51ca919fe082621dd27416e61281f9d667b564).
+   Raw node-id lists -- the notebook computes the union/intersection
+   itself from these; nothing here is a pre-computed verdict.
+   ================================================================ */
+const SET_A = [697, 703, 708, 713, 719, 729, 745, 747, 753, 769, 772, 774, 776, 798, 800, 803, 804, 805, 810, 811, 819, 823, 825, 828, 830, 840, 856, 857, 858, 859, 860, 861, 862, 863, 864, 865, 866, 867, 868, 869, 870, 871, 872, 873, 874, 875, 876, 877, 878, 879, 880, 881, 882, 883, 884, 885, 886, 887, 888, 889, 890, 891, 892, 893, 894, 895];
+const SET_B = [687, 688, 689, 690, 691, 692, 693, 694, 695, 696, 697, 698, 699, 700, 701, 702, 703, 704, 705, 706, 707, 708, 709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 719, 720, 721, 722, 723, 724, 725, 726, 727, 728, 729, 730, 731, 732, 733, 734, 735, 736, 737, 738, 739, 740, 741, 742, 743, 744, 745, 746, 747, 748, 749, 750, 751, 752, 753, 754, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769, 770, 771, 772, 773, 774, 775, 776, 777, 778, 779, 780, 781, 782, 783, 784, 785, 786, 787, 788, 789, 790, 791, 792, 793, 794, 795, 796, 797, 798, 799, 800, 801, 802, 803, 804, 805, 806, 807, 808, 809, 810, 811, 812, 813, 814, 815, 816, 817, 818, 819, 820, 821, 822, 823, 824, 825, 826, 827, 828, 829, 830, 831, 832, 833, 834, 835, 836, 837, 838, 839, 840, 841, 842, 843, 844, 845, 846, 847, 848, 849, 850, 851, 852, 853, 854, 855, 856];
+const OUTLIER_ID = 828;
+
+/* ================================================================
+   PARAMS/FLEX/evaluate() -- JS port contract (INTERACTIVE_HTML_CONTRACT.md
+   sec.2). PARAMS holds every case-stated dial; FLEX is what a sensitivity
+   probe would perturb. Everything below computes from raw data or PARAMS
+   only -- no hardcoded union/intersection size, no hardcoded verdict.
+   ================================================================ */
+const PARAMS = {
+  kit_allotment: 45,
+  secondary_case_rate: 0.166
+};
+const FLEX = ["kit_allotment", "secondary_case_rate"];
+const TWIST_KIT_ALLOTMENT = 27; // lab equipment failure cuts supply mid-week: 45 -> 27
+
+function setUnion(a, b){ return new Set([...a, ...b]); }
+function setIntersection(a, b){ const sb = new Set(b); return a.filter(x => sb.has(x)); }
+
+function rawSets(){
+  return { A: SET_A.slice(), B: SET_B.slice() };
+}
+function dropOutlierFromSets(dropOutlier){
+  if(!dropOutlier) return rawSets();
+  return { A: SET_A.filter(x => x !== OUTLIER_ID), B: SET_B.filter(x => x !== OUTLIER_ID) };
+}
+
+function evaluate(params, dropOutlier){
+  const p = Object.assign({}, PARAMS, params || {});
+  const sets = dropOutlierFromSets(!!dropOutlier);
+  const unionSize = setUnion(sets.A, sets.B).size;
+  const interSize = setIntersection(sets.A, sets.B).length;
+
+  const kitsA = Math.min(p.kit_allotment, unionSize);
+  const kitsB = Math.min(p.kit_allotment, interSize);
+  const casesA = Math.round(kitsA * p.secondary_case_rate);
+  const casesB = Math.round(kitsB * p.secondary_case_rate);
+  const yieldA = kitsA ? 100 * casesA / kitsA : 0;
+  const yieldB = kitsB ? 100 * casesB / kitsB : 0;
+
+  return { unionSize, interSize, kitsA, kitsB, casesA, casesB, A: yieldA, B: yieldB };
+}
+function evaluate_twist(params, dropOutlier){
+  // The twist: a countywide lab equipment failure cuts the kit allotment from 45 to 27,
+  // mid-discussion. This flexes kit_allotment (MA1); it does not change either real set.
+  const p = Object.assign({}, params || {}, { kit_allotment: TWIST_KIT_ALLOTMENT });
+  return evaluate(p, dropOutlier);
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers.
+   ================================================================ */
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table.
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-—]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '⬇ Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — top-right toolbar.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions.
+   ================================================================ */
+function currentOutlierChoice(){
+  const sel = document.getElementById('s3outlier');
+  return sel && sel.value === 'drop';
+}
+function saveD4Reasoning(v){ localStorage.setItem(CASE_ID_PENDING()+'_d4reasoning', v); }
+function CASE_ID_PENDING(){ return typeof CASE_ID !== 'undefined' ? CASE_ID : 'the-overlap-call'; }
+function onOutlierChoice(){
+  checkStep4();
+}
+function restoreD4(){
+  const saved = localStorage.getItem(CASE_ID_PENDING()+'_d4reasoning');
+  if(saved) document.getElementById('s3reasoning').value = saved;
+}
+
+function checkStep1(){
+  fb('fb1a', val('s1sizeA') === SET_A.length);
+  fb('fb1b', val('s1sizeB') === SET_B.length);
+}
+
+function checkStep2(){
+  const union = setUnion(SET_A, SET_B).size;
+  const inter = setIntersection(SET_A, SET_B).length;
+  fb('fb2a', val('s2union') === union);
+  fb('fb2b', val('s2inter') === inter);
+}
+
+function checkStep4(){
+  const dropOutlier = currentOutlierChoice();
+  const twistEl = document.getElementById('applyTwist');
+  const applyTwist = twistEl && twistEl.checked;
+  const r = applyTwist ? evaluate_twist(PARAMS, dropOutlier) : evaluate(PARAMS, dropOutlier);
+  fb('fb4a', val('s4kitsA') === r.kitsA);
+  fb('fb4b', val('s4casesA') === r.casesA);
+  fb('fb4c', near(val('s4yieldA'), r.A, 0.5));
+  fb('fb4d', val('s4kitsB') === r.kitsB);
+  fb('fb4e', val('s4casesB') === r.casesB);
+  fb('fb4f', near(val('s4yieldB'), r.B, 0.5));
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget.
+   ================================================================ */
+const CASE_ID = "the-overlap-call";
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+restoreD4();
+
+/* ================================================================
+   CASE-SPECIFIC — render the raw id lists into Appendix A's table.
+   ================================================================ */
+document.getElementById('listSetA').textContent = SET_A.join(', ');
+document.getElementById('listSetB').textContent = SET_B.join(', ');
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist.
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Both index patients' contact lists, as two labeled sets in set notation",
+    "Why build both as labeled sets first: every later step (the Venn diagram, the union, the intersection, even the outlier decision) depends on having an unambiguous, complete listing of who is exposed to each index patient. Set notation forces each contact to appear exactly once per list, which is exactly the discipline you need in place before any counting step can be trusted."],
+  ["D2", "Single Venn diagram, every contact in the correct region",
+    "Why a Venn diagram is the right tool here: it forces every contact &mdash; all of them, not a sample &mdash; into exactly one of three mutually exclusive regions (only A, only B, or both). That makes it visually obvious if you've double-counted someone or left someone out, before you ever rely on a union or intersection size for anything downstream."],
+  ["D3", "Union and intersection, written out explicitly with sizes labeled",
+    "Why list every member and not just report |A &cup; B| and |A &cap; B| as numbers: a count alone can't be checked by someone else, and it hides arithmetic shortcuts (like assuming |A &cup; B| = |A| + |B| without confirming the overlap) that go wrong if the outlier decision in D4 hasn't been applied yet. The full list is what makes the count verifiable."],
+  ["D4", "Written decision on the outlier contact, with reasoning",
+    "Why this decision has to come before you finalize D3 and D5: node 828's connection rate changes the actual membership of both sets, not just a footnote about them. Deciding whether to keep or drop that contact after you've already computed your union, intersection, or per-kit ratios means redoing that arithmetic on a contact list you hadn't actually finalized yet."],
+  ["D5", "Comparison table: confirmed secondary cases per test kit used",
+    "Why per-kit yield, not raw case count: the case states plainly that Widest Net will always find more cases in raw count, simply because it tests more people &mdash; that fact alone settles nothing about which plan uses a fixed, limited kit supply better. Dividing by kits used normalizes for group size so the two plans are actually comparable, and applying Appendix B's rounding convention identically to both plans is what keeps that comparison apples-to-apples rather than favoring whichever plan you happened to round more generously."]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label,explain])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      ${explain ? `<div class="side-note" style="border-top:none;margin-top:2px;padding-top:0">${explain}</div>` : ''}
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — math glossary content (MCS-39: >=8 terms, every
+   url https:// to an allowlisted domain). All 10 URLs below were
+   verified live for this exact vocabulary elsewhere in this corpus
+   (cases/the-overlap-send, cases/six-degrees-of-exposure,
+   cases/biostatician) -- a URL fetched and confirmed for one case is
+   a legitimate source for the same term reused verbatim in another
+   case (INTERACTIVE_HTML_CONTRACT.md, section 3).
+   ================================================================ */
+const GLOSSARY = {
+  "Set": {def: "A well-defined collection of distinct objects, called its elements or members.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Subset": {def: "A set A is a subset of set B (written A ⊆ B) if every element of A is also an element of B.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Union": {def: "The union of two sets (written A ∪ B) is everything that is in A, or in B, or in both.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Intersection": {def: "The intersection of two sets (written A ∩ B) is everything that is in BOTH A and B at the same time.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Empty Set": {def: "The set with no elements at all, written ∅ or {}.",
+    url: "https://www.mathsisfun.com/sets/sets-introduction.html"},
+  "Venn Diagram": {def: "A diagram using overlapping circles inside a bounding rectangle to show how sets relate to each other and to the universal set.",
+    url: "https://www.mathsisfun.com/sets/venn-diagrams.html"},
+  "Vertex": {def: "A point in a graph -- in this case, one traced person. Plural: vertices.",
+    url: "https://www.mathsisfun.com/sets/graph-theory.html"},
+  "Edge": {def: "A line connecting two vertices in a graph -- in this case, a confirmed contact between two traced people.",
+    url: "https://www.mathsisfun.com/sets/graph-theory.html"},
+  "Graph": {def: "A network of points (vertices) connected by lines (edges) -- the mathematical structure a contact-tracing network is built on.",
+    url: "https://www.mathsisfun.com/sets/graph-theory.html"},
+  "Outlier": {def: "A value that lies far outside most of the other values in a data set.",
+    url: "https://www.mathsisfun.com/definitions/outlier.html"}
+};
+const HOWTO = [
+  ["How to find the union and intersection of two sets", "Union"],
+  ["How to represent a set relationship using a Venn diagram", "Venn Diagram"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer (T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+  document.querySelectorAll('.gterm-placeholder[data-term]').forEach(span => {
+    const term = span.dataset.term;
+    span.outerHTML = gtermHTML(term, span.textContent);
+  });
+}
+renderGlossary();
+
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #story-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-SPECIFIC — a SECOND glossary layer for this case's real
+   contact-tracing/epidemiology vocabulary, kept separate from the
+   math GLOSSARY above (which T1-19 checks against). Same
+   hover+hyperlink mechanism, its own data object, its own render
+   target (#glossaryStory), and its own auto-linker. {desc, link}
+   field shape (not {def, url}) per this case's own build contract.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "Contact Tracing": {desc: "The public-health process of identifying and following up with people who may have been exposed to a person with a confirmed infectious disease -- Priya's entire job.",
+    link: "https://en.wikipedia.org/wiki/Contact_tracing"},
+  "Index Patient": {desc: "Also called the index case: the first identified person infected in an outbreak or a specific chain of transmission being investigated -- this case's Priya has two of them.",
+    link: "https://en.wikipedia.org/wiki/Index_case"},
+  "Attack Rate": {desc: "The share of a group exposed to a disease who go on to actually get infected -- a general public-health term. This case uses one specific kind, the secondary attack rate (see below), applied by analogy to a fictional disease.",
+    link: "https://en.wikipedia.org/wiki/Attack_rate"},
+  "Secondary Attack Rate": {desc: "The share of a person's known close contacts who go on to test positive themselves, usually measured within one household or one clear exposure event -- distinct from a test positivity rate (the share of ALL administered tests, from any source, that come back positive). This case's 16.6% figure is a real secondary attack rate, applied here by analogy since the case's own disease is never named.",
+    link: "https://en.wikipedia.org/wiki/Attack_rate"},
+  "Test Positivity Rate": {desc: "The share of all administered tests, from any source, that come back positive -- a related but different quantity from a secondary attack rate, which is specifically about a known contact's own exposure to one confirmed case.",
+    link: "https://en.wikipedia.org/wiki/COVID-19_testing"},
+  "Ego Network": {desc: "A network built from one focal person (the 'ego') and everyone that person is directly connected to -- the exact real-data structure Appendix A's two circles use.",
+    link: "https://arxiv.org/abs/2101.00863"},
+  "Exposure Window": {desc: "The specific time period during which a person could have been infected by contact with an infectious individual -- what determines whether a name belongs on a contact list at all.",
+    link: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7832466/"},
+  "Confidence Interval": {desc: "A range of plausible values for a measured rate, given the size and variability of the study that measured it -- e.g. this case's 16.6% rate has a 95% CI of 14.0%-19.3%, meaning the researchers are 95% confident the true rate falls somewhere in that range.",
+    link: "https://en.wikipedia.org/wiki/Confidence_interval"},
+  "Pooled": {desc: "Combined across many separate studies into one overall estimate (a 'meta-analysis'), rather than taken from a single study -- this case's 16.6% secondary attack rate is pooled from 54 separate studies covering 77,758 participants, which is part of why it's rated HIGH confidence.",
+    link: "https://en.wikipedia.org/wiki/Meta-analysis"},
+  "Processing Capacity": {desc: "The maximum number of test samples a lab can actually run and report in a given period -- the real-world constraint that sets Priya's fixed weekly kit allotment (Appendix B), regardless of how many contacts get flagged.",
+    link: "https://en.wikipedia.org/wiki/Laboratory"},
+  "Caseload": {desc: "The number of people (contacts, or cases) assigned to one worker to follow up with over a given period -- a related but different quantity from a kit-supply figure, since a caseload measures a person's workload, not a lab's test-kit budget.",
+    link: "https://www.cdc.gov/mmwr/volumes/70/wr/mm7003a3.htm"}
+};
+function gtermHTMLStory(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-sterm="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">Open a source on this &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('glossaryStory');
+  if(!el) return;
+  el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => gtermHTMLStory(k)).join('');
+  document.querySelectorAll('.sterm-placeholder[data-sterm]').forEach(span => {
+    const term = span.dataset.sterm;
+    span.outerHTML = gtermHTMLStory(term, span.textContent);
+  });
+}
+renderStoryGlossary();
+
+function autoLinkStoryGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-sterm]').forEach(a => {
+    if(STORY_GLOSSARY[a.dataset.sterm] && !a.closest('#story-glossary')) linked.add(a.dataset.sterm);
+  });
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+  const skip = 'script, style, svg, .gterm, .sterm, #story-glossary, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTMLStory(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating.
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+function onTwistToggle(){
+  checkStep4();
+}
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

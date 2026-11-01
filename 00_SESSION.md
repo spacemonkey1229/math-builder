@@ -35,7 +35,9 @@ Read first, in order:
 4. DOCTRINE_LEDGER.md (every rule's lifecycle PROPOSED->CODIFIED->WIRED->VERIFIED; read the
    "Verification status", "UNWIRED queue" and "Change log" sections for current state, not
    just the table)
-5. ROADMAP.md (current track priorities and the one blocking fact at the top)
+5. ROADMAP.md (v3.0: product phases + parking lot first; content-pipeline status below it)
+   and, for any learner-facing feature work, VISION.md + PRD.md (direction + requirements;
+   PROPOSED as of 2026-10-19, see DECISIONS.md D-021)
 6. DECISIONS.md (append-only; D-015 through D-020 are the whole hosted-app history and are
    NOT summarized anywhere else)
 
@@ -74,6 +76,14 @@ deploying -- do not act on a snapshot taken earlier in your own session.
 
 Session end: state what changed, what is staged (queue files, INTERIM scores), and what still
 needs a human sign-off (a --confirm run, a guide's dry-run, a fetch this sandbox can't make).
+
+Model routing (v2.0 · 2026-10-08 · canonical: Best Practices/MODEL_ROUTING.md — Haiku first, then Sonnet, limited Opus, no Fable)
+- Default: Sonnet for building (provisional)
+- Haiku: problem/case variant generation **with every answer recomputed in code, not trusted from the model**; QA checklists; R1 reviewer seats (`.claude/agents/r1*` set to haiku)
+- Sonnet: pipeline/app code, case design, balance-test judgment
+- Opus: none
+- R1a/R1b/R1c: three `haiku-rater` subagents (independent) → genuine split gets one Sonnet tie-break → still split or Apex/capital goes to Manan, batched, with rationale logged.
+- Escalate one tier only after 2 failed attempts, an unresolved R1 split, or when the task touches doctrine or capital. Don't switch models mid-file.
 ```
 
 ## How to finish the graduation on your end
